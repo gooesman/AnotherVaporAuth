@@ -845,7 +845,7 @@
   "steamAccelerationLoading": "正在同步訂閱…",
   "steamAccelerationStarting": "正在啟動…",
   "steamAccelerationRunning": "已啟用",
-  "steamAccelerationPaused": "偵測到外部代理，內建加速已暫停",
+  "steamAccelerationPaused": "內建加速已暫停",
   "steamAccelerationFailed": "加速無法使用",
   "steamAccelerationUnsupported": "目前僅支援 Windows 和 Android。",
   "steamAccelerationConfigured": "訂閱已儲存在此裝置",

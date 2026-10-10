@@ -2730,8 +2730,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get steamAccelerationRunning => 'Activada';
 
   @override
-  String get steamAccelerationPaused =>
-      'Proxy externo detectado; aceleración integrada en pausa';
+  String get steamAccelerationPaused => 'Aceleración integrada en pausa';
 
   @override
   String get steamAccelerationFailed => 'Aceleración no disponible';

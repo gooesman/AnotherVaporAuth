@@ -223,7 +223,13 @@ class _SteamAccelerationScreenState
                             const SizedBox(height: 12),
                             const LinearProgressIndicator(),
                           ],
-                          if (state.error != null) ...[
+                          // An already detected proxy/VPN takes priority over
+                          // an incomplete scan; manual startup stays disabled.
+                          if (state.error != null &&
+                              !(state.error ==
+                                      SteamAccelerationError
+                                          .environmentUnknown &&
+                                  environment.hasExternal)) ...[
                             const SizedBox(height: 12),
                             Text(
                               _errorLabel(l, state.error!),
@@ -419,10 +425,12 @@ class _SteamAccelerationScreenState
                               Text(l.steamAccelerationExternalProxy),
                             if (environment.vpnOrTunnelDetected)
                               Text(l.steamAccelerationExternalVpn),
-                            if (!environment.detectionAvailable)
-                              Text(l.steamAccelerationDetectionUnavailable)
-                            else if (!environment.hasExternal)
-                              Text(l.steamAccelerationNoExternal),
+                            if (!environment.hasExternal)
+                              Text(
+                                environment.detectionAvailable
+                                    ? l.steamAccelerationNoExternal
+                                    : l.steamAccelerationDetectionUnavailable,
+                              ),
                             const SizedBox(height: 8),
                             Text(
                               l.steamAccelerationEnvironmentHelp,

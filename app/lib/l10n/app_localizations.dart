@@ -4760,7 +4760,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationPaused.
   ///
   /// In en, this message translates to:
-  /// **'External proxy detected; built-in acceleration is paused'**
+  /// **'Built-in acceleration is paused'**
   String get steamAccelerationPaused;
 
   /// No description provided for @steamAccelerationFailed.

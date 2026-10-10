@@ -775,7 +775,7 @@
   "steamAccelerationLoading": "Sincronizando la suscripción…",
   "steamAccelerationStarting": "Iniciando…",
   "steamAccelerationRunning": "Activada",
-  "steamAccelerationPaused": "Proxy externo detectado; aceleración integrada en pausa",
+  "steamAccelerationPaused": "Aceleración integrada en pausa",
   "steamAccelerationFailed": "Aceleración no disponible",
   "steamAccelerationUnsupported": "Actualmente solo compatible con Windows y Android.",
   "steamAccelerationConfigured": "Suscripción guardada en este dispositivo",

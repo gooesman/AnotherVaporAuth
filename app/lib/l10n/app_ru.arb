@@ -775,7 +775,7 @@
   "steamAccelerationLoading": "Синхронизация подписки…",
   "steamAccelerationStarting": "Запуск…",
   "steamAccelerationRunning": "Включено",
-  "steamAccelerationPaused": "Обнаружен внешний прокси; встроенное ускорение приостановлено",
+  "steamAccelerationPaused": "Встроенное ускорение приостановлено",
   "steamAccelerationFailed": "Ускорение недоступно",
   "steamAccelerationUnsupported": "Сейчас поддерживаются только Windows и Android.",
   "steamAccelerationConfigured": "Подписка сохранена на этом устройстве",

@@ -1329,7 +1329,7 @@
   "steamAccelerationLoading": "Syncing subscription…",
   "steamAccelerationStarting": "Starting…",
   "steamAccelerationRunning": "Enabled",
-  "steamAccelerationPaused": "External proxy detected; built-in acceleration is paused",
+  "steamAccelerationPaused": "Built-in acceleration is paused",
   "steamAccelerationFailed": "Acceleration unavailable",
   "steamAccelerationUnsupported": "Currently supported on Windows and Android only.",
   "steamAccelerationConfigured": "Subscription saved on this device",

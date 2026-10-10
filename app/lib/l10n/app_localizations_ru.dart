@@ -2784,8 +2784,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steamAccelerationRunning => 'Включено';
 
   @override
-  String get steamAccelerationPaused =>
-      'Обнаружен внешний прокси; встроенное ускорение приостановлено';
+  String get steamAccelerationPaused => 'Встроенное ускорение приостановлено';
 
   @override
   String get steamAccelerationFailed => 'Ускорение недоступно';

@@ -2551,7 +2551,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationRunning => '已启用';
 
   @override
-  String get steamAccelerationPaused => '检测到外部代理，内置加速已暂停';
+  String get steamAccelerationPaused => '内置加速已暂停';
 
   @override
   String get steamAccelerationFailed => '加速不可用';
@@ -5210,7 +5210,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationRunning => '已啟用';
 
   @override
-  String get steamAccelerationPaused => '偵測到外部代理，內建加速已暫停';
+  String get steamAccelerationPaused => '內建加速已暫停';
 
   @override
   String get steamAccelerationFailed => '加速無法使用';

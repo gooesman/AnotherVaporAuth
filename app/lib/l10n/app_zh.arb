@@ -1206,7 +1206,7 @@
   "steamAccelerationLoading": "正在同步订阅…",
   "steamAccelerationStarting": "正在启动…",
   "steamAccelerationRunning": "已启用",
-  "steamAccelerationPaused": "检测到外部代理，内置加速已暂停",
+  "steamAccelerationPaused": "内置加速已暂停",
   "steamAccelerationFailed": "加速不可用",
   "steamAccelerationUnsupported": "目前仅支持 Windows 和 Android。",
   "steamAccelerationConfigured": "订阅已保存在此设备",

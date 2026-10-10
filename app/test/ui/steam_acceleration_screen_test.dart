@@ -355,6 +355,14 @@ void main() {
       detectionAvailable: true,
       vpnOrTunnelDetected: true,
     ),
+    'system proxy with incomplete detection':
+        const SteamAccelerationEnvironment(systemProxyDetected: true),
+    'PAC with incomplete detection': const SteamAccelerationEnvironment(
+      pacDetected: true,
+    ),
+    'VPN with incomplete detection': const SteamAccelerationEnvironment(
+      vpnOrTunnelDetected: true,
+    ),
   }.entries) {
     testWidgets('${entry.key} environment prevents accidental internal start', (
       tester,
@@ -365,10 +373,27 @@ void main() {
               ? SteamAccelerationPhase.pausedExternal
               : SteamAccelerationPhase.off,
           environment: entry.value,
+          error: entry.value.detectionAvailable
+              ? null
+              : SteamAccelerationError.environmentUnknown,
         );
-      await _pump(tester, service);
+      await _pump(tester, service, locale: const Locale('zh'));
+      final l = AppLocalizations.of(
+        tester.element(find.byType(SteamAccelerationScreen)),
+      );
+      expect(tester.widget<Text>(_key('status')).data, '内置加速已暂停');
+      expect(find.text(l.steamAccelerationDetectionUnavailable), findsNothing);
       expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNull);
       await _tap(tester, 'check-environment');
+      expect(find.text(l.steamAccelerationDetectionUnavailable), findsNothing);
+      expect(
+        find.text(
+          entry.value.vpnOrTunnelDetected
+              ? l.steamAccelerationExternalVpn
+              : l.steamAccelerationExternalProxy,
+        ),
+        findsOneWidget,
+      );
       expect(service.checks, 2);
       expect(service.starts, 0);
       service.emit(
@@ -385,12 +410,17 @@ void main() {
     'unknown detection explains paused auto mode and allows only an explicit start',
     (tester) async {
       final service = _Service(_ready)
-        ..emit(environment: const SteamAccelerationEnvironment());
-      await _pump(tester, service);
+        ..emit(
+          phase: SteamAccelerationPhase.pausedExternal,
+          environment: const SteamAccelerationEnvironment(),
+          error: SteamAccelerationError.environmentUnknown,
+        );
+      await _pump(tester, service, locale: const Locale('zh'));
       final l = AppLocalizations.of(
         tester.element(find.byType(SteamAccelerationScreen)),
       );
       expect(find.text(l.steamAccelerationDetectionUnavailable), findsWidgets);
+      expect(tester.widget<Text>(_key('status')).data, '内置加速已暂停');
       expect(find.text(l.steamAccelerationNoExternal), findsNothing);
       expect(service.starts, 0);
       expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNotNull);
