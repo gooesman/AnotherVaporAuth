@@ -299,11 +299,21 @@ void main() {
       expect(find.text(l.proOpen), findsNothing);
       expect(find.text(l.settingsUpdateCheck), findsNothing);
       await tester.scrollUntilVisible(find.text(l.themeNeon), 300);
+      await Scrollable.ensureVisible(
+        tester.element(find.text(l.themeNeon)),
+        alignment: 0.5,
+      );
+      await tester.pump();
       await tester.tap(find.text(l.themeNeon));
       // Styled skins deliberately animate; they never settle.
       await tester.pump(const Duration(milliseconds: 100));
       expect(c.read(effectiveSkinProvider), AvaSkin.neon);
       await tester.scrollUntilVisible(find.text(l.themePixel), 300);
+      await Scrollable.ensureVisible(
+        tester.element(find.text(l.themePixel)),
+        alignment: 0.5,
+      );
+      await tester.pump();
       await tester.tap(find.text(l.themePixel));
       await tester.pump(const Duration(milliseconds: 100));
       expect(c.read(effectiveSkinProvider), AvaSkin.pixel);

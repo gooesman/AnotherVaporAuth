@@ -1084,7 +1084,7 @@ class _SidebarRow extends ConsumerWidget {
   /// context menu.
   ///
   /// Deliberately still lists the swipe actions (confirmations / refresh /
-  /// export / remove) that the touch sheet drops — with a mouse this menu is
+  /// export / remove) that touch users reach by swiping — with a mouse this menu is
   /// the *only* discoverable way to reach them. The sidebar's refresh button
   /// is a global avatar refresh, not this account's re-login.
   Future<void> _contextMenu(BuildContext context, Offset at) async {
@@ -1129,115 +1129,6 @@ class _SidebarRow extends ConsumerWidget {
     if (action != null && context.mounted) onAction(account, action);
   }
 
-  /// Touch path for the long-press menu: a centered, phone-friendly sheet (big
-  /// tappable rows) instead of the desktop cursor popup.
-  ///
-  /// Only lists what the swipe panes *don't* already offer. Confirmations
-  /// (swipe right), refresh / export / remove (swipe left) used to be repeated
-  /// here, which made the sheet long enough to bury the actions that have no
-  /// other touch entry point. [_contextMenu] still carries the full set —
-  /// see the note there.
-  Future<void> _actionSheet(BuildContext context) async {
-    final l = AppLocalizations.of(context);
-    final t = Theme.of(context).extension<AvaTokens>()!;
-
-    Widget row(IconData icon, String label, String result, {Color? color}) {
-      final c = color ?? t.accent;
-      return InkWell(
-        onTap: () => Navigator.pop(context, result),
-        borderRadius: BorderRadius.circular(t.radiusSm),
-        child: Padding(
-          padding: context.rInsets(h: 16, v: 12),
-          child: Row(
-            children: [
-              Container(
-                width: context.r(34),
-                height: context.r(34),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: c.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(t.radiusSm),
-                  border: Border.all(
-                      color: c.withValues(alpha: 0.55), width: t.borderWidth),
-                ),
-                child: Icon(icon, color: c, size: context.r(18)),
-              ),
-              SizedBox(width: context.r(14)),
-              Expanded(
-                child: Text(label,
-                    style: TextStyle(
-                        color: color ?? t.text, fontSize: context.r(14.5))),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: context.rInsets(h: 32, v: 24),
-        child: Container(
-          padding: context.rInsets(v: 8),
-          decoration: BoxDecoration(
-            color: t.isPixel ? t.panel2 : t.panel2.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(t.isPixel ? 0 : t.radius),
-            border: Border.all(
-              color: t.isPixel ? t.borderColor : t.accent.withValues(alpha: 0.5),
-              width: t.borderWidth,
-            ),
-            boxShadow: t.isPixel
-                ? t.cardShadow()
-                : [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10)),
-                    ...t.glowShadow(blur: context.r(18), opacity: 0.18),
-                  ],
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: SingleChildScrollView(
-              padding: context.rSafeInsets(all: 0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: context.rInsets(h: 16, top: 6, bottom: 8),
-                    child: Text(
-                      account.accountName ??
-                          account.personaName ??
-                          '${account.steamId}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: t.muted,
-                          fontSize: context.r(12.5),
-                          letterSpacing: 0.5),
-                    ),
-                  ),
-                  row(Icons.dashboard_outlined, l.dashboardTitle, 'dashboard'),
-                  row(Icons.inventory_2_outlined, l.actionMarket, 'market'),
-                  row(Icons.people_outline, l.friendsTitle, 'friends'),
-                  row(Icons.key_outlined, l.backupCodesTitle, 'backup-codes'),
-                  row(Icons.family_restroom, l.famAccountAction, 'family'),
-                  row(Icons.devices_outlined, l.deviceSessionsAction, 'devices'),
-                  row(Icons.vpn_key_outlined, l.keyRedeemAction, 'redeem'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    if (action != null && context.mounted) onAction(account, action);
-  }
-
-  /// Long-press menu: manage the stored auto-login password.
   Widget _action(
     BuildContext context, {
     required IconData icon,
@@ -1357,14 +1248,11 @@ class _SidebarRow extends ConsumerWidget {
           ],
         ),
         child: _PressableCard(
-          // The account menu (market / family / devices / …) has no swipe
-          // action of its own: long-press (touch) opens the centered sheet,
-          // right-click (mouse) the cursor popup. Holding also scales the card
-          // down so the long-press affordance is discoverable.
-          haptics: haptics,
+          // Hold an account to open its overview directly; swipe panes
+          // hold the remaining management actions. Desktop keeps right-click.
           radius: t.radiusSm,
           onTap: onTap,
-          onMenu: () => _actionSheet(context),
+          onLongPress: () => onAction(account, 'dashboard'),
           onSecondaryMenu: (pos) => _contextMenu(context, pos),
           child: Container(
             padding: context.rInsets(all: 8),
@@ -1461,82 +1349,34 @@ class _SidebarRow extends ConsumerWidget {
   }
 }
 
-/// Wraps an account card with press feedback: a short hold scales it down
-/// (a delayed timer so a scroll's brief touch never triggers it) and, at the
-/// long-press threshold, fires a haptic and opens the menu. Kept stateful so
-/// the pressed scale survives the home list's per-second code-tick rebuilds.
-class _PressableCard extends StatefulWidget {
+/// Tapping selects the token; holding opens its overview without a second menu.
+/// Desktop retains its right-click context menu.
+class _PressableCard extends StatelessWidget {
   final Widget child;
-  final bool haptics;
   final double radius;
   final VoidCallback onTap;
-  final VoidCallback onMenu; // touch long-press → centered sheet
-  final void Function(Offset) onSecondaryMenu; // mouse right-click → popup
+  final VoidCallback onLongPress;
+  final void Function(Offset) onSecondaryMenu;
   const _PressableCard({
     required this.child,
-    required this.haptics,
     required this.radius,
     required this.onTap,
-    required this.onMenu,
+    required this.onLongPress,
     required this.onSecondaryMenu,
   });
 
   @override
-  State<_PressableCard> createState() => _PressableCardState();
-}
-
-class _PressableCardState extends State<_PressableCard> {
-  bool _pressed = false;
-  Timer? _hold;
-
-  void _reset() {
-    _hold?.cancel();
-    if (_pressed && mounted) {
-      setState(() => _pressed = false);
-    } else {
-      _pressed = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _hold?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) => GestureDetector(
-        // onLongPressDown fires the instant a finger lands. Wait ~140ms before
-        // scaling so a scroll (which moves and cancels well within that) never
-        // flickers the card; a deliberate hold does scale, cueing the menu.
-        onLongPressDown: (_) {
-          _hold?.cancel();
-          _hold = Timer(const Duration(milliseconds: 140), () {
-            if (mounted) setState(() => _pressed = true);
-          });
-        },
-        onLongPressCancel: _reset,
-        onLongPressEnd: (_) => _reset(),
-        onLongPressStart: (_) {
-          _reset(); // pop back as the menu opens
-          if (widget.haptics) HapticFeedback.mediumImpact();
-          widget.onMenu();
-        },
-        onSecondaryTapDown: (d) => widget.onSecondaryMenu(d.globalPosition),
-        child: AnimatedScale(
-          scale: _pressed ? 0.96 : 1.0,
-          duration: const Duration(milliseconds: 110),
-          curve: Curves.easeOut,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(widget.radius),
-            child: widget.child,
-          ),
+        onSecondaryTapDown: (d) => onSecondaryMenu(d.globalPosition),
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(radius),
+          child: child,
         ),
       );
 }
 
-/// Main panel for the selected account.
 class _MainPanel extends ConsumerWidget {
   final SteamGuardAccount account;
   final int tick;
@@ -1569,6 +1409,9 @@ class _MainPanel extends ConsumerWidget {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final code = _codeFor(account, tick);
     final remaining = SteamTotp.secondsRemaining(tick);
+    final platform = Theme.of(context).platform;
+    final mobile = platform == TargetPlatform.android ||
+        platform == TargetPlatform.iOS;
     final sessionInvalid =
         ref.watch(sessionHealthProvider).contains(account.steamId);
 
@@ -1580,7 +1423,12 @@ class _MainPanel extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              InkWell(onTap: onOpenDashboard, child: _Avatar(account: account, size: context.r(wide ? 76 : 56))),
+              InkWell(
+                key: const ValueKey('selected-account-avatar'),
+                onTap: mobile ? null : onOpenDashboard,
+                onLongPress: mobile ? onOpenDashboard : null,
+                child: _Avatar(account: account, size: context.r(wide ? 76 : 56)),
+              ),
               SizedBox(width: context.r(18)),
               Flexible(
                 child: Column(

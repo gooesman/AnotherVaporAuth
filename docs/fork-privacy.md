@@ -5,9 +5,28 @@ freefrank's AVA, including its **AVA-pc** Windows and **AVA Fork** Android previ
 builds.
 
 Steam accounts and authenticator secrets are stored on your device. Steam
-authentication, inventory, market and trading requests go directly to Valve's
-services. Those operations require the relevant account/session information;
-they do not go through a server operated by this fork.
+authentication, inventory, market and trading requests use Valve's services.
+Those operations require the relevant account/session information; they do not
+go through a server operated by this fork. Optional acceleration routes encrypted
+Steam connections through your selected subscription node or detected external
+proxy. Its operator can see connection metadata, including destinations, timing
+and volume; normal Steam TLS certificate validation remains enabled.
+
+Steam backup login codes are requested only when you choose the in-app SMS and
+verification steps. The selected account's session and entered verification code
+are sent to Valve over HTTPS. Returned codes stay in page memory and are cleared
+on leaving, hiding or locking the app; they are not written to account files,
+logs or WebDAV.
+
+Steam acceleration is optional and starts manually by default. Subscription
+URLs and sanitized node credentials are kept in local secure storage, separately
+from account synchronization. Explicit synchronization contacts your subscription
+provider; automatic startup may fetch it when no cached node is available.
+Windows first-use core downloads contact the pinned upstream GitHub release.
+The Android package includes the same core. The core uses a private local
+listener and receives its configuration in memory, with no retained diagnostics.
+AVA detects system proxy/VPN information locally to pause its own core; it does
+not upload that information or modify system proxy, DNS or certificates.
 
 Optional WebDAV synchronization sends encrypted account data to the server you
 choose. It is disabled until you configure it. Local debug logs may include

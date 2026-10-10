@@ -14,6 +14,7 @@
 - `AVA-Fork-v1.5.0+100042-android-arm64.apk`
 - `SHA256SUMS.txt`
 - `release-provenance.json`
+- `mihomo-v1.19.32-source.tar.gz`、`mihomo-LICENSE.txt`、`mihomo-NOTICE.txt`
 
 Windows 安装器显示为 AVA-pc。内部仍使用 `ava.exe`、`%LOCALAPPDATA%\Programs\AVA` 和原有应用数据目录。NSIS 的 `APPVER` 参数只使用三段版本号；完整版本和构建编号写入应用和预览元数据。
 
@@ -21,11 +22,19 @@ Android 目前使用独立包名 `pro.dotslash.ava.fork`、显示名称 AVA Fork
 
 ## 先构建，再手动发布
 
+首次使用前，需要把发布工作流合入本 Fork 的默认分支，GitHub 才会提供该工作流的
+手动运行入口。预览分支的构建成功不等于已经发布稳定版本。
+
 1. 运行 **Windows and Android preview**，等待整个 run 成功。该流程会检查、构建两端，并生成 Windows 单文件安装器。现有 Windows 目录 artifact 和 Android APK artifact 保留；额外生成 `AVA-windows-installer-preview-<SHA>` 安装器 artifact。
 2. 在 artifact 保留期（14 天）内检查安装包。两个安装包 artifact 分别包含 `windows-preview.json` / `android-preview.json`，记录仓库、源工作流、run ID、run number、attempt、提交、版本、构建号、文件名、大小和 SHA-256。Android 还记录已验证的包名与证书摘要。
 3. 手动运行 **Promote AVA Fork preview**，填写成功预览的 run ID 和这次版本的更新说明。此操作会发布稳定版本并设为 Latest；只在确实准备发布时执行。
 
 发布流程不会重新构建或执行下载的安装包。它核对 run 属于本仓库的指定预览工作流、整个 run 已成功、源提交的 pubspec 版本、元数据和构建号，并核对 GitHub artifact ZIP 摘要、安装包大小与 SHA-256。APK 在发布时仅改名，字节和签名保持原样。
+
+Android 包内包含固定版本的可选 Mihomo 组件，构建时会核对组件原始字节的 SHA-256
+和许可证。相同提交的 `AVA-steam-core-source-<SHA>` artifact 提供匹配源码和声明；
+正式发布必须同时核对并附带这些文件。Windows 按需下载同版本组件，安装目录保留
+其许可证和版本信息。向他人提供 APK 时，也应同时提供该组件源码包和声明。
 
 流程先创建草稿，上传文件，再核对 GitHub Release API 返回的每个文件摘要，全部通过后才公开。已有标签或 Release 一律拒绝覆盖；发布中途失败留下的草稿应先人工检查。只重跑失败 job 时，可以使用同一 run 的早先成功 artifact；提交、版本和构建号必须完全一致。
 

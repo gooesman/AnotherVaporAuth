@@ -481,14 +481,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
         if (width < 640) {
           // Phone selection stays on the token home. Tools are opened only
-          // when explicitly chosen from the selected account's menu.
+          // by holding the selected account.
           expect(find.byType(AccountDashboardScreen), findsNothing);
           expect(find.byType(AccountDashboard), findsNothing);
           expect(find.text('TargetUser'), findsNWidgets(2));
           await tester.longPress(find.text('TargetUser').last);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 500));
-          await tester.tap(find.text('Account overview'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 500));
           final dashboard = tester.widget<AccountDashboardScreen>(

@@ -12,11 +12,12 @@ class BiometricUnlock {
   final FlutterSecureStorage _store;
 
   BiometricUnlock({LocalAuthentication? auth, FlutterSecureStorage? store})
-      : _auth = auth ?? LocalAuthentication(),
-        _store = store ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-            );
+    : _auth = auth ?? LocalAuthentication(),
+      _store =
+          store ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+          );
 
   static const _key = 'ava.unlock.passkey';
 
@@ -67,6 +68,15 @@ class BiometricUnlock {
     try {
       await _store.delete(key: _key);
     } catch (_) {}
+  }
+
+  /// Used for explicit settings changes: never report disabled while a
+  /// credential remains. Cleanup during a vault reset can stay best-effort.
+  Future<void> disableVerified() async {
+    await _store.delete(key: _key);
+    if (await _store.containsKey(key: _key)) {
+      throw StateError('Secure storage did not clear the biometric credential');
+    }
   }
 
   /// Authenticates and returns the stored passkey, or null on failure / cancel.

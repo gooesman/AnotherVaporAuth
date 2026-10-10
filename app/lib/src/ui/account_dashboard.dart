@@ -279,7 +279,7 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                   children: [
                     const Icon(Icons.account_balance_wallet_outlined),
                     const SizedBox(width: 10),
-                    Text(l.dashboardWallet),
+                    Expanded(child: Text(l.dashboardWallet)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -305,13 +305,14 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
                   children: [
-                    Expanded(
-                      child: Text(
-                        l.marketTabListings,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                    Text(
+                      l.marketTabListings,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     TextButton(
                       onPressed: () => widget.onAction('listings'),

@@ -8,6 +8,7 @@ import '../core/protocol/community_session.dart'
 import '../core/protocol/eresult.dart';
 import '../core/proto/protobuf_wire.dart';
 import 'debug_log.dart';
+import 'steam_network.dart';
 
 /// Thin HTTP client for Steam's web APIs.
 ///
@@ -60,7 +61,7 @@ class SteamApiClient {
 
   SteamApiClient({Dio? dio})
       : _dio = dio ??
-            Dio(BaseOptions(
+            SteamNetwork.createDio(BaseOptions(
               connectTimeout: const Duration(seconds: 20),
               receiveTimeout: const Duration(seconds: 30),
               followRedirects: false,

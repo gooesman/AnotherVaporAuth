@@ -11,9 +11,14 @@ import io.flutter.plugin.common.MethodChannel
 // FlutterFragmentActivity is required by local_auth for the biometric /
 // device-credential prompt.
 class MainActivity : FlutterFragmentActivity() {
+    private var steamAcceleration: SteamAccelerationChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         AppUpdateChannel.register(this, flutterEngine)
+        steamAcceleration = SteamAccelerationChannel(applicationContext).also {
+            it.register(flutterEngine)
+        }
 
         // The display's rounded-corner radius. Flutter has no equivalent:
         // MediaQuery's padding / viewPadding / systemGestureInsets cover the
@@ -56,6 +61,12 @@ class MainActivity : FlutterFragmentActivity() {
         // even if a play-flavor build includes its optional classes. This
         // keeps AVA from initializing its ads, billing, consent or sign-in
         // bridge; the cn flavor additionally excludes those dependencies.
+    }
+
+    override fun onDestroy() {
+        steamAcceleration?.stop()
+        steamAcceleration = null
+        super.onDestroy()
     }
 
     /// The larger of the two bottom corner radii, in **physical pixels** (Dart

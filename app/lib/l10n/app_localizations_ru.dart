@@ -185,11 +185,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get unlockBiometricReason => 'Разблокировать AVA';
 
   @override
-  String get settingsBiometric => 'Разблокировка биометрией';
+  String get settingsBiometric => 'Разблокировка устройства';
 
   @override
   String get settingsBiometricDesc =>
-      'Разблокировка отпечатком пальца или PIN-кодом устройства; пароль хранится в хранилище ключей устройства.';
+      'При включённой проверке при запуске можно использовать отпечаток пальца, Windows Hello или код устройства вместо PIN AVA. Отключение проверки отключает и эту опцию; затем её нужно включить отдельно.';
 
   @override
   String get settingsBiometricNeedPasskey =>
@@ -200,7 +200,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'На этом устройстве не настроены биометрия и блокировка экрана.';
 
   @override
-  String get settingsBiometricEnabled => 'Разблокировка биометрией включена.';
+  String get settingsBiometricEnabled => 'Разблокировка устройства включена';
 
   @override
   String get settingsHoldConfirm => 'Подтверждение удержанием';
@@ -2713,4 +2713,191 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get forkUpdateSignatureMismatch =>
       'Подпись установщика не совпадает с приложением; установка заблокирована';
+
+  @override
+  String get backupCodesNativeIntro =>
+      'Здесь можно создать одноразовые коды входа Steam. Требуется SMS-подтверждение привязанного телефона. Новый набор может заменить прежние коды.';
+
+  @override
+  String get backupCodesSendSms => 'Отправить SMS с кодом';
+
+  @override
+  String get backupCodesSmsPrompt => 'Введите код из SMS от Steam.';
+
+  @override
+  String get backupCodesSmsLabel => 'Код подтверждения из SMS';
+
+  @override
+  String get backupCodesGenerate => 'Подтвердить и создать коды';
+
+  @override
+  String get backupCodesReady => 'Ваши одноразовые коды входа';
+
+  @override
+  String get backupCodesKeepSafe =>
+      'Каждый код можно использовать один раз. Храните распечатку в безопасном месте. AVA не сохраняет коды; при уходе со страницы или переключении приложения они исчезнут. Steam отправляет письмо при создании и использовании кодов.';
+
+  @override
+  String get backupCodesClear => 'Очистить коды';
+
+  @override
+  String get backupCodesRequestFailed =>
+      'Steam не смог выполнить запрос. Автоматического повтора не было. Проверьте соединение и повторите вручную.';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Steam вернул неизвестный ответ. Результат не подтверждён; запрос не повторялся.';
+
+  @override
+  String get backupCodesInvalidSms =>
+      'Steam отклонил код. Проверьте SMS и повторите попытку.';
+
+  @override
+  String get backupCodesRateLimited =>
+      'Steam ограничивает запросы. Подождите перед повторной попыткой.';
+
+  @override
+  String get backupCodesPhoneRequired =>
+      'Для этого аккаунта Steam нужен подтверждённый номер телефона.';
+
+  @override
+  String get backupCodesManualHelp =>
+      'Официальная страница Steam (необязательно)';
+
+  @override
+  String get steamAccelerationTitle => 'Ускорение Steam';
+
+  @override
+  String get steamAccelerationDesc =>
+      'Ускоряет только запросы AVA к Steam, не затрагивая другие приложения.';
+
+  @override
+  String get steamAccelerationOff => 'Выключено';
+
+  @override
+  String get steamAccelerationLoading => 'Синхронизация подписки…';
+
+  @override
+  String get steamAccelerationStarting => 'Запуск…';
+
+  @override
+  String get steamAccelerationRunning => 'Включено';
+
+  @override
+  String get steamAccelerationPaused =>
+      'Обнаружен внешний прокси; встроенное ускорение приостановлено';
+
+  @override
+  String get steamAccelerationFailed => 'Ускорение недоступно';
+
+  @override
+  String get steamAccelerationUnsupported =>
+      'Сейчас поддерживаются только Windows и Android.';
+
+  @override
+  String get steamAccelerationConfigured =>
+      'Подписка сохранена на этом устройстве';
+
+  @override
+  String get steamAccelerationUnconfigured => 'Подписка не настроена';
+
+  @override
+  String get steamAccelerationConfigure => 'Добавить подписку';
+
+  @override
+  String get steamAccelerationReplace => 'Заменить подписку';
+
+  @override
+  String get steamAccelerationSubscription => 'Адрес подписки';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      'Ссылка может содержать личные учётные данные и хранится только на этом устройстве. После сохранения синхронизируйте доступные узлы.';
+
+  @override
+  String get steamAccelerationClear => 'Удалить подписку';
+
+  @override
+  String get steamAccelerationClearConfirm =>
+      'Остановить встроенное ускорение и удалить сохранённую подписку и узлы с этого устройства?';
+
+  @override
+  String get steamAccelerationSync => 'Синхронизировать узлы';
+
+  @override
+  String get steamAccelerationNodes => 'Узлы';
+
+  @override
+  String get steamAccelerationNoNodes =>
+      'Синхронизируйте подписку, чтобы загрузить доступные узлы.';
+
+  @override
+  String get steamAccelerationNode => 'Выбранный узел';
+
+  @override
+  String get steamAccelerationStart => 'Включить ускорение';
+
+  @override
+  String get steamAccelerationStop => 'Остановить ускорение';
+
+  @override
+  String get steamAccelerationAuto => 'Автоматический запуск';
+
+  @override
+  String get steamAccelerationAutoDesc =>
+      'Запускать при открытии AVA; при обнаружении внешнего прокси приостанавливать встроенное ускорение.';
+
+  @override
+  String get steamAccelerationEnvironment => 'Проверка внешнего прокси';
+
+  @override
+  String get steamAccelerationExternalProxy =>
+      'Обнаружен системный прокси или PAC';
+
+  @override
+  String get steamAccelerationExternalVpn => 'Обнаружен VPN или туннель';
+
+  @override
+  String get steamAccelerationNoExternal => 'Внешний прокси не обнаружен';
+
+  @override
+  String get steamAccelerationDetectionUnavailable =>
+      'Состояние внешнего прокси неизвестно. Автозапуск приостановлен; можно запустить вручную.';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      'Встроенное ускорение уступает обнаруженным внешним прокси. Обнаружение может зависеть от системных разрешений.';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return 'Пропущено неподдерживаемых узлов: $count.';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription =>
+      'Введите действительный HTTPS-адрес подписки.';
+
+  @override
+  String get steamAccelerationNetworkError =>
+      'Не удалось получить подписку. Проверьте подключение и повторите попытку.';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      'В подписке нет поддерживаемых узлов. Используйте совместимую подписку Clash.';
+
+  @override
+  String get steamAccelerationStorageError =>
+      'Защищённое хранилище недоступно. Не удалось сохранить настройку.';
+
+  @override
+  String get steamAccelerationCoreUnavailable =>
+      'Компонент ускорения отсутствует. Установите обновлённый пакет приложения.';
+
+  @override
+  String get steamAccelerationCoreIntegrity =>
+      'Компонент ускорения не прошёл проверку и был заблокирован.';
+
+  @override
+  String get steamAccelerationStartFailed =>
+      'Не удалось запустить ускорение. Обновите проверку окружения и повторите попытку.';
 }

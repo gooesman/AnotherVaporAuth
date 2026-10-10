@@ -37,9 +37,12 @@ The same feature branch now also includes an account overview on Windows and
 Android. It uses the existing theme/skin components. Desktop accounts show the
 overview beside the account list. The phone home shows only codes and accounts
 in both portrait and landscape;
-tapping an account selects its code. Long-press the account for the overview,
-market, friends or backup-code entry; the account avatar can also open the
-overview. Wallet and market data are not fetched just to show the phone home.
+tapping an account selects its code. Long-press the account to open its overview
+directly, without an intermediate menu. Market, friends, backup codes, family,
+devices and key redemption are reached from that overview. Long-pressing the
+large selected-account avatar also opens the overview on phones (desktop keeps
+its avatar click). Wallet and market data are not fetched just to show
+the phone home. Swipe actions and the desktop context menu remain available.
 Wallet, market listings and account-tool cards can be hidden using the tune menu.
 Unavailable balances are never presented as zero. Market records include active,
 held and awaiting-confirmation listings, with separate inventory-context labels.
@@ -53,12 +56,51 @@ trade. An uncertain send result must be checked in sent offers before retrying.
 Settings offers startup verification (on by default) and Lock now. Disabling
 verification stores a convenience credential in the device's secure storage;
 account files stay encrypted. Changing the PIN re-enables verification. The
-setting and credential are not account-sync data.
+setting and credential are not account-sync data. System unlock (fingerprint,
+Windows Hello or device credentials) is a child of this setting. Disabling
+verification clears and disables system unlock as well. Re-enabling verification
+leaves system unlock off until you enable and authorize it again. Failure to
+clear a credential is reported instead of falsely showing the setting as saved.
 
-Backup login codes opens Steam's official `https://store.steampowered.com/twofactor/manage`
-flow. Check the browser's account and complete Steam's verification there. AVA
-does not generate, retrieve or cache one-use codes in its own UI, and does not
-substitute the authenticator removal/recovery code for them.
+Backup login codes has an in-app SMS flow: explicitly request a message, enter
+the received verification code, then display the returned one-use codes. It uses
+the selected account's existing Steam session and does not substitute the
+authenticator removal/recovery code. Opening the page sends nothing. Codes and
+verification text are not stored or synced; displayed codes are cleared when
+the app is hidden, the vault locks, the account changes or the page is left.
+There is no automatic retry of an SMS or generation request. An optional help
+section retains the official Steam website as a fallback. This undocumented
+Steam endpoint was checked with simulated protocol responses, not a real SMS;
+real-account compatibility still requires a manual check.
+
+## Optional Steam connectivity
+
+Settings → Steam acceleration accepts an HTTPS Clash-format subscription and a
+selected supported node. It starts manually by default; **Start automatically**
+is optional. Only AVA's Steam HTTPS requests use the connection, including QR
+approval, community, market, images and backup codes. It does not accelerate the
+Steam desktop client, games, a browser or other apps, and never changes the
+system proxy, DNS, certificates or TUN routing. Unsupported nodes are reported;
+subscription rules, scripts, plugins and listeners are not imported.
+
+Detected external HTTP proxy settings take priority. A detected VPN/TUN already
+routes operating-system sockets, so AVA pauses its own core. PAC is detected but
+not evaluated; the UI reports its presence and pauses internal acceleration.
+Environment checks run on entry, foreground return and
+periodically while configured. Detection cannot identify every VPN product or
+eliminate the short interval before a change is noticed. Unknown environments
+do not automatically start a second core, but allow an explicit manual start.
+Manually stopping prevents automatic
+restart for the rest of that app session.
+
+Windows downloads a fixed, SHA-256-verified Mihomo component (about 22 MB) on
+first use. Android includes the ARM64 component because downloaded executable
+code cannot be launched from its writable app storage; this adds about 22 MB
+compressed to the APK. The core listens only on an authenticated random local
+port and is stopped with AVA. Subscription links and sanitized node credentials
+stay in local secure storage; they are not synced with accounts or logged.
+Steam's normal TLS certificate checks remain enabled. See the
+[privacy notice](fork-privacy.md) and [component notices](../third_party/mihomo/NOTICE).
 
 The Android artifact is an **ARM64 debug preview**, package
 `pro.dotslash.ava.fork`, labelled **AVA Fork**. It uses a stable private fork

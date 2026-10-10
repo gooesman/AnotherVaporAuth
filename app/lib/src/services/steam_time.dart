@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'steam_network.dart';
 
 /// Aligns local time with Steam's server time (TimeAligner equivalent).
 ///
@@ -18,7 +19,7 @@ class SteamTime {
   /// keeps the previous (or zero) offset so codes still work approximately.
   static Future<void> align({Dio? dio}) async {
     final client = dio ??
-        Dio(BaseOptions(
+        SteamNetwork.createDio(BaseOptions(
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
         ));

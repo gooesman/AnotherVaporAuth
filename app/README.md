@@ -38,8 +38,19 @@ Implemented and statically verified end-to-end:
 
 - maFile compatibility (PBKDF2 50k/SHA1 + AES-256-CBC, byte-compatible)
 - TOTP codes + countdown, copy, account list/reorder
+- Phone account tap selects the home token; long-press opens that account's
+  overview directly, with no intermediate menu. Desktop selection and right-click
+  actions remain available.
 - Encryption: mandatory local PIN, PIN changes, and optional startup verification
   (disabling verification keeps the account files encrypted)
+- System unlock is a subordinate startup-verification option; disabling the
+  parent clears its credential. Re-enabling the parent does not restore system
+  unlock until the user enables and authorizes it again.
+- Backup login codes: explicit in-app SMS request, verification and memory-only
+  display, with no automatic retry or persistent code cache.
+- Optional Steam-only app connectivity via an HTTPS Clash node subscription;
+  manual start by default, optional automatic start, external-proxy detection.
+  It never writes system proxy/DNS settings or routes other apps.
 - Import existing `.maFile`
 - **Pending center** (tabbed): trade/market confirmations with **batch**
   accept/reject; **trade offers** (received/sent/history, expandable cards,
@@ -103,7 +114,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1023 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1110 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -139,7 +150,7 @@ old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1023 tests
+flutter test                       # 1110 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

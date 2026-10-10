@@ -157,10 +157,48 @@ jobs:
                   manifests.append({**metadata, 'release_file': name, 'artifact_id': artifact['id'], 'artifact_sha256': archive_hash})
                   payloads.append(destination)
 
+          # Do not distribute the Android GPL component without its matching
+          # source snapshot and license. Download only flat files, never execute
+          # or extract the contained upstream source archive during promotion.
+          pins_file = api(f'contents/third_party/mihomo/core.json?ref={commit}')
+          pins = json.loads(base64.b64decode(pins_file['content']))
+          require(re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', pins['version']) and re.fullmatch(r'[0-9a-f]{40}', pins['commit']), 'Invalid component identity')
+          source_name = f'mihomo-{pins["version"]}-source.tar.gz'
+          expected_source = {source_name: pins['source_sha256']}
+          for name in ('LICENSE', 'NOTICE'):
+              item = api(f'contents/third_party/mihomo/{name}?ref={commit}')
+              expected_source[f'mihomo-{name}.txt'] = hashlib.sha256(base64.b64decode(item['content'])).hexdigest()
+          matches = [a for a in artifacts if a['name'] == f'AVA-steam-core-source-{commit}' and not a['expired']]
+          require(len(matches) == 1, 'Corresponding component source artifact is required')
+          artifact = matches[0]
+          require(0 < artifact['size_in_bytes'] <= 40 * 1024 * 1024, 'Component source exceeds size limit')
+          archive = output / 'core-source.zip'
+          with archive.open('wb') as stream:
+              subprocess.run(['gh', 'api', f'repos/{repo}/actions/artifacts/{artifact["id"]}/zip'], stdout=stream, check=True)
+          require(artifact.get('digest') == 'sha256:' + hashlib.sha256(archive.read_bytes()).hexdigest(), 'Source artifact digest mismatch')
+          source_manifest = []
+          with zipfile.ZipFile(archive) as bundle:
+              entries = [e for e in bundle.infolist() if not e.is_dir()]
+              require(len(entries) == 4 and {e.filename for e in entries} == set(expected_source) | {'core-provenance.json'}, 'Unexpected component source files')
+              require(all(not stat.S_ISLNK(e.external_attr >> 16) and e.file_size <= 32 * 1024 * 1024 for e in entries), 'Invalid component source entry')
+              require(bundle.getinfo('core-provenance.json').file_size <= 65536, 'Component metadata too large')
+              metadata = json.loads(bundle.read('core-provenance.json'))
+              require(metadata.get('schema') == 1 and metadata.get('component') == 'mihomo' and metadata.get('version') == pins['version']
+                      and metadata.get('source_commit') == pins['commit'] and metadata.get('repository') == repo
+                      and metadata.get('commit') == commit and metadata.get('run_id') == int(run_id), 'Component source provenance mismatch')
+              for name, expected_digest in expected_source.items():
+                  content = bundle.read(name)
+                  digest = hashlib.sha256(content).hexdigest()
+                  require(digest == expected_digest and metadata['files'].get(name) == {'sha256': digest, 'size': len(content)}, 'Component source hash mismatch')
+                  destination = output / name
+                  destination.write_bytes(content)
+                  payloads.append(destination)
+                  source_manifest.append({'release_file': name, 'sha256': digest, 'size': len(content)})
+
           provenance = output / 'release-provenance.json'
-          provenance.write_text(json.dumps({'tag': tag, 'source_run': run['html_url'], 'packages': manifests}, indent=2) + '\n')
+          provenance.write_text(json.dumps({'tag': tag, 'source_run': run['html_url'], 'packages': manifests, 'component_source': source_manifest}, indent=2) + '\n')
           checksums = output / 'SHA256SUMS.txt'
-          checksums.write_text(''.join(f'{item["sha256"]}  {item["release_file"]}\n' for item in manifests))
+          checksums.write_text(''.join(f'{item["sha256"]}  {item["release_file"]}\n' for item in manifests + source_manifest))
           assets = payloads + [provenance, checksums]
           notes_file = output / 'notes.md'
           notes_file.write_text(notes + f'\n\nSource preview: {run["html_url"]}\nCommit: `{commit}`\nBuild: `{build}`\n')

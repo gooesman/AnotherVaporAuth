@@ -220,8 +220,7 @@ void main() {
             expect(find.text('demo_trading'), findsNWidgets(2));
             await tester.longPress(find.text('demo_trading').last);
             await pumpDashboardHome(tester);
-            await tester.tap(find.text('Account overview'));
-            await pumpDashboardHome(tester);
+            expect(find.byType(Dialog), findsNothing);
             expect(find.byType(AccountDashboardScreen), findsOneWidget);
             expect(find.text('CNY 89.00'), findsOneWidget);
           } else {
@@ -240,7 +239,7 @@ void main() {
   }
 
   testWidgets(
-    'phone only fetches overview data after choosing it from account menu',
+    'phone taps select tokens and long press opens overview without a menu',
     (tester) async {
       tester.view.physicalSize = const Size(393, 852);
       tester.view.devicePixelRatio = 1;
@@ -267,28 +266,29 @@ void main() {
       expect(inventory.walletReads, 0);
       expect(market.listingReads, 0);
 
+      // The large selected-account avatar follows the same phone convention:
+      // a tap cannot accidentally leave the token screen.
+      await tester.tap(find.byKey(const ValueKey('selected-account-avatar')));
+      await pumpDashboardHome(tester);
+      expect(find.byType(AccountDashboardScreen), findsNothing);
+      expect(inventory.walletReads, 0);
+      expect(market.listingReads, 0);
+
       await tester.tap(find.text('demo_trading'));
       await pumpDashboardHome(tester);
       expect(inventory.walletReads, 0);
       expect(market.listingReads, 0);
       await tester.longPress(find.text('demo_trading').last);
       await pumpDashboardHome(tester);
-      for (final label in [
-        l.dashboardTitle,
-        l.actionMarket,
-        l.friendsTitle,
-        l.backupCodesTitle,
-      ]) {
-        expect(
-          find.descendant(of: find.byType(Dialog), matching: find.text(label)),
-          findsOneWidget,
-        );
-      }
-      expect(inventory.walletReads, 0);
-      expect(market.listingReads, 0);
-      await tester.tap(find.text(l.dashboardTitle));
-      await pumpDashboardHome(tester);
+      expect(find.byType(Dialog), findsNothing);
       expect(find.byType(AccountDashboardScreen), findsOneWidget);
+      expect(
+        tester
+            .widget<AccountDashboardScreen>(find.byType(AccountDashboardScreen))
+            .account
+            .steamId,
+        homePreviewAccounts[1].steamId,
+      );
       expect(find.text('CNY 89.00'), findsOneWidget);
       expect(inventory.walletReads, 1);
       expect(market.listingReads, 1);
@@ -297,6 +297,18 @@ void main() {
       expect(find.byType(AccountDashboard), findsNothing);
       expect(inventory.walletReads, 1);
       expect(market.listingReads, 1);
+      await tester.longPress(
+        find.byKey(const ValueKey('selected-account-avatar')),
+      );
+      await pumpDashboardHome(tester);
+      expect(find.byType(AccountDashboardScreen), findsOneWidget);
+      expect(
+        tester
+            .widget<AccountDashboardScreen>(find.byType(AccountDashboardScreen))
+            .account
+            .steamId,
+        homePreviewAccounts[1].steamId,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -329,12 +341,19 @@ void main() {
     expect(find.text('demo_trading'), findsNWidgets(2));
     expect(inventory.walletReads, 0);
     expect(market.listingReads, 0);
+    // In two-column layout the sidebar precedes the token header.
+    await tester.longPress(find.text('demo_trading').first);
+    await pumpDashboardHome(tester);
+    expect(find.byType(AccountDashboardScreen), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
+    expect(inventory.walletReads, 1);
+    expect(market.listingReads, 1);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets(
-    'phone account menu scrolls with large translated labels on short screens',
+    'phone opens overview directly with large labels on short screens',
     (tester) async {
       tester.view.physicalSize = const Size(320, 560);
       tester.view.devicePixelRatio = 1;
@@ -351,18 +370,12 @@ void main() {
       await pumpDashboardHome(tester);
       tester.platformDispatcher.textScaleFactorTestValue = 1.8;
       await pumpDashboardHome(tester);
-      expect(tester.takeException(), isNull, reason: 'before opening menu');
+      expect(tester.takeException(), isNull, reason: 'before opening overview');
       await tester.ensureVisible(find.text('demo_trading'));
       await tester.longPress(find.text('demo_trading'));
       await pumpDashboardHome(tester);
-      final l = AppLocalizations.of(tester.element(find.byType(HomeScreen)));
-      final last = find.descendant(
-        of: find.byType(Dialog),
-        matching: find.text(l.keyRedeemAction),
-      );
-      await tester.ensureVisible(last);
-      await pumpDashboardHome(tester);
-      expect(last.hitTestable(), findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byType(AccountDashboardScreen), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

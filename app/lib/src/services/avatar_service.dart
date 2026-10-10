@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'debug_log.dart';
+import 'steam_network.dart';
 
 /// Thrown by [AvatarService.fetchEquippedItems] when the account's access
 /// token is stale (HTTP 401); the caller should refresh the session and retry.
@@ -33,7 +34,7 @@ class AvatarService {
   final Dio _dio;
   AvatarService({Dio? dio})
       : _dio = dio ??
-            Dio(BaseOptions(
+            SteamNetwork.createDio(BaseOptions(
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(seconds: 15),
             ));

@@ -49,6 +49,16 @@ android {
         resValues = true
     }
 
+    // The optional ARM64 core must be installed by Android into nativeLibraryDir,
+    // never copied to/exec'd from writable app storage. It is an unchanged ELF
+    // executable packaged with a .so name, not a library to dlopen or strip.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols += "**/libava_steam_core.so"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

@@ -175,10 +175,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unlockBiometricReason => '解锁 AVA';
 
   @override
-  String get settingsBiometric => '指纹解锁';
+  String get settingsBiometric => '使用系统解锁';
 
   @override
-  String get settingsBiometricDesc => '用指纹或设备密码解锁；口令保存在设备 Keystore 中。';
+  String get settingsBiometricDesc =>
+      '启动验证开启时，可用指纹、Windows Hello 或设备密码代替 AVA PIN。关闭启动验证会同时停用此项；重新开启后需单独启用。';
 
   @override
   String get settingsBiometricNeedPasskey => '请先设置加密口令。';
@@ -187,7 +188,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBiometricUnavailable => '此设备未设置生物识别或屏幕锁。';
 
   @override
-  String get settingsBiometricEnabled => '已启用指纹解锁。';
+  String get settingsBiometricEnabled => '已启用系统解锁';
 
   @override
   String get settingsHoldConfirm => '长按确认';
@@ -2485,6 +2486,173 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forkUpdateSignatureMismatch => '安装包签名与当前应用不一致，已阻止安装';
+
+  @override
+  String get backupCodesNativeIntro =>
+      '在这里生成 Steam 一次性备用登录码。Steam 需要验证此账户绑定手机号收到的短信。生成新的一组可能替换原有备用码。';
+
+  @override
+  String get backupCodesSendSms => '发送验证短信';
+
+  @override
+  String get backupCodesSmsPrompt => '输入 Steam 短信中的验证码。';
+
+  @override
+  String get backupCodesSmsLabel => '短信验证码';
+
+  @override
+  String get backupCodesGenerate => '验证并生成备用码';
+
+  @override
+  String get backupCodesReady => '你的一次性备用登录码';
+
+  @override
+  String get backupCodesKeepSafe =>
+      '每个备用码只能使用一次。请打印并妥善保存。AVA 不会保存这些码；离开此页或切换应用后会清除显示。生成或使用备用码时，Steam 会发送邮件通知。';
+
+  @override
+  String get backupCodesClear => '清除备用码';
+
+  @override
+  String get backupCodesRequestFailed => 'Steam 未能完成请求。程序没有自动重试。请检查网络后手动重试。';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Steam 返回了未识别的响应，无法确认结果；程序没有重试请求。';
+
+  @override
+  String get backupCodesInvalidSms => 'Steam 未接受验证码，请核对短信后重试。';
+
+  @override
+  String get backupCodesRateLimited => 'Steam 限制了请求次数，请稍后再试。';
+
+  @override
+  String get backupCodesPhoneRequired => 'Steam 要求此账户已绑定并验证手机号。';
+
+  @override
+  String get backupCodesManualHelp => 'Steam 官方网页（备用方式）';
+
+  @override
+  String get steamAccelerationTitle => 'Steam 加速';
+
+  @override
+  String get steamAccelerationDesc => '仅加速 AVA 访问 Steam，不影响其他应用。';
+
+  @override
+  String get steamAccelerationOff => '未启用';
+
+  @override
+  String get steamAccelerationLoading => '正在同步订阅…';
+
+  @override
+  String get steamAccelerationStarting => '正在启动…';
+
+  @override
+  String get steamAccelerationRunning => '已启用';
+
+  @override
+  String get steamAccelerationPaused => '检测到外部代理，内置加速已暂停';
+
+  @override
+  String get steamAccelerationFailed => '加速不可用';
+
+  @override
+  String get steamAccelerationUnsupported => '目前仅支持 Windows 和 Android。';
+
+  @override
+  String get steamAccelerationConfigured => '订阅已保存在此设备';
+
+  @override
+  String get steamAccelerationUnconfigured => '尚未配置订阅';
+
+  @override
+  String get steamAccelerationConfigure => '添加订阅';
+
+  @override
+  String get steamAccelerationReplace => '更换订阅';
+
+  @override
+  String get steamAccelerationSubscription => '订阅地址';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      '链接可能包含私人凭据，仅保存在本机。保存后点击“同步节点”获取可用节点。';
+
+  @override
+  String get steamAccelerationClear => '清除订阅';
+
+  @override
+  String get steamAccelerationClearConfirm => '停止内置加速，并删除本机保存的订阅和节点？';
+
+  @override
+  String get steamAccelerationSync => '同步节点';
+
+  @override
+  String get steamAccelerationNodes => '节点';
+
+  @override
+  String get steamAccelerationNoNodes => '请同步订阅获取可用节点。';
+
+  @override
+  String get steamAccelerationNode => '使用节点';
+
+  @override
+  String get steamAccelerationStart => '启用加速';
+
+  @override
+  String get steamAccelerationStop => '停止加速';
+
+  @override
+  String get steamAccelerationAuto => '自动启用';
+
+  @override
+  String get steamAccelerationAutoDesc => '打开 AVA 时自动启用；检测到外部代理时暂停内置加速。';
+
+  @override
+  String get steamAccelerationEnvironment => '外部代理检测';
+
+  @override
+  String get steamAccelerationExternalProxy => '检测到系统代理或 PAC';
+
+  @override
+  String get steamAccelerationExternalVpn => '检测到 VPN 或隧道';
+
+  @override
+  String get steamAccelerationNoExternal => '未检测到外部代理';
+
+  @override
+  String get steamAccelerationDetectionUnavailable => '无法确认外部代理；自动启动已暂停，可手动开启。';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      '内置加速会避让检测到的外部代理。检测结果可能受系统权限影响。';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return '已跳过 $count 个不支持的节点。';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription => '请输入有效的 HTTPS 订阅地址。';
+
+  @override
+  String get steamAccelerationNetworkError => '无法获取订阅，请检查网络后重试。';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      '订阅中没有支持的节点，请使用兼容的 Clash 订阅。';
+
+  @override
+  String get steamAccelerationStorageError => '系统安全存储不可用，无法保存设置。';
+
+  @override
+  String get steamAccelerationCoreUnavailable => '缺少加速组件，请安装更新的应用包。';
+
+  @override
+  String get steamAccelerationCoreIntegrity => '加速组件校验失败，已阻止启动。';
+
+  @override
+  String get steamAccelerationStartFailed => '无法启动加速，请刷新环境检测后重试。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2658,10 +2826,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get unlockBiometricReason => '解鎖 AVA';
 
   @override
-  String get settingsBiometric => '生物辨識解鎖';
+  String get settingsBiometric => '使用系統解鎖';
 
   @override
-  String get settingsBiometricDesc => '用指紋或裝置密碼解鎖；通行碼存放在裝置的 Keystore 裡。';
+  String get settingsBiometricDesc =>
+      '啟動驗證開啟時，可用指紋、Windows Hello 或裝置密碼代替 AVA PIN。關閉啟動驗證會同時停用此項；重新開啟後需另行啟用。';
 
   @override
   String get settingsBiometricNeedPasskey => '請先設定加密通行碼。';
@@ -2670,7 +2839,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get settingsBiometricUnavailable => '這台裝置沒有設定生物辨識或螢幕鎖。';
 
   @override
-  String get settingsBiometricEnabled => '已啟用生物辨識解鎖。';
+  String get settingsBiometricEnabled => '已啟用系統解鎖';
 
   @override
   String get settingsHoldConfirm => '長按確認';
@@ -4976,4 +5145,171 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get forkUpdateSignatureMismatch => '安裝檔簽章與目前應用程式不符，已阻止安裝';
+
+  @override
+  String get backupCodesNativeIntro =>
+      '在這裡產生 Steam 一次性備用登入碼。Steam 需要驗證此帳戶綁定手機號碼收到的簡訊。產生新的一組可能取代原有備用碼。';
+
+  @override
+  String get backupCodesSendSms => '傳送驗證簡訊';
+
+  @override
+  String get backupCodesSmsPrompt => '輸入 Steam 簡訊中的驗證碼。';
+
+  @override
+  String get backupCodesSmsLabel => '簡訊驗證碼';
+
+  @override
+  String get backupCodesGenerate => '驗證並產生備用碼';
+
+  @override
+  String get backupCodesReady => '你的一次性備用登入碼';
+
+  @override
+  String get backupCodesKeepSafe =>
+      '每個備用碼只能使用一次。請列印並妥善保存。AVA 不會儲存這些碼；離開此頁或切換應用程式後會清除顯示。產生或使用備用碼時，Steam 會寄送電子郵件通知。';
+
+  @override
+  String get backupCodesClear => '清除備用碼';
+
+  @override
+  String get backupCodesRequestFailed => 'Steam 未能完成請求。程式沒有自動重試。請檢查網路後手動重試。';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Steam 傳回了無法識別的回應，無法確認結果；程式沒有重試請求。';
+
+  @override
+  String get backupCodesInvalidSms => 'Steam 未接受驗證碼，請核對簡訊後重試。';
+
+  @override
+  String get backupCodesRateLimited => 'Steam 限制了請求次數，請稍後再試。';
+
+  @override
+  String get backupCodesPhoneRequired => 'Steam 要求此帳戶已綁定並驗證手機號碼。';
+
+  @override
+  String get backupCodesManualHelp => 'Steam 官方網頁（備用方式）';
+
+  @override
+  String get steamAccelerationTitle => 'Steam 加速';
+
+  @override
+  String get steamAccelerationDesc => '僅加速 AVA 存取 Steam，不影響其他應用程式。';
+
+  @override
+  String get steamAccelerationOff => '未啟用';
+
+  @override
+  String get steamAccelerationLoading => '正在同步訂閱…';
+
+  @override
+  String get steamAccelerationStarting => '正在啟動…';
+
+  @override
+  String get steamAccelerationRunning => '已啟用';
+
+  @override
+  String get steamAccelerationPaused => '偵測到外部代理，內建加速已暫停';
+
+  @override
+  String get steamAccelerationFailed => '加速無法使用';
+
+  @override
+  String get steamAccelerationUnsupported => '目前僅支援 Windows 和 Android。';
+
+  @override
+  String get steamAccelerationConfigured => '訂閱已儲存在此裝置';
+
+  @override
+  String get steamAccelerationUnconfigured => '尚未設定訂閱';
+
+  @override
+  String get steamAccelerationConfigure => '新增訂閱';
+
+  @override
+  String get steamAccelerationReplace => '更換訂閱';
+
+  @override
+  String get steamAccelerationSubscription => '訂閱網址';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      '連結可能含有私人憑證，僅儲存在本機。儲存後點選「同步節點」取得可用節點。';
+
+  @override
+  String get steamAccelerationClear => '清除訂閱';
+
+  @override
+  String get steamAccelerationClearConfirm => '停止內建加速，並刪除本機儲存的訂閱和節點？';
+
+  @override
+  String get steamAccelerationSync => '同步節點';
+
+  @override
+  String get steamAccelerationNodes => '節點';
+
+  @override
+  String get steamAccelerationNoNodes => '請同步訂閱以取得可用節點。';
+
+  @override
+  String get steamAccelerationNode => '使用節點';
+
+  @override
+  String get steamAccelerationStart => '啟用加速';
+
+  @override
+  String get steamAccelerationStop => '停止加速';
+
+  @override
+  String get steamAccelerationAuto => '自動啟用';
+
+  @override
+  String get steamAccelerationAutoDesc => '開啟 AVA 時自動啟用；偵測到外部代理時暫停內建加速。';
+
+  @override
+  String get steamAccelerationEnvironment => '外部代理偵測';
+
+  @override
+  String get steamAccelerationExternalProxy => '偵測到系統代理或 PAC';
+
+  @override
+  String get steamAccelerationExternalVpn => '偵測到 VPN 或通道';
+
+  @override
+  String get steamAccelerationNoExternal => '未偵測到外部代理';
+
+  @override
+  String get steamAccelerationDetectionUnavailable => '無法確認外部代理；自動啟動已暫停，可手動開啟。';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      '內建加速會避讓偵測到的外部代理。偵測結果可能受系統權限影響。';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return '已略過 $count 個不支援的節點。';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription => '請輸入有效的 HTTPS 訂閱網址。';
+
+  @override
+  String get steamAccelerationNetworkError => '無法取得訂閱，請檢查網路後重試。';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      '訂閱中沒有支援的節點，請使用相容的 Clash 訂閱。';
+
+  @override
+  String get steamAccelerationStorageError => '系統安全儲存空間無法使用，無法儲存設定。';
+
+  @override
+  String get steamAccelerationCoreUnavailable => '缺少加速元件，請安裝更新的應用程式套件。';
+
+  @override
+  String get steamAccelerationCoreIntegrity => '加速元件驗證失敗，已阻止啟動。';
+
+  @override
+  String get steamAccelerationStartFailed => '無法啟動加速，請重新整理環境偵測後再試。';
 }

@@ -7,6 +7,7 @@ import 'package:ava/src/core/crypto/vault_crypto.dart';
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
 import 'package:ava/src/services/account_store.dart';
+import 'package:ava/src/services/biometric_unlock.dart';
 import 'package:ava/src/services/startup_unlock.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/services/vault_key_store.dart';
@@ -18,6 +19,11 @@ class _LocalSettings extends SettingsStore {
   _LocalSettings(super.storage);
   @override
   Future<int> loadPrivacyAcceptedVersion() async => 0;
+}
+
+class _BiometricDeleteFailure extends BiometricUnlock {
+  @override
+  Future<void> disableVerified() async => throw StateError('secure storage');
 }
 
 class _DelayedVaultKeys extends VaultKeyStore {
@@ -75,13 +81,15 @@ void main() {
   late StartupUnlock startup;
   const secret = 'MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=';
 
-  ProviderContainer container({AppData? initial}) {
+  ProviderContainer container({AppData? initial, BiometricUnlock? biometric}) {
     final value = ProviderContainer(
       overrides: [
         storageProvider.overrideWithValue(storage),
         settingsStoreProvider.overrideWithValue(_LocalSettings(storage)),
         vaultKeyStoreProvider.overrideWithValue(keys),
         startupUnlockProvider.overrideWithValue(startup),
+        if (biometric != null)
+          biometricUnlockProvider.overrideWithValue(biometric),
         timeAlignerProvider.overrideWithValue(() async {}),
         if (initial != null)
           appControllerProvider.overrideWith(() => _SeededApp(initial)),
@@ -131,16 +139,59 @@ void main() {
 
   test('re-enabling startup verification affects the next startup', () async {
     await startup.remember('123456');
+    // An older installation may have both convenience and biometric keys.
+    await const FlutterSecureStorage().write(
+      key: 'ava.unlock.passkey',
+      value: '123456',
+    );
     final first = container();
     await first.read(appControllerProvider.future);
     await first
         .read(appControllerProvider.notifier)
         .setStartupVerificationEnabled(true);
+    expect(await BiometricUnlock().isEnabled, isFalse);
     expect(
       (await container().read(appControllerProvider.future)).locked,
       isTrue,
     );
   });
+
+  test(
+    'disabling startup verification also removes biometric credentials',
+    () async {
+      await const FlutterSecureStorage().write(
+        key: 'ava.unlock.passkey',
+        value: '123456',
+      );
+      final first = container();
+      await first.read(appControllerProvider.future);
+      final controller = first.read(appControllerProvider.notifier);
+      expect(await controller.unlock('123456'), isTrue);
+      await controller.setStartupVerificationEnabled(false);
+      expect(await startup.verificationRequired, isFalse);
+      expect(await BiometricUnlock().isEnabled, isFalse);
+      await controller.setStartupVerificationEnabled(true);
+      expect(await BiometricUnlock().isEnabled, isFalse);
+    },
+  );
+
+  for (final required in [true, false]) {
+    test(
+      'credential deletion failure does not change startup policy to $required',
+      () async {
+        if (required) await startup.remember('123456');
+        final first = container(biometric: _BiometricDeleteFailure());
+        await first.read(appControllerProvider.future);
+        final controller = first.read(appControllerProvider.notifier);
+        if (!required) expect(await controller.unlock('123456'), isTrue);
+        await expectLater(
+          controller.setStartupVerificationEnabled(required),
+          throwsStateError,
+        );
+        expect(await startup.verificationRequired, !required);
+      },
+    );
+  }
 
   test('a saved wrong PIN falls back to a usable manual unlock', () async {
     await startup.remember('000000');
@@ -178,10 +229,16 @@ void main() {
     'changing the PIN turns verification back on and preserves the vault',
     () async {
       await startup.remember('123456');
+      await const FlutterSecureStorage().write(
+        key: 'ava.unlock.passkey',
+        value: '123456',
+      );
       final first = container();
       await first.read(appControllerProvider.future);
+      expect(await first.read(biometricUnlockEnabledProvider.future), isTrue);
       final controller = first.read(appControllerProvider.notifier);
       expect(await controller.changePasskey('123456', '654321'), isTrue);
+      expect(await first.read(biometricUnlockEnabledProvider.future), isFalse);
       final next = container();
       expect((await next.read(appControllerProvider.future)).locked, isTrue);
       expect(

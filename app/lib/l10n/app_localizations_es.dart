@@ -187,11 +187,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get unlockBiometricReason => 'Desbloquear AVA';
 
   @override
-  String get settingsBiometric => 'Desbloqueo biométrico';
+  String get settingsBiometric => 'Usar desbloqueo del dispositivo';
 
   @override
   String get settingsBiometricDesc =>
-      'Desbloquea con tu huella o el PIN del dispositivo; la clave se guarda en el Keystore del dispositivo.';
+      'Con la verificación al iniciar activada, usa la huella, Windows Hello o la clave del dispositivo en lugar del PIN de AVA. Al desactivar la verificación, esta opción también se desactiva; vuelve a habilitarla por separado.';
 
   @override
   String get settingsBiometricNeedPasskey =>
@@ -202,7 +202,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Este dispositivo no tiene biometría ni bloqueo de pantalla configurados.';
 
   @override
-  String get settingsBiometricEnabled => 'Desbloqueo biométrico activado.';
+  String get settingsBiometricEnabled => 'Desbloqueo del dispositivo activado';
 
   @override
   String get settingsHoldConfirm => 'Mantener para confirmar';
@@ -2659,4 +2659,192 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get forkUpdateSignatureMismatch =>
       'La firma no coincide con esta aplicación y se ha bloqueado';
+
+  @override
+  String get backupCodesNativeIntro =>
+      'Genera aquí códigos de inicio de sesión de Steam de un solo uso. Steam requiere verificar por SMS el teléfono vinculado. Los códigos nuevos pueden sustituir a los anteriores.';
+
+  @override
+  String get backupCodesSendSms => 'Enviar SMS de verificación';
+
+  @override
+  String get backupCodesSmsPrompt => 'Introduce el código del SMS de Steam.';
+
+  @override
+  String get backupCodesSmsLabel => 'Código de verificación por SMS';
+
+  @override
+  String get backupCodesGenerate => 'Verificar y generar códigos';
+
+  @override
+  String get backupCodesReady =>
+      'Tus códigos de inicio de sesión de un solo uso';
+
+  @override
+  String get backupCodesKeepSafe =>
+      'Cada código se puede usar una vez. Guarda una copia impresa en un lugar seguro. AVA no guarda los códigos; al salir de la página o cambiar de aplicación se borran de la pantalla. Steam envía un correo al generarlos o usarlos.';
+
+  @override
+  String get backupCodesClear => 'Borrar códigos';
+
+  @override
+  String get backupCodesRequestFailed =>
+      'Steam no pudo completar la solicitud. No se reintentó automáticamente. Comprueba la conexión y vuelve a intentarlo manualmente.';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Steam devolvió una respuesta desconocida. No se pudo confirmar el resultado ni se repitió la solicitud.';
+
+  @override
+  String get backupCodesInvalidSms =>
+      'Steam rechazó el código. Comprueba el SMS e inténtalo de nuevo.';
+
+  @override
+  String get backupCodesRateLimited =>
+      'Steam está limitando las solicitudes. Espera antes de reintentarlo.';
+
+  @override
+  String get backupCodesPhoneRequired =>
+      'Steam requiere un número de teléfono verificado en esta cuenta.';
+
+  @override
+  String get backupCodesManualHelp => 'Página oficial de Steam (opcional)';
+
+  @override
+  String get steamAccelerationTitle => 'Aceleración de Steam';
+
+  @override
+  String get steamAccelerationDesc =>
+      'Acelera solo las solicitudes de AVA a Steam, sin afectar a otras aplicaciones.';
+
+  @override
+  String get steamAccelerationOff => 'Desactivada';
+
+  @override
+  String get steamAccelerationLoading => 'Sincronizando la suscripción…';
+
+  @override
+  String get steamAccelerationStarting => 'Iniciando…';
+
+  @override
+  String get steamAccelerationRunning => 'Activada';
+
+  @override
+  String get steamAccelerationPaused =>
+      'Proxy externo detectado; aceleración integrada en pausa';
+
+  @override
+  String get steamAccelerationFailed => 'Aceleración no disponible';
+
+  @override
+  String get steamAccelerationUnsupported =>
+      'Actualmente solo compatible con Windows y Android.';
+
+  @override
+  String get steamAccelerationConfigured =>
+      'Suscripción guardada en este dispositivo';
+
+  @override
+  String get steamAccelerationUnconfigured => 'Ninguna suscripción configurada';
+
+  @override
+  String get steamAccelerationConfigure => 'Añadir suscripción';
+
+  @override
+  String get steamAccelerationReplace => 'Cambiar suscripción';
+
+  @override
+  String get steamAccelerationSubscription => 'URL de suscripción';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      'Este enlace puede contener credenciales privadas y solo se guarda en este dispositivo. Tras guardarlo, sincroniza los nodos disponibles.';
+
+  @override
+  String get steamAccelerationClear => 'Borrar suscripción';
+
+  @override
+  String get steamAccelerationClearConfirm =>
+      '¿Detener la aceleración integrada y borrar la suscripción y los nodos guardados en este dispositivo?';
+
+  @override
+  String get steamAccelerationSync => 'Sincronizar nodos';
+
+  @override
+  String get steamAccelerationNodes => 'Nodos';
+
+  @override
+  String get steamAccelerationNoNodes =>
+      'Sincroniza la suscripción para cargar los nodos disponibles.';
+
+  @override
+  String get steamAccelerationNode => 'Nodo seleccionado';
+
+  @override
+  String get steamAccelerationStart => 'Activar aceleración';
+
+  @override
+  String get steamAccelerationStop => 'Detener aceleración';
+
+  @override
+  String get steamAccelerationAuto => 'Inicio automático';
+
+  @override
+  String get steamAccelerationAutoDesc =>
+      'Iniciar al abrir AVA; pausar la aceleración integrada cuando se detecte un proxy externo.';
+
+  @override
+  String get steamAccelerationEnvironment => 'Detección de proxy externo';
+
+  @override
+  String get steamAccelerationExternalProxy =>
+      'Proxy del sistema o PAC detectado';
+
+  @override
+  String get steamAccelerationExternalVpn => 'VPN o túnel detectado';
+
+  @override
+  String get steamAccelerationNoExternal =>
+      'No se ha detectado ningún proxy externo';
+
+  @override
+  String get steamAccelerationDetectionUnavailable =>
+      'Se desconoce el estado del proxy externo. El inicio automático está pausado; puedes iniciar manualmente.';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      'La aceleración integrada cede ante los proxies externos detectados. La detección puede depender de los permisos del sistema.';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return 'Se omitieron $count nodos no compatibles.';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription =>
+      'Introduce una URL de suscripción HTTPS válida.';
+
+  @override
+  String get steamAccelerationNetworkError =>
+      'No se pudo obtener la suscripción. Comprueba la conexión e inténtalo de nuevo.';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      'La suscripción no contiene nodos compatibles. Usa una suscripción Clash compatible.';
+
+  @override
+  String get steamAccelerationStorageError =>
+      'El almacenamiento seguro no está disponible. No se pudo guardar el ajuste.';
+
+  @override
+  String get steamAccelerationCoreUnavailable =>
+      'Falta el componente de aceleración. Instala un paquete actualizado de la aplicación.';
+
+  @override
+  String get steamAccelerationCoreIntegrity =>
+      'El componente de aceleración no superó la verificación y fue bloqueado.';
+
+  @override
+  String get steamAccelerationStartFailed =>
+      'No se pudo iniciar la aceleración. Actualiza la comprobación del entorno e inténtalo de nuevo.';
 }

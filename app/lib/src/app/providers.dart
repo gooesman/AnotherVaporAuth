@@ -68,6 +68,10 @@ final biometricUnlockProvider = Provider<BiometricUnlock>(
   (ref) => BiometricUnlock(),
 );
 
+final biometricUnlockEnabledProvider = FutureProvider<bool>(
+  (ref) => ref.watch(biometricUnlockProvider).isEnabled,
+);
+
 final startupUnlockProvider = Provider<StartupUnlock>(
   (ref) => StartupUnlock(vaultKeys: ref.read(vaultKeyStoreProvider)),
 );
@@ -1011,6 +1015,10 @@ class AppController extends AsyncNotifier<AppData> {
       throw StateError('Unlock the vault before changing startup verification');
     }
     final startup = ref.read(startupUnlockProvider);
+    // Turning verification back on must not revive credentials left by an
+    // older version. Biometric unlock is explicitly enabled under this gate.
+    await ref.read(biometricUnlockProvider).disableVerified();
+    ref.invalidate(biometricUnlockEnabledProvider);
     if (required) {
       await startup.forget();
     } else {
@@ -1649,7 +1657,10 @@ class AppController extends AsyncNotifier<AppData> {
     // Publishing the captured [data] would restore its accounts and unlocked
     // state. Preserve the latest session, and never install a PIN into a
     // manually locked session or a different (reset/reloaded) store.
-    void publishChangedPin() {
+    Future<void> publishChangedPin() async {
+      // Every PIN-change entry point invalidates the old system credential.
+      await ref.read(biometricUnlockProvider).disable();
+      ref.invalidate(biometricUnlockEnabledProvider);
       final current = state.value;
       if (current == null || !identical(current.store, store)) return;
       if (current.locked) {
@@ -1665,7 +1676,7 @@ class AppController extends AsyncNotifier<AppData> {
           .read(vaultKeyStoreProvider)
           .rewrapPin(oldKey ?? '', newKey);
       if (ok) {
-        publishChangedPin();
+        await publishChangedPin();
         // The new PIN wrap invalidates the convenience credential even if
         // best-effort deletion fails. PIN changes restore verification.
         try {
@@ -1679,13 +1690,13 @@ class AppController extends AsyncNotifier<AppData> {
     // First PIN on a brand-new store → go straight to the vault scheme.
     if (oldKey == null && !store.encrypted) {
       final ok = await _establishVault(newKey, data.accounts);
-      if (ok) publishChangedPin();
+      if (ok) await publishChangedPin();
       return ok;
     }
 
     // Legacy rotate (migrates to vault on next unlock).
     final ok = await store.changeEncryptionKey(oldKey, newKey);
-    if (ok) publishChangedPin();
+    if (ok) await publishChangedPin();
     return ok;
   }
 }

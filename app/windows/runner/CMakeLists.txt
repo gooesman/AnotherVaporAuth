@@ -11,6 +11,7 @@ add_executable(${BINARY_NAME} WIN32
   "main.cpp"
   "screen_qr_capture.cpp"
   "steam_client_bridge.cpp"
+  "steam_acceleration_bridge.cpp"
   "utils.cpp"
   "win32_window.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
@@ -37,6 +38,7 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "advapi32.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "winhttp.lib" "iphlpapi.lib" "shell32.lib" "ole32.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "gdi32.lib" "msimg32.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 

@@ -19,6 +19,7 @@ import 'debug_log_screen.dart';
 import 'fork_update_screen.dart';
 import 'portable_mode_card.dart';
 import 'steam_client_screen.dart';
+import 'steam_acceleration_screen.dart';
 import 'paywall_screen.dart';
 import 'sync/sync_screen.dart';
 import 'sync/sync_setup_screen.dart';
@@ -106,8 +107,21 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const _StartupVerificationCard(),
-                // Biometric / device-credential unlock
-                const _BiometricCard(),
+                if (kForkLocalFeatures)
+                  _Card(
+                    title: l.steamAccelerationTitle,
+                    description: l.steamAccelerationDesc,
+                    trailing: OutlinedButton.icon(
+                      key: const ValueKey('steam-acceleration-settings-open'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SteamAccelerationScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.speed_outlined),
+                      label: Text(l.commonOpen),
+                    ),
+                  ),
                 // Account-library sync (WebDAV; spec 2026-08-12)
                 const _SyncCard(),
                 if (kForkLocalFeatures)
@@ -671,11 +685,6 @@ class SettingsScreen extends ConsumerWidget {
     final success = await ref
         .read(appControllerProvider.notifier)
         .changePasskey(data.encrypted ? oldKey : null, newKey);
-    if (success) {
-      // The stored biometric passkey is now stale — clear it so the user
-      // re-enables with the new passkey.
-      await ref.read(biometricUnlockProvider).disable();
-    }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(success ? l.commonOk : l.unlockInvalid)),
@@ -1008,32 +1017,33 @@ class _StartupVerificationCard extends ConsumerStatefulWidget {
 class _StartupVerificationCardState
     extends ConsumerState<_StartupVerificationCard> {
   bool _busy = false;
+  bool _biometricBusy = false;
 
   Future<void> _toggle(bool required) async {
-    if (_busy) return;
+    if (_busy || _biometricBusy) return;
     final l = AppLocalizations.of(context);
-    if (!required) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(l.settingsStartupVerificationDisable),
-          content: Text(l.settingsStartupVerificationDesc),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l.commonCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l.commonOk),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true || !mounted) return;
-    }
     setState(() => _busy = true);
     try {
+      if (!required) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l.settingsStartupVerificationDisable),
+            content: Text(l.settingsStartupVerificationDesc),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(l.commonOk),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
       await ref
           .read(appControllerProvider.notifier)
           .setStartupVerificationEnabled(required);
@@ -1044,7 +1054,11 @@ class _StartupVerificationCardState
         );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
     }
   }
 
@@ -1053,6 +1067,7 @@ class _StartupVerificationCardState
     final l = AppLocalizations.of(context);
     final required = ref.watch(startupVerificationEnabledProvider);
     final data = ref.watch(appControllerProvider).value;
+    final available = data != null && !data.locked && data.store.isVault;
     return _Card(
       title: l.settingsStartupVerification,
       description:
@@ -1061,44 +1076,58 @@ class _StartupVerificationCardState
       trailing: Switch(
         key: const ValueKey('startup-verification-switch'),
         value: required.value ?? true,
-        onChanged:
-            _busy ||
-                required.isLoading ||
-                data == null ||
-                data.locked ||
-                !data.store.isVault
+        onChanged: _busy || _biometricBusy || required.isLoading || !available
             ? null
             : _toggle,
       ),
-      child: OutlinedButton.icon(
-        onPressed: _busy || data == null || data.locked
-            ? null
-            : () {
-                final controller = ref.read(appControllerProvider.notifier);
-                Navigator.of(context).popUntil((route) => route.isFirst);
-                controller.lock();
-              },
-        icon: const Icon(Icons.lock_outline),
-        label: Text(l.settingsLockNow),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _BiometricSetting(
+            verificationRequired: required.value == true && !required.isLoading,
+            disabled: _busy || !available,
+            onBusyChanged: (busy) {
+              if (mounted) setState(() => _biometricBusy = busy);
+            },
+          ),
+          OutlinedButton.icon(
+            onPressed: _busy || _biometricBusy || data == null || data.locked
+                ? null
+                : () {
+                    final controller = ref.read(appControllerProvider.notifier);
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    controller.lock();
+                  },
+            icon: const Icon(Icons.lock_outline),
+            label: Text(l.settingsLockNow),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Toggle for system-credential (biometric / device PIN) unlock. Hidden when the
-/// device has no biometrics/lock set up. Enabling stores the current encryption
-/// passkey in the keystore (the store must be encrypted + unlocked first).
-class _BiometricCard extends ConsumerStatefulWidget {
-  const _BiometricCard();
+/// A subordinate unlock method, available only while startup verification is
+/// enabled. Unsupported devices omit the row rather than show a dead switch.
+class _BiometricSetting extends ConsumerStatefulWidget {
+  const _BiometricSetting({
+    required this.verificationRequired,
+    required this.disabled,
+    required this.onBusyChanged,
+  });
+
+  final bool verificationRequired;
+  final bool disabled;
+  final ValueChanged<bool> onBusyChanged;
 
   @override
-  ConsumerState<_BiometricCard> createState() => _BiometricCardState();
+  ConsumerState<_BiometricSetting> createState() => _BiometricSettingState();
 }
 
-class _BiometricCardState extends ConsumerState<_BiometricCard> {
+class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
   bool _supported = false;
-  bool _enabled = false;
   bool _loading = true;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -1109,45 +1138,114 @@ class _BiometricCardState extends ConsumerState<_BiometricCard> {
   Future<void> _load() async {
     final bio = ref.read(biometricUnlockProvider);
     final supported = await bio.isSupported;
-    final enabled = await bio.isEnabled;
     if (!mounted) return;
     setState(() {
       _supported = supported;
-      _enabled = enabled;
       _loading = false;
     });
   }
 
   Future<void> _toggle(bool value) async {
+    if (_busy || widget.disabled || !widget.verificationRequired) return;
     final l = AppLocalizations.of(context);
     final bio = ref.read(biometricUnlockProvider);
+    final startup = ref.read(startupUnlockProvider);
     final messenger = ScaffoldMessenger.of(context);
-    if (!value) {
-      await bio.disable();
-      if (mounted) setState(() => _enabled = false);
-      return;
-    }
     final passKey = ref.read(appControllerProvider).value?.passKey;
-    if (passKey == null || passKey.isEmpty) {
+    setState(() => _busy = true);
+    widget.onBusyChanged(true);
+    try {
+      if (!await startup.verificationRequired) return;
+      if (!value) {
+        await bio.disableVerified();
+        if (mounted) ref.invalidate(biometricUnlockEnabledProvider);
+        return;
+      }
+      if (passKey == null || passKey.isEmpty) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(content: Text(l.settingsBiometricNeedPasskey)),
+          );
+        }
+        return;
+      }
+      final ok = await bio.enable(passKey, l.unlockBiometricReason);
+      // System prompts may resume after settings were closed, the vault was
+      // locked, or its PIN changed. Never keep a credential from that session.
+      final stillRequired = await startup.verificationRequired;
+      if (!mounted) {
+        await bio.disableVerified();
+        return;
+      }
+      final current = ref.read(appControllerProvider).value;
+      if (current == null ||
+          current.locked ||
+          current.passKey != passKey ||
+          !stillRequired) {
+        await bio.disableVerified();
+        if (mounted) ref.invalidate(biometricUnlockEnabledProvider);
+        return;
+      }
+      if (!ok) return;
+      ref.invalidate(biometricUnlockEnabledProvider);
       messenger.showSnackBar(
-        SnackBar(content: Text(l.settingsBiometricNeedPasskey)),
+        SnackBar(content: Text(l.settingsBiometricEnabled)),
       );
-      return;
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l.settingsStartupVerificationError)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        widget.onBusyChanged(false);
+      }
     }
-    final ok = await bio.enable(passKey, l.unlockBiometricReason);
-    if (!mounted || !ok) return;
-    setState(() => _enabled = true);
-    messenger.showSnackBar(SnackBar(content: Text(l.settingsBiometricEnabled)));
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading || !_supported) return const SizedBox.shrink();
     final l = AppLocalizations.of(context);
-    return _Card(
-      title: l.settingsBiometric,
-      description: l.settingsBiometricDesc,
-      trailing: Switch(value: _enabled, onChanged: _toggle),
+    final t = Theme.of(context).extension<AvaTokens>()!;
+    final enabled = ref.watch(biometricUnlockEnabledProvider);
+    return Padding(
+      padding: context.rInsets(left: 12, bottom: 12),
+      child: Row(
+        children: [
+          Icon(Icons.fingerprint, color: t.muted, size: context.r(20)),
+          SizedBox(width: context.r(10)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.settingsBiometric,
+                  style: TextStyle(color: t.text, fontSize: context.r(14)),
+                ),
+                SizedBox(height: context.r(4)),
+                Text(
+                  l.settingsBiometricDesc,
+                  style: TextStyle(color: t.muted, fontSize: context.r(12.5)),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            key: const ValueKey('biometric-unlock-switch'),
+            value: widget.verificationRequired && enabled.value == true,
+            onChanged:
+                _busy ||
+                    enabled.isLoading ||
+                    widget.disabled ||
+                    !widget.verificationRequired
+                ? null
+                : _toggle,
+          ),
+        ],
+      ),
     );
   }
 }

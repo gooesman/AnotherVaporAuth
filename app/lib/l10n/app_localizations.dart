@@ -422,13 +422,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBiometric.
   ///
   /// In en, this message translates to:
-  /// **'Biometric unlock'**
+  /// **'Use device unlock'**
   String get settingsBiometric;
 
   /// No description provided for @settingsBiometricDesc.
   ///
   /// In en, this message translates to:
-  /// **'Unlock with your fingerprint or device PIN; the passkey is stored in the device keystore.'**
+  /// **'Use fingerprint, Windows Hello or your device credential instead of the AVA PIN when startup verification is on. Turning startup verification off disables this option; enable it separately after turning verification back on.'**
   String get settingsBiometricDesc;
 
   /// No description provided for @settingsBiometricNeedPasskey.
@@ -446,7 +446,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBiometricEnabled.
   ///
   /// In en, this message translates to:
-  /// **'Biometric unlock enabled.'**
+  /// **'Device unlock enabled'**
   String get settingsBiometricEnabled;
 
   /// No description provided for @settingsHoldConfirm.
@@ -4636,6 +4636,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The installer signature does not match this app and was blocked'**
   String get forkUpdateSignatureMismatch;
+
+  /// No description provided for @backupCodesNativeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate one-time Steam login codes here. Steam requires SMS verification of the phone linked to this account. Generating a new set may replace existing codes.'**
+  String get backupCodesNativeIntro;
+
+  /// No description provided for @backupCodesSendSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Send verification SMS'**
+  String get backupCodesSendSms;
+
+  /// No description provided for @backupCodesSmsPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the verification code from Steam\'s SMS.'**
+  String get backupCodesSmsPrompt;
+
+  /// No description provided for @backupCodesSmsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS verification code'**
+  String get backupCodesSmsLabel;
+
+  /// No description provided for @backupCodesGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify and generate codes'**
+  String get backupCodesGenerate;
+
+  /// No description provided for @backupCodesReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Your one-time login codes'**
+  String get backupCodesReady;
+
+  /// No description provided for @backupCodesKeepSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Each code can be used once. Keep a printed copy somewhere safe. AVA does not save these codes; leaving this page or switching apps clears them. Steam emails you when codes are generated or used.'**
+  String get backupCodesKeepSafe;
+
+  /// No description provided for @backupCodesClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear codes'**
+  String get backupCodesClear;
+
+  /// No description provided for @backupCodesRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam could not complete this request. No request was retried automatically. Check your connection and try again when ready.'**
+  String get backupCodesRequestFailed;
+
+  /// No description provided for @backupCodesUnexpectedResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam returned an unrecognized response. The result could not be confirmed; the request was not retried.'**
+  String get backupCodesUnexpectedResponse;
+
+  /// No description provided for @backupCodesInvalidSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam rejected the verification code. Check the SMS and try again.'**
+  String get backupCodesInvalidSms;
+
+  /// No description provided for @backupCodesRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is limiting requests. Please wait before trying again.'**
+  String get backupCodesRateLimited;
+
+  /// No description provided for @backupCodesPhoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam requires a verified phone number on this account.'**
+  String get backupCodesPhoneRequired;
+
+  /// No description provided for @backupCodesManualHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Official Steam page (optional)'**
+  String get backupCodesManualHelp;
+
+  /// No description provided for @steamAccelerationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam acceleration'**
+  String get steamAccelerationTitle;
+
+  /// No description provided for @steamAccelerationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Accelerate only Steam requests made by AVA, without affecting other apps.'**
+  String get steamAccelerationDesc;
+
+  /// No description provided for @steamAccelerationOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get steamAccelerationOff;
+
+  /// No description provided for @steamAccelerationLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing subscription…'**
+  String get steamAccelerationLoading;
+
+  /// No description provided for @steamAccelerationStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting…'**
+  String get steamAccelerationStarting;
+
+  /// No description provided for @steamAccelerationRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get steamAccelerationRunning;
+
+  /// No description provided for @steamAccelerationPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'External proxy detected; built-in acceleration is paused'**
+  String get steamAccelerationPaused;
+
+  /// No description provided for @steamAccelerationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration unavailable'**
+  String get steamAccelerationFailed;
+
+  /// No description provided for @steamAccelerationUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently supported on Windows and Android only.'**
+  String get steamAccelerationUnsupported;
+
+  /// No description provided for @steamAccelerationConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription saved on this device'**
+  String get steamAccelerationConfigured;
+
+  /// No description provided for @steamAccelerationUnconfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No subscription configured'**
+  String get steamAccelerationUnconfigured;
+
+  /// No description provided for @steamAccelerationConfigure.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subscription'**
+  String get steamAccelerationConfigure;
+
+  /// No description provided for @steamAccelerationReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace subscription'**
+  String get steamAccelerationReplace;
+
+  /// No description provided for @steamAccelerationSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription URL'**
+  String get steamAccelerationSubscription;
+
+  /// No description provided for @steamAccelerationSubscriptionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This link may contain private credentials and is stored only on this device. After saving, sync the subscription to load available nodes.'**
+  String get steamAccelerationSubscriptionHelp;
+
+  /// No description provided for @steamAccelerationClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear subscription'**
+  String get steamAccelerationClear;
+
+  /// No description provided for @steamAccelerationClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop built-in acceleration and remove the saved subscription and nodes from this device?'**
+  String get steamAccelerationClearConfirm;
+
+  /// No description provided for @steamAccelerationSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync nodes'**
+  String get steamAccelerationSync;
+
+  /// No description provided for @steamAccelerationNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Nodes'**
+  String get steamAccelerationNodes;
+
+  /// No description provided for @steamAccelerationNoNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync the subscription to load available nodes.'**
+  String get steamAccelerationNoNodes;
+
+  /// No description provided for @steamAccelerationNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected node'**
+  String get steamAccelerationNode;
+
+  /// No description provided for @steamAccelerationStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable acceleration'**
+  String get steamAccelerationStart;
+
+  /// No description provided for @steamAccelerationStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop acceleration'**
+  String get steamAccelerationStop;
+
+  /// No description provided for @steamAccelerationAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Start automatically'**
+  String get steamAccelerationAuto;
+
+  /// No description provided for @steamAccelerationAutoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Start when AVA opens; pause built-in acceleration when an external proxy is detected.'**
+  String get steamAccelerationAutoDesc;
+
+  /// No description provided for @steamAccelerationEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'External proxy detection'**
+  String get steamAccelerationEnvironment;
+
+  /// No description provided for @steamAccelerationExternalProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'System proxy or PAC detected'**
+  String get steamAccelerationExternalProxy;
+
+  /// No description provided for @steamAccelerationExternalVpn.
+  ///
+  /// In en, this message translates to:
+  /// **'VPN or tunnel detected'**
+  String get steamAccelerationExternalVpn;
+
+  /// No description provided for @steamAccelerationNoExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'No external proxy detected'**
+  String get steamAccelerationNoExternal;
+
+  /// No description provided for @steamAccelerationDetectionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'External proxy status is unknown. Automatic startup is paused; you can start manually.'**
+  String get steamAccelerationDetectionUnavailable;
+
+  /// No description provided for @steamAccelerationEnvironmentHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in acceleration yields to detected external proxies. Detection may depend on system permissions.'**
+  String get steamAccelerationEnvironmentHelp;
+
+  /// No description provided for @steamAccelerationSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped {count} unsupported nodes.'**
+  String steamAccelerationSkipped(int count);
+
+  /// No description provided for @steamAccelerationInvalidSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid HTTPS subscription URL.'**
+  String get steamAccelerationInvalidSubscription;
+
+  /// No description provided for @steamAccelerationNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch the subscription. Check your connection and try again.'**
+  String get steamAccelerationNetworkError;
+
+  /// No description provided for @steamAccelerationUnsupportedSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'The subscription has no supported nodes. Use a compatible Clash subscription.'**
+  String get steamAccelerationUnsupportedSubscription;
+
+  /// No description provided for @steamAccelerationStorageError.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure storage is unavailable. The setting could not be saved.'**
+  String get steamAccelerationStorageError;
+
+  /// No description provided for @steamAccelerationCoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The acceleration component is missing. Install an updated app package.'**
+  String get steamAccelerationCoreUnavailable;
+
+  /// No description provided for @steamAccelerationCoreIntegrity.
+  ///
+  /// In en, this message translates to:
+  /// **'The acceleration component failed verification and was blocked.'**
+  String get steamAccelerationCoreIntegrity;
+
+  /// No description provided for @steamAccelerationStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start acceleration. Refresh the environment check and try again.'**
+  String get steamAccelerationStartFailed;
 }
 
 class _AppLocalizationsDelegate

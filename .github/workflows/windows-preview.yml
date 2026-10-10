@@ -61,6 +61,11 @@ jobs:
       - name: Build Windows release
         run: flutter build windows --release --build-name=$env:AVA_VERSION --build-number=$env:AVA_BUILD_NUMBER --no-pub
 
+      - name: Include optional component notices
+        run: |
+          New-Item -ItemType Directory -Force build/windows/x64/runner/Release/third_party/mihomo | Out-Null
+          Copy-Item ../third_party/mihomo/* build/windows/x64/runner/Release/third_party/mihomo/
+
       # GitHub packages this complete directory as a downloadable ZIP.
       # Keep the DLLs and data directory alongside ava.exe after extracting.
       - name: Upload Windows preview
@@ -181,12 +186,19 @@ jobs:
           properties.chmod(0o600)
           print('Private fork signing configured')
           PY
+      - name: Stage verified optional Steam acceleration component and source
+        run: python3 ../tool/prepare_steam_core.py --android --source-output ../dist/core-source
+
       - name: Build side-by-side Android preview
         # Fork preview uses its own fixed signing key, package and label. It
         # keeps production AVA and older randomly signed AVA dev data intact.
         run: flutter build apk --debug --flavor cn --dart-define=AVA_CHANNEL=cn --target-platform android-arm64 --build-number=$((100000 + GITHUB_RUN_NUMBER)) --no-pub
+
+      - name: Verify unchanged packaged Steam acceleration component
+        run: python3 ../tool/prepare_steam_core.py --verify-apk build/app/outputs/flutter-apk/app-cn-debug.apk
       - name: Verify isolated package identity
         run: |
+          set -o pipefail
           APK=build/app/outputs/flutter-apk/app-cn-debug.apk
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$APK" | grep -Fx 'pro.dotslash.ava.fork'
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK" > "$RUNNER_TEMP/ava-preview-manifest.xml"
@@ -201,7 +213,7 @@ jobs:
           PY
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
           "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'AVA Fork'"
-          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" > "$RUNNER_TEMP/ava-preview-signature.txt"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/ava-preview-signature.txt"
           grep -Fi 'Signer #1 certificate SHA-256 digest: a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f' "$RUNNER_TEMP/ava-preview-signature.txt"
           sha256sum "$APK"
       - name: Verify cn preview excludes ads and billing
@@ -254,5 +266,13 @@ jobs:
           path: |
             app/build/app/outputs/flutter-apk/app-cn-debug.apk
             app/build/app/outputs/flutter-apk/android-preview.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload corresponding component source and notices
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-steam-core-source-${{ github.sha }}
+          path: dist/core-source/*
           if-no-files-found: error
           retention-days: 14

@@ -8,6 +8,7 @@
 
 #include "screen_qr_capture.h"
 #include "steam_client_bridge.h"
+#include "steam_acceleration_bridge.h"
 #include "win32_window.h"
 
 // A window that does nothing but host a Flutter view.
@@ -34,6 +35,7 @@ class FlutterWindow : public Win32Window {
   // Declared after the controller so its channel is detached before the engine
   // is destroyed, including during ordinary member destruction.
   std::unique_ptr<SteamClientBridge> steam_client_bridge_;
+  std::unique_ptr<SteamAccelerationBridge> steam_acceleration_bridge_;
   std::unique_ptr<ScreenQrCapture> screen_qr_capture_;
 };
 

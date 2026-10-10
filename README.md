@@ -84,11 +84,17 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 
 - **Account overview (branch preview)** — Windows and Android share configurable
   wallet/pending-funds and market-listing cards, friends and two-sided trade-offer
-  editing, and an entry to Steam's official backup-login-code flow. Startup
+  editing, and in-app backup login codes with Steam SMS verification. Startup
   verification can be disabled in Settings while keeping account files encrypted at rest.
   The Android preview is a separate **AVA Fork** app with its own data.
   Its home screen stays focused on codes and accounts in portrait and landscape;
-  long-press an account to open the overview, market or friends when needed.
+  tap an account to select its code, or long-press it to open its overview directly.
+  Market, friends and other account tools are available in that overview.
+
+- **Optional Steam acceleration (branch preview)** — choose a node from an HTTPS
+  Clash subscription for AVA's Steam requests. Manual start is the default;
+  automatic start pauses when an external proxy or VPN is detected. System
+  proxy settings and other apps are untouched. See the [scope and limitations](docs/windows-steam-switch.md#optional-steam-connectivity).
 
 - **Inventory rarity and prices (branch preview)** — restrained rarity-colored
   icon borders in the inventory and trade picker. Right-click, long-press or
@@ -115,7 +121,7 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   with both sides' items, gift / one-sided / escrow banners, accept then hand off to
   the matching mobileconf).
 - **Steam Family groups** — a read-only group page (members, roles, slots, cooldown)
-  from an account's menu, where incoming invites also live: pre-join checks first,
+  from the account overview (or desktop context menu), where incoming invites also live: pre-join checks first,
   then hold-to-join. *(experimental)*
 - **Hold-to-confirm** — decisions on existing trade offers and confirmations,
   joining a family and deleting an account use press-and-hold with accelerating
@@ -125,15 +131,17 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   picker, identical items stacked) and list items on the Community Market with
   live Steam fees, a high/low price trend, linked "you receive ⇄ buyer pays"
   pricing, batch listing, and optional auto-confirm; a "My listings" tab cancels
-  active listings. Long-press an account to open it.
+  active listings. Open it from the account overview or desktop context menu.
 - **Automatic session refresh** — refreshes the access token from the refresh
   token, and (optionally) does a full headless re-login with a stored password
   plus the account's own TOTP when the refresh token expires.
 - **Login flows** — password + **QR**, session refresh, add authenticator, and
   approving another device's login by scanning its QR.
 - **App lock** — a 6-digit PIN gates a random 256-bit key held in the
-  platform's secure storage, which encrypts the local store (AES-256-GCM); with
-  biometric / device-credential unlock, it signs in as soon as the PIN is entered.
+  platform's secure storage, which encrypts the local store (AES-256-GCM).
+  System unlock (fingerprint, Windows Hello or device credentials) is an optional
+  method under startup verification. Turning verification off also disables this
+  method; turning verification back on requires enabling system unlock again.
   Verification is enabled by default. Opting out stores a device-local convenience
   credential only in platform secure storage; changing the PIN enables verification again.
 - **Encrypted sync (optional)** — put your accounts on a WebDAV server you
@@ -150,7 +158,7 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 - **Device management** — see every device and browser session signed into an
   account (platform, rough location, last activity) and sign any of them out
   remotely. The current device is marked and can't sign itself out.
-- **Redeem Steam keys** — activate a product key on an account from its menu,
+- **Redeem Steam keys** — activate a product key from the account overview or desktop context menu,
   with Steam's own rejection reasons spelled out (mistyped, already owned,
   already used, wrong country, needs the base game, rate-limited). Activation is
   permanent, so it always confirms first and never retries a key by itself.
@@ -185,7 +193,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1023 tests
+flutter test                       # 1110 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.
@@ -266,8 +274,10 @@ existing users can migrate. Steam auth protocol references:
 
 ## Privacy
 
-Your Steam data has no backend: accounts, secrets and codes stay on your device
-and every Steam request goes straight to Valve. This fork disables Pro
+Accounts, secrets and codes stay on your device. Steam requests go to Valve,
+without a backend operated by this fork. When optional acceleration is enabled,
+connections use your selected node or detected external proxy with normal TLS
+verification. This fork disables Pro
 verification, payments and advertising, and has no default upstream update
 check. Feedback opens this fork's GitHub issues without sending a report or
 log automatically. Optional WebDAV synchronization uses your chosen server.

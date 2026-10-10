@@ -185,11 +185,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get unlockBiometricReason => 'AVA entsperren';
 
   @override
-  String get settingsBiometric => 'Biometrisches Entsperren';
+  String get settingsBiometric => 'Geräteentsperrung verwenden';
 
   @override
   String get settingsBiometricDesc =>
-      'Entsperre mit deinem Fingerabdruck oder der Gerätesperre; das Passwort liegt im Keystore des Geräts.';
+      'Bei aktiver Startprüfung können Fingerabdruck, Windows Hello oder der Gerätecode die AVA-PIN ersetzen. Das Ausschalten der Startprüfung deaktiviert auch diese Option; danach muss sie separat wieder aktiviert werden.';
 
   @override
   String get settingsBiometricNeedPasskey =>
@@ -200,7 +200,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Auf diesem Gerät sind weder Biometrie noch eine Gerätesperre eingerichtet.';
 
   @override
-  String get settingsBiometricEnabled => 'Biometrisches Entsperren ist aktiv.';
+  String get settingsBiometricEnabled => 'Geräteentsperrung aktiviert';
 
   @override
   String get settingsHoldConfirm => 'Zum Bestätigen halten';
@@ -2650,4 +2650,189 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get forkUpdateSignatureMismatch =>
       'Die Signatur stimmt nicht mit dieser App überein; Installation blockiert';
+
+  @override
+  String get backupCodesNativeIntro =>
+      'Hier kannst du einmalige Steam-Anmeldecodes erstellen. Steam verlangt eine SMS-Bestätigung der verknüpften Telefonnummer. Neue Codes können die bisherigen ersetzen.';
+
+  @override
+  String get backupCodesSendSms => 'Bestätigungs-SMS senden';
+
+  @override
+  String get backupCodesSmsPrompt => 'Gib den Code aus der Steam-SMS ein.';
+
+  @override
+  String get backupCodesSmsLabel => 'SMS-Bestätigungscode';
+
+  @override
+  String get backupCodesGenerate => 'Bestätigen und Codes erstellen';
+
+  @override
+  String get backupCodesReady => 'Deine einmaligen Anmeldecodes';
+
+  @override
+  String get backupCodesKeepSafe =>
+      'Jeder Code ist einmal nutzbar. Bewahre einen Ausdruck sicher auf. AVA speichert diese Codes nicht; beim Verlassen der Seite oder App werden sie ausgeblendet. Steam sendet bei Erstellung und Verwendung eine E-Mail.';
+
+  @override
+  String get backupCodesClear => 'Codes löschen';
+
+  @override
+  String get backupCodesRequestFailed =>
+      'Steam konnte die Anfrage nicht abschließen. Es gab keinen automatischen Wiederholungsversuch. Prüfe die Verbindung und versuche es manuell erneut.';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Unbekannte Steam-Antwort. Das Ergebnis ist unbestätigt; die Anfrage wurde nicht wiederholt.';
+
+  @override
+  String get backupCodesInvalidSms =>
+      'Steam hat den Code abgelehnt. Prüfe die SMS und versuche es erneut.';
+
+  @override
+  String get backupCodesRateLimited =>
+      'Steam begrenzt die Anfragen. Bitte warte vor einem weiteren Versuch.';
+
+  @override
+  String get backupCodesPhoneRequired =>
+      'Für dieses Konto ist eine bestätigte Telefonnummer erforderlich.';
+
+  @override
+  String get backupCodesManualHelp => 'Offizielle Steam-Seite (optional)';
+
+  @override
+  String get steamAccelerationTitle => 'Steam-Beschleunigung';
+
+  @override
+  String get steamAccelerationDesc =>
+      'Beschleunigt nur Steam-Anfragen von AVA und beeinflusst keine anderen Apps.';
+
+  @override
+  String get steamAccelerationOff => 'Aus';
+
+  @override
+  String get steamAccelerationLoading => 'Abonnement wird synchronisiert…';
+
+  @override
+  String get steamAccelerationStarting => 'Wird gestartet…';
+
+  @override
+  String get steamAccelerationRunning => 'Aktiv';
+
+  @override
+  String get steamAccelerationPaused =>
+      'Externer Proxy erkannt; interne Beschleunigung pausiert';
+
+  @override
+  String get steamAccelerationFailed => 'Beschleunigung nicht verfügbar';
+
+  @override
+  String get steamAccelerationUnsupported =>
+      'Derzeit nur unter Windows und Android unterstützt.';
+
+  @override
+  String get steamAccelerationConfigured =>
+      'Abonnement auf diesem Gerät gespeichert';
+
+  @override
+  String get steamAccelerationUnconfigured => 'Kein Abonnement eingerichtet';
+
+  @override
+  String get steamAccelerationConfigure => 'Abonnement hinzufügen';
+
+  @override
+  String get steamAccelerationReplace => 'Abonnement ersetzen';
+
+  @override
+  String get steamAccelerationSubscription => 'Abonnement-URL';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      'Dieser Link kann private Zugangsdaten enthalten und wird nur auf diesem Gerät gespeichert. Synchronisiere nach dem Speichern die verfügbaren Knoten.';
+
+  @override
+  String get steamAccelerationClear => 'Abonnement löschen';
+
+  @override
+  String get steamAccelerationClearConfirm =>
+      'Interne Beschleunigung stoppen und das gespeicherte Abonnement sowie die Knoten von diesem Gerät löschen?';
+
+  @override
+  String get steamAccelerationSync => 'Knoten synchronisieren';
+
+  @override
+  String get steamAccelerationNodes => 'Knoten';
+
+  @override
+  String get steamAccelerationNoNodes =>
+      'Synchronisiere das Abonnement, um verfügbare Knoten zu laden.';
+
+  @override
+  String get steamAccelerationNode => 'Ausgewählter Knoten';
+
+  @override
+  String get steamAccelerationStart => 'Beschleunigung aktivieren';
+
+  @override
+  String get steamAccelerationStop => 'Beschleunigung stoppen';
+
+  @override
+  String get steamAccelerationAuto => 'Automatisch starten';
+
+  @override
+  String get steamAccelerationAutoDesc =>
+      'Beim Öffnen von AVA starten; bei erkanntem externen Proxy die interne Beschleunigung pausieren.';
+
+  @override
+  String get steamAccelerationEnvironment => 'Erkennung externer Proxys';
+
+  @override
+  String get steamAccelerationExternalProxy => 'Systemproxy oder PAC erkannt';
+
+  @override
+  String get steamAccelerationExternalVpn => 'VPN oder Tunnel erkannt';
+
+  @override
+  String get steamAccelerationNoExternal => 'Kein externer Proxy erkannt';
+
+  @override
+  String get steamAccelerationDetectionUnavailable =>
+      'Der Status externer Proxys ist unbekannt. Der automatische Start ist pausiert; ein manueller Start ist möglich.';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      'Die interne Beschleunigung weicht erkannten externen Proxys aus. Die Erkennung kann von Systemberechtigungen abhängen.';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return '$count nicht unterstützte Knoten übersprungen.';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription =>
+      'Gib eine gültige HTTPS-Abonnement-URL ein.';
+
+  @override
+  String get steamAccelerationNetworkError =>
+      'Das Abonnement konnte nicht abgerufen werden. Prüfe die Verbindung und versuche es erneut.';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      'Das Abonnement enthält keine unterstützten Knoten. Verwende ein kompatibles Clash-Abonnement.';
+
+  @override
+  String get steamAccelerationStorageError =>
+      'Der sichere Speicher ist nicht verfügbar. Die Einstellung konnte nicht gespeichert werden.';
+
+  @override
+  String get steamAccelerationCoreUnavailable =>
+      'Die Beschleunigungskomponente fehlt. Installiere ein aktualisiertes App-Paket.';
+
+  @override
+  String get steamAccelerationCoreIntegrity =>
+      'Die Beschleunigungskomponente hat die Prüfung nicht bestanden und wurde blockiert.';
+
+  @override
+  String get steamAccelerationStartFailed =>
+      'Die Beschleunigung konnte nicht gestartet werden. Aktualisiere die Umgebungsprüfung und versuche es erneut.';
 }
