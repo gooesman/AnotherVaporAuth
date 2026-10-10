@@ -37,12 +37,16 @@ void main() {
   tearDown(() => deleteTempDirSync(tmp));
 
   ProviderContainer makeContainer() {
-    final c = ProviderContainer(overrides: [
-      storageProvider.overrideWithValue(storage),
-      entitlementApiProvider.overrideWithValue(_NoApi()),
-      entitlementPublicKeyProvider.overrideWithValue(mint.publicKey),
-      clockProvider.overrideWithValue(() => now),
-    ]);
+    final c = ProviderContainer(
+      overrides: [
+        // Explicitly exercise the retained upstream compatibility path.
+        upstreamProEnabledProvider.overrideWithValue(true),
+        storageProvider.overrideWithValue(storage),
+        entitlementApiProvider.overrideWithValue(_NoApi()),
+        entitlementPublicKeyProvider.overrideWithValue(mint.publicKey),
+        clockProvider.overrideWithValue(() => now),
+      ],
+    );
     addTearDown(c.dispose);
     return c;
   }
@@ -57,17 +61,19 @@ void main() {
     expect(makeContainer().read(skinProvider), AvaSkin.none);
   });
 
-  test('free user with a stored Pro skin renders plain, selection kept',
-      () async {
-    final seed = makeContainer();
-    await seed.read(settingsStoreProvider).saveSkin('neon');
+  test(
+    'free user with a stored Pro skin renders plain, selection kept',
+    () async {
+      final seed = makeContainer();
+      await seed.read(settingsStoreProvider).saveSkin('neon');
 
-    final c = makeContainer();
-    c.read(effectiveSkinProvider);
-    await settle(c, () => c.read(skinProvider) == AvaSkin.neon);
-    expect(c.read(skinProvider), AvaSkin.neon); // selection preserved
-    expect(c.read(effectiveSkinProvider), AvaSkin.none); // but not rendered
-  });
+      final c = makeContainer();
+      c.read(effectiveSkinProvider);
+      await settle(c, () => c.read(skinProvider) == AvaSkin.neon);
+      expect(c.read(skinProvider), AvaSkin.neon); // selection preserved
+      expect(c.read(effectiveSkinProvider), AvaSkin.none); // but not rendered
+    },
+  );
 
   test('pro user keeps the selected skin', () async {
     final seed = makeContainer();
@@ -79,10 +85,11 @@ void main() {
     final c = makeContainer();
     c.read(effectiveSkinProvider);
     await settle(
-        c,
-        () =>
-            c.read(skinProvider) == AvaSkin.pixel &&
-            c.read(entitlementTokenProvider) != null);
+      c,
+      () =>
+          c.read(skinProvider) == AvaSkin.pixel &&
+          c.read(entitlementTokenProvider) != null,
+    );
     expect(c.read(effectiveSkinProvider), AvaSkin.pixel);
   });
 
@@ -113,36 +120,46 @@ void main() {
   });
 
   testWidgets(
-      'REGRESSION: the rendered theme (not just the spec) falls back to '
-      'plain for a free user with a stored Pro skin', (tester) async {
-    // The 0.90.0 bug: effectiveSkinProvider existed but app.dart still fed
-    // the raw selection into resolveThemeVariant, so neon kept rendering.
-    final dir = Directory.systemTemp.createTempSync('ava_skin_theme');
-    addTearDown(() => deleteTempDirSync(dir));
-    File(p.join(dir.path, 'app_settings.json')).writeAsStringSync(
-        jsonEncode({'skin': 'neon', 'privacy_accepted': true}));
+    'REGRESSION: the rendered theme (not just the spec) falls back to '
+    'plain for a free user with a stored Pro skin',
+    (tester) async {
+      // The 0.90.0 bug: effectiveSkinProvider existed but app.dart still fed
+      // the raw selection into resolveThemeVariant, so neon kept rendering.
+      final dir = Directory.systemTemp.createTempSync('ava_skin_theme');
+      addTearDown(() => deleteTempDirSync(dir));
+      File(p.join(dir.path, 'app_settings.json')).writeAsStringSync(
+        jsonEncode({'skin': 'neon', 'privacy_accepted': true}),
+      );
 
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        storageProvider.overrideWithValue(
-            MemoryStorageProvider(p.join(dir.path, 'maFiles'))),
-        entitlementApiProvider.overrideWithValue(_NoApi()),
-        clockProvider.overrideWithValue(() => now),
-        timeAlignerProvider.overrideWithValue(() async {}),
-        tickProvider.overrideWith((ref) => Stream<int>.value(1700000000)),
-      ],
-      child: const AvaApp(),
-    ));
-    // Settings load does real file IO — let it complete outside FakeAsync.
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            // Explicitly exercise the retained upstream compatibility path.
+            upstreamProEnabledProvider.overrideWithValue(true),
+            storageProvider.overrideWithValue(
+              MemoryStorageProvider(p.join(dir.path, 'maFiles')),
+            ),
+            entitlementApiProvider.overrideWithValue(_NoApi()),
+            clockProvider.overrideWithValue(() => now),
+            timeAlignerProvider.overrideWithValue(() async {}),
+            tickProvider.overrideWith((ref) => Stream<int>.value(1700000000)),
+          ],
+          child: const AvaApp(),
+        ),
+      );
+      // Settings load does real file IO — let it complete outside FakeAsync.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    final theme =
-        tester.widget<MaterialApp>(find.byType(MaterialApp).first).theme!;
-    final variant = theme.extension<AvaTokens>()!.variant;
-    expect(variant, isNot(AvaThemeVariant.neon));
-    expect(variant, isNot(AvaThemeVariant.pixel));
-  });
+      final theme = tester
+          .widget<MaterialApp>(find.byType(MaterialApp).first)
+          .theme!;
+      final variant = theme.extension<AvaTokens>()!.variant;
+      expect(variant, isNot(AvaThemeVariant.neon));
+      expect(variant, isNot(AvaThemeVariant.pixel));
+    },
+  );
 }

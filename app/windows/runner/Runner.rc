@@ -61,7 +61,9 @@ IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
 //
 
 #if defined(FLUTTER_VERSION_MAJOR) && defined(FLUTTER_VERSION_MINOR) && defined(FLUTTER_VERSION_PATCH) && defined(FLUTTER_VERSION_BUILD)
-#define VERSION_AS_NUMBER FLUTTER_VERSION_MAJOR,FLUTTER_VERSION_MINOR,FLUTTER_VERSION_PATCH,FLUTTER_VERSION_BUILD
+// VERSIONINFO numeric fields are 16-bit; ProductVersion below retains the full
+// Flutter version string for package_info_plus and fork update comparisons.
+#define VERSION_AS_NUMBER FLUTTER_VERSION_MAJOR,FLUTTER_VERSION_MINOR,FLUTTER_VERSION_PATCH,(FLUTTER_VERSION_BUILD & 0xffff)
 #else
 #define VERSION_AS_NUMBER 1,0,0,0
 #endif
@@ -90,11 +92,14 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "dotslash.pro" "\0"
-            VALUE "FileDescription", "AVA" "\0"
+            VALUE "FileDescription", "AVA-pc" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "AVA" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 dotSlash. All rights reserved." "\0"
             VALUE "OriginalFilename", "ava.exe" "\0"
+            // path_provider derives the account/settings directory from this
+            // value. Keep its storage identity while the window/shortcut and
+            // FileDescription display AVA-pc.
             VALUE "ProductName", "AVA" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

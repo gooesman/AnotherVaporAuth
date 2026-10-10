@@ -1252,5 +1252,61 @@
         "type": "String"
       }
     }
+  },
+  "forkLocalFeaturesTitle": "Local features unlocked",
+  "forkLocalFeaturesBody": "All local features in this independent fork are available without Pro verification. The original author’s online services and subscriptions are not included.",
+  "forkPrivacyConsentBody": "This independent AVA fork stores your Steam accounts and authenticator secrets on this device. Steam requests go directly to Valve. Optional synchronization is off until you configure your own server; account data is encrypted locally before synchronization. Local features require no Pro verification. This build uses no advertising, payment service or upstream update check. Feedback only opens this fork’s GitHub issue page; reports and logs are not sent automatically. There is no tracking or analytics. Read this fork’s privacy notice below. By continuing, you accept it.",
+  "forkUpdateTitle": "Software updates",
+  "forkUpdateCurrentVersion": "Current version {version}",
+  "forkUpdateCheck": "Check for updates",
+  "forkUpdateChecking": "Checking for updates…",
+  "forkUpdateNoRelease": "No published release is available yet",
+  "forkUpdateUpToDate": "You are up to date",
+  "forkUpdateAvailable": "New version {version}",
+  "forkUpdateReleaseNotes": "Release notes",
+  "forkUpdateNoNotes": "No release notes were provided",
+  "forkUpdateDownload": "Download update",
+  "forkUpdateDownloading": "Downloading {progress}",
+  "forkUpdateCancelDownload": "Cancel download",
+  "forkUpdateReady": "The installer is downloaded and verified",
+  "forkUpdateInstall": "Install update",
+  "forkUpdateInstallTitle": "Install this update?",
+  "forkUpdateInstallAndroid": "The system installer will open. If prompted, allow AVA Fork to install apps, then follow the system instructions.",
+  "forkUpdateInstallWindows": "The installer will open and AVA-pc will close. Finish your current work first, then follow the installer instructions.",
+  "forkUpdateInstallConfirm": "Continue installation",
+  "forkUpdateInstallStarted": "The system installer is open; follow its instructions",
+  "forkUpdateCheckFailed": "Could not check for updates. Try again later.",
+  "forkUpdateDownloadFailed": "Download failed. Please retry.",
+  "forkUpdateHashFailed": "The installer failed verification and was blocked. Download it again.",
+  "forkUpdateInstallFailed": "Could not open the installer. Please retry.",
+  "forkUpdateNoCompatibleAsset": "This release has no installer for this device",
+  "forkUpdateUnverifiable": "This installer has no trusted checksum and cannot be downloaded or installed",
+  "forkUpdateInvalidMetadata": "Release information is incomplete or invalid. Try again later.",
+  "forkUpdateUnsupported": "In-app updates are not supported on this device",
+  "forkUpdateCancelled": "Download cancelled",
+  "forkUpdatePermissionRequired": "Allow AVA Fork to install apps, then return here to install",
+  "forkUpdateOpenPermissionSettings": "Allow app installs",
+  "forkUpdateWrongPackage": "This installer belongs to another app and was blocked",
+  "forkUpdateSignatureMismatch": "The installer signature does not match this app and was blocked",
+  "@forkUpdateCurrentVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateDownloading": {
+    "placeholders": {
+      "progress": {
+        "type": "String"
+      }
+    }
   }
 }

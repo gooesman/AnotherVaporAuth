@@ -1,5 +1,9 @@
 # Windows Steam sign-in and account switching (preview)
 
+The Windows app is displayed as **AVA-pc**; the Android preview is **AVA Fork**.
+Windows keeps `ava.exe` and the existing AVA data paths so the name change does
+not create a new account library.
+
 ## Sign in by selecting Steam's QR code on screen
 
 Open an account's overview and choose **Switch Steam account**, or use the
@@ -31,7 +35,11 @@ and an actual Steam sign-in still require a manual preview check.
 
 The same feature branch now also includes an account overview on Windows and
 Android. It uses the existing theme/skin components. Desktop accounts show the
-overview beside the account list; tapping a phone account opens its full overview.
+overview beside the account list. The phone home shows only codes and accounts
+in both portrait and landscape;
+tapping an account selects its code. Long-press the account for the overview,
+market, friends or backup-code entry; the account avatar can also open the
+overview. Wallet and market data are not fetched just to show the phone home.
 Wallet, market listings and account-tool cards can be hidden using the tune menu.
 Unavailable balances are never presented as zero. Market records include active,
 held and awaiting-confirmation listings, with separate inventory-context labels.
@@ -53,12 +61,15 @@ does not generate, retrieve or cache one-use codes in its own UI, and does not
 substitute the authenticator removal/recovery code for them.
 
 The Android artifact is an **ARM64 debug preview**, package
-`pro.dotslash.ava.dev`, labelled **AVA dev**. Its separate vault is empty on first
-installation; it does not upgrade the installed production app. This is a development
-build, not a Play release. Builds from separate CI runs may have different debug
-signatures. Keep the production app and its data; do not uninstall it to test.
-The predictive-back regression is covered with simulated system gestures and
-pixel checks; Xiaomi 15 Pro validation remains a manual step.
+`pro.dotslash.ava.fork`, labelled **AVA Fork**. It uses a stable private fork
+signing key and installs alongside both the original AVA and the earlier
+**AVA dev** preview. Its separate vault is empty on first installation. It is
+a development build, not a Play release; see the migration steps below.
+Android pages stay still while a system back gesture is in progress, and use a
+short fade after it is committed. Cancelling the gesture keeps the current page.
+The Activity opts out of predictive system previews as well. Simulated gestures,
+pixel checks and navigation guards are covered; Xiaomi 15 Pro validation,
+including any launcher-specific final animation, remains a manual step.
 
 Windows preview ZIPs keep DLLs and the `data` directory beside `ava.exe`.
 They use the current Windows user's existing AVA data directory. Close other
@@ -68,6 +79,41 @@ This branch adds **Switch Steam account** to the Windows account-row context
 menu and to Settings. It opens a list of accounts remembered by the local Steam installation,
 preselecting the matching AVA account by SteamID. The local account list can include accounts that
 have no authenticator in AVA.
+
+## Android installation and migration
+
+AVA Fork cannot update the earlier AVA dev app in place: that preview used a
+temporary CI debug key which is no longer available. The new package identity
+keeps the old app and its data intact. Do not uninstall the old app or clear its
+data as part of migration.
+
+1. In the old **AVA dev**, unlock the app, swipe an account row **left**, and
+   choose **Export**. Confirm the unencrypted `.maFile` export and use Android's
+   share sheet to save a copy through a trusted file app. Repeat for each account;
+   there is no single all-account backup button. A saved Steam password is
+   excluded unless explicitly selected.
+2. Install **AVA Fork**, accept its privacy notice and set its own local PIN.
+   On the welcome screen choose **Import .maFile** and select the first exported
+   file. Once the account list appears, **+ → Import** imports another file,
+   or **+ → Import SDA folder** opens a file multi-selector for the remaining
+   exported `.maFile` files.
+   These plain exports need no `manifest.json`; encrypted SDA files do require
+   their matching manifest and encryption password.
+3. Check that every expected account and its codes appear. A saved Steam session
+   may need a normal sign-in before online features work; this does not require
+   removing or re-linking the authenticator. The single-file import offers to
+   activate an expired session; after a batch import use the account's refresh
+   action if needed. App settings, the local unlock PIN and WebDAV configuration
+   are not included in a `.maFile` export and must be configured separately.
+4. Keep the old app until the new one works. The exported files contain
+   authenticator secrets and Steam session data: store any retained backup
+   securely and remove temporary migration copies after verification. Export
+   alone is not a backup unless the share destination actually saved the file.
+
+Later **AVA Fork** APKs signed with the same fork key and a higher Android
+version code can update it directly, retaining its app data. APKs with another
+signature cannot. Keep the signing key secure and backed up when maintaining
+this fork; generating a new key does not preserve update compatibility.
 
 ## Trying the preview
 
@@ -96,6 +142,29 @@ with **Remember me** enabled. Importing a maFile into AVA does not establish tha
 desktop login. If Steam has forgotten or revoked the credentials, log in through
 Steam normally, then refresh this page. AVA's existing login approval feature can
 assist with that normal login.
+
+## In-app software updates
+
+On Windows or Android, open **Settings → Software updates**. Opening this page
+checks this fork's public GitHub releases and displays the current version,
+available version and release notes. No published release, an unavailable
+connection and an already-current version have separate messages. CI artifacts
+alone are not published releases and will not appear as available updates.
+
+Choose **Download update** to fetch an installer; progress and cancellation are
+shown. The download must match the release's size and SHA-256 digest. Missing
+verification information or a failed check blocks installation. Downloading does
+not run the file: **Install update** opens a separate confirmation, and the file
+is checked again before it is handed to the operating system.
+
+On Android, an **Allow app installs** button opens the system permission page
+when needed. After returning, choose **Install update** again; installation does
+not start just because permission was enabled. Android also checks the app's
+package identity, version and current signing certificate, then asks you to
+confirm installation. On Windows, finish current work before confirming: AVA-pc
+opens the installer and then closes to release its files. Follow the installer
+prompts to complete the update. The app does not silently install updates or
+send Steam credentials to GitHub.
 
 ## File and process handling
 
@@ -128,6 +197,20 @@ The Windows preview workflow analyzes, tests, and compiles the full application.
 Real two-account switching, expired credentials, and behavior after future
 Steam client updates still require a manual check on a suitable Steam setup.
 The Android interface does not expose this Windows-only action.
+
+## Local features in this fork
+
+All local features and skins are available without Pro verification. The settings
+page has no purchase, redemption, restore or paid-skin entry. Existing entitlement
+tokens remain on disk for compatibility but are not read, refreshed or transmitted;
+no entitlement is forged and no subscription to the author's services is granted.
+The Play bridge and advertising auto-initialization are disabled. Accounts,
+encryption and user-configured WebDAV synchronization keep their existing storage.
+
+This fork has no default upstream update check, so it will not recommend replacing
+itself with the original app. Feedback opens this repository's issue page without
+automatically sending account details or logs. Original copyright and license
+notices are retained. See the [fork privacy notice](fork-privacy.md).
 
 ## Inventory rarity and read-only market prices
 

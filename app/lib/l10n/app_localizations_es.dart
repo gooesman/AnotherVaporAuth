@@ -2532,4 +2532,131 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamClientCurrentBadge => 'Sesión actual';
+
+  @override
+  String get forkLocalFeaturesTitle => 'Funciones locales desbloqueadas';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      'Todas las funciones locales de esta versión derivada independiente están disponibles sin verificar Pro. No se incluyen los servicios en línea ni las suscripciones del autor original.';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      'Esta versión independiente de AVA guarda tus cuentas de Steam y secretos del autenticador en este dispositivo. Las solicitudes de Steam van directamente a Valve. La sincronización opcional solo se activa cuando configuras tu propio servidor; los datos se cifran localmente antes de sincronizarlos. Las funciones locales no requieren verificación Pro. Esta versión no usa publicidad, servicios de pago ni busca actualizaciones del proyecto original. Los comentarios solo abren las incidencias de GitHub de esta versión; no se envían informes ni registros automáticamente. No hay seguimiento ni análisis de uso. Lee el aviso de privacidad a continuación. Al continuar, lo aceptas.';
+
+  @override
+  String get forkUpdateTitle => 'Actualizaciones';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return 'Versión actual $version';
+  }
+
+  @override
+  String get forkUpdateCheck => 'Buscar actualizaciones';
+
+  @override
+  String get forkUpdateChecking => 'Buscando actualizaciones…';
+
+  @override
+  String get forkUpdateNoRelease => 'Aún no hay ninguna versión publicada';
+
+  @override
+  String get forkUpdateUpToDate => 'Ya tienes la última versión';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return 'Nueva versión $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => 'Notas de la versión';
+
+  @override
+  String get forkUpdateNoNotes => 'No se incluyeron notas de la versión';
+
+  @override
+  String get forkUpdateDownload => 'Descargar actualización';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return 'Descargando $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => 'Cancelar descarga';
+
+  @override
+  String get forkUpdateReady => 'Instalador descargado y verificado';
+
+  @override
+  String get forkUpdateInstall => 'Instalar actualización';
+
+  @override
+  String get forkUpdateInstallTitle => '¿Instalar esta actualización?';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      'Se abrirá el instalador del sistema. Si se solicita, permite que AVA Fork instale aplicaciones y sigue las instrucciones.';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      'Se abrirá el instalador y se cerrará AVA-pc. Termina primero tu trabajo actual y sigue las instrucciones del instalador.';
+
+  @override
+  String get forkUpdateInstallConfirm => 'Continuar instalación';
+
+  @override
+  String get forkUpdateInstallStarted =>
+      'Instalador abierto; sigue sus instrucciones';
+
+  @override
+  String get forkUpdateCheckFailed =>
+      'No se pudieron buscar actualizaciones. Inténtalo más tarde.';
+
+  @override
+  String get forkUpdateDownloadFailed =>
+      'Error de descarga. Inténtalo de nuevo.';
+
+  @override
+  String get forkUpdateHashFailed =>
+      'La verificación falló y se bloqueó la instalación. Vuelve a descargar.';
+
+  @override
+  String get forkUpdateInstallFailed => 'No se pudo abrir el instalador.';
+
+  @override
+  String get forkUpdateNoCompatibleAsset =>
+      'Esta versión no tiene un instalador para este dispositivo';
+
+  @override
+  String get forkUpdateUnverifiable =>
+      'Falta una suma de verificación fiable; no se puede descargar ni instalar';
+
+  @override
+  String get forkUpdateInvalidMetadata =>
+      'La información de la versión es incompleta o inválida. Inténtalo más tarde.';
+
+  @override
+  String get forkUpdateUnsupported =>
+      'Este dispositivo no admite actualizaciones desde la aplicación';
+
+  @override
+  String get forkUpdateCancelled => 'Descarga cancelada';
+
+  @override
+  String get forkUpdatePermissionRequired =>
+      'Permite que AVA Fork instale aplicaciones y vuelve aquí para instalar';
+
+  @override
+  String get forkUpdateOpenPermissionSettings =>
+      'Permitir instalación de aplicaciones';
+
+  @override
+  String get forkUpdateWrongPackage =>
+      'El instalador pertenece a otra aplicación y se ha bloqueado';
+
+  @override
+  String get forkUpdateSignatureMismatch =>
+      'La firma no coincide con esta aplicación y se ha bloqueado';
 }

@@ -27,7 +27,25 @@
 
 ---
 
-## Get it
+## This fork
+
+This is gooesman's independently maintained fork of freefrank's AVA. Local
+features and all skins are available without Pro verification or payment.
+The original author's MIT notice and credits remain intact. Preview builds
+come from this fork's [builds](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml);
+the download links below belong to the original project. Windows is named
+**AVA-pc**. Settings → Software updates checks this fork's published releases and
+lets you download and open the installer. Android uses the same update page;
+installation still requires the system confirmation.
+
+The Android preview is **AVA Fork** (`pro.dotslash.ava.fork`), an ARM64 debug
+build with a stable fork signing key. It installs alongside the original AVA
+and the earlier **AVA dev** preview, leaving their data intact. Import each
+account's exported `.maFile` once; later AVA Fork builds with the same signature
+and a higher version code update in place. See the
+[migration steps](docs/windows-steam-switch.md#android-installation-and-migration).
+
+## Original project downloads
 
 | | |
 |---|---|
@@ -68,7 +86,9 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   wallet/pending-funds and market-listing cards, friends and two-sided trade-offer
   editing, and an entry to Steam's official backup-login-code flow. Startup
   verification can be disabled in Settings while keeping account files encrypted at rest.
-  The Android preview is a separate **AVA dev** app with its own data.
+  The Android preview is a separate **AVA Fork** app with its own data.
+  Its home screen stays focused on codes and accounts in portrait and landscape;
+  long-press an account to open the overview, market or friends when needed.
 
 - **Inventory rarity and prices (branch preview)** — restrained rarity-colored
   icon borders in the inventory and trade picker. Right-click, long-press or
@@ -165,7 +185,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 958 tests
+flutter test                       # 1023 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.
@@ -237,8 +257,8 @@ ideograph blocks (simplified + traditional). Latin-only fonts cover ASCII.
 
 ## Credits
 
-AVA is an independent project, written from scratch in Flutter — not a fork or
-port. It was inspired by the classic **Steam Desktop Authenticator** (by
+The original AVA by freefrank was written from scratch in Flutter. This repository
+is a fork of that project. AVA was inspired by **Steam Desktop Authenticator** (by
 Jessecar96 and contributors), and stays compatible with its `.maFile` format so
 existing users can migrate. Steam auth protocol references:
 [SteamAuth](https://github.com/geel9/SteamAuth),
@@ -247,11 +267,13 @@ existing users can migrate. Steam auth protocol references:
 ## Privacy
 
 Your Steam data has no backend: accounts, secrets and codes stay on your device
-and every Steam request goes straight to Valve. Four other services are
-involved and are named here rather than buried — Pro entitlement checks, the
-launch-time update check (a single GET, off-switchable), in-app feedback (only
-when you press send), and ads on the Play build's free tier. The full
-[Privacy Policy](PRIVACY.md) ([简体中文](PRIVACY_ZH.md)) covers each.
+and every Steam request goes straight to Valve. This fork disables Pro
+verification, payments and advertising, and has no default upstream update
+check. Feedback opens this fork's GitHub issues without sending a report or
+log automatically. Optional WebDAV synchronization uses your chosen server.
+See the [fork privacy notice](docs/fork-privacy.md)
+([简体中文](docs/fork-privacy-zh.md)); the original policies remain in the
+repository for reference.
 
 ## License
 

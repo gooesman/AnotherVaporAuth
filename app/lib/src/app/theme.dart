@@ -330,8 +330,10 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
     pageTransitionsTheme: PageTransitionsTheme(builders: {
       for (final platform in TargetPlatform.values)
         platform: AvaPageTransitionsBuilder(
-          delegate: base.pageTransitionsTheme.builders[platform] ??
-              const ZoomPageTransitionsBuilder(),
+          delegate: platform == TargetPlatform.android
+              ? const AvaAndroidPageTransitionsBuilder()
+              : base.pageTransitionsTheme.builders[platform] ??
+                  const ZoomPageTransitionsBuilder(),
           color: t.bg,
           gradient: t.bgGradient,
         ),

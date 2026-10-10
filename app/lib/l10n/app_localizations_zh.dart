@@ -2370,6 +2370,121 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamClientCurrentBadge => '当前登录';
+
+  @override
+  String get forkLocalFeaturesTitle => '本地功能已开放';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      '此独立分支无需 Pro 验证即可使用全部本地功能。原作者的在线服务和订阅不包含在内。';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      '此 AVA 独立分支将 Steam 账户与验证器密钥保存在本设备上，Steam 请求直连 Valve。可选同步只有在你配置自己的服务器后才启用，账户数据在本机加密后再同步。本地功能无需 Pro 验证；此构建不使用广告、支付服务或原版更新检查。反馈只打开本分支的 GitHub Issues，不会自动发送报告或日志。没有跟踪或统计。请阅读下方本分支的隐私说明，继续即表示接受。';
+
+  @override
+  String get forkUpdateTitle => '软件更新';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return '当前版本 $version';
+  }
+
+  @override
+  String get forkUpdateCheck => '检查更新';
+
+  @override
+  String get forkUpdateChecking => '正在检查更新…';
+
+  @override
+  String get forkUpdateNoRelease => '暂时没有可用的发布版本';
+
+  @override
+  String get forkUpdateUpToDate => '当前已是最新版本';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return '发现新版本 $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => '更新说明';
+
+  @override
+  String get forkUpdateNoNotes => '此版本没有附带更新说明';
+
+  @override
+  String get forkUpdateDownload => '下载更新';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return '正在下载 $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => '取消下载';
+
+  @override
+  String get forkUpdateReady => '安装包已下载并通过校验';
+
+  @override
+  String get forkUpdateInstall => '安装更新';
+
+  @override
+  String get forkUpdateInstallTitle => '安装此更新？';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      '将打开系统安装页面。若提示，请允许 AVA Fork 安装应用，然后按系统提示完成更新。';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      '确认后将启动安装程序并关闭 AVA-pc。请先完成当前操作，再按安装程序提示更新。';
+
+  @override
+  String get forkUpdateInstallConfirm => '继续安装';
+
+  @override
+  String get forkUpdateInstallStarted => '已打开系统安装程序，请按提示完成更新';
+
+  @override
+  String get forkUpdateCheckFailed => '检查更新失败，请稍后重试';
+
+  @override
+  String get forkUpdateDownloadFailed => '下载失败，请重试';
+
+  @override
+  String get forkUpdateHashFailed => '安装包校验失败，已阻止安装，请重新下载';
+
+  @override
+  String get forkUpdateInstallFailed => '无法启动安装程序，请重试';
+
+  @override
+  String get forkUpdateNoCompatibleAsset => '此版本没有适用于本设备的安装包';
+
+  @override
+  String get forkUpdateUnverifiable => '此安装包缺少可信校验信息，无法下载或安装';
+
+  @override
+  String get forkUpdateInvalidMetadata => '发布信息不完整或无效，请稍后重试';
+
+  @override
+  String get forkUpdateUnsupported => '此设备暂不支持应用内更新';
+
+  @override
+  String get forkUpdateCancelled => '下载已取消';
+
+  @override
+  String get forkUpdatePermissionRequired => '请先允许 AVA Fork 安装应用，再返回此页面安装';
+
+  @override
+  String get forkUpdateOpenPermissionSettings => '允许安装应用';
+
+  @override
+  String get forkUpdateWrongPackage => '安装包不属于此应用，已阻止安装';
+
+  @override
+  String get forkUpdateSignatureMismatch => '安装包签名与当前应用不一致，已阻止安装';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -4746,4 +4861,119 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamClientCurrentBadge => '目前登入';
+
+  @override
+  String get forkLocalFeaturesTitle => '本機功能已開放';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      '此獨立分支無需 Pro 驗證即可使用全部本機功能。不包含原作者的線上服務與訂閱。';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      '此 AVA 獨立分支將 Steam 帳戶與驗證器密鑰保存在本裝置上，Steam 請求直接連線至 Valve。選用同步只有在你設定自己的伺服器後才啟用，帳戶資料在本機加密後再同步。本機功能無需 Pro 驗證；此版本不使用廣告、付款服務或原版更新檢查。意見回饋只開啟本分支的 GitHub Issues，不會自動傳送報告或記錄。沒有追蹤或統計。請閱讀下方本分支的隱私說明，繼續即表示接受。';
+
+  @override
+  String get forkUpdateTitle => '軟體更新';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return '目前版本 $version';
+  }
+
+  @override
+  String get forkUpdateCheck => '檢查更新';
+
+  @override
+  String get forkUpdateChecking => '正在檢查更新…';
+
+  @override
+  String get forkUpdateNoRelease => '暫時沒有可用的發布版本';
+
+  @override
+  String get forkUpdateUpToDate => '目前已是最新版本';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return '發現新版本 $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => '更新說明';
+
+  @override
+  String get forkUpdateNoNotes => '此版本沒有附上更新說明';
+
+  @override
+  String get forkUpdateDownload => '下載更新';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return '正在下載 $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => '取消下載';
+
+  @override
+  String get forkUpdateReady => '安裝檔已下載並通過驗證';
+
+  @override
+  String get forkUpdateInstall => '安裝更新';
+
+  @override
+  String get forkUpdateInstallTitle => '安裝此更新？';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      '將開啟系統安裝畫面。若出現提示，請允許 AVA Fork 安裝應用程式，再依系統指示完成更新。';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      '確認後將啟動安裝程式並關閉 AVA-pc。請先完成目前操作，再依安裝程式指示更新。';
+
+  @override
+  String get forkUpdateInstallConfirm => '繼續安裝';
+
+  @override
+  String get forkUpdateInstallStarted => '已開啟系統安裝程式，請依指示完成更新';
+
+  @override
+  String get forkUpdateCheckFailed => '無法檢查更新，請稍後再試';
+
+  @override
+  String get forkUpdateDownloadFailed => '下載失敗，請重試';
+
+  @override
+  String get forkUpdateHashFailed => '安裝檔驗證失敗，已阻止安裝，請重新下載';
+
+  @override
+  String get forkUpdateInstallFailed => '無法啟動安裝程式，請重試';
+
+  @override
+  String get forkUpdateNoCompatibleAsset => '此版本沒有適用於本裝置的安裝檔';
+
+  @override
+  String get forkUpdateUnverifiable => '此安裝檔缺少可信的校驗資訊，無法下載或安裝';
+
+  @override
+  String get forkUpdateInvalidMetadata => '發布資訊不完整或無效，請稍後再試';
+
+  @override
+  String get forkUpdateUnsupported => '此裝置暫不支援應用程式內更新';
+
+  @override
+  String get forkUpdateCancelled => '已取消下載';
+
+  @override
+  String get forkUpdatePermissionRequired => '請先允許 AVA Fork 安裝應用程式，再返回此頁安裝';
+
+  @override
+  String get forkUpdateOpenPermissionSettings => '允許安裝應用程式';
+
+  @override
+  String get forkUpdateWrongPackage => '安裝檔不屬於此應用程式，已阻止安裝';
+
+  @override
+  String get forkUpdateSignatureMismatch => '安裝檔簽章與目前應用程式不符，已阻止安裝';
 }

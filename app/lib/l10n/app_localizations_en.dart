@@ -2503,4 +2503,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamClientCurrentBadge => 'Currently signed in';
+
+  @override
+  String get forkLocalFeaturesTitle => 'Local features unlocked';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      'All local features in this independent fork are available without Pro verification. The original author’s online services and subscriptions are not included.';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      'This independent AVA fork stores your Steam accounts and authenticator secrets on this device. Steam requests go directly to Valve. Optional synchronization is off until you configure your own server; account data is encrypted locally before synchronization. Local features require no Pro verification. This build uses no advertising, payment service or upstream update check. Feedback only opens this fork’s GitHub issue page; reports and logs are not sent automatically. There is no tracking or analytics. Read this fork’s privacy notice below. By continuing, you accept it.';
+
+  @override
+  String get forkUpdateTitle => 'Software updates';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return 'Current version $version';
+  }
+
+  @override
+  String get forkUpdateCheck => 'Check for updates';
+
+  @override
+  String get forkUpdateChecking => 'Checking for updates…';
+
+  @override
+  String get forkUpdateNoRelease => 'No published release is available yet';
+
+  @override
+  String get forkUpdateUpToDate => 'You are up to date';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return 'New version $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => 'Release notes';
+
+  @override
+  String get forkUpdateNoNotes => 'No release notes were provided';
+
+  @override
+  String get forkUpdateDownload => 'Download update';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return 'Downloading $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => 'Cancel download';
+
+  @override
+  String get forkUpdateReady => 'The installer is downloaded and verified';
+
+  @override
+  String get forkUpdateInstall => 'Install update';
+
+  @override
+  String get forkUpdateInstallTitle => 'Install this update?';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      'The system installer will open. If prompted, allow AVA Fork to install apps, then follow the system instructions.';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      'The installer will open and AVA-pc will close. Finish your current work first, then follow the installer instructions.';
+
+  @override
+  String get forkUpdateInstallConfirm => 'Continue installation';
+
+  @override
+  String get forkUpdateInstallStarted =>
+      'The system installer is open; follow its instructions';
+
+  @override
+  String get forkUpdateCheckFailed =>
+      'Could not check for updates. Try again later.';
+
+  @override
+  String get forkUpdateDownloadFailed => 'Download failed. Please retry.';
+
+  @override
+  String get forkUpdateHashFailed =>
+      'The installer failed verification and was blocked. Download it again.';
+
+  @override
+  String get forkUpdateInstallFailed =>
+      'Could not open the installer. Please retry.';
+
+  @override
+  String get forkUpdateNoCompatibleAsset =>
+      'This release has no installer for this device';
+
+  @override
+  String get forkUpdateUnverifiable =>
+      'This installer has no trusted checksum and cannot be downloaded or installed';
+
+  @override
+  String get forkUpdateInvalidMetadata =>
+      'Release information is incomplete or invalid. Try again later.';
+
+  @override
+  String get forkUpdateUnsupported =>
+      'In-app updates are not supported on this device';
+
+  @override
+  String get forkUpdateCancelled => 'Download cancelled';
+
+  @override
+  String get forkUpdatePermissionRequired =>
+      'Allow AVA Fork to install apps, then return here to install';
+
+  @override
+  String get forkUpdateOpenPermissionSettings => 'Allow app installs';
+
+  @override
+  String get forkUpdateWrongPackage =>
+      'This installer belongs to another app and was blocked';
+
+  @override
+  String get forkUpdateSignatureMismatch =>
+      'The installer signature does not match this app and was blocked';
 }

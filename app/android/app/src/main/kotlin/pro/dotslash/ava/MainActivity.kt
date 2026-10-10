@@ -13,6 +13,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        AppUpdateChannel.register(this, flutterEngine)
 
         // The display's rounded-corner radius. Flutter has no equivalent:
         // MediaQuery's padding / viewPadding / systemGestureInsets cover the
@@ -51,23 +52,10 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
-        // Play-channel native services (UMP consent, Google sign-in, Play
-        // Billing, AdMob) live entirely in the `play` flavor sourceset
-        // (src/play/kotlin/pro/dotslash/ava/play/). Probe by reflection so
-        // src/main never references a single Google class: on the cn flavor
-        // the class simply doesn't exist and the probe is a silent no-op.
-        // This is the ONLY reflection hook — everything else stays in play/.
-        try {
-            Class.forName("pro.dotslash.ava.play.PlayChannel")
-                .getMethod(
-                    "register",
-                    FlutterEngine::class.java,
-                    android.app.Activity::class.java,
-                )
-                .invoke(null, flutterEngine, this)
-        } catch (_: ClassNotFoundException) {
-            // cn flavor: expected — no play classes in this APK by design.
-        }
+        // This fork has no Pro/paywall services. Do not register PlayChannel,
+        // even if a play-flavor build includes its optional classes. This
+        // keeps AVA from initializing its ads, billing, consent or sign-in
+        // bridge; the cn flavor additionally excludes those dependencies.
     }
 
     /// The larger of the two bottom corner radii, in **physical pixels** (Dart

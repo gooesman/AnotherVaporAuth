@@ -30,9 +30,7 @@ import 'account_dashboard.dart';
 import 'backup_codes_screen.dart';
 import 'friends/friends_screen.dart';
 import 'steam_client_screen.dart';
-import 'paywall_screen.dart';
 import 'pending/pending_screen.dart';
-import 'widgets/ava_banner.dart';
 import 'import_helper.dart';
 import 'pending_login.dart';
 import 'device_sessions_screen.dart';
@@ -325,35 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
     if (hasAccounts) _maybeShowTutorial();
 
-    // One-time 0.90 migration notice: the stored skin moved behind Pro.
-    ref.listen(skinPaywallNoticeProvider, (_, active) {
-      if (active != true) return;
-      final messenger = ScaffoldMessenger.of(context);
-      void close() {
-        messenger.hideCurrentMaterialBanner();
-        ref.read(skinPaywallNoticeProvider.notifier).dismiss();
-      }
-
-      messenger.showMaterialBanner(MaterialBanner(
-        content: Text(l.skinProNotice),
-        actions: [
-          TextButton(
-            onPressed: () {
-              close();
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const PaywallScreen()));
-            },
-            child: Text(l.proOpen),
-          ),
-          TextButton(onPressed: close, child: Text(l.skinProNoticeDismiss)),
-        ],
-      ));
-    });
-
     return Scaffold(
-      // Banner ad slot: play flavor, free tier only; collapses to nothing
-      // everywhere else. Never rendered on screens with confirm actions.
-      bottomNavigationBar: const AvaBannerSlot(),
       // Header removed — settings is a floating button in the bottom-right.
       // endFloat already lifts the FAB clear of minViewPadding.bottom, so the
       // gesture pill is handled — but it sits in the bottom-*right* corner,
@@ -401,7 +371,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       // Tapping an account polls its pending sign-in requests.
                       checkPendingLogins(context, ref, accounts[i],
                           silent: true);
-                      if (c.maxWidth < 640) _openDashboard(accounts[i]);
                     },
                     onAdd: () => _addMenu(context),
                     nameMode: _nameMode,
@@ -1194,9 +1163,11 @@ class _SidebarRow extends ConsumerWidget {
                 child: Icon(icon, color: c, size: context.r(18)),
               ),
               SizedBox(width: context.r(14)),
-              Text(label,
-                  style: TextStyle(
-                      color: color ?? t.text, fontSize: context.r(14.5))),
+              Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        color: color ?? t.text, fontSize: context.r(14.5))),
+              ),
             ],
           ),
         ),
@@ -1229,29 +1200,35 @@ class _SidebarRow extends ConsumerWidget {
           ),
           child: Material(
             type: MaterialType.transparency,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: context.rInsets(h: 16, top: 6, bottom: 8),
-                  child: Text(
-                    account.accountName ??
-                        account.personaName ??
-                        '${account.steamId}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: t.muted,
-                        fontSize: context.r(12.5),
-                        letterSpacing: 0.5),
+            child: SingleChildScrollView(
+              padding: context.rSafeInsets(all: 0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: context.rInsets(h: 16, top: 6, bottom: 8),
+                    child: Text(
+                      account.accountName ??
+                          account.personaName ??
+                          '${account.steamId}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: t.muted,
+                          fontSize: context.r(12.5),
+                          letterSpacing: 0.5),
+                    ),
                   ),
-                ),
-                row(Icons.inventory_2_outlined, l.actionMarket, 'market'),
-                row(Icons.family_restroom, l.famAccountAction, 'family'),
-                row(Icons.devices_outlined, l.deviceSessionsAction, 'devices'),
-                row(Icons.vpn_key_outlined, l.keyRedeemAction, 'redeem'),
-              ],
+                  row(Icons.dashboard_outlined, l.dashboardTitle, 'dashboard'),
+                  row(Icons.inventory_2_outlined, l.actionMarket, 'market'),
+                  row(Icons.people_outline, l.friendsTitle, 'friends'),
+                  row(Icons.key_outlined, l.backupCodesTitle, 'backup-codes'),
+                  row(Icons.family_restroom, l.famAccountAction, 'family'),
+                  row(Icons.devices_outlined, l.deviceSessionsAction, 'devices'),
+                  row(Icons.vpn_key_outlined, l.keyRedeemAction, 'redeem'),
+                ],
+              ),
             ),
           ),
         ),
@@ -1716,6 +1693,13 @@ class _MainPanel extends ConsumerWidget {
         ],
       ),
     );
+    // The phone home stays a token and account picker. Its richer account
+    // tools are opened explicitly from the avatar or account action menu.
+    final touchPlatform = switch (Theme.of(context).platform) {
+      TargetPlatform.android || TargetPlatform.iOS => true,
+      _ => false,
+    };
+    if (!wide || touchPlatform) return header;
     final dashboard = AccountDashboard(
       key: ValueKey(('dashboard', account.steamId, account.fromPortable, wide)),
       account: account,
@@ -1723,12 +1707,6 @@ class _MainPanel extends ConsumerWidget {
       onAction: onAction,
       onExpand: onOpenDashboard,
     );
-    if (!wide) {
-      return Column(mainAxisSize: MainAxisSize.min, children: [
-        header,
-        Padding(padding: context.rInsets(h: 14, bottom: 4), child: dashboard),
-      ]);
-    }
     return ListView(
       padding: context.rSafeInsets(left: 28, right: 96, top: 52, bottom: 96),
       children: [

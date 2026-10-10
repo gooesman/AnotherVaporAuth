@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 
 /// Stamped by CI: --dart-define=AVA_VERSION=x.y.z
 const appVersion = String.fromEnvironment('AVA_VERSION', defaultValue: 'dev');
+const appDisplayName = 'AVA-pc';
 
 const _regKey = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA';
 
@@ -338,8 +339,15 @@ class InstallEngine {
     await _ps('''
 \$ws = New-Object -ComObject WScript.Shell
 foreach (\$sf in @('Programs','Desktop')) {
-  \$lnk = Join-Path \$ws.SpecialFolders(\$sf) 'AVA.lnk'
-  if (Test-Path \$lnk) { Remove-Item \$lnk -Force }
+  foreach (\$name in @('$appDisplayName.lnk','AVA.lnk')) {
+    \$path = Join-Path \$ws.SpecialFolders(\$sf) \$name
+    if (Test-Path -LiteralPath \$path -PathType Leaf) {
+      \$link = \$ws.CreateShortcut(\$path)
+      if ([string]::Equals(\$link.TargetPath, '${_q(p.join(dir, 'ava.exe'))}', [StringComparison]::OrdinalIgnoreCase)) {
+        Remove-Item -LiteralPath \$path -Force
+      }
+    }
+  }
 }''');
     progress(0.6);
     log('removing registry entry');
@@ -402,11 +410,25 @@ foreach (\$sf in @('Programs','Desktop')) {
       String specialFolder, String target, String workDir) async {
     await _ps('''
 \$ws = New-Object -ComObject WScript.Shell
-\$lnk = \$ws.CreateShortcut((Join-Path \$ws.SpecialFolders('$specialFolder') 'AVA.lnk'))
-\$lnk.TargetPath = '${_q(target)}'
-\$lnk.WorkingDirectory = '${_q(workDir)}'
-\$lnk.IconLocation = '${_q(target)},0'
-\$lnk.Save()''');
+\$folder = \$ws.SpecialFolders('$specialFolder')
+\$path = Join-Path \$folder '$appDisplayName.lnk'
+\$exists = Test-Path -LiteralPath \$path
+\$lnk = \$ws.CreateShortcut(\$path)
+# Never replace a same-named shortcut that launches a different program.
+if (-not \$exists -or [string]::Equals(\$lnk.TargetPath, '${_q(target)}', [StringComparison]::OrdinalIgnoreCase)) {
+  \$lnk.TargetPath = '${_q(target)}'
+  \$lnk.WorkingDirectory = '${_q(workDir)}'
+  \$lnk.IconLocation = '${_q(target)},0'
+  \$lnk.Save()
+  # Migrate only the legacy link for this exact installation.
+  \$oldPath = Join-Path \$folder 'AVA.lnk'
+  if (Test-Path -LiteralPath \$oldPath -PathType Leaf) {
+    \$oldLink = \$ws.CreateShortcut(\$oldPath)
+    if ([string]::Equals(\$oldLink.TargetPath, '${_q(target)}', [StringComparison]::OrdinalIgnoreCase)) {
+      Remove-Item -LiteralPath \$oldPath -Force
+    }
+  }
+}''');
   }
 
   static Future<void> _registerUninstall(
@@ -423,7 +445,7 @@ foreach (\$sf in @('Programs','Desktop')) {
       }
     }
 
-    await add('DisplayName', 'AVA');
+    await add('DisplayName', appDisplayName);
     await add('DisplayVersion', appVersion);
     await add('Publisher', 'dotSlash');
     await add('InstallLocation', dir);

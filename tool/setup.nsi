@@ -40,7 +40,7 @@ ManifestDPIAware true
   !define APPVER "0.0.0"
 !endif
 
-Name "AVA Setup"
+Name "AVA-pc Setup"
 OutFile "${OUTFILE}"
 ; AVA installs under %LOCALAPPDATA%\Programs and registers uninstall in HKCU,
 ; so it needs no elevation — and asking for it would be a new, scarier prompt
@@ -54,8 +54,8 @@ SetCompressor /SOLID lzma
 !endif
 
 VIProductVersion "${APPVER}.0"
-VIAddVersionKey "ProductName" "AVA"
-VIAddVersionKey "FileDescription" "AVA — Steam authenticator (setup)"
+VIAddVersionKey "ProductName" "AVA-pc"
+VIAddVersionKey "FileDescription" "AVA-pc — Steam authenticator (setup)"
 VIAddVersionKey "FileVersion" "${APPVER}"
 VIAddVersionKey "ProductVersion" "${APPVER}"
 VIAddVersionKey "LegalCopyright" "MIT licensed. Community project, unaffiliated with Valve."

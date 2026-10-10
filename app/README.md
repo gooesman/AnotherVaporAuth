@@ -8,6 +8,10 @@ migration.
 
 See the design spec: `../docs/specs/2026-06-29-flutter-rewrite-design.md`
 
+This fork displays **AVA-pc** on Windows and **AVA Fork** on Android. Windows
+keeps the existing executable and data paths; the Android preview has a separate
+package and requires the one-time account import described below.
+
 ## Architecture
 
 ```
@@ -34,7 +38,8 @@ Implemented and statically verified end-to-end:
 
 - maFile compatibility (PBKDF2 50k/SHA1 + AES-256-CBC, byte-compatible)
 - TOTP codes + countdown, copy, account list/reorder
-- Encryption: unlock, set/change/remove passkey
+- Encryption: mandatory local PIN, PIN changes, and optional startup verification
+  (disabling verification keeps the account files encrypted)
 - Import existing `.maFile`
 - **Pending center** (tabbed): trade/market confirmations with **batch**
   accept/reject; **trade offers** (received/sent/history, expandable cards,
@@ -63,8 +68,22 @@ Implemented and statically verified end-to-end:
   with `EPurchaseResultDetail` mapped to per-reason copy. **Success path verified
   on a live account** (2026-07-29); the individual rejection codes and the
   receipt's field spelling are still unconfirmed
-- **AVA Pro** — channel split (`play` / `cn` flavors), Ed25519 entitlement tokens
-  verified offline, paywalled skins, AdMob banner + rewarded VIP (play only)
+- **Fork local features** — all skins work without Pro verification; payments,
+  ads and upstream entitlement requests are disabled. Legacy entitlement code
+  remains isolated for compatibility testing, with no user-facing enable switch.
+  The CN preview contains no ads or billing classes.
+- **Phone home** — token and account list in both orientations; select an account
+  without opening its overview. Long-press for overview, market, friends or backup
+  login codes. Wallet and market requests begin when those tools are opened.
+  Desktop keeps the overview beside the account list.
+- **Android back gestures** — no page movement during the gesture; a short fade
+  after a committed back action, with the current page retained on cancellation.
+  Xiaomi 15 Pro behavior still needs a device check.
+- **Software updates** — Settings opens this fork's public GitHub release check.
+  Download is explicit and cancellable; file size and SHA-256 are verified before
+  a separate install confirmation. Android uses its system permission and installer,
+  while Windows starts the installer and then closes AVA-pc. No release, network
+  failure and an unverifiable package are distinct states, never silent installation.
 - **Block screenshots** — opt-in `FLAG_SECURE` toggle (Android only; off by
   default, since it also blanks screen sharing and feedback screenshots)
 - **Versioned privacy consent** — the first-run notice is tracked by revision,
@@ -84,7 +103,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **958 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1023 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -109,9 +128,18 @@ Both **Linux desktop and Android release builds are verified**:
   `--target-platform android-arm64`, since `lib/` is ~71% of them.
   Android builds use the NDK version selected by Flutter.
 
+This fork's Android workflow produces an **ARM64 CN debug preview** named
+**AVA Fork** (`pro.dotslash.ava.fork`), signed with a stable private fork key.
+It installs alongside the original AVA and the earlier AVA dev preview, with a
+new empty vault. Import accounts once using their exported `.maFile` files;
+local settings and the app PIN are separate. Later APKs with the same signature
+and a higher Android version code update AVA Fork in place. Do not uninstall the
+old app to bypass a signature mismatch. See the
+[installation and migration guide](../docs/windows-steam-switch.md#android-installation-and-migration).
+
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 958 tests
+flutter test                       # 1023 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 
@@ -137,9 +165,15 @@ flutter config --android-sdk ~/Android/Sdk
 Notes:
 - `android/build.gradle.kts` forces every plugin's `compileSdk` to 36 in
   `afterEvaluate` (file_picker 8.x pins 34, which breaks the release build).
-- Release signing comes from `android/key.properties` (git-ignored). Without it,
-  release APKs fall back to the debug key so `flutter run --release` still works,
-  but `bundleRelease` **fails closed** — a store bundle can never ship debug-signed.
+- The fork preview workflow sets `ORG_GRADLE_PROJECT_avaForkPreview=true`
+  (equivalent to Gradle `-PavaForkPreview=true`). This selects the AVA Fork
+  package/name and uses `android/key.properties` (git-ignored) to sign the debug
+  APK. Missing signing fields or the keystore fail the build; no temporary debug
+  key is substituted. Without that property, ordinary debug builds remain
+  **AVA dev** and do not update AVA Fork.
+- Release signing also comes from `android/key.properties`. Release artifacts
+  fail closed without it; `-PallowDebugSigning=true` explicitly permits the
+  public debug-key fallback for local experiments only.
 
 ## Toolchain
 

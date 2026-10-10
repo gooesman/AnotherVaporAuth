@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "pro.dotslash" "\0"
-            VALUE "FileDescription", "ava_installer" "\0"
+            VALUE "FileDescription", "AVA-pc Setup" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "ava_installer" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 pro.dotslash. All rights reserved." "\0"
             VALUE "OriginalFilename", "ava_installer.exe" "\0"
-            VALUE "ProductName", "ava_installer" "\0"
+            VALUE "ProductName", "AVA-pc" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

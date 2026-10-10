@@ -26,7 +26,20 @@
 
 ---
 
-## 下载
+## 关于本分支
+
+这是 gooesman 基于 freefrank 的 AVA 维护的独立 Fork。本地功能和所有皮肤直接开放，
+无需 Pro 验证或付费；保留原作者的 MIT 许可及署名。试用包来自
+[本分支构建](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml)，
+下方下载链接仍属于原项目。电脑端名为 **AVA-pc**，可在设置里的“软件更新”中查询
+本分支正式发布的版本、下载并打开安装程序；手机端也有同样入口，由系统确认安装。
+
+Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固定 Fork
+签名的 ARM64 debug 构建，可与原版 AVA、此前的 **AVA dev** 同时安装并保留旧应用数据。
+首次需导出各账号的 `.maFile` 后导入新应用；后续相同签名且版本号递增的 AVA Fork
+可直接覆盖更新。详见[安装与迁移步骤](docs/windows-steam-switch.md#android-installation-and-migration)。
+
+## 原项目下载
 
 | | |
 |---|---|
@@ -54,7 +67,8 @@
 - **账户概览（本分支试用功能）** —— 电脑和 Android 共用钱包余额、待到账金额、
   在售/暂挂/待确认物品概览，可选择显示的卡片；新增好友列表、双向交易报价编辑
   和 Steam 官方备用登录码入口。设置中可关闭启动身份验证，账户文件仍保持加密。
-  Android 试用包为独立的 **AVA dev**，不覆盖已安装版本；详见[试用说明](docs/windows-steam-switch.md)。
+  Android 试用包为独立的 **AVA Fork**，首次安装不覆盖旧应用；详见[试用说明](docs/windows-steam-switch.md)。
+  手机首页在竖屏和横屏下都只保留令牌和账号列表，长按账号后再按需打开概览、市场或好友。
 
 - **库存品质与查价（本分支试用功能）** —— 库存和交易选物图标增加淡品质色细边框。
   右键、长按或点击物品菜单可按需查看 Steam 市场参考价与币种，并打开对应市场页面，
@@ -116,7 +130,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 958 项测试
+flutter test                       # 1023 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。
@@ -181,7 +195,7 @@ Noto Sans SC 子集化到 CJK 汉字区块（简体 + 繁体）。拉丁字体�
 
 ## 致谢
 
-AVA 是一个用 Flutter 从零写起的独立项目 —— 既非 fork 也非移植，灵感来自
+原版 AVA 由 freefrank 用 Flutter 从零编写，本仓库是该项目的 Fork。AVA 的灵感来自
 老牌工具 **Steam Desktop Authenticator**（Jessecar96 及贡献者开发），并保持与其
 `.maFile` 格式兼容，方便老用户迁移。Steam 认证协议参考：
 [SteamAuth](https://github.com/geel9/SteamAuth)、
@@ -190,9 +204,10 @@ AVA 是一个用 Flutter 从零写起的独立项目 —— 既非 fork 也非�
 ## 隐私
 
 你的 Steam 数据没有后端：账户、密钥与验证码全部留在设备上，所有 Steam 请求直连
-Valve。另有四处服务会联网，写在这里而不是藏起来——Pro 权益校验、启动时的更新检查
-（单次 GET，可关闭）、应用内反馈（仅在你按下发送时）、以及 Play 版免费档的广告。
-详见[隐私政策](PRIVACY_ZH.md)（[English](PRIVACY.md)）。
+Valve。本分支关闭 Pro 验证、支付和广告，默认不检查原版更新。反馈入口打开本分支的
+GitHub Issues，不自动发送报告或日志。可选的 WebDAV 同步使用你指定的服务器。
+详见[本分支隐私说明](docs/fork-privacy-zh.md)（[English](docs/fork-privacy.md)）；
+仓库内的原版隐私政策保留供参考。
 
 ## 许可
 

@@ -4426,6 +4426,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Currently signed in'**
   String get steamClientCurrentBadge;
+
+  /// No description provided for @forkLocalFeaturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local features unlocked'**
+  String get forkLocalFeaturesTitle;
+
+  /// No description provided for @forkLocalFeaturesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'All local features in this independent fork are available without Pro verification. The original author’s online services and subscriptions are not included.'**
+  String get forkLocalFeaturesBody;
+
+  /// No description provided for @forkPrivacyConsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This independent AVA fork stores your Steam accounts and authenticator secrets on this device. Steam requests go directly to Valve. Optional synchronization is off until you configure your own server; account data is encrypted locally before synchronization. Local features require no Pro verification. This build uses no advertising, payment service or upstream update check. Feedback only opens this fork’s GitHub issue page; reports and logs are not sent automatically. There is no tracking or analytics. Read this fork’s privacy notice below. By continuing, you accept it.'**
+  String get forkPrivacyConsentBody;
+
+  /// No description provided for @forkUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Software updates'**
+  String get forkUpdateTitle;
+
+  /// No description provided for @forkUpdateCurrentVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Current version {version}'**
+  String forkUpdateCurrentVersion(String version);
+
+  /// No description provided for @forkUpdateCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get forkUpdateCheck;
+
+  /// No description provided for @forkUpdateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates…'**
+  String get forkUpdateChecking;
+
+  /// No description provided for @forkUpdateNoRelease.
+  ///
+  /// In en, this message translates to:
+  /// **'No published release is available yet'**
+  String get forkUpdateNoRelease;
+
+  /// No description provided for @forkUpdateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'You are up to date'**
+  String get forkUpdateUpToDate;
+
+  /// No description provided for @forkUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'New version {version}'**
+  String forkUpdateAvailable(String version);
+
+  /// No description provided for @forkUpdateReleaseNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Release notes'**
+  String get forkUpdateReleaseNotes;
+
+  /// No description provided for @forkUpdateNoNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No release notes were provided'**
+  String get forkUpdateNoNotes;
+
+  /// No description provided for @forkUpdateDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download update'**
+  String get forkUpdateDownload;
+
+  /// No description provided for @forkUpdateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {progress}'**
+  String forkUpdateDownloading(String progress);
+
+  /// No description provided for @forkUpdateCancelDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel download'**
+  String get forkUpdateCancelDownload;
+
+  /// No description provided for @forkUpdateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'The installer is downloaded and verified'**
+  String get forkUpdateReady;
+
+  /// No description provided for @forkUpdateInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install update'**
+  String get forkUpdateInstall;
+
+  /// No description provided for @forkUpdateInstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install this update?'**
+  String get forkUpdateInstallTitle;
+
+  /// No description provided for @forkUpdateInstallAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'The system installer will open. If prompted, allow AVA Fork to install apps, then follow the system instructions.'**
+  String get forkUpdateInstallAndroid;
+
+  /// No description provided for @forkUpdateInstallWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'The installer will open and AVA-pc will close. Finish your current work first, then follow the installer instructions.'**
+  String get forkUpdateInstallWindows;
+
+  /// No description provided for @forkUpdateInstallConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue installation'**
+  String get forkUpdateInstallConfirm;
+
+  /// No description provided for @forkUpdateInstallStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'The system installer is open; follow its instructions'**
+  String get forkUpdateInstallStarted;
+
+  /// No description provided for @forkUpdateCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check for updates. Try again later.'**
+  String get forkUpdateCheckFailed;
+
+  /// No description provided for @forkUpdateDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed. Please retry.'**
+  String get forkUpdateDownloadFailed;
+
+  /// No description provided for @forkUpdateHashFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The installer failed verification and was blocked. Download it again.'**
+  String get forkUpdateHashFailed;
+
+  /// No description provided for @forkUpdateInstallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the installer. Please retry.'**
+  String get forkUpdateInstallFailed;
+
+  /// No description provided for @forkUpdateNoCompatibleAsset.
+  ///
+  /// In en, this message translates to:
+  /// **'This release has no installer for this device'**
+  String get forkUpdateNoCompatibleAsset;
+
+  /// No description provided for @forkUpdateUnverifiable.
+  ///
+  /// In en, this message translates to:
+  /// **'This installer has no trusted checksum and cannot be downloaded or installed'**
+  String get forkUpdateUnverifiable;
+
+  /// No description provided for @forkUpdateInvalidMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Release information is incomplete or invalid. Try again later.'**
+  String get forkUpdateInvalidMetadata;
+
+  /// No description provided for @forkUpdateUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app updates are not supported on this device'**
+  String get forkUpdateUnsupported;
+
+  /// No description provided for @forkUpdateCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Download cancelled'**
+  String get forkUpdateCancelled;
+
+  /// No description provided for @forkUpdatePermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow AVA Fork to install apps, then return here to install'**
+  String get forkUpdatePermissionRequired;
+
+  /// No description provided for @forkUpdateOpenPermissionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow app installs'**
+  String get forkUpdateOpenPermissionSettings;
+
+  /// No description provided for @forkUpdateWrongPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'This installer belongs to another app and was blocked'**
+  String get forkUpdateWrongPackage;
+
+  /// No description provided for @forkUpdateSignatureMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The installer signature does not match this app and was blocked'**
+  String get forkUpdateSignatureMismatch;
 }
 
 class _AppLocalizationsDelegate

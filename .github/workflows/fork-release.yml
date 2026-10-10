@@ -1,0 +1,181 @@
+name: Promote AVA Fork preview
+
+# Manual promotion only: never rebuild binaries or publish on push/tag.
+on:
+  workflow_dispatch:
+    inputs:
+      preview_run_id:
+        description: Successful Windows and Android preview run ID
+        required: true
+        type: string
+      release_notes:
+        description: User-facing notes for this exact preview build
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ava-fork-release
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.repository == 'gooesman/AnotherVaporAuth'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      # No checkout or executable from the source run is executed. Only the
+      # authenticated Actions API, flat artifact files and JSON are consumed.
+      - name: Verify source, packages and publish stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_RUN_ID: ${{ inputs.preview_run_id }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          import stat
+          import subprocess
+          import zipfile
+          from pathlib import Path
+          from urllib.parse import quote
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          if repo != 'gooesman/AnotherVaporAuth':
+              raise SystemExit('This workflow only publishes to the AVA fork')
+          run_id = os.environ['PREVIEW_RUN_ID']
+          if not re.fullmatch(r'[1-9][0-9]*', run_id):
+              raise SystemExit('The preview run ID must be a positive integer')
+          notes = os.environ['RELEASE_NOTES'].strip()
+          if not notes or len(notes.encode()) > 50000:
+              raise SystemExit('Provide release notes of at most 50 KB')
+
+          def api(endpoint, paginate=False):
+              args = ['gh', 'api', f'repos/{repo}/{endpoint}']
+              if paginate:
+                  args += ['--paginate', '--slurp']
+              return json.loads(subprocess.check_output(args))
+
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+
+          workflow_path = '.github/workflows/windows-preview.yml'
+          workflow = api('actions/workflows/windows-preview.yml')
+          run = api(f'actions/runs/{run_id}')
+          require(
+              run.get('workflow_id') == workflow['id'] and workflow.get('path') == workflow_path
+              and run.get('path', '').split('@', 1)[0] == workflow_path
+              and run.get('head_repository', {}).get('full_name') == repo
+              and run.get('repository', {}).get('full_name') == repo
+              and run.get('event') in ('push', 'workflow_dispatch')
+              and run.get('status') == 'completed' and run.get('conclusion') == 'success',
+              'Source must be a successful preview workflow in this repository',
+          )
+          commit = run['head_sha']
+          require(re.fullmatch(r'[0-9a-f]{40}', commit), 'Invalid source commit')
+          source = api(f'contents/app/pubspec.yaml?ref={commit}')
+          pubspec = base64.b64decode(source['content']).decode()
+          match = re.search(r'^version:\s*((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:\+[0-9]+)?\s*$', pubspec, re.M)
+          require(match is not None, 'Source commit must have a three-part version')
+          version = match[1]
+          build = 100000 + run['run_number']
+          require(0 < build <= 2100000000, 'Build number exceeds the Android limit')
+          tag = f'v{version}+{build}'
+          tag_pattern = re.compile(r'^v([0-9]+)\.([0-9]+)\.([0-9]+)\+([1-9][0-9]*)$')
+          releases = [item for page in api('releases?per_page=100', paginate=True) for item in page]
+          for release in releases:
+              require(release.get('tag_name') != tag, 'This release already exists; never overwrite a published package')
+              previous = tag_pattern.fullmatch(release.get('tag_name', ''))
+              if previous and not release.get('draft') and not release.get('prerelease'):
+                  require(int(previous[4]) < build, 'Refusing to publish a stale build')
+                  require(tuple(map(int, previous.group(1, 2, 3))) <= tuple(map(int, version.split('.'))), 'Refusing a version downgrade')
+          refs = api(f'git/matching-refs/tags/{quote(tag, safe="")}')
+          require(not any(ref['ref'] == f'refs/tags/{tag}' for ref in refs), 'The target tag already exists')
+
+          artifact_pages = api(f'actions/runs/{run_id}/artifacts?per_page=100', paginate=True)
+          artifacts = [item for page in artifact_pages for item in page['artifacts']]
+          output = Path(os.environ['RUNNER_TEMP']) / 'fork-release'
+          output.mkdir()
+          manifests = []
+          payloads = []
+          max_size = 512 * 1024 * 1024
+          platforms = [
+              ('windows-x64', f'AVA-windows-installer-preview-{commit}', 'windows-preview.json', f'AVA-pc-{tag}-windows-x64-setup.exe'),
+              ('android-arm64', f'AVA-android-preview-{commit}', 'android-preview.json', 'app-cn-debug.apk'),
+          ]
+          for platform, artifact_name, metadata_name, source_name in platforms:
+              matches = [a for a in artifacts if a['name'] == artifact_name and not a['expired']]
+              require(len(matches) == 1, f'Missing or ambiguous artifact: {artifact_name}')
+              artifact = matches[0]
+              require(0 < artifact['size_in_bytes'] <= max_size + 1024 * 1024, 'Artifact exceeds the size limit')
+              archive = output / f'{platform}.zip'
+              with archive.open('wb') as stream:
+                  subprocess.run(['gh', 'api', f'repos/{repo}/actions/artifacts/{artifact["id"]}/zip'], stdout=stream, check=True)
+              with archive.open('rb') as stream:
+                  archive_hash = hashlib.file_digest(stream, 'sha256').hexdigest()
+              require(artifact.get('digest') == 'sha256:' + archive_hash, 'Artifact archive digest mismatch')
+              with zipfile.ZipFile(archive) as bundle:
+                  entries = [item for item in bundle.infolist() if not item.is_dir()]
+                  require(len(entries) == 2 and {item.filename for item in entries} == {source_name, metadata_name}, 'Artifact must contain only the expected flat package and metadata')
+                  require(all(not stat.S_ISLNK(item.external_attr >> 16) for item in entries), 'Artifact symlinks are forbidden')
+                  require(bundle.getinfo(metadata_name).file_size <= 65536, 'Metadata is too large')
+                  metadata = json.loads(bundle.read(metadata_name).decode('utf-8-sig'))
+                  expected = {
+                      'schema': 1, 'repository': repo, 'workflow': workflow_path,
+                      'run_id': int(run_id), 'run_number': run['run_number'], 'commit': commit,
+                      'version': version, 'build': build, 'platform': platform, 'file': source_name,
+                  }
+                  require(all(type(metadata.get(key)) is type(value) and metadata[key] == value for key, value in expected.items()), 'Package provenance does not match the source run')
+                  # Rerunning only failed jobs can retain a successful artifact
+                  # from an earlier attempt of the same run/commit/build.
+                  require(type(metadata.get('run_attempt')) is int and 1 <= metadata['run_attempt'] <= run['run_attempt'], 'Invalid run attempt')
+                  size = metadata.get('size')
+                  require(type(size) is int and 0 < size <= max_size and bundle.getinfo(source_name).file_size == size, 'Package size mismatch')
+                  require(isinstance(metadata.get('sha256'), str) and re.fullmatch(r'[0-9a-f]{64}', metadata['sha256']), 'Invalid package digest')
+                  if platform == 'android-arm64':
+                      require(metadata.get('package') == 'pro.dotslash.ava.fork', 'Unexpected Android package identity')
+                      require(metadata.get('signer_sha256') == 'a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f', 'Unexpected Android signer')
+                  name = source_name if platform == 'windows-x64' else f'AVA-Fork-{tag}-android-arm64.apk'
+                  destination = output / name
+                  with bundle.open(source_name) as src, destination.open('wb') as dst:
+                      shutil.copyfileobj(src, dst)
+                  with destination.open('rb') as stream:
+                      digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+                  require(digest == metadata['sha256'], 'Package SHA-256 mismatch')
+                  manifests.append({**metadata, 'release_file': name, 'artifact_id': artifact['id'], 'artifact_sha256': archive_hash})
+                  payloads.append(destination)
+
+          provenance = output / 'release-provenance.json'
+          provenance.write_text(json.dumps({'tag': tag, 'source_run': run['html_url'], 'packages': manifests}, indent=2) + '\n')
+          checksums = output / 'SHA256SUMS.txt'
+          checksums.write_text(''.join(f'{item["sha256"]}  {item["release_file"]}\n' for item in manifests))
+          assets = payloads + [provenance, checksums]
+          notes_file = output / 'notes.md'
+          notes_file.write_text(notes + f'\n\nSource preview: {run["html_url"]}\nCommit: `{commit}`\nBuild: `{build}`\n')
+          # Keep the release hidden until GitHub confirms every uploaded byte.
+          # On failure, leave the draft for review; never replace existing assets.
+          subprocess.run(['gh', 'release', 'create', tag, *map(str, assets), '--repo', repo,
+                          '--target', commit, '--title', f'AVA Fork {tag}', '--notes-file', str(notes_file), '--draft'], check=True)
+          uploaded = api(f'releases/tags/{quote(tag, safe="")}')
+          require(uploaded.get('draft') and not uploaded.get('prerelease'), 'Expected a draft stable release')
+          require({a['name'] for a in uploaded['assets']} == {p.name for p in assets}, 'Unexpected release assets')
+          for path in assets:
+              asset = next(a for a in uploaded['assets'] if a['name'] == path.name)
+              with path.open('rb') as stream:
+                  digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+              require(asset['size'] == path.stat().st_size and asset.get('digest') == 'sha256:' + digest, 'Uploaded asset digest mismatch')
+          subprocess.run(['gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', '--latest'], check=True)
+          print(f'Published verified stable release {tag}')
+          PY

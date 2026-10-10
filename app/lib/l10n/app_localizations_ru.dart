@@ -2587,4 +2587,130 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamClientCurrentBadge => 'Текущий аккаунт';
+
+  @override
+  String get forkLocalFeaturesTitle => 'Локальные функции разблокированы';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      'Все локальные функции этой независимой версии доступны без проверки Pro. Онлайн-сервисы и подписки первоначального автора не включены.';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      'Эта независимая версия AVA хранит аккаунты Steam и секреты аутентификатора на устройстве. Запросы Steam идут напрямую в Valve. Необязательная синхронизация включается только после настройки вашего сервера; данные аккаунтов шифруются локально перед синхронизацией. Локальные функции не требуют проверки Pro. Здесь нет рекламы, платёжных сервисов или проверки обновлений исходного проекта. Обратная связь лишь открывает страницу задач этой версии на GitHub; отчёты и журналы автоматически не отправляются. Отслеживания и аналитики нет. Прочтите уведомление о конфиденциальности ниже. Продолжая, вы принимаете его.';
+
+  @override
+  String get forkUpdateTitle => 'Обновления';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return 'Текущая версия $version';
+  }
+
+  @override
+  String get forkUpdateCheck => 'Проверить обновления';
+
+  @override
+  String get forkUpdateChecking => 'Проверка обновлений…';
+
+  @override
+  String get forkUpdateNoRelease => 'Опубликованных выпусков пока нет';
+
+  @override
+  String get forkUpdateUpToDate => 'Установлена актуальная версия';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return 'Новая версия $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => 'Описание выпуска';
+
+  @override
+  String get forkUpdateNoNotes => 'Описание выпуска отсутствует';
+
+  @override
+  String get forkUpdateDownload => 'Скачать обновление';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return 'Загрузка: $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => 'Отменить загрузку';
+
+  @override
+  String get forkUpdateReady => 'Установщик загружен и проверен';
+
+  @override
+  String get forkUpdateInstall => 'Установить обновление';
+
+  @override
+  String get forkUpdateInstallTitle => 'Установить это обновление?';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      'Откроется системный установщик. При необходимости разрешите AVA Fork устанавливать приложения и следуйте инструкциям.';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      'Откроется установщик, а AVA-pc закроется. Сначала завершите текущую работу, затем следуйте инструкциям установщика.';
+
+  @override
+  String get forkUpdateInstallConfirm => 'Продолжить установку';
+
+  @override
+  String get forkUpdateInstallStarted =>
+      'Установщик открыт; следуйте его инструкциям';
+
+  @override
+  String get forkUpdateCheckFailed =>
+      'Не удалось проверить обновления. Повторите позже.';
+
+  @override
+  String get forkUpdateDownloadFailed => 'Ошибка загрузки. Повторите попытку.';
+
+  @override
+  String get forkUpdateHashFailed =>
+      'Проверка не пройдена, установка заблокирована. Скачайте файл снова.';
+
+  @override
+  String get forkUpdateInstallFailed => 'Не удалось открыть установщик.';
+
+  @override
+  String get forkUpdateNoCompatibleAsset =>
+      'В этом выпуске нет установщика для вашего устройства';
+
+  @override
+  String get forkUpdateUnverifiable =>
+      'Нет надёжной контрольной суммы; загрузка и установка заблокированы';
+
+  @override
+  String get forkUpdateInvalidMetadata =>
+      'Данные выпуска неполны или недействительны. Повторите позже.';
+
+  @override
+  String get forkUpdateUnsupported =>
+      'Обновление из приложения на этом устройстве не поддерживается';
+
+  @override
+  String get forkUpdateCancelled => 'Загрузка отменена';
+
+  @override
+  String get forkUpdatePermissionRequired =>
+      'Разрешите AVA Fork устанавливать приложения и вернитесь сюда';
+
+  @override
+  String get forkUpdateOpenPermissionSettings =>
+      'Разрешить установку приложений';
+
+  @override
+  String get forkUpdateWrongPackage =>
+      'Установщик предназначен для другого приложения и заблокирован';
+
+  @override
+  String get forkUpdateSignatureMismatch =>
+      'Подпись установщика не совпадает с приложением; установка заблокирована';
 }
