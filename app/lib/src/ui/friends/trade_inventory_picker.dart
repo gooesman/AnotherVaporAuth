@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../app/providers.dart';
 import '../../app/responsive.dart';
 import '../../core/models/steam_guard_account.dart';
+import '../../core/inventory_filter.dart';
 import '../../core/models/steam_item.dart';
 import '../../core/models/trade_draft.dart';
 import '../../core/protocol/inventory_client.dart';
@@ -12,6 +13,7 @@ import '../error_text.dart';
 import '../market/item_market_actions.dart';
 import '../pending/session_retry.dart';
 import '../widgets/inventory_item_icon.dart';
+import '../widgets/inventory_filter_bar.dart';
 
 class TradeInventoryPicker extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
@@ -43,6 +45,7 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
   String? _cursor;
   bool _more = false;
   int _generation = 0;
+  InventoryFilter _filter = const InventoryFilter();
 
   @override
   void initState() {
@@ -85,6 +88,7 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
       _cursor = null;
       _more = false;
       _items.clear();
+      _filter = const InventoryFilter();
       _error = null;
       _loading = false;
     });
@@ -164,6 +168,9 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final entries = _items.entries
+        .where((entry) => _filter.matches(entry.value))
+        .toList(growable: false);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.mine ? l.tradeYourItems : l.tradeTheirItems),
@@ -175,147 +182,204 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
           ),
         ],
       ),
-      body: ListView(
-        padding: context.rSafeInsets(all: 16),
-        children: [
-          if (_selected.length >= 256)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(l.tradeValidationFailed),
-            ),
-          if (_overview != null && _overview!.games.isNotEmpty)
-            DropdownButtonFormField<InventoryGame>(
-              initialValue: _game,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: l.tradeChooseGame),
-              items: [
-                for (final game in _overview!.games)
-                  DropdownMenuItem(value: game, child: Text(game.displayName)),
-              ],
-              onChanged: _loading
-                  ? null
-                  : (game) {
-                      if (game != null) _selectGame(game);
-                    },
-            ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Column(
-                children: [
-                  Text(_error!),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: _needsLogin
-                        ? () => signInThen(widget.account, _loadOverview)
-                        : _overview == null
-                        ? _loadOverview
-                        : _loadItems,
-                    child: Text(_needsLogin ? l.loginButton : l.commonRetry),
-                  ),
-                ],
-              ),
-            ),
-          if (!_loading && _error == null && _items.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(l.tradeNoItems),
-            ),
-          for (final entry in _items.entries)
-            ItemMarketActions(
-              key: ValueKey('market-${entry.key}'),
-              item: entry.value,
-              // Steam embeds the signed-in viewer's wallet even when this
-              // inventory belongs to the trade partner.
-              currency:
-                  _overview?.wallet.currency ?? WalletInfo.fallback.currency,
-              builder: (context, priceLabel, showActions) => Card(
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CheckboxListTile(
-                            key: ValueKey('asset-${entry.key}'),
-                            value: _selected.containsKey(entry.key),
-                            onChanged:
-                                !_selected.containsKey(entry.key) &&
-                                    _selected.length >= 256
-                                ? null
-                                : (selected) => _quantity(
-                                    entry.key,
-                                    entry.value,
-                                    selected == true ? 1 : 0,
-                                  ),
-                            title: Text(entry.value.name),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${entry.value.type}\n${entry.value.assetId}',
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: context.rSafeInsets(all: 16),
+            sliver: SliverMainAxisGroup(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_selected.length >= 256)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(l.tradeValidationFailed),
+                        ),
+                      if (_overview != null && _overview!.games.isNotEmpty)
+                        DropdownButtonFormField<InventoryGame>(
+                          initialValue: _game,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: l.tradeChooseGame,
+                          ),
+                          items: [
+                            for (final game in _overview!.games)
+                              DropdownMenuItem(
+                                value: game,
+                                child: Text(game.displayName),
+                              ),
+                          ],
+                          onChanged: _loading
+                              ? null
+                              : (game) {
+                                  if (game != null) _selectGame(game);
+                                },
+                        ),
+                      if (_game != null) ...[
+                        const SizedBox(height: 16),
+                        InventoryFilterBar(
+                          items: _items.values,
+                          value: _filter,
+                          hasMore: _more,
+                          onChanged: (filter) =>
+                              setState(() => _filter = filter),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Column(
+                            children: [
+                              Text(_error!),
+                              const SizedBox(height: 8),
+                              OutlinedButton(
+                                onPressed: _needsLogin
+                                    ? () => signInThen(
+                                        widget.account,
+                                        _loadOverview,
+                                      )
+                                    : _overview == null
+                                    ? _loadOverview
+                                    : _loadItems,
+                                child: Text(
+                                  _needsLogin ? l.loginButton : l.commonRetry,
                                 ),
-                                if (priceLabel != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: priceLabel,
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (!_loading && _error == null && entries.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            _items.isEmpty
+                                ? l.tradeNoItems
+                                : l.inventoryFilterNoMatches,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                SliverList.builder(
+                  itemCount: entries.length,
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    return ItemMarketActions(
+                      key: ValueKey('market-${entry.key}'),
+                      item: entry.value,
+                      // Steam embeds the signed-in viewer's wallet even when this
+                      // inventory belongs to the trade partner.
+                      currency:
+                          _overview?.wallet.currency ??
+                          WalletInfo.fallback.currency,
+                      builder: (context, priceLabel, showActions) => Card(
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CheckboxListTile(
+                                    key: ValueKey('asset-${entry.key}'),
+                                    value: _selected.containsKey(entry.key),
+                                    onChanged:
+                                        !_selected.containsKey(entry.key) &&
+                                            _selected.length >= 256
+                                        ? null
+                                        : (selected) => _quantity(
+                                            entry.key,
+                                            entry.value,
+                                            selected == true ? 1 : 0,
+                                          ),
+                                    title: Text(entry.value.name),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${entry.value.type}\n${entry.value.assetId}',
+                                        ),
+                                        if (priceLabel != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 4,
+                                            ),
+                                            child: priceLabel,
+                                          ),
+                                      ],
+                                    ),
+                                    secondary: InventoryItemIcon(
+                                      item: entry.value,
+                                      size: 44,
+                                    ),
                                   ),
+                                ),
+                                IconButton(
+                                  key: ValueKey('item-actions-${entry.key}'),
+                                  tooltip: l.itemMarketActions,
+                                  onPressed: showActions,
+                                  icon: const Icon(Icons.more_horiz),
+                                ),
+                                const SizedBox(width: 4),
                               ],
                             ),
-                            secondary: InventoryItemIcon(
-                              item: entry.value,
-                              size: 44,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          key: ValueKey('item-actions-${entry.key}'),
-                          tooltip: l.itemMarketActions,
-                          onPressed: showActions,
-                          icon: const Icon(Icons.more_horiz),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                    ),
-                    if (_selected.containsKey(entry.key) &&
-                        entry.value.amount > 1)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(l.tradeQuantity),
-                          IconButton(
-                            onPressed: () => _quantity(
-                              entry.key,
-                              entry.value,
-                              _selected[entry.key]!.amount - 1,
-                            ),
-                            icon: const Icon(Icons.remove),
-                          ),
-                          Text('${_selected[entry.key]!.amount}'),
-                          IconButton(
-                            onPressed:
-                                _selected[entry.key]!.amount >=
-                                    entry.value.amount
-                                ? null
-                                : () => _quantity(
-                                    entry.key,
-                                    entry.value,
-                                    _selected[entry.key]!.amount + 1,
+                            if (_selected.containsKey(entry.key) &&
+                                entry.value.amount > 1)
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(l.tradeQuantity),
+                                  IconButton(
+                                    onPressed: () => _quantity(
+                                      entry.key,
+                                      entry.value,
+                                      _selected[entry.key]!.amount - 1,
+                                    ),
+                                    icon: const Icon(Icons.remove),
                                   ),
-                            icon: const Icon(Icons.add),
-                          ),
-                        ],
+                                  Text('${_selected[entry.key]!.amount}'),
+                                  IconButton(
+                                    onPressed:
+                                        _selected[entry.key]!.amount >=
+                                            entry.value.amount
+                                        ? null
+                                        : () => _quantity(
+                                            entry.key,
+                                            entry.value,
+                                            _selected[entry.key]!.amount + 1,
+                                          ),
+                                    icon: const Icon(Icons.add),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
                       ),
-                  ],
+                    );
+                  },
                 ),
-              ),
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_loading)
+                        const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      if (_more && !_loading)
+                        OutlinedButton(
+                          onPressed: _loadItems,
+                          child: Text(l.tradeMore),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          if (_more && !_loading)
-            OutlinedButton(onPressed: _loadItems, child: Text(l.tradeMore)),
+          ),
         ],
       ),
     );

@@ -105,5 +105,36 @@ class TradeSendResult {
 /// A reply without an offer id is ambiguous; callers must not automatically
 /// resend. Steam may already have created the first offer.
 class TradeSendUnconfirmed implements Exception {
-  const TradeSendUnconfirmed();
+  final Object? cause;
+  final TradeSendAttempt? attempt;
+  const TradeSendUnconfirmed({this.cause, this.attempt});
+}
+
+/// Read-only reconciliation context. Never persisted and never used to replay
+/// the write. Missing/incomplete baseline means a matching old offer cannot be
+/// safely attributed to this attempt.
+class TradeSendAttempt {
+  final TradeDraft draft;
+  final int startedAt;
+  final int finishedAt;
+  final Set<String>? previousOfferIds;
+  TradeSendAttempt({
+    required this.draft,
+    required this.startedAt,
+    required this.finishedAt,
+    Set<String>? previousOfferIds,
+  }) : previousOfferIds = previousOfferIds == null
+           ? null
+           : Set.unmodifiable(previousOfferIds);
+}
+
+/// The connection failed before Steam could receive any HTTP request bytes.
+class TradeSendNotSent implements Exception {
+  final Object cause;
+  const TradeSendNotSent(this.cause);
+}
+
+/// Steam explicitly rejected the request but omitted a useful diagnostic.
+class TradeSendRejected implements Exception {
+  const TradeSendRejected();
 }

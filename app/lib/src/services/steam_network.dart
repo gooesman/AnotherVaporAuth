@@ -5,6 +5,16 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 
+/// This connection failed before a socket was returned for Steam HTTP bytes.
+/// It is not proof about earlier redirects/retries of the same logical action.
+/// Callers classifying a write as unsent must disable both of those behaviors.
+class SteamConnectionSetupException implements Exception {
+  const SteamConnectionSetupException([this.cause]);
+  final Object? cause;
+  @override
+  String toString() => 'Steam connection could not be established';
+}
+
 /// A transport-only proxy. Credentials must never be copied into Steam headers
 /// or exposed through logging/UI state.
 class SteamNetworkProxy {
@@ -122,6 +132,7 @@ class SteamNetwork {
                 requestOptions: options,
                 type: DioExceptionType.connectionError,
                 message: 'Steam network initialization failed',
+                error: const SteamConnectionSetupException(),
               ),
             );
             return;
@@ -148,10 +159,13 @@ class SteamNetwork {
     SecurityContext? context,
     Future<ConnectionTask<Socket>> Function(String, int) connect,
   ) async {
-    final task = await connect(
-      proxy?.host ?? uri.host,
-      proxy?.port ?? uri.port,
-    );
+    final ConnectionTask<Socket> task;
+    try {
+      task = await connect(proxy?.host ?? uri.host, proxy?.port ?? uri.port);
+    } catch (error) {
+      if (isSteamRequest(uri)) throw SteamConnectionSetupException(error);
+      rethrow;
+    }
     Socket? socket;
     var cancelled = false;
     final ready = () async {
@@ -170,8 +184,9 @@ class SteamNetwork {
         }
         if (cancelled) throw const SocketException('Connection cancelled');
         return socket!;
-      } catch (_) {
+      } catch (error) {
         socket?.destroy();
+        if (isSteamRequest(uri)) throw SteamConnectionSetupException(error);
         rethrow;
       }
     }();

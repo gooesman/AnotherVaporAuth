@@ -8,8 +8,10 @@ import '../app/responsive.dart';
 import '../app/steam_acceleration_providers.dart';
 import '../app/theme.dart';
 import '../services/steam_acceleration.dart';
+import '../services/steam_connectivity.dart';
 import 'widgets/ava_panel.dart';
 import 'widgets/scanline_overlay.dart';
+import 'widgets/steam_acceleration_status.dart';
 
 /// This page never reads back a subscription URL or presents a raw exception.
 /// Only the service's public, credential-free status is rendered.
@@ -212,6 +214,11 @@ class _SteamAccelerationScreenState
                           ),
                           const SizedBox(height: 8),
                           Text(l.steamAccelerationDesc),
+                          const SizedBox(height: 8),
+                          Text(
+                            l.steamConnectionNoVpnIcon,
+                            style: TextStyle(color: t.muted),
+                          ),
                           if (supported &&
                               !environment.detectionAvailable &&
                               !environment.hasExternal &&
@@ -262,6 +269,8 @@ class _SteamAccelerationScreenState
                       ),
                     ),
                     if (supported) ...[
+                      const SizedBox(height: 16),
+                      const _ConnectionCheckCard(),
                       const SizedBox(height: 16),
                       AvaPanel(
                         child: Column(
@@ -458,6 +467,103 @@ class _SteamAccelerationScreenState
           },
         ),
       ),
+    );
+  }
+}
+
+class _ConnectionCheckCard extends ConsumerWidget {
+  const _ConnectionCheckCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final monitor = ref.watch(steamConnectivityProvider);
+    final service = ref.watch(steamAccelerationServiceProvider);
+    final l = AppLocalizations.of(context);
+    final t = Theme.of(context).extension<AvaTokens>()!;
+    return ListenableBuilder(
+      listenable: monitor,
+      builder: (context, _) {
+        final state = monitor.state;
+        final checking = state.status == SteamConnectionStatus.checking;
+        final result = state.result;
+        Widget endpoint(String label, bool available) => Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            children: [
+              Icon(
+                available ? Icons.check_circle_outline : Icons.error_outline,
+                size: 18,
+                color: available ? t.good : t.bad,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$label · ${available ? l.steamConnectionReachable : l.steamConnectionFailed}',
+                ),
+              ),
+            ],
+          ),
+        );
+        return AvaPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.steamConnectionTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  steamConnectionLabel(l, state.status),
+                  key: const ValueKey('steam-connection-status'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(steamConnectionRouteLabel(l, state.route)),
+              if (service.state.environment.pacDetected) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l.steamConnectionPacHelp,
+                  style: TextStyle(color: t.muted),
+                ),
+              ],
+              if (checking) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+              ],
+              if (result != null) ...[
+                endpoint(l.steamConnectionApi, result.api),
+                endpoint(l.steamConnectionCommunity, result.community),
+              ],
+              if (state.checkedAt != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l.steamConnectionCheckedAt(
+                    MaterialLocalizations.of(context).formatTimeOfDay(
+                      TimeOfDay.fromDateTime(state.checkedAt!.toLocal()),
+                      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(
+                        context,
+                      ),
+                    ),
+                  ),
+                  style: TextStyle(color: t.muted),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(l.steamConnectionScope, style: TextStyle(color: t.muted)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const ValueKey('steam-connection-check'),
+                onPressed: checking ? null : monitor.check,
+                icon: const Icon(Icons.network_check),
+                label: Text(l.steamConnectionCheck),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

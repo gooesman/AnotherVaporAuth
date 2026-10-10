@@ -3,11 +3,86 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:ava/src/services/steam_network.dart';
+import 'package:ava/src/services/steam_connectivity.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   tearDown(() => SteamNetwork.configureProxy(() => null));
+
+  test(
+    'connectivity probe uses the active authenticated route and detects failure',
+    () async {
+      final fixture = await _NetworkFixture.create();
+      addTearDown(fixture.close);
+      final proxy = await fixture.proxy('probe', target: null);
+      var route = proxy.endpoint;
+      SteamNetwork.configureProxy(() => route);
+      final probe = SteamConnectivityProbe(
+        createClient: () => SteamNetwork.createDio(
+          BaseOptions(
+            followRedirects: false,
+            connectTimeout: const Duration(seconds: 3),
+            receiveTimeout: const Duration(seconds: 3),
+          ),
+          securityContext: fixture.trust,
+          socketConnector: fixture.connect,
+        ),
+      );
+      final reachable = await probe.check(CancelToken());
+      // The fixture certificate intentionally authenticates only Community.
+      // The API TLS failure must not be reported as full connectivity.
+      expect(reachable.community, isTrue);
+      expect(reachable.api, isFalse);
+      expect(reachable.status, SteamConnectionStatus.partial);
+      expect(proxy.requests, 2);
+      expect(proxy.authorized, 2);
+      expect(fixture.proxyHeadersAtSteam, everyElement(isNull));
+      route = SteamNetworkProxy(
+        host: route.host,
+        port: route.port,
+        username: 'probe',
+        password: 'incorrect-fixture-secret',
+      );
+      final failed = await probe.check(CancelToken());
+      expect(failed.status, SteamConnectionStatus.unavailable);
+      expect(proxy.requests, 4);
+      expect(proxy.authorized, 2);
+    },
+  );
+
+  test(
+    'socket setup failure is marked without exposing its diagnostic',
+    () async {
+      final dio = SteamNetwork.createDio(
+        BaseOptions(),
+        socketConnector: (_, _) async {
+          throw const SocketException('synthetic-private-diagnostic');
+        },
+      );
+      addTearDown(() => dio.close(force: true));
+      await expectLater(
+        dio.post(
+          'https://steamcommunity.com/tradeoffer/new/send',
+          data: 'never-sent',
+          options: Options(followRedirects: false),
+        ),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.error,
+            'error',
+            isA<SteamConnectionSetupException>(),
+          ),
+        ),
+      );
+      expect(
+        const SteamConnectionSetupException(
+          'synthetic-private-diagnostic',
+        ).toString(),
+        isNot(contains('synthetic-private-diagnostic')),
+      );
+    },
+  );
 
   test('proxy scope is limited to genuine Steam HTTPS origins', () {
     for (final url in [
@@ -126,7 +201,11 @@ void main() {
           isA<DioException>().having(
             (error) => error.error,
             'TLS failure',
-            isA<HandshakeException>(),
+            isA<SteamConnectionSetupException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<HandshakeException>(),
+            ),
           ),
         ),
       );
@@ -163,7 +242,13 @@ void main() {
           'https://steamcommunity.com/sms',
           data: 'must-not-reach-Steam',
         ),
-        throwsA(isA<DioException>()),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.error,
+            'setup failure',
+            isA<SteamConnectionSetupException>(),
+          ),
+        ),
       );
       expect(proxy.authorized, 0);
       expect(proxy.requests, 1);
@@ -196,7 +281,11 @@ void main() {
           isA<DioException>().having(
             (error) => error.error,
             'TLS hostname failure',
-            isA<HandshakeException>(),
+            isA<SteamConnectionSetupException>().having(
+              (error) => error.cause,
+              'cause',
+              isA<HandshakeException>(),
+            ),
           ),
         ),
       );
@@ -266,7 +355,13 @@ void main() {
       );
       final assertion = expectLater(
         pending.timeout(const Duration(seconds: 3)),
-        throwsA(isA<DioException>()),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.error,
+            'setup failure',
+            isA<SteamConnectionSetupException>(),
+          ),
+        ),
       );
       // Even if readiness fails before Dio enters its separate interceptor
       // error zone, the normalized failure must not leak or hang the request.
@@ -385,7 +480,7 @@ class _NetworkFixture {
 
   Future<_Proxy> proxy(
     String name, {
-    String target = 'steamcommunity.com:443',
+    String? target = 'steamcommunity.com:443',
   }) async {
     // Parse CONNECT's authority-form target directly. This fixture must not
     // depend on HttpServer's origin-form URI normalization or detach semantics.
@@ -419,7 +514,17 @@ class _NetworkFixture {
         return;
       }
       final lines = ascii.decode(buffer.sublist(0, headerEnd)).split('\r\n');
-      expect(lines.first, 'CONNECT $target HTTP/1.1');
+      if (target != null) {
+        expect(lines.first, 'CONNECT $target HTTP/1.1');
+      } else {
+        expect(
+          lines.first,
+          anyOf(
+            'CONNECT steamcommunity.com:443 HTTP/1.1',
+            'CONNECT api.steampowered.com:443 HTTP/1.1',
+          ),
+        );
+      }
       final headers = <String, String>{};
       for (final line in lines.skip(1)) {
         if (line.isEmpty) continue;

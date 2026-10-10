@@ -11,6 +11,7 @@ import 'package:ava/src/core/models/trade_draft.dart';
 import 'package:ava/src/core/protocol/inventory_client.dart';
 import 'package:ava/src/core/protocol/trade_offers_client.dart';
 import 'package:ava/src/services/steam_api_client.dart';
+import 'package:ava/src/services/steam_network.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/friends/trade_compose_screen.dart';
 import 'package:flutter/material.dart';
@@ -72,10 +73,25 @@ class _Inventory extends InventoryClient {
 
 class _Trade extends TradeOffersClient {
   int sends = 0;
+  int checks = 0;
+  Object? checkError;
+  TradeSendResult? checkResult;
+  Completer<TradeSendResult?>? pendingCheck;
   TradeDraft? draft;
   Object? error;
   Completer<TradeSendResult>? pending;
   _Trade() : super(SteamApiClient());
+  @override
+  Future<TradeSendResult?> recheckSend(
+    SteamGuardAccount account,
+    TradeSendUnconfirmed uncertain,
+  ) async {
+    checks++;
+    if (checkError != null) throw checkError!;
+    if (pendingCheck != null) return pendingCheck!.future;
+    return checkResult;
+  }
+
   @override
   Future<TradeSendResult> send(
     SteamGuardAccount account,
@@ -157,6 +173,113 @@ Future<void> _select(WidgetTester tester, bool mine) async {
 }
 
 void main() {
+  testWidgets(
+    'definite rejection shows the cause and keeps manual review available',
+    (tester) async {
+      for (final error in [
+        SteamApiException(
+          2,
+          'Item is no longer available (26)',
+          'SendTradeOffer',
+        ),
+        const TradeSendNotSent(
+          SteamConnectionSetupException('private-proxy-credential'),
+        ),
+        const TradeSendRejected(),
+      ]) {
+        final trade = _Trade()..error = error;
+        await _show(tester, _Inventory(), trade);
+        await _select(tester, true);
+        await tester.tap(find.byKey(const ValueKey('trade-review')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('trade-confirm-send')));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Offer was not sent.'), findsOneWidget);
+        expect(find.textContaining('private-proxy-credential'), findsNothing);
+        expect(find.byKey(const ValueKey('trade-check-send')), findsNothing);
+        expect(
+          tester
+              .widget<FilledButton>(find.byKey(const ValueKey('trade-review')))
+              .onPressed,
+          isNotNull,
+        );
+        if (error is SteamApiException) {
+          expect(
+            find.textContaining('no longer available (26)'),
+            findsOneWidget,
+          );
+        }
+        expect(trade.sends, 1);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      }
+    },
+  );
+
+  testWidgets('empty or failed read-only checks never re-enable sending', (
+    tester,
+  ) async {
+    final trade = _Trade()..error = const TradeSendUnconfirmed();
+    await _show(tester, _Inventory(), trade);
+    await _select(tester, true);
+    await tester.tap(find.byKey(const ValueKey('trade-review')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('trade-confirm-send')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('trade-check-send')));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('No matching new offer is visible yet.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('trade-review')), findsNothing);
+    trade.checkError = Exception('private-proxy-credential');
+    await tester.tap(find.byKey(const ValueKey('trade-check-send')));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Could not verify the send result.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('private-proxy-credential'), findsNothing);
+    expect(find.byKey(const ValueKey('trade-review')), findsNothing);
+    expect(trade.sends, 1);
+    expect(trade.checks, 2);
+  });
+
+  testWidgets(
+    'checking is single-flight and a verified receipt closes without resending',
+    (tester) async {
+      final trade = _Trade()
+        ..error = const TradeSendUnconfirmed()
+        ..pendingCheck = Completer<TradeSendResult?>();
+      await _show(tester, _Inventory(), trade);
+      await _select(tester, true);
+      await tester.tap(find.byKey(const ValueKey('trade-review')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('trade-confirm-send')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('trade-check-send')));
+      await tester.tap(find.byKey(const ValueKey('trade-check-send')));
+      await tester.pump();
+      expect(trade.checks, 1);
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.byKey(const ValueKey('trade-check-send')),
+            )
+            .onPressed,
+        isNull,
+      );
+      trade.pendingCheck!.complete(
+        const TradeSendResult(offerId: '999', needsMobileConfirmation: true),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(TradeComposeScreen), findsNothing);
+      expect(find.text('Open'), findsOneWidget);
+      expect(trade.sends, 1);
+    },
+  );
+
   testWidgets(
     'receive-only offer stays bound to the sending account shown during review',
     (tester) async {

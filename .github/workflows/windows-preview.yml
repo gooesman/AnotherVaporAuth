@@ -192,14 +192,16 @@ jobs:
       - name: Build side-by-side Android preview
         # Fork preview uses its own fixed signing key, package and label. It
         # keeps production AVA and older randomly signed AVA dev data intact.
-        run: flutter build apk --debug --flavor cn --dart-define=AVA_CHANNEL=cn --target-platform android-arm64 --build-number=$((100000 + GITHUB_RUN_NUMBER)) --no-pub
+        # AOT release mode removes debug/JIT overhead while retaining the
+        # existing fork package and signing key for in-place upgrades.
+        run: flutter build apk --release --flavor cn --dart-define=AVA_CHANNEL=cn --target-platform android-arm64 --build-number=$((100000 + GITHUB_RUN_NUMBER)) --no-pub
 
       - name: Verify unchanged packaged Steam acceleration component
-        run: python3 ../tool/prepare_steam_core.py --verify-apk build/app/outputs/flutter-apk/app-cn-debug.apk
+        run: python3 ../tool/prepare_steam_core.py --verify-apk build/app/outputs/flutter-apk/app-cn-release.apk
       - name: Verify isolated package identity
         run: |
           set -o pipefail
-          APK=build/app/outputs/flutter-apk/app-cn-debug.apk
+          APK=build/app/outputs/flutter-apk/app-cn-release.apk
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$APK" | grep -Fx 'pro.dotslash.ava.fork'
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK" > "$RUNNER_TEMP/ava-preview-manifest.xml"
           python3 - "$RUNNER_TEMP/ava-preview-manifest.xml" <<'PY'
@@ -228,9 +230,10 @@ jobs:
           PY
           sha256sum "$APK"
       - name: Verify cn preview excludes ads and billing
-        # Debug bytecode is not obfuscated, so the dex package names are usable.
+        # R8 rewrites class names: its original-name mapping is authoritative.
         run: |
-          APK=build/app/outputs/flutter-apk/app-cn-debug.apk
+          APK=build/app/outputs/flutter-apk/app-cn-release.apk
+          python3 ../tool/verify_android_release.py --apk "$APK" --manifest "$RUNNER_TEMP/ava-preview-manifest.xml" --mapping build/app/outputs/mapping/cnRelease/mapping.txt
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" dex packages --defined-only "$APK" > "$RUNNER_TEMP/ava-preview-dex.txt"
           if grep -E 'com[.]google[.]android[.]gms[.]ads([.]|[[:space:]]|$)|com[.]android[.]billingclient([.]|[[:space:]]|$)|com[.]google[.]android[.]ump([.]|[[:space:]]|$)' "$RUNNER_TEMP/ava-preview-dex.txt"; then
             echo 'Unexpected ads or billing code in cn preview'
@@ -250,7 +253,7 @@ jobs:
               raise SystemExit('Expected a three-part version in app/pubspec.yaml')
           version = match[1]
           build = 100000 + int(os.environ['GITHUB_RUN_NUMBER'])
-          apk = Path('build/app/outputs/flutter-apk/app-cn-debug.apk')
+          apk = Path('build/app/outputs/flutter-apk/app-cn-release.apk')
           analyzer = Path(os.environ['ANDROID_HOME']) / 'cmdline-tools/latest/bin/apkanalyzer'
           actual_build = subprocess.check_output([str(analyzer), 'manifest', 'version-code', str(apk)], text=True).strip()
           actual_version = subprocess.check_output([str(analyzer), 'manifest', 'version-name', str(apk)], text=True).strip()
@@ -262,6 +265,7 @@ jobs:
               'run_id': int(os.environ['GITHUB_RUN_ID']), 'run_number': int(os.environ['GITHUB_RUN_NUMBER']),
               'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'commit': os.environ['GITHUB_SHA'],
               'version': version, 'build': build, 'platform': 'android-arm64', 'file': apk.name,
+              'build_mode': 'release',
               'size': apk.stat().st_size, 'sha256': hashlib.file_digest(apk.open('rb'), 'sha256').hexdigest(),
               'package': 'pro.dotslash.ava.fork',
               'signer_sha256': 'a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f',
@@ -269,13 +273,13 @@ jobs:
           apk.with_name('android-preview.json').write_text(json.dumps(metadata, indent=2) + '\n')
           PY
       - name: Upload Android preview
-        # Keep the existing APK name for preview downloads; promotion gives it
-        # the strict versioned asset name used by the in-app updater.
+        # Keep Gradle's release APK filename in the artifact; promotion gives
+        # it the strict versioned asset name used by the in-app updater.
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: AVA-android-preview-${{ github.sha }}
           path: |
-            app/build/app/outputs/flutter-apk/app-cn-debug.apk
+            app/build/app/outputs/flutter-apk/app-cn-release.apk
             app/build/app/outputs/flutter-apk/android-preview.json
           if-no-files-found: error
           retention-days: 14

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
@@ -8,6 +9,9 @@ import 'package:ava/src/core/protocol/community_session.dart';
 import 'package:ava/src/core/protocol/trade_offers_client.dart';
 import 'package:ava/src/services/steam_api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
+import 'package:ava/src/services/steam_network.dart';
+import 'package:ava/src/services/steam_time.dart';
 
 const _owner = '76561198000000001';
 const _partner = '76561198000000002';
@@ -53,6 +57,26 @@ class _Api extends SteamApiClient {
   String? referer;
   Map<String, dynamic> reply = {'tradeofferid': '123'};
   Object? error;
+  int gets = 0;
+  List<Map<String, dynamic>> snapshots = [];
+  Map<String, dynamic>? lastQuery;
+  @override
+  Future<Map<String, dynamic>> apiGetJson(
+    String iface,
+    String method,
+    Map<String, dynamic> query, {
+    String? accessToken,
+    int version = 1,
+  }) async {
+    lastQuery = query;
+    final index = gets++;
+    return index < snapshots.length
+        ? snapshots[index]
+        : {
+            'response': {'trade_offers_sent': <Object>[]},
+          };
+  }
+
   @override
   Future<Map<String, dynamic>> communityPostJson(
     String path,
@@ -70,7 +94,104 @@ class _Api extends SteamApiClient {
   }
 }
 
+/// Exercise the actual Dio status gate and community decoder offline.
+class _SendAdapter implements HttpClientAdapter {
+  final int status;
+  final String body;
+  int posts = 0;
+  bool? followsRedirects;
+  _SendAdapter(this.status, this.body);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.method == 'POST') {
+      posts++;
+      followsRedirects = options.followRedirects;
+      return ResponseBody.fromString(
+        body,
+        status,
+        headers: {
+          'content-type': ['application/json'],
+        },
+      );
+    }
+    return ResponseBody.fromString(
+      jsonEncode(_snapshot([])),
+      200,
+      headers: {
+        'content-type': ['application/json'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
 void main() {
+  test(
+    'message without an ID or rejection marker cannot authorize a resend',
+    () async {
+      for (final reply in [
+        {'success': true, 'message': 'Offer submitted'},
+        {'message': 'Processing'},
+      ]) {
+        final api = _Api()..reply = reply;
+        await expectLater(
+          TradeOffersClient(api).send(_account(), _draft()),
+          throwsA(isA<TradeSendUnconfirmed>()),
+        );
+        expect(api.posts, 1);
+      }
+    },
+  );
+
+  test(
+    'real Dio 500 Steam rejection reaches the caller without a resend',
+    () async {
+      final adapter = _SendAdapter(
+        500,
+        '{"strError":"These items are no longer available for trade. (26)"}',
+      );
+      final dio = Dio(BaseOptions(validateStatus: (s) => s != null && s < 500))
+        ..httpClientAdapter = adapter;
+      await expectLater(
+        TradeOffersClient(SteamApiClient(dio: dio)).send(_account(), _draft()),
+        throwsA(
+          isA<SteamApiException>().having(
+            (e) => e.message,
+            'Steam reason',
+            contains('no longer available'),
+          ),
+        ),
+      );
+      expect(adapter.posts, 1);
+      expect(adapter.followsRedirects, isFalse);
+    },
+  );
+
+  test('gateway HTML or opaque 5xx stays unknown with one POST', () async {
+    final adapter = _SendAdapter(502, '<html>upstream timed out</html>');
+    final dio = Dio(BaseOptions(validateStatus: (s) => s != null && s < 500))
+      ..httpClientAdapter = adapter;
+    await expectLater(
+      TradeOffersClient(SteamApiClient(dio: dio)).send(_account(), _draft()),
+      throwsA(isA<TradeSendUnconfirmed>()),
+    );
+    expect(adapter.posts, 1);
+    final api = _Api()
+      ..error = SteamApiException(2, 'HTTP 500', 'send', httpStatus: 500);
+    await expectLater(
+      TradeOffersClient(api).send(_account(), _draft()),
+      throwsA(isA<TradeSendUnconfirmed>()),
+    );
+    expect(api.posts, 1);
+  });
+
   test(
     'receive-only draft cannot send after the account session changes',
     () async {
@@ -255,4 +376,267 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('HTTP 500 Steam business rejection retains its diagnostic', () async {
+    final request = RequestOptions(path: '/tradeoffer/new/send');
+    final api = _Api()
+      ..error = DioException.badResponse(
+        statusCode: 500,
+        requestOptions: request,
+        response: Response(
+          requestOptions: request,
+          statusCode: 500,
+          data: '{"strError":"Items are unavailable (26)"}',
+        ),
+      );
+    await expectLater(
+      TradeOffersClient(api).send(_account(), _draft()),
+      throwsA(
+        isA<SteamApiException>().having(
+          (e) => e.message,
+          'message',
+          'Items are unavailable (26)',
+        ),
+      ),
+    );
+    expect(api.posts, 1);
+    expect(api.gets, 1);
+  });
+
+  test(
+    'definite failed flags and alternate messages are not unknown',
+    () async {
+      for (final reply in [
+        {'success': false},
+        {'success': '0'},
+        {'success': 0, 'message': 'Trading is restricted'},
+        {'error': 'Unavailable'},
+        {'eresult': 26},
+      ]) {
+        final api = _Api()..reply = reply;
+        await expectLater(
+          TradeOffersClient(api).send(_account(), _draft()),
+          throwsA(anyOf(isA<TradeSendRejected>(), isA<SteamApiException>())),
+        );
+        expect(api.posts, 1);
+        expect(api.gets, 1);
+      }
+    },
+  );
+
+  test(
+    'numeric and string mobile/email confirmation markers are kept',
+    () async {
+      final api = _Api()
+        ..reply = {
+          'tradeofferid': '123',
+          'needs_mobile_confirmation': 1,
+          'needs_email_confirmation': '1',
+        };
+      final result = await TradeOffersClient(api).send(_account(), _draft());
+      expect(result.needsMobileConfirmation, isTrue);
+      expect(result.needsEmailConfirmation, isTrue);
+    },
+  );
+
+  test(
+    'setup failure is not sent but transport timeouts stay unresolved',
+    () async {
+      final request = RequestOptions(path: '/tradeoffer/new/send');
+      final api = _Api()
+        ..error = DioException(
+          requestOptions: request,
+          error: const SteamConnectionSetupException(),
+          type: DioExceptionType.connectionError,
+        );
+      await expectLater(
+        TradeOffersClient(api).send(_account(), _draft()),
+        throwsA(isA<TradeSendNotSent>()),
+      );
+      expect(api.gets, 1);
+      for (final type in [
+        DioExceptionType.sendTimeout,
+        DioExceptionType.receiveTimeout,
+        DioExceptionType.connectionError,
+      ]) {
+        final api = _Api()
+          ..error = DioException(requestOptions: request, type: type);
+        await expectLater(
+          TradeOffersClient(api).send(_account(), _draft()),
+          throwsA(isA<TradeSendUnconfirmed>()),
+        );
+        expect(api.posts, 1);
+        expect(api.gets, 2);
+      }
+    },
+  );
+
+  test(
+    'missing POST receipt is recovered by a fresh exact pending offer',
+    () async {
+      final api = _Api()
+        ..reply = {}
+        ..snapshots = [
+          _snapshot([]),
+          _snapshot([_sentOffer('99', state: 9, confirmation: 2)]),
+        ];
+      final result = await TradeOffersClient(api).send(_account(), _draft());
+      expect(result.offerId, '99');
+      expect(result.needsMobileConfirmation, isTrue);
+      expect(api.posts, 1);
+      expect(api.lastQuery!['get_sent_offers'], '1');
+      expect(api.lastQuery!['get_received_offers'], '0');
+    },
+  );
+
+  test(
+    'older identical, wrong direction or altered amounts cannot confirm send',
+    () async {
+      for (final offer in [
+        _sentOffer('99')..['time_created'] = 1,
+        _sentOffer('99')..['time_created'] = SteamTime.currentSteamTime + 3600,
+        _sentOffer('99')..['is_our_offer'] = false,
+        _sentOffer('99')..['accountid_other'] = 111,
+        _sentOffer('99')..['message'] = 'different',
+        _sentOffer('99')..['items_to_give'] = [_selection(_owner).toJson()],
+        _sentOffer('99')..['items_to_receive'] = [],
+      ]) {
+        final api = _Api()
+          ..reply = {}
+          ..snapshots = [
+            _snapshot([]),
+            _snapshot([offer]),
+          ];
+        await expectLater(
+          TradeOffersClient(api).send(_account(), _draft()),
+          throwsA(isA<TradeSendUnconfirmed>()),
+        );
+        expect(api.posts, 1);
+      }
+    },
+  );
+
+  test(
+    'existing identical offer and multiple new matches stay unresolved',
+    () async {
+      for (final snapshots in [
+        [
+          _snapshot([_sentOffer('99')]),
+          _snapshot([_sentOffer('99')]),
+        ],
+        [
+          _snapshot([]),
+          _snapshot([_sentOffer('98'), _sentOffer('99')]),
+        ],
+      ]) {
+        final api = _Api()
+          ..reply = {}
+          ..snapshots = snapshots;
+        await expectLater(
+          TradeOffersClient(api).send(_account(), _draft()),
+          throwsA(isA<TradeSendUnconfirmed>()),
+        );
+        expect(api.posts, 1);
+      }
+    },
+  );
+
+  test(
+    'incomplete baseline cannot mistake an existing offer for a new one',
+    () async {
+      final api = _Api()
+        ..reply = {}
+        ..snapshots = [
+          _snapshot([], cursor: '123'),
+          _snapshot([], cursor: '123'),
+          _snapshot([_sentOffer('99')]),
+        ];
+      final client = TradeOffersClient(api);
+      try {
+        await client.send(_account(), _draft());
+        fail('Expected unresolved result');
+      } on TradeSendUnconfirmed catch (error) {
+        expect(error.attempt!.previousOfferIds, isNull);
+        expect(await client.recheckSend(_account(), error), isNull);
+      }
+      expect(api.posts, 1);
+      expect(api.gets, 2);
+    },
+  );
+
+  test('reconciliation reads every page before attributing an offer', () async {
+    final api = _Api()
+      ..reply = {}
+      ..snapshots = [
+        _snapshot([], cursor: '12'),
+        _snapshot([_sentOffer('99')]),
+        _snapshot([_sentOffer('99')], cursor: '13'),
+        _snapshot([_sentOffer('100')]),
+      ];
+    final result = await TradeOffersClient(api).send(_account(), _draft());
+    expect(result.offerId, '100');
+    expect(api.posts, 1);
+    expect(api.gets, 4);
+  });
+
+  test(
+    'a later read-only check can find delayed creation without another POST',
+    () async {
+      final api = _Api()
+        ..reply = {}
+        ..snapshots = [
+          _snapshot([]),
+          _snapshot([]),
+          _snapshot([_sentOffer('99')]),
+        ];
+      final client = TradeOffersClient(api);
+      try {
+        await client.send(_account(), _draft());
+        fail('Expected unresolved result');
+      } on TradeSendUnconfirmed catch (error) {
+        expect((await client.recheckSend(_account(), error))!.offerId, '99');
+      }
+      expect(api.posts, 1);
+    },
+  );
+
+  test(
+    'pending offer with unknown confirmation method is not called sent',
+    () async {
+      final api = _Api()
+        ..reply = {}
+        ..snapshots = [
+          _snapshot([]),
+          _snapshot([_sentOffer('99', state: 9, confirmation: 0)]),
+        ];
+      await expectLater(
+        TradeOffersClient(api).send(_account(), _draft()),
+        throwsA(isA<TradeSendUnconfirmed>()),
+      );
+      expect(api.posts, 1);
+    },
+  );
 }
+
+Map<String, dynamic> _snapshot(
+  List<Map<String, dynamic>> offers, {
+  String cursor = '0',
+}) => {
+  'response': {'trade_offers_sent': offers, 'next_cursor': cursor},
+};
+
+Map<String, dynamic> _sentOffer(
+  String id, {
+  int state = 2,
+  int confirmation = 0,
+}) => {
+  'tradeofferid': id,
+  'is_our_offer': true,
+  'accountid_other': 39734274,
+  'message': 'hello',
+  'time_created': SteamTime.currentSteamTime,
+  'trade_offer_state': state,
+  'confirmation_method': confirmation,
+  'items_to_give': [_selection(_owner, amount: 2).toJson()],
+  'items_to_receive': [_selection(_partner, asset: '20').toJson()],
+};

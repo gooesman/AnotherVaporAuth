@@ -54,13 +54,11 @@ class _PreviewSettings extends SettingsStore {
 
 class _PreviewController extends AppController {
   final StorageProvider storage;
-  _PreviewController(this.storage);
+  final List<SteamGuardAccount> accounts;
+  _PreviewController(this.storage, this.accounts);
   @override
-  Future<AppData> build() async => AppData(
-    store: AccountStore(storage),
-    accounts: homePreviewAccounts,
-    locked: false,
-  );
+  Future<AppData> build() async =>
+      AppData(store: AccountStore(storage), accounts: accounts, locked: false);
 }
 
 class _PreviewSkin extends SkinSpecController {
@@ -141,6 +139,8 @@ Widget dashboardHomePreviewApp({
   SkinSpec? skinSpec,
   InventoryClient? inventory,
   MarketClient? market,
+  List<SteamGuardAccount>? accounts,
+  Stream<int>? ticks,
 }) {
   final storage = MemoryStorageProvider();
   final tokens = AvaTokens.of(variant);
@@ -149,13 +149,15 @@ Widget dashboardHomePreviewApp({
     overrides: [
       storageProvider.overrideWithValue(storage),
       settingsStoreProvider.overrideWithValue(_PreviewSettings(storage)),
-      appControllerProvider.overrideWith(() => _PreviewController(storage)),
+      appControllerProvider.overrideWith(
+        () => _PreviewController(storage, accounts ?? homePreviewAccounts),
+      ),
       apiClientProvider.overrideWithValue(_PreviewApi()),
       inventoryClientProvider.overrideWithValue(
         inventory ?? _PreviewInventory(),
       ),
       marketClientProvider.overrideWithValue(market ?? _PreviewMarket()),
-      tickProvider.overrideWith((ref) => Stream.value(1900000010)),
+      tickProvider.overrideWith((ref) => ticks ?? Stream.value(1900000010)),
       timeAlignerProvider.overrideWithValue(() async {}),
       skinSpecProvider.overrideWith(() => _PreviewSkin(skinSpec)),
       proStatusProvider.overrideWithValue(ProStatus.pro),

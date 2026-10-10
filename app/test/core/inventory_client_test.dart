@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:ava/src/core/inventory_filter.dart';
 
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
@@ -66,6 +68,166 @@ Future<InventoryItem> _item(Map<String, dynamic> description) async {
 }
 
 void main() {
+  test(
+    'category fixtures retain genuine localized tags across CS2, Dota and Steam',
+    () async {
+      final cases =
+          jsonDecode(
+                File(
+                  'test/fixtures/inventory_categories.json',
+                ).readAsStringSync(),
+              )
+              as List;
+      for (final fixture in cases) {
+        final api = _InventoryApi()
+          ..json = Map<String, dynamic>.from(fixture['response'] as Map);
+        final page = await InventoryClient(
+          api,
+        ).items(_account(), fixture['appid'] as int, '2');
+        final options = inventoryFacetOptions(
+          page.items,
+          InventoryFacet.type,
+          unknownLabel: 'Other',
+        );
+        expect(options.length, page.items.length);
+        expect(
+          options.any((option) => option.key == inventoryUnknownFacet),
+          isFalse,
+        );
+        if (fixture['appid'] == 730) {
+          expect(
+            options.map((option) => option.label),
+            containsAll(['步枪', '喷漆', '音乐盒']),
+          );
+        } else if (fixture['appid'] == 570) {
+          expect(options.single.label, 'Wearable');
+        } else {
+          expect(options.single.key, 'item_class/item_class_2');
+        }
+      }
+    },
+  );
+
+  test(
+    'classification ignores translated category names and malformed optional tags',
+    () async {
+      final item = await _item({
+        'tags': [
+          null,
+          5,
+          {
+            'category': 'Weapon',
+            'internal_name': 'x',
+            'localized_category_name': 'Type',
+            'localized_tag_name': 'Rifle',
+          },
+          {
+            'category': 'Type',
+            'internal_name': 5,
+            'localized_tag_name': 'Rifle',
+          },
+          {
+            'category': 'Type',
+            'internal_name': '',
+            'localized_tag_name': 'Rifle',
+          },
+        ],
+      });
+      expect(
+        inventoryFacetKey(item, InventoryFacet.type),
+        inventoryUnknownFacet,
+      );
+      expect(
+        const InventoryFilter(type: inventoryUnknownFacet).matches(item),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'duplicate tags use stable identifiers independent of display language',
+    () async {
+      final item = await _item({
+        'tags': [
+          {
+            'category': 'Type',
+            'internal_name': 'CSGO_Type_Spray',
+            'localized_tag_name': '喷漆',
+          },
+          {
+            'category': 'Type',
+            'internal_name': 'CSGO_Type_Spray',
+            'localized_tag_name': 'Graffiti',
+          },
+          {
+            'category': 'Rarity',
+            'internal_name': 'common',
+            'localized_tag_name': '普通级',
+          },
+        ],
+      });
+      expect(item.tags.length, 2);
+      expect(
+        const InventoryFilter(
+          type: 'type/CSGO_Type_Spray',
+          rarity: 'rarity/common',
+          query: '喷漆',
+        ).matches(item),
+        isTrue,
+      );
+      expect(
+        const InventoryFilter(
+          type: 'type/CSGO_Type_Spray',
+          rarity: 'rarity/rare',
+        ).matches(item),
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'unknown tags remain available and search does not guess their type',
+    () async {
+      final item = await _item({
+        'name': 'Mystery Rifle',
+        'market_hash_name': 'Future item',
+        'type': 'Unclassified',
+        'tags': [],
+      });
+      expect(
+        const InventoryFilter(query: 'mystery FUTURE').matches(item),
+        isTrue,
+      );
+      expect(
+        const InventoryFilter(type: 'type/CSGO_Type_Rifle').matches(item),
+        isFalse,
+      );
+      expect(
+        const InventoryFilter(type: inventoryUnknownFacet).matches(item),
+        isTrue,
+      );
+    },
+  );
+
+  test('missing localized type labels share one unclassified option', () async {
+    final a = await _item({
+      'tags': [
+        {'category': 'Type', 'internal_name': 'missing_label'},
+      ],
+    });
+    final b = await _item({'tags': []});
+    final options = inventoryFacetOptions(
+      [a, b],
+      InventoryFacet.type,
+      unknownLabel: 'Other',
+    );
+    expect(options.single.key, inventoryUnknownFacet);
+    expect(
+      const InventoryFilter(type: inventoryUnknownFacet).matches(a),
+      isTrue,
+    );
+  });
+
   test(
     'rarity tag takes precedence over quality regardless of order',
     () async {

@@ -4754,7 +4754,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationRunning.
   ///
   /// In en, this message translates to:
-  /// **'Enabled'**
+  /// **'Running'**
   String get steamAccelerationRunning;
 
   /// No description provided for @steamAccelerationPaused.
@@ -4954,6 +4954,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not start acceleration. Refresh the environment check and try again.'**
   String get steamAccelerationStartFailed;
+
+  /// No description provided for @inventorySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search items'**
+  String get inventorySearch;
+
+  /// No description provided for @inventoryFilterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get inventoryFilterType;
+
+  /// No description provided for @inventoryFilterRarity.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarity / quality'**
+  String get inventoryFilterRarity;
+
+  /// No description provided for @inventoryFilterOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other / unclassified'**
+  String get inventoryFilterOther;
+
+  /// No description provided for @inventoryFilterNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No items match these filters'**
+  String get inventoryFilterNoMatches;
+
+  /// No description provided for @inventoryFilterLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters apply to loaded items. Load more to include the rest.'**
+  String get inventoryFilterLoaded;
+
+  /// No description provided for @steamConnectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection check'**
+  String get steamConnectionTitle;
+
+  /// No description provided for @steamConnectionNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked'**
+  String get steamConnectionNotChecked;
+
+  /// No description provided for @steamConnectionChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking connection…'**
+  String get steamConnectionChecking;
+
+  /// No description provided for @steamConnectionAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection available'**
+  String get steamConnectionAvailable;
+
+  /// No description provided for @steamConnectionPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Some Steam services are unavailable'**
+  String get steamConnectionPartial;
+
+  /// No description provided for @steamConnectionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam connection unavailable'**
+  String get steamConnectionUnavailable;
+
+  /// No description provided for @steamConnectionCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check connection'**
+  String get steamConnectionCheck;
+
+  /// No description provided for @steamConnectionApi.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam sign-in API'**
+  String get steamConnectionApi;
+
+  /// No description provided for @steamConnectionCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam Community and Market'**
+  String get steamConnectionCommunity;
+
+  /// No description provided for @steamConnectionReachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Reachable'**
+  String get steamConnectionReachable;
+
+  /// No description provided for @steamConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get steamConnectionFailed;
+
+  /// No description provided for @steamConnectionInternal.
+  ///
+  /// In en, this message translates to:
+  /// **'AVA internal route'**
+  String get steamConnectionInternal;
+
+  /// No description provided for @steamConnectionExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'External HTTP proxy'**
+  String get steamConnectionExternal;
+
+  /// No description provided for @steamConnectionSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Current system route (external network detected)'**
+  String get steamConnectionSystem;
+
+  /// No description provided for @steamConnectionDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct connection'**
+  String get steamConnectionDirect;
+
+  /// No description provided for @steamConnectionCheckedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked: {time}'**
+  String steamConnectionCheckedAt(String time);
+
+  /// No description provided for @steamConnectionNoVpnIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'This only routes Steam requests inside AVA, so Android does not show a system VPN icon. It does not accelerate the Steam app or other apps.'**
+  String get steamConnectionNoVpnIcon;
+
+  /// No description provided for @steamConnectionScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks Steam API and Community over AVA’s current route without account credentials. Results describe this check, not continuous availability.'**
+  String get steamConnectionScope;
+
+  /// No description provided for @tradeSendNotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer was not sent. {reason}'**
+  String tradeSendNotSent(String reason);
+
+  /// No description provided for @tradeCheckSendResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Check send result'**
+  String get tradeCheckSendResult;
+
+  /// No description provided for @tradeSendNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching new offer is visible yet. Steam may take time to update. Check Pending and sent offers before sending again.'**
+  String get tradeSendNotFound;
+
+  /// No description provided for @tradeSendCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not verify the send result. {reason}'**
+  String tradeSendCheckFailed(String reason);
+
+  /// No description provided for @tradeSendRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam rejected this offer without a detailed reason. Check the selected items and trading restrictions.'**
+  String get tradeSendRejected;
+
+  /// No description provided for @tradeSendUnreadableResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam did not return a complete send receipt.'**
+  String get tradeSendUnreadableResponse;
+
+  /// No description provided for @steamConnectionPacHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'PAC is detected but not evaluated by AVA. This check uses the current system route.'**
+  String get steamConnectionPacHelp;
 }
 
 class _AppLocalizationsDelegate

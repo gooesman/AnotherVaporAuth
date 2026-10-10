@@ -9,7 +9,7 @@
          decrypted — they'd only produce a vault that rejects the correct PIN
          forever. A clean first run + maFile re-import is strictly better. -->
     <application
-        android:label="AVA"
+        android:label="@string/ava_app_label"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false">

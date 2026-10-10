@@ -774,7 +774,7 @@
   "steamAccelerationOff": "Désactivée",
   "steamAccelerationLoading": "Synchronisation de l’abonnement…",
   "steamAccelerationStarting": "Démarrage…",
-  "steamAccelerationRunning": "Activée",
+  "steamAccelerationRunning": "En cours",
   "steamAccelerationPaused": "Accélération intégrée en pause",
   "steamAccelerationFailed": "Accélération indisponible",
   "steamAccelerationUnsupported": "Actuellement pris en charge uniquement sous Windows et Android.",
@@ -807,5 +807,57 @@
   "steamAccelerationStorageError": "Le stockage sécurisé est indisponible. Le réglage n’a pas pu être enregistré.",
   "steamAccelerationCoreUnavailable": "Le composant d’accélération est absent. Installez une version plus récente de l’application.",
   "steamAccelerationCoreIntegrity": "La vérification du composant d’accélération a échoué ; son lancement a été bloqué.",
-  "steamAccelerationStartFailed": "Impossible de démarrer l’accélération. Actualisez la vérification de l’environnement et réessayez."
+  "steamAccelerationStartFailed": "Impossible de démarrer l’accélération. Actualisez la vérification de l’environnement et réessayez.",
+  "inventorySearch": "Rechercher des objets",
+  "inventoryFilterType": "Type",
+  "inventoryFilterRarity": "Rareté / qualité",
+  "inventoryFilterOther": "Autres / non classés",
+  "inventoryFilterNoMatches": "Aucun objet ne correspond aux filtres",
+  "inventoryFilterLoaded": "Les filtres portent sur les objets chargés. Chargez-en davantage pour inclure le reste.",
+  "steamConnectionTitle": "Vérification de connexion",
+  "steamConnectionNotChecked": "Non vérifiée",
+  "steamConnectionChecking": "Vérification de la connexion…",
+  "steamConnectionAvailable": "Connexion disponible",
+  "steamConnectionPartial": "Certains services Steam sont indisponibles",
+  "steamConnectionUnavailable": "Connexion à Steam indisponible",
+  "steamConnectionCheck": "Vérifier la connexion",
+  "steamConnectionApi": "API de connexion Steam",
+  "steamConnectionCommunity": "Communauté et Marché Steam",
+  "steamConnectionReachable": "Accessible",
+  "steamConnectionFailed": "Échec de la connexion",
+  "steamConnectionInternal": "Connexion interne AVA",
+  "steamConnectionExternal": "Proxy HTTP externe",
+  "steamConnectionSystem": "Connexion système actuelle (réseau externe détecté)",
+  "steamConnectionDirect": "Connexion directe",
+  "steamConnectionCheckedAt": "Dernière vérification : {time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "Seules les requêtes Steam dans AVA sont redirigées ; Android n’affiche donc pas d’icône VPN. L’application Steam et les autres applications ne sont pas accélérées.",
+  "steamConnectionScope": "Vérifie l’API et la Communauté Steam via la connexion actuelle d’AVA, sans identifiants. Le résultat concerne cette vérification, sans surveillance continue.",
+  "tradeSendNotSent": "L’offre n’a pas été envoyée. {reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "Vérifier le résultat de l’envoi",
+  "tradeSendNotFound": "Aucune nouvelle offre correspondante n’est encore visible. Steam peut mettre du temps à s’actualiser. Vérifiez les offres en attente et envoyées avant de renvoyer.",
+  "tradeSendCheckFailed": "Impossible de vérifier le résultat de l’envoi. {reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam a refusé cette offre sans raison détaillée. Vérifiez les objets sélectionnés et les restrictions d’échange.",
+  "tradeSendUnreadableResponse": "Steam n’a pas renvoyé de confirmation d’envoi complète.",
+  "steamConnectionPacHelp": "AVA détecte PAC sans interpréter ses règles. Cette vérification utilise la connexion système actuelle."
 }

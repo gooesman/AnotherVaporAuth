@@ -844,7 +844,7 @@
   "steamAccelerationOff": "未啟用",
   "steamAccelerationLoading": "正在同步訂閱…",
   "steamAccelerationStarting": "正在啟動…",
-  "steamAccelerationRunning": "已啟用",
+  "steamAccelerationRunning": "執行中",
   "steamAccelerationPaused": "內建加速已暫停",
   "steamAccelerationFailed": "加速無法使用",
   "steamAccelerationUnsupported": "目前僅支援 Windows 和 Android。",
@@ -877,5 +877,57 @@
   "steamAccelerationStorageError": "系統安全儲存空間無法使用，無法儲存設定。",
   "steamAccelerationCoreUnavailable": "缺少加速元件，請安裝更新的應用程式套件。",
   "steamAccelerationCoreIntegrity": "加速元件驗證失敗，已阻止啟動。",
-  "steamAccelerationStartFailed": "無法啟動加速，請重新整理環境偵測後再試。"
+  "steamAccelerationStartFailed": "無法啟動加速，請重新整理環境偵測後再試。",
+  "inventorySearch": "搜尋物品",
+  "inventoryFilterType": "類型",
+  "inventoryFilterRarity": "品質",
+  "inventoryFilterOther": "其他／未分類",
+  "inventoryFilterNoMatches": "沒有符合篩選條件的物品",
+  "inventoryFilterLoaded": "篩選目前已載入的物品；載入更多後會包含其餘物品。",
+  "steamConnectionTitle": "連線檢查",
+  "steamConnectionNotChecked": "尚未檢查連線",
+  "steamConnectionChecking": "正在檢查連線…",
+  "steamConnectionAvailable": "連線可用",
+  "steamConnectionPartial": "部分 Steam 服務無法連線",
+  "steamConnectionUnavailable": "無法連線 Steam",
+  "steamConnectionCheck": "檢查連線",
+  "steamConnectionApi": "Steam 登入介面",
+  "steamConnectionCommunity": "Steam 社群與市集",
+  "steamConnectionReachable": "可連線",
+  "steamConnectionFailed": "連線失敗",
+  "steamConnectionInternal": "AVA 內建線路",
+  "steamConnectionExternal": "外部 HTTP 代理",
+  "steamConnectionSystem": "目前系統線路（偵測到外部網路）",
+  "steamConnectionDirect": "直接連線",
+  "steamConnectionCheckedAt": "上次檢查：{time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "僅代理 AVA 內部的 Steam 請求，因此 Android 不顯示系統 VPN 圖示；Steam 用戶端和其他應用程式不會被加速。",
+  "steamConnectionScope": "透過 AVA 目前線路檢查 Steam 介面和社群，不傳送帳戶憑證。結果僅代表本次檢查，不會持續偵測。",
+  "tradeSendNotSent": "報價未送出。{reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "核對傳送結果",
+  "tradeSendNotFound": "暫未查到對應的新報價，Steam 可能尚未更新。請先檢查待確認與已傳送報價，避免重複傳送。",
+  "tradeSendCheckFailed": "暫時無法核對傳送結果。{reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam 拒絕了這筆報價，但未提供詳細原因。請檢查所選物品與交易限制。",
+  "tradeSendUnreadableResponse": "Steam 未傳回完整的傳送回執。",
+  "steamConnectionPacHelp": "AVA 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。"
 }

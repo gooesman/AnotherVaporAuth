@@ -2697,7 +2697,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamAccelerationStarting => 'Starting…';
 
   @override
-  String get steamAccelerationRunning => 'Enabled';
+  String get steamAccelerationRunning => 'Running';
 
   @override
   String get steamAccelerationPaused => 'Built-in acceleration is paused';
@@ -2813,4 +2813,111 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get steamAccelerationStartFailed =>
       'Could not start acceleration. Refresh the environment check and try again.';
+
+  @override
+  String get inventorySearch => 'Search items';
+
+  @override
+  String get inventoryFilterType => 'Type';
+
+  @override
+  String get inventoryFilterRarity => 'Rarity / quality';
+
+  @override
+  String get inventoryFilterOther => 'Other / unclassified';
+
+  @override
+  String get inventoryFilterNoMatches => 'No items match these filters';
+
+  @override
+  String get inventoryFilterLoaded =>
+      'Filters apply to loaded items. Load more to include the rest.';
+
+  @override
+  String get steamConnectionTitle => 'Connection check';
+
+  @override
+  String get steamConnectionNotChecked => 'Not checked';
+
+  @override
+  String get steamConnectionChecking => 'Checking connection…';
+
+  @override
+  String get steamConnectionAvailable => 'Connection available';
+
+  @override
+  String get steamConnectionPartial => 'Some Steam services are unavailable';
+
+  @override
+  String get steamConnectionUnavailable => 'Steam connection unavailable';
+
+  @override
+  String get steamConnectionCheck => 'Check connection';
+
+  @override
+  String get steamConnectionApi => 'Steam sign-in API';
+
+  @override
+  String get steamConnectionCommunity => 'Steam Community and Market';
+
+  @override
+  String get steamConnectionReachable => 'Reachable';
+
+  @override
+  String get steamConnectionFailed => 'Connection failed';
+
+  @override
+  String get steamConnectionInternal => 'AVA internal route';
+
+  @override
+  String get steamConnectionExternal => 'External HTTP proxy';
+
+  @override
+  String get steamConnectionSystem =>
+      'Current system route (external network detected)';
+
+  @override
+  String get steamConnectionDirect => 'Direct connection';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return 'Last checked: $time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      'This only routes Steam requests inside AVA, so Android does not show a system VPN icon. It does not accelerate the Steam app or other apps.';
+
+  @override
+  String get steamConnectionScope =>
+      'Checks Steam API and Community over AVA’s current route without account credentials. Results describe this check, not continuous availability.';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return 'Offer was not sent. $reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => 'Check send result';
+
+  @override
+  String get tradeSendNotFound =>
+      'No matching new offer is visible yet. Steam may take time to update. Check Pending and sent offers before sending again.';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return 'Could not verify the send result. $reason';
+  }
+
+  @override
+  String get tradeSendRejected =>
+      'Steam rejected this offer without a detailed reason. Check the selected items and trading restrictions.';
+
+  @override
+  String get tradeSendUnreadableResponse =>
+      'Steam did not return a complete send receipt.';
+
+  @override
+  String get steamConnectionPacHelp =>
+      'PAC is detected but not evaluated by AVA. This check uses the current system route.';
 }

@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/steam_acceleration.dart';
+import '../services/steam_connectivity.dart';
 import '../services/steam_network.dart';
 
 final steamAccelerationServiceProvider = Provider<SteamAccelerationService>((
@@ -12,6 +13,21 @@ final steamAccelerationServiceProvider = Provider<SteamAccelerationService>((
   final service = SteamAccelerationService();
   ref.onDispose(service.dispose);
   return service;
+});
+
+final steamConnectivityProbeProvider = Provider<SteamConnectivityProbe>(
+  (ref) => SteamConnectivityProbe(),
+);
+
+final steamConnectivityProvider = Provider<SteamConnectivityMonitor>((ref) {
+  final service = ref.watch(steamAccelerationServiceProvider);
+  final monitor = SteamConnectivityMonitor(
+    service,
+    effectiveProxy: () => steamProxyFor(service),
+    probe: ref.watch(steamConnectivityProbeProvider),
+  );
+  ref.onDispose(monitor.dispose);
+  return monitor;
 });
 
 /// Only the real application installs this scope. Offline rendering and TOTP
@@ -29,6 +45,7 @@ class SteamAccelerationScope extends ConsumerStatefulWidget {
 class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
     with WidgetsBindingObserver {
   late final SteamAccelerationService _service;
+  late final SteamConnectivityMonitor _connectivity;
 
   @override
   void initState() {
@@ -39,6 +56,10 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
       () => steamProxyFor(_service),
       readiness: _initialize(),
     );
+    // Start observing after installing routing. Its asynchronous probe waits
+    // for readiness without holding up initialization, avoiding a dependency
+    // cycle when automatic acceleration is still starting.
+    _connectivity = ref.read(steamConnectivityProvider);
   }
 
   Future<void> _initialize() async {
@@ -56,7 +77,9 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _service.supported) {
-      unawaited(_service.checkEnvironment());
+      unawaited(
+        _service.checkEnvironment().then((_) => _connectivity.refreshIfStale()),
+      );
     } else if (state == AppLifecycleState.detached) {
       unawaited(_service.stop());
     }

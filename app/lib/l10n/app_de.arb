@@ -844,7 +844,7 @@
   "steamAccelerationOff": "Aus",
   "steamAccelerationLoading": "Abonnement wird synchronisiert…",
   "steamAccelerationStarting": "Wird gestartet…",
-  "steamAccelerationRunning": "Aktiv",
+  "steamAccelerationRunning": "Läuft",
   "steamAccelerationPaused": "Interne Beschleunigung pausiert",
   "steamAccelerationFailed": "Beschleunigung nicht verfügbar",
   "steamAccelerationUnsupported": "Derzeit nur unter Windows und Android unterstützt.",
@@ -877,5 +877,57 @@
   "steamAccelerationStorageError": "Der sichere Speicher ist nicht verfügbar. Die Einstellung konnte nicht gespeichert werden.",
   "steamAccelerationCoreUnavailable": "Die Beschleunigungskomponente fehlt. Installiere ein aktualisiertes App-Paket.",
   "steamAccelerationCoreIntegrity": "Die Beschleunigungskomponente hat die Prüfung nicht bestanden und wurde blockiert.",
-  "steamAccelerationStartFailed": "Die Beschleunigung konnte nicht gestartet werden. Aktualisiere die Umgebungsprüfung und versuche es erneut."
+  "steamAccelerationStartFailed": "Die Beschleunigung konnte nicht gestartet werden. Aktualisiere die Umgebungsprüfung und versuche es erneut.",
+  "inventorySearch": "Gegenstände suchen",
+  "inventoryFilterType": "Typ",
+  "inventoryFilterRarity": "Seltenheit / Qualität",
+  "inventoryFilterOther": "Sonstige / nicht klassifiziert",
+  "inventoryFilterNoMatches": "Keine passenden Gegenstände",
+  "inventoryFilterLoaded": "Filter gelten für geladene Gegenstände. Lade weitere, um den Rest einzubeziehen.",
+  "steamConnectionTitle": "Verbindungsprüfung",
+  "steamConnectionNotChecked": "Noch nicht geprüft",
+  "steamConnectionChecking": "Verbindung wird geprüft…",
+  "steamConnectionAvailable": "Verbindung verfügbar",
+  "steamConnectionPartial": "Einige Steam-Dienste sind nicht erreichbar",
+  "steamConnectionUnavailable": "Steam-Verbindung nicht verfügbar",
+  "steamConnectionCheck": "Verbindung prüfen",
+  "steamConnectionApi": "Steam-Anmeldeschnittstelle",
+  "steamConnectionCommunity": "Steam-Community und -Markt",
+  "steamConnectionReachable": "Erreichbar",
+  "steamConnectionFailed": "Verbindung fehlgeschlagen",
+  "steamConnectionInternal": "Interne AVA-Verbindung",
+  "steamConnectionExternal": "Externer HTTP-Proxy",
+  "steamConnectionSystem": "Aktuelle Systemverbindung (externes Netzwerk erkannt)",
+  "steamConnectionDirect": "Direkte Verbindung",
+  "steamConnectionCheckedAt": "Zuletzt geprüft: {time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "Nur Steam-Anfragen innerhalb von AVA werden umgeleitet. Daher zeigt Android kein VPN-Symbol. Die Steam-App und andere Apps werden nicht beschleunigt.",
+  "steamConnectionScope": "Prüft Steam-API und Community über AVAs aktuelle Verbindung ohne Kontozugangsdaten. Das Ergebnis gilt nur für diese Prüfung.",
+  "tradeSendNotSent": "Angebot wurde nicht gesendet. {reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "Sendeergebnis prüfen",
+  "tradeSendNotFound": "Noch kein passendes neues Angebot sichtbar. Steam braucht möglicherweise Zeit. Prüfe ausstehende und gesendete Angebote vor erneutem Senden.",
+  "tradeSendCheckFailed": "Sendeergebnis konnte nicht geprüft werden. {reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam hat das Angebot ohne genaue Begründung abgelehnt. Prüfe die ausgewählten Gegenstände und Handelsbeschränkungen.",
+  "tradeSendUnreadableResponse": "Steam hat keine vollständige Sendebestätigung geliefert.",
+  "steamConnectionPacHelp": "AVA erkennt PAC, wertet dessen Regeln jedoch nicht aus. Diese Prüfung nutzt die aktuelle Systemverbindung."
 }

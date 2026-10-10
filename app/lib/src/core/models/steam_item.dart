@@ -87,6 +87,21 @@ class InventoryGame {
       : name;
 }
 
+/// Steam's stable category/tag identifiers with its localized display label.
+/// Labels are never used to classify items: translations vary by game/language.
+class InventoryTag {
+  final String category;
+  final String internalName;
+  final String label;
+  const InventoryTag({
+    required this.category,
+    required this.internalName,
+    required this.label,
+  });
+
+  String get key => '${category.toLowerCase()}/$internalName';
+}
+
 /// One inventory item (asset merged with its description).
 class InventoryItem {
   final int appid;
@@ -108,6 +123,8 @@ class InventoryItem {
   /// Localized rarity/quality label supplied by Steam, never inferred from name.
   final String rarityName;
 
+  final List<InventoryTag> tags;
+
   const InventoryItem({
     required this.appid,
     required this.contextId,
@@ -124,6 +141,7 @@ class InventoryItem {
     this.publisherFeePct,
     this.rarityColor = '',
     this.rarityName = '',
+    this.tags = const [],
   });
 }
 

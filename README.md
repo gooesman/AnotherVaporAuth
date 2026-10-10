@@ -38,7 +38,7 @@ the download links below belong to the original project. Windows is named
 lets you download and open the installer. Android uses the same update page;
 installation still requires the system confirmation.
 
-The Android preview is **AVA Fork** (`pro.dotslash.ava.fork`), an ARM64 debug
+The Android preview is **AVA Fork** (`pro.dotslash.ava.fork`), an ARM64 optimized release-mode
 build with a stable fork signing key. It installs alongside the original AVA
 and the earlier **AVA dev** preview, leaving their data intact. Import each
 account's exported `.maFile` once; later AVA Fork builds with the same signature
@@ -94,12 +94,16 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 - **Optional Steam acceleration (branch preview)** — choose a node from an HTTPS
   Clash subscription for AVA's Steam requests. Manual start is the default;
   automatic start pauses when an external proxy or VPN is detected. System
-  proxy settings and other apps are untouched. See the [scope and limitations](docs/windows-steam-switch.md#optional-steam-connectivity).
+  proxy settings and other apps are untouched. A compact status entry separates
+  core operation from checked API/community reachability; no system VPN icon is
+  expected. See the [scope and limitations](docs/windows-steam-switch.md#optional-steam-connectivity).
 
 - **Inventory rarity and prices (branch preview)** — restrained rarity-colored
   icon borders in the inventory and trade picker. Right-click, long-press or
   use the item menu for a read-only Steam price reference and market-page link.
   Prices load on demand, include their currency, and do not change item selection.
+  Market and trade inventories support name search and Steam-tag type/rarity
+  filters, retaining selected items and quantities when filters change.
   The Windows account switcher also shows Steam's running state and an account
   verified against the active local Steam process, when it can be identified.
 
@@ -193,7 +197,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1113 tests
+flutter test                       # 1182 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

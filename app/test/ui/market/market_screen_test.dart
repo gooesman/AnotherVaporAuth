@@ -27,9 +27,11 @@ class _Inventory extends InventoryClient {
   _Inventory({
     this.inventoryItems = const [],
     this.walletInfo = WalletInfo.fallback,
+    this.nextPage = const [],
   }) : super(SteamApiClient());
   final List<InventoryItem> inventoryItems;
   final WalletInfo walletInfo;
+  final List<InventoryItem> nextPage;
   final selectedContexts = <String>[];
 
   @override
@@ -67,7 +69,13 @@ class _Inventory extends InventoryClient {
     int count = 75,
   }) async {
     selectedContexts.add(contextId);
-    return InventoryPage(inventoryItems, null, false);
+    return startAssetId == null && nextPage.isNotEmpty
+        ? InventoryPage(inventoryItems, 'cursor', true)
+        : InventoryPage(
+            startAssetId == null ? inventoryItems : nextPage,
+            null,
+            false,
+          );
   }
 }
 
@@ -122,13 +130,18 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
   WidgetTester tester, {
   int initialTab = 1,
   List<InventoryItem> items = const [],
+  List<InventoryItem> nextPage = const [],
   WalletInfo wallet = WalletInfo.fallback,
   AvaThemeVariant variant = AvaThemeVariant.light,
   Locale locale = const Locale('en'),
   double textScale = 1,
 }) async {
   final market = _Market();
-  final inventory = _Inventory(inventoryItems: items, walletInfo: wallet);
+  final inventory = _Inventory(
+    inventoryItems: items,
+    walletInfo: wallet,
+    nextPage: nextPage,
+  );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -165,7 +178,174 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
   );
 }
 
+InventoryItem _categoryItem(
+  String id,
+  String name,
+  String category,
+  String label,
+) => InventoryItem(
+  appid: 730,
+  contextId: '2',
+  assetId: id,
+  classId: id,
+  instanceId: '0',
+  amount: 1,
+  marketHashName: name,
+  name: name,
+  type: '',
+  iconUrl: '',
+  marketable: true,
+  tradable: true,
+  tags: [InventoryTag(category: 'Type', internalName: category, label: label)],
+);
+
+Future<void> _filter(WidgetTester tester, String control, String label) async {
+  await tester.tap(find.byKey(ValueKey(control)));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets(
+    'market type filtering preserves matching items and combines with search',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await _show(
+        tester,
+        initialTab: 0,
+        items: [
+          _categoryItem('1', 'Rifle item', 'CSGO_Type_Rifle', 'Rifle'),
+          _categoryItem('2', 'Paint item', 'CSGO_Type_Spray', 'Graffiti'),
+          _categoryItem('3', 'Music item', 'CSGO_Type_MusicKit', 'Music Kit'),
+        ],
+      );
+      await _filter(tester, 'inventory-type', 'Music Kit');
+      expect(find.byKey(const ValueKey('inventory-730-2-3')), findsOneWidget);
+      expect(find.byKey(const ValueKey('inventory-730-2-1')), findsNothing);
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'rifle',
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(InventoryItemIcon), findsNothing);
+      await _filter(tester, 'inventory-type', 'All');
+      expect(find.byKey(const ValueKey('inventory-730-2-1')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'empty filtered results can load another page and discover new categories',
+    (tester) async {
+      final (_, _, l) = await _show(
+        tester,
+        initialTab: 0,
+        items: [_categoryItem('1', 'Rifle item', 'CSGO_Type_Rifle', 'Rifle')],
+        nextPage: [
+          _categoryItem('2', 'Music item', 'CSGO_Type_MusicKit', 'Music Kit'),
+        ],
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'music',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l.inventoryFilterNoMatches), findsOneWidget);
+      expect(find.text(l.inventoryFilterLoaded), findsOneWidget);
+      await tester.tap(find.text(l.tradeMore));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('inventory-730-2-2')), findsOneWidget);
+      expect(find.text(l.inventoryFilterLoaded), findsNothing);
+      await _filter(tester, 'inventory-type', 'Music Kit');
+      expect(find.byKey(const ValueKey('inventory-730-2-2')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    '360px large-text filters remain usable without keyboard overflow',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      await _show(
+        tester,
+        initialTab: 0,
+        textScale: 1.5,
+        locale: const Locale('de'),
+        items: [
+          _categoryItem(
+            '1',
+            'Music item',
+            'CSGO_Type_MusicKit',
+            'Very long localized music kit category label',
+          ),
+        ],
+      );
+      await _filter(
+        tester,
+        'inventory-type',
+        'Very long localized music kit category label',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'music',
+      );
+      tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'short screen with large text and keyboard keeps filters and results scrollable',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      await _show(
+        tester,
+        initialTab: 0,
+        textScale: 1.5,
+        locale: const Locale('de'),
+        items: [
+          _categoryItem('1', 'Music item', 'CSGO_Type_MusicKit', 'Music Kit'),
+        ],
+        nextPage: [
+          _categoryItem('2', 'Rifle item', 'CSGO_Type_Rifle', 'Rifle'),
+        ],
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'music',
+      );
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('inventory-730-2-1')),
+        120,
+        scrollable: find
+            .descendant(
+              of: find.byType(CustomScrollView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(InventoryItemIcon).hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   const item = InventoryItem(
     appid: 730,
     contextId: '2',
@@ -342,9 +522,21 @@ void main() {
     final (_, inventory, _) = await _show(tester, initialTab: 0);
     expect(find.text('CS2 · Backpack  '), findsOneWidget);
     expect(find.text('CS2 · Trade Protected  '), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('inventory-search')),
+      'previous game filter',
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('CS2 · Trade Protected  '));
     await tester.pumpAndSettle();
     expect(inventory.selectedContexts, ['2', '16']);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const ValueKey('inventory-search')))
+          .controller!
+          .text,
+      isEmpty,
+    );
     expect(tester.takeException(), isNull);
   });
 }

@@ -1328,7 +1328,7 @@
   "steamAccelerationOff": "Off",
   "steamAccelerationLoading": "Syncing subscription…",
   "steamAccelerationStarting": "Starting…",
-  "steamAccelerationRunning": "Enabled",
+  "steamAccelerationRunning": "Running",
   "steamAccelerationPaused": "Built-in acceleration is paused",
   "steamAccelerationFailed": "Acceleration unavailable",
   "steamAccelerationUnsupported": "Currently supported on Windows and Android only.",
@@ -1368,5 +1368,57 @@
   "steamAccelerationStorageError": "Secure storage is unavailable. The setting could not be saved.",
   "steamAccelerationCoreUnavailable": "The acceleration component is missing. Install an updated app package.",
   "steamAccelerationCoreIntegrity": "The acceleration component failed verification and was blocked.",
-  "steamAccelerationStartFailed": "Could not start acceleration. Refresh the environment check and try again."
+  "steamAccelerationStartFailed": "Could not start acceleration. Refresh the environment check and try again.",
+  "inventorySearch": "Search items",
+  "inventoryFilterType": "Type",
+  "inventoryFilterRarity": "Rarity / quality",
+  "inventoryFilterOther": "Other / unclassified",
+  "inventoryFilterNoMatches": "No items match these filters",
+  "inventoryFilterLoaded": "Filters apply to loaded items. Load more to include the rest.",
+  "steamConnectionTitle": "Connection check",
+  "steamConnectionNotChecked": "Not checked",
+  "steamConnectionChecking": "Checking connection…",
+  "steamConnectionAvailable": "Connection available",
+  "steamConnectionPartial": "Some Steam services are unavailable",
+  "steamConnectionUnavailable": "Steam connection unavailable",
+  "steamConnectionCheck": "Check connection",
+  "steamConnectionApi": "Steam sign-in API",
+  "steamConnectionCommunity": "Steam Community and Market",
+  "steamConnectionReachable": "Reachable",
+  "steamConnectionFailed": "Connection failed",
+  "steamConnectionInternal": "AVA internal route",
+  "steamConnectionExternal": "External HTTP proxy",
+  "steamConnectionSystem": "Current system route (external network detected)",
+  "steamConnectionDirect": "Direct connection",
+  "steamConnectionCheckedAt": "Last checked: {time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "This only routes Steam requests inside AVA, so Android does not show a system VPN icon. It does not accelerate the Steam app or other apps.",
+  "steamConnectionScope": "Checks Steam API and Community over AVA’s current route without account credentials. Results describe this check, not continuous availability.",
+  "tradeSendNotSent": "Offer was not sent. {reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "Check send result",
+  "tradeSendNotFound": "No matching new offer is visible yet. Steam may take time to update. Check Pending and sent offers before sending again.",
+  "tradeSendCheckFailed": "Could not verify the send result. {reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam rejected this offer without a detailed reason. Check the selected items and trading restrictions.",
+  "tradeSendUnreadableResponse": "Steam did not return a complete send receipt.",
+  "steamConnectionPacHelp": "PAC is detected but not evaluated by AVA. This check uses the current system route."
 }

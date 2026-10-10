@@ -113,7 +113,7 @@ jobs:
           max_size = 512 * 1024 * 1024
           platforms = [
               ('windows-x64', f'AVA-windows-installer-preview-{commit}', 'windows-preview.json', f'AVA-pc-{tag}-windows-x64-setup.exe'),
-              ('android-arm64', f'AVA-android-preview-{commit}', 'android-preview.json', 'app-cn-debug.apk'),
+              ('android-arm64', f'AVA-android-preview-{commit}', 'android-preview.json', 'app-cn-release.apk'),
           ]
           for platform, artifact_name, metadata_name, source_name in platforms:
               matches = [a for a in artifacts if a['name'] == artifact_name and not a['expired']]
@@ -145,6 +145,7 @@ jobs:
                   require(type(size) is int and 0 < size <= max_size and bundle.getinfo(source_name).file_size == size, 'Package size mismatch')
                   require(isinstance(metadata.get('sha256'), str) and re.fullmatch(r'[0-9a-f]{64}', metadata['sha256']), 'Invalid package digest')
                   if platform == 'android-arm64':
+                      require(metadata.get('build_mode') == 'release', 'Android package must be an optimized release build')
                       require(metadata.get('package') == 'pro.dotslash.ava.fork', 'Unexpected Android package identity')
                       require(metadata.get('signer_sha256') == 'a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f', 'Unexpected Android signer')
                   name = source_name if platform == 'windows-x64' else f'AVA-Fork-{tag}-android-arm64.apk'

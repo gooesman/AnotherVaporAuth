@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../app/providers.dart';
@@ -8,6 +11,8 @@ import '../../core/models/steam_friend.dart';
 import '../../core/models/steam_guard_account.dart';
 import '../../core/models/trade_draft.dart';
 import '../../services/steam_api_client.dart';
+import '../../services/steam_network.dart';
+import '../../services/debug_log.dart';
 import '../error_text.dart';
 import '../pending/session_retry.dart';
 import '../pending/pending_screen.dart';
@@ -38,6 +43,7 @@ class _TradeComposeScreenState extends ConsumerState<TradeComposeScreen>
   bool _sending = false;
   bool _needsLogin = false;
   bool _unknown = false;
+  TradeSendUnconfirmed? _uncertain;
   String? _error;
 
   @override
@@ -178,19 +184,33 @@ class _TradeComposeScreenState extends ConsumerState<TradeComposeScreen>
       final auth = isAuthError(e);
       // A server diagnostic/auth failure is definite. Network errors or a
       // malformed success reply are ambiguous and require checking offers.
-      final unknown = !auth && e is! SteamApiException && e is! ArgumentError;
+      final unknown =
+          !auth &&
+          e is! SteamApiException &&
+          e is! ArgumentError &&
+          e is! TradeSendNotSent &&
+          e is! TradeSendRejected;
       setState(() {
         _needsLogin = auth;
         _unknown = unknown;
+        _uncertain = unknown
+            ? e is TradeSendUnconfirmed
+                  ? e
+                  : TradeSendUnconfirmed(cause: e)
+            : null;
         _error = auth
             ? l.confNeedsLogin
             : e is TradeAccountMismatch
             ? l.loginAccountMismatch
             : unknown
-            ? l.tradeUnknownResult
+            ? '${l.tradeUnknownResult}\n\n${_sendReason(l, _uncertain?.cause)}'
+            : e is TradeSendNotSent
+            ? l.tradeSendNotSent(_sendReason(l, e.cause))
+            : e is TradeSendRejected
+            ? l.tradeSendNotSent(l.tradeSendRejected)
             : e is ArgumentError
             ? l.tradeValidationFailed
-            : describeError(l, e);
+            : l.tradeSendNotSent(_sendReason(l, e));
       });
     } finally {
       if (mounted) {
@@ -199,6 +219,61 @@ class _TradeComposeScreenState extends ConsumerState<TradeComposeScreen>
           _sending = false;
         });
       }
+    }
+  }
+
+  String _sendReason(AppLocalizations l, Object? error) {
+    if (error == null || error is FormatException) {
+      return l.tradeSendUnreadableResponse;
+    }
+    // The connection marker's text intentionally has no endpoint or secrets.
+    // A transport failure should stay a useful network diagnostic in the UI.
+    if (error is SteamConnectionSetupException ||
+        error is DioException && error.error is SteamConnectionSetupException) {
+      return l.netErrUnreachable;
+    }
+    if (error is SteamApiException) {
+      return DebugLog.redactSecrets(error.message);
+    }
+    if (error is TimeoutException) return l.netErrTimeout;
+    if (error is DioException) {
+      // Dio's fallback toString may contain a request URL or a proxy cause.
+      // Only use mappings that never interpolate the underlying exception.
+      if (error.type == DioExceptionType.unknown ||
+          error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.cancel) {
+        return l.netErrUnreachable;
+      }
+      return describeError(l, error);
+    }
+    return l.netErrUnreachable;
+  }
+
+  Future<void> _checkSend() async {
+    if (_busy || _uncertain == null) return;
+    final l = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    try {
+      final result = await ref
+          .read(tradeOffersClientProvider)
+          .recheckSend(widget.account, _uncertain!);
+      if (!mounted) return;
+      if (result != null) {
+        Navigator.pop(context, result);
+      } else {
+        setState(() => _error = l.tradeSendNotFound);
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _needsLogin = isAuthError(error);
+          _error = _needsLogin
+              ? l.confNeedsLogin
+              : l.tradeSendCheckFailed(_sendReason(l, error));
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -324,12 +399,28 @@ class _TradeComposeScreenState extends ConsumerState<TradeComposeScreen>
                 child: Text(l.loginButton),
               ),
             if (_unknown)
+              OutlinedButton.icon(
+                key: const ValueKey('trade-check-send'),
+                onPressed: _busy ? null : _checkSend,
+                icon: _busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(l.tradeCheckSendResult),
+              ),
+            if (_unknown)
               FilledButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => PendingScreen(account: widget.account),
-                  ),
-                ),
+                onPressed: _busy
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              PendingScreen(account: widget.account),
+                        ),
+                      ),
                 child: Text(l.tradeOpenPending),
               ),
             if (!_unknown)

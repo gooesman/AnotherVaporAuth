@@ -221,16 +221,19 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 ? const Center(child: CircularProgressIndicator())
                 : RefreshIndicator(
                     onRefresh: _load,
-                    child: ListView(
+                    child: ListView.builder(
                       padding: context.rSafeInsets(
                         left: 16,
                         right: 16,
                         bottom: 24,
                       ),
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        if (_error != null)
-                          Padding(
+                      itemCount: _error != null || visible.isEmpty
+                          ? 1
+                          : visible.length,
+                      itemBuilder: (context, index) {
+                        if (_error != null) {
+                          return Padding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
                               children: [
@@ -246,49 +249,55 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                                 ),
                               ],
                             ),
-                          ),
-                        if (_error == null && visible.isEmpty)
-                          Padding(
+                          );
+                        }
+                        if (visible.isEmpty) {
+                          return Padding(
                             padding: const EdgeInsets.all(24),
                             child: Text(l.friendsEmpty),
-                          ),
-                        if (_error == null)
-                          for (final friend in visible)
-                            Card(
-                              child: ListTile(
-                                leading: ClipOval(
-                                  child: SizedBox(
-                                    width: 44,
-                                    height: 44,
-                                    child: friend.avatarUrl.isEmpty
-                                        ? const Icon(Icons.person)
-                                        : Image(
-                                            image: SteamImageProvider(
-                                              friend.avatarUrl,
-                                            ),
-                                            errorBuilder: (_, _, _) =>
-                                                const Icon(Icons.person),
-                                          ),
-                                  ),
-                                ),
-                                title: Text(friend.name),
-                                subtitle: Text(
-                                  '${switch (friend.state) {
-                                    SteamFriendState.offline => l.friendsOffline,
-                                    SteamFriendState.online => l.friendsOnline,
-                                    SteamFriendState.playing => friend.game.isNotEmpty ? friend.game : l.friendsPlaying,
-                                  }}\n${friend.steamId}',
-                                ),
-                                isThreeLine: true,
-                                onTap: () => _details(friend),
-                                trailing: IconButton(
-                                  tooltip: l.friendsTrade,
-                                  icon: const Icon(Icons.swap_horiz),
-                                  onPressed: () => _compose(friend),
-                                ),
+                          );
+                        }
+                        final friend = visible[index];
+                        return Card(
+                          child: ListTile(
+                            leading: ClipOval(
+                              child: SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: friend.avatarUrl.isEmpty
+                                    ? const Icon(Icons.person)
+                                    : Image(
+                                        image: steamThumbnailProvider(
+                                          friend.avatarUrl,
+                                          logicalSize: const Size(44, 44),
+                                          devicePixelRatio:
+                                              MediaQuery.devicePixelRatioOf(
+                                                context,
+                                              ),
+                                        ),
+                                        errorBuilder: (_, _, _) =>
+                                            const Icon(Icons.person),
+                                      ),
                               ),
                             ),
-                      ],
+                            title: Text(friend.name),
+                            subtitle: Text(
+                              '${switch (friend.state) {
+                                SteamFriendState.offline => l.friendsOffline,
+                                SteamFriendState.online => l.friendsOnline,
+                                SteamFriendState.playing => friend.game.isNotEmpty ? friend.game : l.friendsPlaying,
+                              }}\n${friend.steamId}',
+                            ),
+                            isThreeLine: true,
+                            onTap: () => _details(friend),
+                            trailing: IconButton(
+                              tooltip: l.friendsTrade,
+                              icon: const Icon(Icons.swap_horiz),
+                              onPressed: () => _compose(friend),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
           ),

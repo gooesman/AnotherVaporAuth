@@ -186,6 +186,7 @@ class InventoryClient {
           publisherFeePct: feeApp is num ? feeApp.toDouble() : null,
           rarityColor: rarity.color,
           rarityName: rarity.name,
+          tags: _tags(d),
         ),
       );
     }
@@ -194,6 +195,31 @@ class InventoryClient {
       json['last_assetid'] as String?,
       json['more_items'] == 1 || json['more_items'] == true,
     );
+  }
+
+  static List<InventoryTag> _tags(Map<String, dynamic> item) {
+    final raw = item['tags'];
+    if (raw is! List) return const [];
+    final result = <String, InventoryTag>{};
+    for (final tag in raw.whereType<Map>()) {
+      final category = tag['category'];
+      final internal = tag['internal_name'];
+      final localized = tag['localized_tag_name'];
+      if (category is! String ||
+          internal is! String ||
+          category.trim().isEmpty ||
+          internal.trim().isEmpty) {
+        continue;
+      }
+      final value = InventoryTag(
+        category: category.trim(),
+        internalName: internal.trim(),
+        label: localized is String ? localized.trim() : '',
+      );
+      // Some descriptions repeat their tags. A duplicate is not a new facet.
+      result.putIfAbsent(value.key, () => value);
+    }
+    return List.unmodifiable(result.values);
   }
 
   /// Categories are machine-readable keys; localized names are display-only.

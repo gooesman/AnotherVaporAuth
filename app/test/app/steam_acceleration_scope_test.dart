@@ -5,6 +5,8 @@ import 'package:ava/src/app/steam_acceleration_providers.dart';
 import 'package:ava/src/services/steam_acceleration.dart';
 import 'package:ava/src/services/steam_acceleration_runtime.dart';
 import 'package:ava/src/services/steam_network.dart';
+import 'package:ava/src/services/steam_connectivity.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,6 +66,12 @@ class _Runtime implements SteamAccelerationRuntime {
   }
 }
 
+class _OfflineProbe extends SteamConnectivityProbe {
+  @override
+  Future<SteamConnectionResult> check(CancelToken cancel) async =>
+      const SteamConnectionResult(api: false, community: false);
+}
+
 void main() {
   tearDown(() => SteamNetwork.configureProxy(() => null));
 
@@ -75,6 +83,7 @@ void main() {
       ProviderScope(
         overrides: [
           steamAccelerationServiceProvider.overrideWithValue(service),
+          steamConnectivityProbeProvider.overrideWithValue(_OfflineProbe()),
         ],
         child: const SteamAccelerationScope(
           child: Directionality(

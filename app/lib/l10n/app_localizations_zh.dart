@@ -2548,7 +2548,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationStarting => '正在启动…';
 
   @override
-  String get steamAccelerationRunning => '已启用';
+  String get steamAccelerationRunning => '运行中';
 
   @override
   String get steamAccelerationPaused => '内置加速已暂停';
@@ -2653,6 +2653,108 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamAccelerationStartFailed => '无法启动加速，请刷新环境检测后重试。';
+
+  @override
+  String get inventorySearch => '搜索物品';
+
+  @override
+  String get inventoryFilterType => '类型';
+
+  @override
+  String get inventoryFilterRarity => '品质';
+
+  @override
+  String get inventoryFilterOther => '其他／未分类';
+
+  @override
+  String get inventoryFilterNoMatches => '没有符合筛选条件的物品';
+
+  @override
+  String get inventoryFilterLoaded => '筛选当前已加载的物品；加载更多后会包含剩余物品。';
+
+  @override
+  String get steamConnectionTitle => '连接检查';
+
+  @override
+  String get steamConnectionNotChecked => '尚未检查连接';
+
+  @override
+  String get steamConnectionChecking => '正在检查连接…';
+
+  @override
+  String get steamConnectionAvailable => '连接可用';
+
+  @override
+  String get steamConnectionPartial => '部分 Steam 服务无法连接';
+
+  @override
+  String get steamConnectionUnavailable => '无法连接 Steam';
+
+  @override
+  String get steamConnectionCheck => '检查连接';
+
+  @override
+  String get steamConnectionApi => 'Steam 登录接口';
+
+  @override
+  String get steamConnectionCommunity => 'Steam 社区与市场';
+
+  @override
+  String get steamConnectionReachable => '可连接';
+
+  @override
+  String get steamConnectionFailed => '连接失败';
+
+  @override
+  String get steamConnectionInternal => 'AVA 内置线路';
+
+  @override
+  String get steamConnectionExternal => '外部 HTTP 代理';
+
+  @override
+  String get steamConnectionSystem => '当前系统线路（检测到外部网络）';
+
+  @override
+  String get steamConnectionDirect => '直接连接';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return '上次检查：$time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      '仅代理 AVA 内部的 Steam 请求，因此 Android 不显示系统 VPN 图标；Steam 客户端和其他应用不会被加速。';
+
+  @override
+  String get steamConnectionScope =>
+      '通过 AVA 当前线路检查 Steam 接口和社区，不发送账户凭据。结果仅代表本次检查，不会持续检测。';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return '报价未发出。$reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => '核对发送结果';
+
+  @override
+  String get tradeSendNotFound =>
+      '暂未查到对应的新报价，Steam 可能尚未更新。请先检查待确认和已发送报价，避免重复发送。';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return '暂时无法核对发送结果。$reason';
+  }
+
+  @override
+  String get tradeSendRejected => 'Steam 拒绝了这笔报价，但未提供详细原因。请检查所选物品和交易限制。';
+
+  @override
+  String get tradeSendUnreadableResponse => 'Steam 未返回完整的发送回执。';
+
+  @override
+  String get steamConnectionPacHelp => 'AVA 仅检测 PAC，不解析其规则；本次检查使用当前系统线路。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5207,7 +5309,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationStarting => '正在啟動…';
 
   @override
-  String get steamAccelerationRunning => '已啟用';
+  String get steamAccelerationRunning => '執行中';
 
   @override
   String get steamAccelerationPaused => '內建加速已暫停';
@@ -5312,4 +5414,106 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamAccelerationStartFailed => '無法啟動加速，請重新整理環境偵測後再試。';
+
+  @override
+  String get inventorySearch => '搜尋物品';
+
+  @override
+  String get inventoryFilterType => '類型';
+
+  @override
+  String get inventoryFilterRarity => '品質';
+
+  @override
+  String get inventoryFilterOther => '其他／未分類';
+
+  @override
+  String get inventoryFilterNoMatches => '沒有符合篩選條件的物品';
+
+  @override
+  String get inventoryFilterLoaded => '篩選目前已載入的物品；載入更多後會包含其餘物品。';
+
+  @override
+  String get steamConnectionTitle => '連線檢查';
+
+  @override
+  String get steamConnectionNotChecked => '尚未檢查連線';
+
+  @override
+  String get steamConnectionChecking => '正在檢查連線…';
+
+  @override
+  String get steamConnectionAvailable => '連線可用';
+
+  @override
+  String get steamConnectionPartial => '部分 Steam 服務無法連線';
+
+  @override
+  String get steamConnectionUnavailable => '無法連線 Steam';
+
+  @override
+  String get steamConnectionCheck => '檢查連線';
+
+  @override
+  String get steamConnectionApi => 'Steam 登入介面';
+
+  @override
+  String get steamConnectionCommunity => 'Steam 社群與市集';
+
+  @override
+  String get steamConnectionReachable => '可連線';
+
+  @override
+  String get steamConnectionFailed => '連線失敗';
+
+  @override
+  String get steamConnectionInternal => 'AVA 內建線路';
+
+  @override
+  String get steamConnectionExternal => '外部 HTTP 代理';
+
+  @override
+  String get steamConnectionSystem => '目前系統線路（偵測到外部網路）';
+
+  @override
+  String get steamConnectionDirect => '直接連線';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return '上次檢查：$time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      '僅代理 AVA 內部的 Steam 請求，因此 Android 不顯示系統 VPN 圖示；Steam 用戶端和其他應用程式不會被加速。';
+
+  @override
+  String get steamConnectionScope =>
+      '透過 AVA 目前線路檢查 Steam 介面和社群，不傳送帳戶憑證。結果僅代表本次檢查，不會持續偵測。';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return '報價未送出。$reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => '核對傳送結果';
+
+  @override
+  String get tradeSendNotFound =>
+      '暫未查到對應的新報價，Steam 可能尚未更新。請先檢查待確認與已傳送報價，避免重複傳送。';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return '暫時無法核對傳送結果。$reason';
+  }
+
+  @override
+  String get tradeSendRejected => 'Steam 拒絕了這筆報價，但未提供詳細原因。請檢查所選物品與交易限制。';
+
+  @override
+  String get tradeSendUnreadableResponse => 'Steam 未傳回完整的傳送回執。';
+
+  @override
+  String get steamConnectionPacHelp => 'AVA 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。';
 }

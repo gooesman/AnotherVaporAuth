@@ -19,10 +19,16 @@ const _partner = '76561198000000002';
 
 class _Inventory extends InventoryClient {
   final WalletInfo walletInfo;
+  final int itemCount;
+  final List<InventoryItem>? inventoryItems;
   final viewers = <String>[];
   final owners = <String?>[];
 
-  _Inventory({this.walletInfo = WalletInfo.fallback}) : super(SteamApiClient());
+  _Inventory({
+    this.walletInfo = WalletInfo.fallback,
+    this.itemCount = 1,
+    this.inventoryItems,
+  }) : super(SteamApiClient());
 
   @override
   Future<InventoryOverview> overview(
@@ -50,24 +56,26 @@ class _Inventory extends InventoryClient {
     String? ownerSteamId,
     String? startAssetId,
     int count = 75,
-  }) async => const InventoryPage(
-    [
-      InventoryItem(
-        appid: 730,
-        contextId: '2',
-        assetId: '22',
-        classId: '100',
-        instanceId: '0',
-        amount: 3,
-        marketHashName: 'SCAR-20 | Contractor (Field-Tested)',
-        name: 'SCAR-20 | Contractor (Field-Tested)',
-        type: 'Consumer Grade Sniper Rifle',
-        iconUrl: '',
-        // Tradable items may still have market references while unsellable.
-        marketable: false,
-        tradable: true,
-      ),
-    ],
+  }) async => InventoryPage(
+    inventoryItems ??
+        List.generate(
+          itemCount,
+          (index) => InventoryItem(
+            appid: 730,
+            contextId: '2',
+            assetId: '${22 + index}',
+            classId: '100',
+            instanceId: '0',
+            amount: 3,
+            marketHashName: 'SCAR-20 | Contractor (Field-Tested)',
+            name: 'SCAR-20 | Contractor (Field-Tested)',
+            type: 'Consumer Grade Sniper Rifle',
+            iconUrl: '',
+            // Tradable items may still have market references while unsellable.
+            marketable: false,
+            tradable: true,
+          ),
+        ),
     null,
     false,
   );
@@ -140,7 +148,143 @@ Future<void> _dismissMenu(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+InventoryItem _categoryItem(
+  String id,
+  String name,
+  String category,
+  String label,
+  String rarity,
+) => InventoryItem(
+  appid: 730,
+  contextId: '2',
+  assetId: id,
+  classId: id,
+  instanceId: '0',
+  amount: 3,
+  marketHashName: name,
+  name: name,
+  type: '',
+  iconUrl: '',
+  marketable: true,
+  tradable: true,
+  tags: [
+    InventoryTag(category: 'Type', internalName: category, label: label),
+    InventoryTag(category: 'Rarity', internalName: rarity, label: rarity),
+  ],
+);
+
+Future<void> _filter(WidgetTester tester, String control, String label) async {
+  await tester.tap(find.byKey(ValueKey(control)));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets(
+    'type and rarity filters cooperate with search without discarding selected quantities',
+    (tester) async {
+      await _show(
+        tester,
+        _Inventory(
+          inventoryItems: [
+            _categoryItem(
+              '22',
+              'Rifle item',
+              'CSGO_Type_Rifle',
+              'Rifle',
+              'Rare',
+            ),
+            _categoryItem(
+              '23',
+              'Blue paint',
+              'CSGO_Type_Spray',
+              'Graffiti',
+              'Common',
+            ),
+            _categoryItem(
+              '24',
+              'Music item',
+              'CSGO_Type_MusicKit',
+              'Music Kit',
+              'Rare',
+            ),
+          ],
+        ),
+        _Market(),
+        size: const Size(390, 800),
+      );
+      await tester.tap(find.byKey(const ValueKey('asset-730/2/22')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await _filter(tester, 'inventory-type', 'Graffiti');
+      expect(find.byKey(const ValueKey('asset-730/2/22')), findsNothing);
+      expect(find.byKey(const ValueKey('asset-730/2/23')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'music',
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(find.text(_l(tester).inventoryFilterNoMatches), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        '',
+      );
+      await _filter(tester, 'inventory-type', 'All');
+      await _filter(tester, 'inventory-rarity', 'Rare');
+      expect(find.byKey(const ValueKey('asset-730/2/23')), findsNothing);
+      expect(
+        tester
+            .widget<CheckboxListTile>(
+              find.byKey(const ValueKey('asset-730/2/22')),
+            )
+            .value,
+        isTrue,
+      );
+      expect(find.text('2'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'large inventories build only viewport rows and retain offscreen selection',
+    (tester) async {
+      await _show(
+        tester,
+        _Inventory(itemCount: 1500),
+        _Market(),
+        size: const Size(390, 800),
+      );
+      final visibleRows = find.byType(CheckboxListTile).evaluate().length;
+      debugPrint('1500 inventory items: $visibleRows rows built initially');
+      expect(visibleRows, greaterThan(0));
+      expect(visibleRows, lessThan(20));
+      expect(find.byKey(const ValueKey('asset-730/2/1521')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('asset-730/2/22')));
+      await tester.pumpAndSettle();
+      final scroll = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      scroll.jumpTo(4000);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('asset-730/2/22')), findsNothing);
+      expect(find.byType(CheckboxListTile).evaluate().length, lessThan(20));
+      scroll.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<CheckboxListTile>(
+              find.byKey(const ValueKey('asset-730/2/22')),
+            )
+            .value,
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('partner inventory prices use the signed-in viewer currency', (
     tester,
   ) async {

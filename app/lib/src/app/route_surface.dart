@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 /// or shrinking the page under the user's finger. This builder deliberately
 /// installs no predictive-back gesture observer; Flutter commits an unhandled
 /// back gesture through the normal Navigator/PopScope path.
-class AvaAndroidPageTransitionsBuilder extends PageTransitionsBuilder {
-  const AvaAndroidPageTransitionsBuilder();
+class AvaFadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const AvaFadePageTransitionsBuilder();
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 180);
+  Duration get transitionDuration => const Duration(milliseconds: 160);
 
   @override
   Duration get reverseTransitionDuration => transitionDuration;
@@ -20,11 +20,13 @@ class AvaAndroidPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
     Widget child,
-  ) => FadeTransition(opacity: animation, child: child);
+  ) => MediaQuery.disableAnimationsOf(context)
+      ? child
+      : FadeTransition(opacity: animation, child: child);
 }
 
 /// Gives each Material page its own opaque backdrop, inside its transition.
-/// The other platforms keep their native transitions; a backdrop outside
+/// iOS and macOS keep their native transitions; a backdrop outside
 /// Navigator lets transparent scaffolds expose the previous page's widgets.
 class AvaPageTransitionsBuilder extends PageTransitionsBuilder {
   const AvaPageTransitionsBuilder({

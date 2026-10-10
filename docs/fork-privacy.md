@@ -1,6 +1,6 @@
 # Privacy notice for this AVA fork
 
-Updated: 2026-10-10. This notice describes gooesman's independent fork of
+Updated: 2026-10-11. This notice describes gooesman's independent fork of
 freefrank's AVA, including its **AVA-pc** Windows and **AVA Fork** Android preview
 builds.
 
@@ -27,6 +27,11 @@ The Android package includes the same core. The core uses a private local
 listener and receives its configuration in memory, with no retained diagnostics.
 AVA detects system proxy/VPN information locally to pause its own core; it does
 not upload that information or modify system proxy, DNS or certificates.
+Connectivity checks contact Steam's public API and community over the same
+current route, without account cookies or tokens. They run after relevant route
+changes, on foreground return when the last result is stale, or when you choose
+to check, rather than continuously polling Steam.
+Results describe reachability, not account authentication or trading permission.
 
 Optional WebDAV synchronization sends encrypted account data to the server you
 choose. It is disabled until you configure it. Local debug logs may include

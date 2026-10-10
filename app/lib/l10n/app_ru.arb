@@ -774,7 +774,7 @@
   "steamAccelerationOff": "Выключено",
   "steamAccelerationLoading": "Синхронизация подписки…",
   "steamAccelerationStarting": "Запуск…",
-  "steamAccelerationRunning": "Включено",
+  "steamAccelerationRunning": "Работает",
   "steamAccelerationPaused": "Встроенное ускорение приостановлено",
   "steamAccelerationFailed": "Ускорение недоступно",
   "steamAccelerationUnsupported": "Сейчас поддерживаются только Windows и Android.",
@@ -807,5 +807,57 @@
   "steamAccelerationStorageError": "Защищённое хранилище недоступно. Не удалось сохранить настройку.",
   "steamAccelerationCoreUnavailable": "Компонент ускорения отсутствует. Установите обновлённый пакет приложения.",
   "steamAccelerationCoreIntegrity": "Компонент ускорения не прошёл проверку и был заблокирован.",
-  "steamAccelerationStartFailed": "Не удалось запустить ускорение. Обновите проверку окружения и повторите попытку."
+  "steamAccelerationStartFailed": "Не удалось запустить ускорение. Обновите проверку окружения и повторите попытку.",
+  "inventorySearch": "Поиск предметов",
+  "inventoryFilterType": "Тип",
+  "inventoryFilterRarity": "Редкость / качество",
+  "inventoryFilterOther": "Другое / без категории",
+  "inventoryFilterNoMatches": "Нет предметов по выбранным фильтрам",
+  "inventoryFilterLoaded": "Фильтры применяются к загруженным предметам. Загрузите ещё, чтобы включить остальные.",
+  "steamConnectionTitle": "Проверка соединения",
+  "steamConnectionNotChecked": "Не проверено",
+  "steamConnectionChecking": "Проверка соединения…",
+  "steamConnectionAvailable": "Соединение доступно",
+  "steamConnectionPartial": "Некоторые службы Steam недоступны",
+  "steamConnectionUnavailable": "Соединение со Steam недоступно",
+  "steamConnectionCheck": "Проверить соединение",
+  "steamConnectionApi": "API входа Steam",
+  "steamConnectionCommunity": "Сообщество и Торговая площадка Steam",
+  "steamConnectionReachable": "Доступно",
+  "steamConnectionFailed": "Ошибка соединения",
+  "steamConnectionInternal": "Встроенный маршрут AVA",
+  "steamConnectionExternal": "Внешний HTTP-прокси",
+  "steamConnectionSystem": "Текущий системный маршрут (обнаружена внешняя сеть)",
+  "steamConnectionDirect": "Прямое соединение",
+  "steamConnectionCheckedAt": "Последняя проверка: {time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "Перенаправляются только запросы Steam внутри AVA, поэтому Android не показывает значок VPN. Приложение Steam и другие приложения не ускоряются.",
+  "steamConnectionScope": "Проверяет API и Сообщество Steam через текущий маршрут AVA без учётных данных. Результат относится только к этой проверке, а не к постоянному мониторингу.",
+  "tradeSendNotSent": "Предложение не отправлено. {reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "Проверить результат отправки",
+  "tradeSendNotFound": "Новое соответствующее предложение пока не найдено. Steam может обновляться с задержкой. Проверьте ожидающие и отправленные предложения перед повторной отправкой.",
+  "tradeSendCheckFailed": "Не удалось проверить результат отправки. {reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam отклонил предложение без подробной причины. Проверьте выбранные предметы и ограничения обмена.",
+  "tradeSendUnreadableResponse": "Steam не вернул полное подтверждение отправки.",
+  "steamConnectionPacHelp": "AVA обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут."
 }

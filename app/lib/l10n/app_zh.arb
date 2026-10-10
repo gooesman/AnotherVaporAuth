@@ -1205,7 +1205,7 @@
   "steamAccelerationOff": "未启用",
   "steamAccelerationLoading": "正在同步订阅…",
   "steamAccelerationStarting": "正在启动…",
-  "steamAccelerationRunning": "已启用",
+  "steamAccelerationRunning": "运行中",
   "steamAccelerationPaused": "内置加速已暂停",
   "steamAccelerationFailed": "加速不可用",
   "steamAccelerationUnsupported": "目前仅支持 Windows 和 Android。",
@@ -1238,5 +1238,57 @@
   "steamAccelerationStorageError": "系统安全存储不可用，无法保存设置。",
   "steamAccelerationCoreUnavailable": "缺少加速组件，请安装更新的应用包。",
   "steamAccelerationCoreIntegrity": "加速组件校验失败，已阻止启动。",
-  "steamAccelerationStartFailed": "无法启动加速，请刷新环境检测后重试。"
+  "steamAccelerationStartFailed": "无法启动加速，请刷新环境检测后重试。",
+  "inventorySearch": "搜索物品",
+  "inventoryFilterType": "类型",
+  "inventoryFilterRarity": "品质",
+  "inventoryFilterOther": "其他／未分类",
+  "inventoryFilterNoMatches": "没有符合筛选条件的物品",
+  "inventoryFilterLoaded": "筛选当前已加载的物品；加载更多后会包含剩余物品。",
+  "steamConnectionTitle": "连接检查",
+  "steamConnectionNotChecked": "尚未检查连接",
+  "steamConnectionChecking": "正在检查连接…",
+  "steamConnectionAvailable": "连接可用",
+  "steamConnectionPartial": "部分 Steam 服务无法连接",
+  "steamConnectionUnavailable": "无法连接 Steam",
+  "steamConnectionCheck": "检查连接",
+  "steamConnectionApi": "Steam 登录接口",
+  "steamConnectionCommunity": "Steam 社区与市场",
+  "steamConnectionReachable": "可连接",
+  "steamConnectionFailed": "连接失败",
+  "steamConnectionInternal": "AVA 内置线路",
+  "steamConnectionExternal": "外部 HTTP 代理",
+  "steamConnectionSystem": "当前系统线路（检测到外部网络）",
+  "steamConnectionDirect": "直接连接",
+  "steamConnectionCheckedAt": "上次检查：{time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "仅代理 AVA 内部的 Steam 请求，因此 Android 不显示系统 VPN 图标；Steam 客户端和其他应用不会被加速。",
+  "steamConnectionScope": "通过 AVA 当前线路检查 Steam 接口和社区，不发送账户凭据。结果仅代表本次检查，不会持续检测。",
+  "tradeSendNotSent": "报价未发出。{reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "核对发送结果",
+  "tradeSendNotFound": "暂未查到对应的新报价，Steam 可能尚未更新。请先检查待确认和已发送报价，避免重复发送。",
+  "tradeSendCheckFailed": "暂时无法核对发送结果。{reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam 拒绝了这笔报价，但未提供详细原因。请检查所选物品和交易限制。",
+  "tradeSendUnreadableResponse": "Steam 未返回完整的发送回执。",
+  "steamConnectionPacHelp": "AVA 仅检测 PAC，不解析其规则；本次检查使用当前系统线路。"
 }

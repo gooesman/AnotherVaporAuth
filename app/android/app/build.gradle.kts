@@ -73,6 +73,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        resValue("string", "ava_app_label", if (avaForkPreview) "AVA Fork" else "AVA")
     }
 
     // Distribution channels. Same applicationId on purpose: play and cn have
@@ -114,6 +115,11 @@ android {
             }
         }
         release {
+            // The optimized fork keeps the installed preview's package,
+            // signing identity and version-name suffix for in-place updates.
+            if (avaForkPreview) {
+                versionNameSuffix = "-fork"
+            }
             // Use the real upload key when key.properties is present; otherwise
             // fall back to debug signing so release builds still run locally/CI.
             signingConfig = if (hasReleaseSigning)

@@ -368,6 +368,9 @@ class SteamApiClient {
         '$communityBase$path',
         data: form,
         options: Options(
+          // Writes must never be transparently replayed at a redirect target.
+          // Keep this explicit even when a caller supplies its own Dio options.
+          followRedirects: false,
           responseType: ResponseType.plain,
           contentType: Headers.formUrlEncodedContentType,
           listFormat: ListFormat.multi,

@@ -35,7 +35,7 @@
 本分支正式发布的版本、下载并打开安装程序；手机端也有同样入口，由系统确认安装。
 
 Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固定 Fork
-签名的 ARM64 debug 构建，可与原版 AVA、此前的 **AVA dev** 同时安装并保留旧应用数据。
+签名的 ARM64 release 优化构建，可与原版 AVA、此前的 **AVA dev** 同时安装并保留旧应用数据。
 首次需导出各账号的 `.maFile` 后导入新应用；后续相同签名且版本号递增的 AVA Fork
 可直接覆盖更新。详见[安装与迁移步骤](docs/windows-steam-switch.md#android-installation-and-migration)。
 
@@ -68,16 +68,18 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
   在售/暂挂/待确认物品概览，可选择显示的卡片；新增好友列表、双向交易报价编辑
   和应用内短信验证获取备用登录码。设置中可关闭启动身份验证，账户文件仍保持加密。
   Android 试用包为独立的 **AVA Fork**，首次安装不覆盖旧应用；详见[试用说明](docs/windows-steam-switch.md)。
-  手机首页在竖屏和横屏下都只保留令牌和账号列表：点按切换当前令牌，长按直接进入该账号概览；
+  手机首页在竖屏和横屏下都以令牌和账号列表为主：点按切换当前令牌，长按直接进入该账号概览；
   市场、好友和其他账号功能从概览进入，不再经过长按菜单。
 
 - **可选 Steam 加速（本分支试用功能）** —— 导入 HTTPS Clash 订阅并选择节点，
   仅用于 AVA 内的 Steam 请求。默认手动开启，可选自动启动；检测到外部代理或 VPN 时
-  暂停内置组件，不修改系统代理或接管其他软件。见[范围与限制](docs/windows-steam-switch.md#optional-steam-connectivity)。
+  暂停内置组件，不修改系统代理或接管其他软件。首页小入口区分组件运行和登录接口/社区连接结果，
+  不依赖系统 VPN 图标。见[范围与限制](docs/windows-steam-switch.md#optional-steam-connectivity)。
 
 - **库存品质与查价（本分支试用功能）** —— 库存和交易选物图标增加淡品质色细边框。
   右键、长按或点击物品菜单可按需查看 Steam 市场参考价与币种，并打开对应市场页面，
   不改变物品勾选。Windows 账号切换页同时显示 Steam 是否运行；能核实本机活动进程时显示当前账号。
+  市场和交易库存支持名称搜索、按 Steam 标签筛选类型与品质；切换筛选保留已选物品及数量。
 
 - **Windows Steam 账号切换（本分支试用功能）** —— 从账户概览、设置页或账号右键菜单选择
   本机已记住登录信息的 Steam 账号，正常退出并重启 Steam；修改前备份设置，
@@ -135,7 +137,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1113 项测试
+flutter test                       # 1182 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。

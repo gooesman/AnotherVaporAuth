@@ -18,7 +18,10 @@
 
 Windows 安装器显示为 AVA-pc。内部仍使用 `ava.exe`、`%LOCALAPPDATA%\Programs\AVA` 和原有应用数据目录。NSIS 的 `APPVER` 参数只使用三段版本号；完整版本和构建编号写入应用和预览元数据。
 
-Android 目前使用独立包名 `pro.dotslash.ava.fork`、显示名称 AVA Fork、固定私有签名，ARM64 / CN debug 预览。原 AVA dev 的数据保留在原应用内；首次迁移使用导出／导入，此后的同包名、同签名新版可以覆盖更新。私钥只能由仓库 Secrets 提供，不得提交到 Git。
+Android 目前使用独立包名 `pro.dotslash.ava.fork`、显示名称 AVA Fork、固定私有签名，ARM64 / CN release 优化构建（AOT、不可调试）。原 AVA dev 的数据保留在原应用内；首次迁移使用导出／导入，此后的同包名、同签名新版可以覆盖更新。私钥只能由仓库 Secrets 提供，不得提交到 Git。
+
+从旧 AVA Fork 调试预览升级到 release 优化包不改变包名或证书，递增构建号后可直接覆盖。
+构建会检查 APK 内的 AOT 代码、不可调试标志及 R8 原始类名映射；广告／计费门禁不会仅凭混淆后的 dex 类名判断。
 
 ## 先构建，再手动发布
 

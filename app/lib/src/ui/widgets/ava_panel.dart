@@ -51,14 +51,17 @@ class AvaChip extends StatelessWidget {
     return Container(
       padding: context.rInsets(h: 9, v: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: t.plain ? 0.08 : 0.15),
         borderRadius: BorderRadius.circular(t.radiusSm),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        border: Border.all(color: color.withValues(alpha: t.plain ? 0.2 : 0.5)),
       ),
       child: Text(
         label,
         style: TextStyle(
-            color: color, fontSize: context.r(11), letterSpacing: context.r(0.5)),
+          color: color,
+          fontSize: context.r(11),
+          letterSpacing: context.r(0.5),
+        ),
       ),
     );
   }

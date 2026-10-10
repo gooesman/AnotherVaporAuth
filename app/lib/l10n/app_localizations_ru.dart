@@ -2781,7 +2781,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steamAccelerationStarting => 'Запуск…';
 
   @override
-  String get steamAccelerationRunning => 'Включено';
+  String get steamAccelerationRunning => 'Работает';
 
   @override
   String get steamAccelerationPaused => 'Встроенное ускорение приостановлено';
@@ -2899,4 +2899,111 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get steamAccelerationStartFailed =>
       'Не удалось запустить ускорение. Обновите проверку окружения и повторите попытку.';
+
+  @override
+  String get inventorySearch => 'Поиск предметов';
+
+  @override
+  String get inventoryFilterType => 'Тип';
+
+  @override
+  String get inventoryFilterRarity => 'Редкость / качество';
+
+  @override
+  String get inventoryFilterOther => 'Другое / без категории';
+
+  @override
+  String get inventoryFilterNoMatches => 'Нет предметов по выбранным фильтрам';
+
+  @override
+  String get inventoryFilterLoaded =>
+      'Фильтры применяются к загруженным предметам. Загрузите ещё, чтобы включить остальные.';
+
+  @override
+  String get steamConnectionTitle => 'Проверка соединения';
+
+  @override
+  String get steamConnectionNotChecked => 'Не проверено';
+
+  @override
+  String get steamConnectionChecking => 'Проверка соединения…';
+
+  @override
+  String get steamConnectionAvailable => 'Соединение доступно';
+
+  @override
+  String get steamConnectionPartial => 'Некоторые службы Steam недоступны';
+
+  @override
+  String get steamConnectionUnavailable => 'Соединение со Steam недоступно';
+
+  @override
+  String get steamConnectionCheck => 'Проверить соединение';
+
+  @override
+  String get steamConnectionApi => 'API входа Steam';
+
+  @override
+  String get steamConnectionCommunity => 'Сообщество и Торговая площадка Steam';
+
+  @override
+  String get steamConnectionReachable => 'Доступно';
+
+  @override
+  String get steamConnectionFailed => 'Ошибка соединения';
+
+  @override
+  String get steamConnectionInternal => 'Встроенный маршрут AVA';
+
+  @override
+  String get steamConnectionExternal => 'Внешний HTTP-прокси';
+
+  @override
+  String get steamConnectionSystem =>
+      'Текущий системный маршрут (обнаружена внешняя сеть)';
+
+  @override
+  String get steamConnectionDirect => 'Прямое соединение';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return 'Последняя проверка: $time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      'Перенаправляются только запросы Steam внутри AVA, поэтому Android не показывает значок VPN. Приложение Steam и другие приложения не ускоряются.';
+
+  @override
+  String get steamConnectionScope =>
+      'Проверяет API и Сообщество Steam через текущий маршрут AVA без учётных данных. Результат относится только к этой проверке, а не к постоянному мониторингу.';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return 'Предложение не отправлено. $reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => 'Проверить результат отправки';
+
+  @override
+  String get tradeSendNotFound =>
+      'Новое соответствующее предложение пока не найдено. Steam может обновляться с задержкой. Проверьте ожидающие и отправленные предложения перед повторной отправкой.';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return 'Не удалось проверить результат отправки. $reason';
+  }
+
+  @override
+  String get tradeSendRejected =>
+      'Steam отклонил предложение без подробной причины. Проверьте выбранные предметы и ограничения обмена.';
+
+  @override
+  String get tradeSendUnreadableResponse =>
+      'Steam не вернул полное подтверждение отправки.';
+
+  @override
+  String get steamConnectionPacHelp =>
+      'AVA обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут.';
 }

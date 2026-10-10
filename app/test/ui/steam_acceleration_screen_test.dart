@@ -8,9 +8,13 @@ import 'package:ava/src/core/models/manifest.dart';
 import 'package:ava/src/services/account_store.dart';
 import 'package:ava/src/services/steam_acceleration.dart';
 import 'package:ava/src/services/steam_acceleration_runtime.dart';
+import 'package:ava/src/services/steam_connectivity.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/settings_screen.dart';
 import 'package:ava/src/ui/steam_acceleration_screen.dart';
+import 'package:ava/src/ui/home_screen.dart';
+import 'package:ava/src/ui/widgets/steam_acceleration_status.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -60,6 +64,16 @@ class _Service extends SteamAccelerationService {
   SteamAccelerationState get state => value;
   @override
   bool get supported => supportedValue;
+  @override
+  SteamProxyEndpoint? get proxyEndpoint =>
+      value.phase == SteamAccelerationPhase.running
+      ? const SteamProxyEndpoint(
+          host: '127.0.0.1',
+          port: 7890,
+          username: 'synthetic',
+          password: 'synthetic',
+        )
+      : null;
 
   void emit({
     SteamAccelerationPhase? phase,
@@ -148,6 +162,20 @@ class _Service extends SteamAccelerationService {
   }
 }
 
+class _Probe extends SteamConnectivityProbe {
+  int calls = 0;
+  Completer<SteamConnectionResult>? pending;
+  SteamConnectionResult result = const SteamConnectionResult(
+    api: false,
+    community: false,
+  );
+  @override
+  Future<SteamConnectionResult> check(CancelToken cancel) async {
+    calls++;
+    return pending == null ? result : pending!.future;
+  }
+}
+
 class _Unlocked extends AppController {
   @override
   Future<AppData> build() async => AppData(
@@ -169,6 +197,7 @@ Future<void> _pump(
   Locale locale = const Locale('en'),
   Widget home = const SteamAccelerationScreen(),
   Size size = const Size(393, 852),
+  SteamConnectivityProbe? probe,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -181,6 +210,9 @@ Future<void> _pump(
         storageProvider.overrideWithValue(MemoryStorageProvider()),
         appControllerProvider.overrideWith(_Unlocked.new),
         steamAccelerationServiceProvider.overrideWithValue(service),
+        steamConnectivityProbeProvider.overrideWithValue(probe ?? _Probe()),
+        tickProvider.overrideWith((ref) => Stream.value(1900000010)),
+        timeAlignerProvider.overrideWithValue(() async {}),
       ],
       child: MaterialApp(
         theme: buildAvaTheme(
@@ -226,6 +258,91 @@ Future<void> _tap(WidgetTester tester, String key) async {
 
 void main() {
   testWidgets(
+    'connection card explains no VPN icon and only reports real probe results',
+    (tester) async {
+      final service = _Service(_ready)
+        ..emit(phase: SteamAccelerationPhase.running);
+      final pending = Completer<SteamConnectionResult>();
+      final probe = _Probe()..pending = pending;
+      await _pump(tester, service, probe: probe, locale: const Locale('zh'));
+      final l = AppLocalizations.of(
+        tester.element(find.byType(SteamAccelerationScreen)),
+      );
+      expect(find.text(l.steamConnectionNoVpnIcon), findsOneWidget);
+      expect(probe.calls, 1);
+      final status = find.byKey(const ValueKey('steam-connection-status'));
+      await _reveal(tester, status);
+      expect(tester.widget<Text>(status).data, l.steamConnectionChecking);
+      expect(find.text(l.steamConnectionAvailable), findsNothing);
+      pending.complete(
+        const SteamConnectionResult(api: true, community: false),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(status).data, l.steamConnectionPartial);
+      expect(find.textContaining(l.steamConnectionApi), findsOneWidget);
+      expect(find.textContaining(l.steamConnectionCommunity), findsOneWidget);
+      probe.pending = null;
+      probe.result = const SteamConnectionResult(api: true, community: true);
+      final check = find.byKey(const ValueKey('steam-connection-check'));
+      await _reveal(tester, check);
+      await tester.tap(check);
+      await tester.pumpAndSettle();
+      expect(probe.calls, 2);
+      expect(tester.widget<Text>(status).data, l.steamConnectionAvailable);
+      expect(service.starts, 0);
+    },
+  );
+
+  testWidgets(
+    'home status stays compact with large labels and opens acceleration settings',
+    (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.7;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final service = _Service(_ready)
+        ..emit(phase: SteamAccelerationPhase.running);
+      final probe = _Probe()
+        ..result = const SteamConnectionResult(api: true, community: true);
+      await _pump(
+        tester,
+        service,
+        probe: probe,
+        home: const HomeScreen(),
+        size: const Size(360, 740),
+        locale: const Locale('zh'),
+      );
+      final chip = _key('home-status');
+      expect(chip, findsOneWidget);
+      expect(tester.getSize(chip).width, lessThanOrEqualTo(200));
+      expect(tester.takeException(), isNull);
+      await tester.tap(chip);
+      await tester.pumpAndSettle();
+      expect(find.byType(SteamAccelerationScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'unconfigured or unsupported status entry stays hidden without checks',
+    (tester) async {
+      final service = _Service();
+      final probe = _Probe();
+      await _pump(
+        tester,
+        service,
+        probe: probe,
+        home: const Scaffold(body: SteamAccelerationStatusChip()),
+      );
+      expect(_key('home-status'), findsNothing);
+      expect(probe.calls, 0);
+      service.supportedValue = false;
+      service.emit(configured: true);
+      await tester.pump();
+      expect(_key('home-status'), findsNothing);
+      expect(probe.calls, 0);
+    },
+  );
+
+  testWidgets(
     'opening the page keeps manual mode and never fetches a subscription',
     (tester) async {
       final service = _Service();
@@ -234,7 +351,9 @@ void main() {
       expect(service.checks, 1);
       expect(service.starts, 0);
       expect(service.refreshes, 0);
+      await _reveal(tester, _key('auto'));
       expect(tester.widget<Switch>(_key('auto')).value, isFalse);
+      await _reveal(tester, _key('toggle'));
       expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNull);
       expect(find.byType(TextField), findsNothing);
     },
@@ -308,6 +427,7 @@ void main() {
       await _tap(tester, 'toggle');
       expect(service.starts, 1);
       expect(service.state.phase, SteamAccelerationPhase.running);
+      await _reveal(tester, find.byType(DropdownButtonFormField<String>));
       expect(
         tester
             .widget<DropdownButtonFormField<String>>(
@@ -329,7 +449,7 @@ void main() {
     (tester) async {
       final service = _Service(_ready);
       await _pump(tester, service);
-      await tester.ensureVisible(find.byType(DropdownButtonFormField<String>));
+      await _reveal(tester, find.byType(DropdownButtonFormField<String>));
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('演示节点 B').last);

@@ -35,8 +35,8 @@ and an actual Steam sign-in still require a manual preview check.
 
 The same feature branch now also includes an account overview on Windows and
 Android. It uses the existing theme/skin components. Desktop accounts show the
-overview beside the account list. The phone home shows only codes and accounts
-in both portrait and landscape;
+overview beside the account list. The phone home focuses on codes and accounts
+in both portrait and landscape, with a compact acceleration status beside Settings;
 tapping an account selects its code. Long-press the account to open its overview
 directly, without an intermediate menu. Market, friends, backup codes, family,
 devices and key redemption are reached from that overview. Long-pressing the
@@ -51,7 +51,14 @@ Friends & trades supports friend search, both sides' inventory selections and
 quantities, review and explicit submission. SteamID/account identity is checked
 when signing back in. No live offers were sent during development. Private
 inventories, Steam restrictions and additional verification can still prevent a
-trade. An uncertain send result must be checked in sent offers before retrying.
+trade. Definite Steam rejections (including JSON diagnostics on HTTP errors),
+failures before establishing a connection, and uncertain responses have separate
+messages. The client submits only once. For an uncertain result it performs a
+bounded read-only check against a pre-send snapshot, matching a new offer's
+partner, message, assets and quantities. A matching receipt still distinguishes
+mobile/email confirmation from a completed send. **Check send result** can repeat
+the read-only check; an incomplete query or no match never proves failure and
+never enables an automatic resend. Check sent offers before making another offer.
 
 Settings offers startup verification (on by default) and Lock now. Disabling
 verification stores a convenience credential in the device's secure storage;
@@ -83,6 +90,14 @@ Steam desktop client, games, a browser or other apps, and never changes the
 system proxy, DNS, certificates or TUN routing. Unsupported nodes are reported;
 subscription rules, scripts, plugins and listeners are not imported.
 
+This app-only proxy does not create Android's system VPN icon. A compact home
+status entry and the acceleration page show the current route and a separate
+connectivity result. Checks use the same active route for anonymous Steam API
+and community HTTPS requests, after route changes, when returning to the foreground
+with a result over one minute old, or on manual request. A running
+core alone is not considered a successful connection; a successful connection
+does not establish that the account is signed in or allowed to trade.
+
 Detected external HTTP proxy settings take priority. A detected VPN/TUN already
 routes operating-system sockets, so AVA pauses its own core. PAC is detected but
 not evaluated; the UI reports its presence and pauses internal acceleration.
@@ -102,11 +117,12 @@ stay in local secure storage; they are not synced with accounts or logged.
 Steam's normal TLS certificate checks remain enabled. See the
 [privacy notice](fork-privacy.md) and [component notices](../third_party/mihomo/NOTICE).
 
-The Android artifact is an **ARM64 debug preview**, package
+The Android artifact is an **ARM64 release-mode preview**, package
 `pro.dotslash.ava.fork`, labelled **AVA Fork**. It uses a stable private fork
 signing key and installs alongside both the original AVA and the earlier
 **AVA dev** preview. Its separate vault is empty on first installation. It is
-a development build, not a Play release; see the migration steps below.
+an optimized AOT build with debugging disabled, distributed outside Play.
+It updates earlier AVA Fork previews in place; see the migration steps below.
 Android pages stay still while a system back gesture is in progress, and use a
 short fade after it is committed. Cancelling the gesture keeps the current page.
 The Activity opts out of predictive system previews as well. Simulated gestures,
@@ -121,6 +137,33 @@ This branch adds **Switch Steam account** to the Windows account-row context
 menu and to Settings. It opens a list of accounts remembered by the local Steam installation,
 preselecting the matching AVA account by SteamID. The local account list can include accounts that
 have no authenticator in AVA.
+
+## Performance and presentation
+
+The fork keeps Flutter and ships Android previews in optimized AOT release mode,
+with the same package/signing identity as earlier AVA Fork builds. Debug/JIT
+builds are not representative of delivered performance; real-device frame-time
+profiling is still needed before claiming a particular frame rate.
+
+The home clock now updates only countdown/token widgets. In an offline test
+with three synthetic accounts, 20 one-second clock updates within one token
+window previously caused 20 home rebuilds, 60 account-row rebuilds, 20 desktop
+dashboard rebuilds and 80 HMAC computations. The updated implementation avoids
+all of those repeat operations after initial rendering; countdown updates and
+code rollover still run. Tests also cover time correction and replacing a
+secret within the same window. This measures work avoided, not user-device FPS.
+
+Friend and trade-inventory rows are constructed on demand, and inventory/offer
+thumbnails decode to their displayed physical dimensions. Animated profile
+images use a bounded decoded-frame cache; visible widgets retain independent
+image handles when cached entries are evicted. Avatar playback pauses when
+hidden, backgrounded or system animation reduction is enabled.
+
+Plain light/dark surfaces use consistent rounded corners and flat cards;
+shadows are reserved for raised overlays. Ambient motion is disabled for quiet
+plain widgets, and page/token transitions finish quickly without page scaling.
+Neon and pixel skins keep their own palettes and visual identity. The Android
+back-gesture policy described above remains unchanged.
 
 ## Android installation and migration
 
@@ -255,6 +298,12 @@ automatically sending account details or logs. Original copyright and license
 notices are retained. See the [fork privacy notice](fork-privacy.md).
 
 ## Inventory rarity and read-only market prices
+
+The market inventory and both sides of a trade offer support name search plus
+type and rarity filters. Categories come from Steam's inventory tags and use
+its localized labels, so CS weapon types, graffiti, music kits and other item
+types can be selected separately. Items with missing metadata remain accessible.
+Changing a filter does not discard already selected trade items or quantities.
 
 Inventory thumbnails and trade selections use a thin rarity-colored border and
 a faint tint, retaining the existing skin and selection styling. Colors come

@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../app/responsive.dart';
 import '../../app/theme.dart';
 import '../../core/models/steam_guard_account.dart';
+import '../../core/inventory_filter.dart';
 import '../../core/models/steam_item.dart';
 import '../../core/protocol/inventory_client.dart';
 import '../../core/steam_currency.dart';
@@ -13,6 +14,7 @@ import '../../services/auto_login.dart';
 import '../../services/steam_api_client.dart' show CommunityAuthException;
 import '../pending/session_retry.dart';
 import '../widgets/inventory_item_icon.dart';
+import '../widgets/inventory_filter_bar.dart';
 import 'item_market_actions.dart';
 import 'sell_sheet.dart';
 import '../error_text.dart';
@@ -56,6 +58,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   // Bumped on game switch / refresh so an in-flight page can't append stale
   // items to the freshly cleared grid.
   int _loadGen = 0;
+  InventoryFilter _filter = const InventoryFilter();
 
   @override
   void initState() {
@@ -125,6 +128,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       _game = g;
       _stacks.clear();
       _stackByKey.clear();
+      _filter = const InventoryFilter();
       _lastAssetId = null;
       _moreItems = false;
       _itemsError = null;
@@ -151,6 +155,10 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
             startAssetId: _lastAssetId,
           );
       if (!mounted || gen != _loadGen) return; // stale page — drop it
+      if (page.more &&
+          (page.lastAssetId == null || page.lastAssetId == _lastAssetId)) {
+        throw const FormatException('Inventory cursor did not advance');
+      }
       setState(() {
         for (final it in page.items) {
           final key = '${it.classId}_${it.instanceId}';
@@ -176,9 +184,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         });
       }
     } catch (e) {
-      // Keep already-loaded items; surface the error only when there is
-      // nothing to show (the scroll listener retries pagination naturally).
-      if (mounted && gen == _loadGen && _stacks.isEmpty) {
+      // Keep loaded items and offer an explicit retry, including when a filter
+      // currently hides them. Do not get stuck behind an endless footer spinner.
+      if (mounted && gen == _loadGen) {
         final l = AppLocalizations.of(context);
         setState(() => _itemsError = describeError(l, e));
       }
@@ -189,6 +197,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
 
   void _onScroll() {
     if (_moreItems &&
+        _itemsError == null &&
         !_loadingItems &&
         _scroll.position.pixels > _scroll.position.maxScrollExtent - 600) {
       _loadItems();
@@ -276,10 +285,29 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
     if (ov == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    return Column(
-      children: [
-        _gamePicker(ov.games),
-        Expanded(child: _itemGrid(l)),
+    // The filter header shares the grid's scroll area. Keeping it fixed can
+    // consume the entire short-screen viewport when the keyboard is open.
+    return CustomScrollView(
+      controller: _scroll,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverToBoxAdapter(child: _gamePicker(ov.games)),
+        if (_game != null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: context.rSafeInsets(left: 12, right: 12, bottom: 8),
+              child: InventoryFilterBar(
+                items: _stacks.map((stack) => stack.item),
+                value: _filter,
+                hasMore: _moreItems,
+                onChanged: (filter) {
+                  setState(() => _filter = filter);
+                  if (_scroll.hasClients) _scroll.jumpTo(0);
+                },
+              ),
+            ),
+          ),
+        _itemGrid(l),
       ],
     );
   }
@@ -346,55 +374,87 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   }
 
   Widget _itemGrid(AppLocalizations l) {
-    if (_stacks.isEmpty) {
+    final visible = _stacks
+        .where((stack) => _filter.matches(stack.item))
+        .toList(growable: false);
+    if (visible.isEmpty) {
       if (_loadingItems) {
-        return const Center(child: CircularProgressIndicator());
+        return const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        );
       }
       if (_itemsError != null) {
-        return _Centered(
-          text: '${l.commonError}: $_itemsError',
-          action: TextButton(onPressed: _loadItems, child: Text(l.commonRetry)),
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: _Centered(
+            text: '${l.commonError}: $_itemsError',
+            action: TextButton(
+              onPressed: _loadItems,
+              child: Text(l.commonRetry),
+            ),
+          ),
         );
       }
-      return _Centered(text: l.marketNoItems);
-    }
-    // Trailing cell shows a spinner while the next page streams in.
-    final footer = _moreItems || _loadingItems;
-    return GridView.builder(
-      controller: _scroll,
-      padding: context.rSafeInsets(all: 12),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: context.r(110),
-        mainAxisSpacing: context.r(10),
-        crossAxisSpacing: context.r(10),
-        // Reserve thumbnail space even when names, status and a price are
-        // shown together with the user's larger text setting.
-        mainAxisExtent:
-            context.r(90) +
-            MediaQuery.textScalerOf(context).scale(context.r(70)),
-      ),
-      itemCount: _stacks.length + (footer ? 1 : 0),
-      itemBuilder: (context, i) {
-        if (i >= _stacks.length) {
-          return const Center(
-            child: SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        }
-        return _ItemTile(
-          key: ValueKey(
-            'inventory-${_stacks[i].item.appid}-${_stacks[i].item.contextId}-${_stacks[i].item.assetId}',
-          ),
-          stack: _stacks[i],
-          currency: _overview!.wallet.currency,
-          onTap: _stacks[i].item.marketable
-              ? () => _openSell(_stacks[i])
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _Centered(
+          text: _stacks.isEmpty ? l.marketNoItems : l.inventoryFilterNoMatches,
+          action: _moreItems
+              ? TextButton(onPressed: _loadItems, child: Text(l.tradeMore))
               : null,
-        );
-      },
+        ),
+      );
+    }
+    // A manual load action also remains reachable when filtering leaves a
+    // grid too short to scroll. Only an actual request shows a spinner.
+    final footer = _moreItems || _loadingItems || _itemsError != null;
+    return SliverPadding(
+      padding: context.rSafeInsets(all: 12),
+      sliver: SliverGrid.builder(
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: context.r(110),
+          mainAxisSpacing: context.r(10),
+          crossAxisSpacing: context.r(10),
+          // Reserve thumbnail space even when names, status and a price are
+          // shown together with the user's larger text setting.
+          mainAxisExtent:
+              context.r(90) +
+              MediaQuery.textScalerOf(context).scale(context.r(70)),
+        ),
+        itemCount: visible.length + (footer ? 1 : 0),
+        itemBuilder: (context, i) {
+          if (i >= visible.length) {
+            if (!_loadingItems) {
+              return Center(
+                child: TextButton(
+                  onPressed: _loadItems,
+                  child: Text(
+                    _itemsError != null ? l.commonRetry : l.tradeMore,
+                  ),
+                ),
+              );
+            }
+            return const Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          }
+          return _ItemTile(
+            key: ValueKey(
+              'inventory-${visible[i].item.appid}-${visible[i].item.contextId}-${visible[i].item.assetId}',
+            ),
+            stack: visible[i],
+            currency: _overview!.wallet.currency,
+            onTap: visible[i].item.marketable
+                ? () => _openSell(visible[i])
+                : null,
+          );
+        },
+      ),
     );
   }
 }

@@ -25,6 +25,7 @@ import '../skins/skin_spec.dart';
 import 'widgets/scanline_overlay.dart';
 import 'widgets/update_banner.dart';
 import 'widgets/steam_image_provider.dart';
+import 'widgets/steam_acceleration_status.dart';
 import 'approve_login_screen.dart';
 import 'account_dashboard.dart';
 import 'backup_codes_screen.dart';
@@ -67,6 +68,62 @@ String _codeFor(SteamGuardAccount a, int tick) {
   }
 }
 
+/// The 30-second token and 1-second countdown have separate subscriptions.
+/// Keeping the clock at these leaves avoids rebuilding avatars, swipe panes,
+/// the account list and the desktop dashboard on every second.
+class _AccountCode extends ConsumerStatefulWidget {
+  final SteamGuardAccount account;
+  final Widget Function(BuildContext context, String code) builder;
+
+  const _AccountCode({required this.account, required this.builder});
+
+  @override
+  ConsumerState<_AccountCode> createState() => _AccountCodeState();
+}
+
+class _AccountCodeState extends ConsumerState<_AccountCode> {
+  int? _window;
+  String? _secret;
+  String? _code;
+
+  @override
+  Widget build(BuildContext context) {
+    final window = ref.watch(
+      tickProvider.select(
+        (tick) => (tick.value ?? SteamTime.currentSteamTime) ~/ 30,
+      ),
+    );
+    // Accounts are mutable. Include the current secret in the cache key so
+    // replacing/re-enrolling an account within the same window is immediate.
+    if (_window != window ||
+        _secret != widget.account.sharedSecret ||
+        _code == null) {
+      _window = window;
+      _secret = widget.account.sharedSecret;
+      _code = _codeFor(widget.account, window * 30);
+    }
+    return RepaintBoundary(child: widget.builder(context, _code!));
+  }
+}
+
+class _LiveCountdown extends ConsumerWidget {
+  final bool wide;
+
+  const _LiveCountdown({required this.wide});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tick = ref.watch(tickProvider).value ?? SteamTime.currentSteamTime;
+    return RepaintBoundary(
+      child: CountdownRing(
+        remaining: SteamTotp.secondsRemaining(tick),
+        size: context.r(wide ? 52 : 42),
+        stroke: context.r(6),
+      ),
+    );
+  }
+}
+
 /// How an account's primary label is shown — tapping the panel name cycles it.
 enum _NameMode { username, persona, id }
 
@@ -82,20 +139,15 @@ String _displayName(SteamGuardAccount a, _NameMode mode) {
   }
 }
 
-/// Fade + scale + full-height vertical slide used when an account label changes
-/// (mode toggle or switching the selected account) — deliberately pronounced.
+/// A short crossfade with a small vertical movement when an account changes.
 Widget _nameTransition(Widget child, Animation<double> anim) {
-  final slide = Tween(begin: const Offset(0, 1.0), end: Offset.zero)
+  final slide = Tween(begin: const Offset(0, 0.12), end: Offset.zero)
       .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
   return FadeTransition(
     opacity: anim,
     child: SlideTransition(
       position: slide,
-      child: ScaleTransition(
-        scale: Tween(begin: 0.7, end: 1.0).animate(anim),
-        alignment: Alignment.centerLeft,
-        child: child,
-      ),
+      child: child,
     ),
   );
 }
@@ -110,16 +162,16 @@ class _AnimatedName extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Respect "reduce motion": plain crossfade instead of slide + scale.
+    // Respect "reduce motion": update immediately instead of sliding.
     final reduce = MediaQuery.disableAnimationsOf(context);
     return AnimatedSwitcher(
-      duration: Duration(milliseconds: reduce ? 150 : 420),
+      duration: Duration(milliseconds: reduce ? 0 : 180),
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
       transitionBuilder: reduce
           ? (child, anim) => FadeTransition(opacity: anim, child: child)
           : _nameTransition,
-      // Clip so the full-height slide doesn't bleed into neighbours.
+      // Clip the outgoing label so it doesn't bleed into neighbours.
       layoutBuilder: (current, previous) => Stack(
         alignment: Alignment.centerLeft,
         clipBehavior: Clip.hardEdge,
@@ -164,10 +216,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // the compositing layer handles the transform, no manual coordinate math.
   final _codeLink = LayerLink();
   final _firstRowLink = LayerLink();
-  late final _demoSlidable = SlidableController(this);
+  late final SlidableController _demoSlidable;
 
   // Custom neon pull-to-refresh state.
-  double _pull = 0; // accumulated finger travel while pulling, in logical px
+  // Pointer movement only rebuilds the refresh overlay, not the entire home.
+  final _pull = ValueNotifier<double>(0);
   bool _refreshing = false;
   // Account-list manual sort mode (toggled by the sidebar's sort button).
   bool _sortMode = false;
@@ -184,9 +237,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const double _pullThreshold = 130;
 
   @override
+  void initState() {
+    super.initState();
+    // Empty libraries never build a row. Initialize while mounted instead of
+    // letting the first lazy access create a ticker during disposal.
+    _demoSlidable = SlidableController(this);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _demoSlidable.dispose();
+    _pull.dispose();
     super.dispose();
   }
 
@@ -204,7 +266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (!mounted) return;
       // Only over the home screen itself — the first account may appear while
       // a login/finalize screen is still on top (revocation code!). Re-arm and
-      // retry on a later build (the 1s tick rebuilds us) once we're current.
+      // retry from the clock listener once we're current.
       if (ModalRoute.of(context)?.isCurrent != true) {
         _checkedTutorial = false;
         return;
@@ -233,28 +295,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// sizes (see `_pullThreshold`).
   void _onPullDelta(double dy) {
     if (_refreshing) return;
-    final p = (_pull + dy).clamp(0.0, _pullThreshold * 1.5);
-    if (p == _pull) return;
+    final p = (_pull.value + dy).clamp(0.0, _pullThreshold * 1.5);
+    if (p == _pull.value) return;
     // Haptic "click" the moment the pull charges past the trigger threshold.
-    if (_pull < _pullThreshold && p >= _pullThreshold) {
+    if (_pull.value < _pullThreshold && p >= _pullThreshold) {
       if (ref.read(hapticsProvider)) HapticFeedback.mediumImpact();
     }
-    setState(() => _pull = p);
+    _pull.value = p;
   }
 
   /// The list scrolled back into its normal (non-overscrolled) region — any
   /// accumulated pull is stale and must be cleared immediately.
   void _onPullReset() {
-    if (_refreshing || _pull == 0) return;
-    setState(() => _pull = 0);
+    if (_refreshing || _pull.value == 0) return;
+    _pull.value = 0;
   }
 
   void _onPullEnd() {
     if (_refreshing) return;
-    if (_pull >= _pullThreshold) {
+    if (_pull.value >= _pullThreshold) {
       _startRefresh();
-    } else if (_pull != 0) {
-      setState(() => _pull = 0);
+    } else if (_pull.value != 0) {
+      _pull.value = 0;
     }
   }
 
@@ -283,7 +345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         setState(() {
           _refreshing = false;
           _pullVisual = false;
-          _pull = 0;
+          _pull.value = 0;
         });
       }
     }
@@ -301,11 +363,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final accounts =
         ref.watch(appControllerProvider).value?.visibleAccounts ??
             const <SteamGuardAccount>[];
-    final tick =
-        ref.watch(tickProvider).value ?? SteamTime.currentSteamTime;
     final haptics = ref.watch(hapticsProvider);
     if (_selected >= accounts.length) _selected = 0;
     final hasAccounts = accounts.isNotEmpty;
+    // A first account can be added while the login screen is still above us.
+    // Retain the tutorial retry without subscribing the whole home to time.
+    ref.listen(tickProvider, (_, _) {
+      if (hasAccounts && !_checkedTutorial) _maybeShowTutorial();
+    });
 
     // Auto-check the selected account for pending sign-in requests once on open.
     if (hasAccounts && !_checkedLogins) {
@@ -331,11 +396,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       // the corner the system inset doesn't already cover.
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: context.cornerOvershoot),
-        child: _SettingsFab(
-          label: l.navSettings,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Flexible(child: SteamAccelerationStatusChip()),
+            SizedBox(width: context.r(12)),
+            _SettingsFab(
+              label: l.navSettings,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+            ),
+          ],
         ),
       ),
       body: Column(children: [
@@ -365,7 +437,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           onSearchChanged: (_) =>
                               setState(() => _sortMode = false),
                           selected: _selected,
-                    tick: tick,
                     onSelect: (i) {
                       setState(() => _selected = i);
                       // Tapping an account polls its pending sign-in requests.
@@ -408,7 +479,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   );
                   final panel = _MainPanel(
                     account: accounts[_selected],
-                    tick: tick,
                     onCopy: _copy,
                     wide: c.maxWidth >= 640,
                     nameMode: _nameMode,
@@ -441,9 +511,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             ],
                           ),
                   );
-                  final pull01 = _refreshing && _pullVisual
-                      ? 1.0
-                      : (_pull / _pullThreshold).clamp(0.0, 1.0);
                   return Stack(
                     children: [
                       // Skin ambience behind, HUD above, pull wash on top —
@@ -473,15 +540,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ),
                       Positioned.fill(
                         child: IgnorePointer(
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(end: pull01),
-                            duration: const Duration(milliseconds: 150),
-                            curve: Curves.easeOut,
-                            builder: (_, v, _) => v <= 0.001
-                                ? const SizedBox.shrink()
-                                : pullSpec?.style == 'pixel'
-                                    ? _PixelPull(progress: v, spec: pullSpec)
-                                    : _NeonPull(progress: v, spec: pullSpec),
+                          child: ValueListenableBuilder<double>(
+                            valueListenable: _pull,
+                            builder: (_, pull, _) => TweenAnimationBuilder<double>(
+                              tween: Tween(end: _refreshing && _pullVisual
+                                  ? 1.0
+                                  : (pull / _pullThreshold).clamp(0.0, 1.0)),
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOut,
+                              builder: (_, v, _) => v <= 0.001
+                                  ? const SizedBox.shrink()
+                                  : pullSpec?.style == 'pixel'
+                                      ? _PixelPull(progress: v, spec: pullSpec)
+                                      : _NeonPull(progress: v, spec: pullSpec),
+                            ),
                           ),
                         ),
                       ),
@@ -726,7 +798,6 @@ class _Sidebar extends StatelessWidget {
   }
 
   final int selected;
-  final int tick;
   final void Function(int index) onSelect;
   final VoidCallback onAdd;
   final void Function(double dy) onPullDelta;
@@ -750,7 +821,6 @@ class _Sidebar extends StatelessWidget {
     required this.onToggleSearch,
     required this.onSearchChanged,
     required this.selected,
-    required this.tick,
     required this.onSelect,
     required this.onAdd,
     required this.nameMode,
@@ -792,7 +862,6 @@ class _Sidebar extends StatelessWidget {
           final i = indices[visibleIndex];
           final row = _SidebarRow(
             account: accounts[i],
-            code: _codeFor(accounts[i], tick),
             selected: i == selected,
             nameMode: nameMode,
             neon: neon,
@@ -834,7 +903,6 @@ class _Sidebar extends StatelessWidget {
           IgnorePointer(
             child: _SidebarRow(
               account: accounts[i],
-              code: _codeFor(accounts[i], tick),
               selected: i == selected,
               nameMode: nameMode,
               neon: neon,
@@ -1060,7 +1128,6 @@ class _Sidebar extends StatelessWidget {
 
 class _SidebarRow extends ConsumerWidget {
   final SteamGuardAccount account;
-  final String code;
   final bool selected;
   final _NameMode nameMode;
   final bool neon;
@@ -1070,7 +1137,6 @@ class _SidebarRow extends ConsumerWidget {
   final SlidableController? controller;
   const _SidebarRow({
     required this.account,
-    required this.code,
     required this.selected,
     required this.nameMode,
     required this.neon,
@@ -1139,12 +1205,13 @@ class _SidebarRow extends ConsumerWidget {
     final r = context.r(1);
     final t = Theme.of(context).extension<AvaTokens>()!;
     final neon = t.glow;
+    final pixel = t.variant == AvaThemeVariant.pixel;
     // Neon theme: dark glassy pill + neon border/inset glow (HUD look).
     // Pixel theme: chunky retro button — bright fill, hard 2px border, hard
     // offset shadow, dark text (no blur, radius 0).
     const ink = Color(0xFF15111F);
-    final fill = neon ? color.withValues(alpha: 0.16) : color;
-    final fg = neon ? color : ink;
+    final fill = pixel ? color : color.withValues(alpha: neon ? 0.16 : 0.08);
+    final fg = neon ? color : pixel ? ink : t.text;
     return CustomSlidableAction(
       backgroundColor: Colors.transparent,
       padding: EdgeInsets.zero,
@@ -1159,11 +1226,12 @@ class _SidebarRow extends ConsumerWidget {
             horizontal: neon ? 3 * r : 4 * r, vertical: 12 * r),
         decoration: BoxDecoration(
           color: fill,
-          borderRadius: BorderRadius.circular(neon ? t.radiusSm : 0),
+          borderRadius: BorderRadius.circular(t.radiusSm),
           border: neon
               ? Border.all(
                   color: color.withValues(alpha: 0.9), width: t.borderWidth)
-              : Border.all(color: ink, width: 2),
+              : Border.all(color: pixel ? ink : t.line,
+                  width: pixel ? 2 : t.borderWidth),
           boxShadow: neon
               ? [
                   BoxShadow(
@@ -1171,7 +1239,9 @@ class _SidebarRow extends ConsumerWidget {
                       blurRadius: 5,
                       blurStyle: BlurStyle.inner),
                 ]
-              : [BoxShadow(color: ink, offset: Offset(3 * r, 3 * r))],
+              : pixel
+                  ? [BoxShadow(color: ink, offset: Offset(3 * r, 3 * r))]
+                  : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1198,8 +1268,9 @@ class _SidebarRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final l = AppLocalizations.of(context);
-    final sessionInvalid =
-        ref.watch(sessionHealthProvider).contains(account.steamId);
+    final sessionInvalid = ref.watch(sessionHealthProvider.select(
+      (invalidAccounts) => invalidAccounts.contains(account.steamId),
+    ));
     return Padding(
       padding: context.rInsets(bottom: 8),
       child: Slidable(
@@ -1277,15 +1348,15 @@ class _SidebarRow extends ConsumerWidget {
                     : null,
               )
             : BoxDecoration(
-                // Pixel theme: retro "sticker" — chunky 2px border + a hard
-                // offset shadow on the selected row (no blur, radius 0).
+                // Plain themes use flat rounded cards; only the pixel skin
+                // keeps its intentional offset shadow.
                 color: selected ? t.panel2 : t.panel.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(t.radiusSm),
                 border: Border.all(
                   color: selected ? t.accent : t.line,
                   width: t.borderWidth,
                 ),
-                boxShadow: selected
+                boxShadow: selected && t.variant == AvaThemeVariant.pixel
                     ? [
                         BoxShadow(
                           color: t.borderColor,
@@ -1329,12 +1400,15 @@ class _SidebarRow extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  Text(
-                    code,
-                    style: TextStyle(
-                      color: t.accent,
-                      fontSize: context.r(18),
-                      letterSpacing: context.r(3),
+                  _AccountCode(
+                    account: account,
+                    builder: (context, code) => Text(
+                      code,
+                      style: TextStyle(
+                        color: t.accent,
+                        fontSize: context.r(18),
+                        letterSpacing: context.r(3),
+                      ),
                     ),
                   ),
                 ],
@@ -1379,7 +1453,6 @@ class _PressableCard extends StatelessWidget {
 
 class _MainPanel extends ConsumerWidget {
   final SteamGuardAccount account;
-  final int tick;
   final void Function(String code) onCopy;
   final bool wide; // two-pane (tablet/desktop) layout
   final _NameMode nameMode;
@@ -1390,7 +1463,6 @@ class _MainPanel extends ConsumerWidget {
   final LayerLink? codeLink; // tutorial spotlight anchor
   const _MainPanel(
       {required this.account,
-      required this.tick,
       required this.onCopy,
       required this.nameMode,
       required this.onTapName,
@@ -1407,13 +1479,12 @@ class _MainPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final t = Theme.of(context).extension<AvaTokens>()!;
-    final code = _codeFor(account, tick);
-    final remaining = SteamTotp.secondsRemaining(tick);
     final platform = Theme.of(context).platform;
     final mobile = platform == TargetPlatform.android ||
         platform == TargetPlatform.iOS;
-    final sessionInvalid =
-        ref.watch(sessionHealthProvider).contains(account.steamId);
+    final sessionInvalid = ref.watch(sessionHealthProvider.select(
+      (invalidAccounts) => invalidAccounts.contains(account.steamId),
+    ));
 
     final header = Padding(
       padding: context.rInsets(h: 16, v: wide ? 24 : 10),
@@ -1516,26 +1587,26 @@ class _MainPanel extends ConsumerWidget {
                 // tracks the code's real painted position in every layout.
                 child: _linkTarget(
                   codeLink,
-                  _TapScale(
-                    onTap: () => onCopy(code),
-                    child: wide
-                        ? FlipCode(code: code, fontSize: 42)
-                        : SizedBox(
-                            width: (MediaQuery.sizeOf(context).width * 0.40)
-                                .clamp(110.0, 200.0),
-                            child: FittedBox(
-                              fit: BoxFit.fitWidth,
-                              child: FlipCode(code: code, fontSize: 56),
+                  _AccountCode(
+                    account: account,
+                    builder: (context, code) => _TapScale(
+                      onTap: () => onCopy(code),
+                      child: wide
+                          ? FlipCode(code: code, fontSize: 42)
+                          : SizedBox(
+                              width: (MediaQuery.sizeOf(context).width * 0.40)
+                                  .clamp(110.0, 200.0),
+                              child: FittedBox(
+                                fit: BoxFit.fitWidth,
+                                child: FlipCode(code: code, fontSize: 56),
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                 ),
               ),
               SizedBox(width: context.r(18)),
-              CountdownRing(
-                  remaining: remaining,
-                  size: context.r(wide ? 52 : 42),
-                  stroke: context.r(6)),
+              _LiveCountdown(wide: wide),
             ],
           ),
         ],
@@ -1567,8 +1638,8 @@ class _MainPanel extends ConsumerWidget {
   }
 }
 
-/// Shared chrome for the floating corner buttons: neon glass disc with an
-/// accent glow, or a chunky pixel square with a hard offset shadow. The two
+/// Shared chrome for the floating corner buttons: flat rounded plain themes,
+/// a neon glass disc, or the pixel skin's square with an offset shadow. The two
 /// call sites deliberately differ in size and emphasis — those constants are
 /// explicit arguments here instead of drifting copies.
 class _AvaFab extends StatelessWidget {
@@ -1603,6 +1674,7 @@ class _AvaFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final neon = t.glow;
+    final pixel = t.variant == AvaThemeVariant.pixel;
     final side = context.r(size);
     Widget button = Material(
       color: Colors.transparent,
@@ -1630,13 +1702,15 @@ class _AvaFab extends StatelessWidget {
                 )
               : BoxDecoration(
                   color: t.panel2,
-                  border: Border.all(color: t.accent, width: 2),
-                  boxShadow: [
+                  borderRadius: BorderRadius.circular(t.radiusSm),
+                  border: Border.all(color: pixel ? t.accent : t.line,
+                      width: pixel ? 2 : t.borderWidth),
+                  boxShadow: pixel ? [
                     BoxShadow(
                         color: t.borderColor,
                         offset: Offset(context.r(pixelShadowOffset),
                             context.r(pixelShadowOffset))),
-                  ],
+                  ] : null,
                 ),
           child: Icon(icon, color: t.accent, size: context.r(iconSize)),
         ),
@@ -1716,8 +1790,9 @@ class _TapScaleState extends State<_TapScale> {
       onTapCancel: () => _set(false),
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
-        scale: _down ? 0.94 : 1.0,
-        duration: const Duration(milliseconds: 90),
+        scale: _down && !MediaQuery.disableAnimationsOf(context) ? 0.98 : 1.0,
+        duration: Duration(milliseconds:
+            MediaQuery.disableAnimationsOf(context) ? 0 : 90),
         curve: Curves.easeOut,
         child: widget.child,
       ),
