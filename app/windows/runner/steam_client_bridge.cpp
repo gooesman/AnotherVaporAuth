@@ -546,10 +546,10 @@ void WriteAutoLogin(const Map& arguments, Result* result) {
   }
   if (!std::holds_alternative<std::monostate>(*remember_argument)) {
     int64_t number = -1;
-    if (const auto* small = std::get_if<int32_t>(remember_argument)) {
-      number = *small;
-    } else if (const auto* large = std::get_if<int64_t>(remember_argument)) {
-      number = *large;
+    if (const auto* number32 = std::get_if<int32_t>(remember_argument)) {
+      number = *number32;
+    } else if (const auto* number64 = std::get_if<int64_t>(remember_argument)) {
+      number = *number64;
     }
     if (number < 0 || number > static_cast<int64_t>((std::numeric_limits<DWORD>::max)())) {
       ReportError(result, {"invalid_arguments", "rememberPassword must be a DWORD integer or null."});
