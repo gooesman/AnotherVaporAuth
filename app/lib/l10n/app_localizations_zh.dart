@@ -2287,6 +2287,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get friendsProfileOpenFailed => '无法打开浏览器，可复制下方 Steam 官方链接。';
+
+  @override
+  String get steamSwitchQrTitle => '用 AVA 账号扫码登录';
+
+  @override
+  String get steamSwitchQrHelp => '选择 AVA 账号，在 Steam 显示登录二维码，再扫码并确认登录请求。';
+
+  @override
+  String get steamSwitchQrAccount => 'AVA 账号';
+
+  @override
+  String get steamSwitchQrNeedsSession => '请先在 AVA 中重新登录此账号。仅有离线令牌码无法批准二维码登录。';
+
+  @override
+  String get steamSwitchQrNoAccounts => '请先向 AVA 添加账号，再使用扫码登录。';
+
+  @override
+  String get approveScreenSelect => '拖框扫描屏幕二维码';
+
+  @override
+  String get approveScreenHelp =>
+      '点击后 AVA 会暂时隐藏。拖动框选 Steam 登录二维码，再核对账号与登录设备并确认。';
+
+  @override
+  String get approveScreenInstruction => '拖动框选一个 Steam 登录二维码 · Esc / 右键取消';
+
+  @override
+  String get approveScreenNoCode => '未识别到二维码。请框选完整二维码，保留少许周围空白后重试。';
+
+  @override
+  String get approveScreenFailed => '无法截取屏幕，请重试或粘贴二维码链接。';
+
+  @override
+  String get approveSessionUnavailable => '此二维码已过期或无法核实登录信息，请在 Steam 刷新二维码后重试。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -4578,4 +4612,40 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get friendsProfileOpenFailed => '無法開啟瀏覽器，可複製下方 Steam 官方連結。';
+
+  @override
+  String get steamSwitchQrTitle => '用 AVA 帳號掃碼登入';
+
+  @override
+  String get steamSwitchQrHelp => '選擇 AVA 帳號，在 Steam 顯示登入 QR 碼，再掃碼並確認登入請求。';
+
+  @override
+  String get steamSwitchQrAccount => 'AVA 帳號';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      '請先在 AVA 中重新登入此帳號。僅有離線驗證碼無法核准 QR 碼登入。';
+
+  @override
+  String get steamSwitchQrNoAccounts => '請先向 AVA 新增帳號，再使用掃碼登入。';
+
+  @override
+  String get approveScreenSelect => '框選螢幕上的 QR 碼';
+
+  @override
+  String get approveScreenHelp =>
+      '點擊後 AVA 會暫時隱藏。拖曳框選 Steam 登入 QR 碼，再核對帳號與登入裝置並確認。';
+
+  @override
+  String get approveScreenInstruction => '拖曳框選一個 Steam 登入 QR 碼 · Esc / 右鍵取消';
+
+  @override
+  String get approveScreenNoCode => '未辨識到 QR 碼。請框選完整 QR 碼，保留少許周圍空白後重試。';
+
+  @override
+  String get approveScreenFailed => '無法擷取螢幕，請重試或貼上 QR 碼連結。';
+
+  @override
+  String get approveSessionUnavailable =>
+      '此 QR 碼已過期或無法核實登入資訊，請在 Steam 重新整理 QR 碼後重試。';
 }

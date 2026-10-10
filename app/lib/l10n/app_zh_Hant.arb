@@ -763,5 +763,16 @@
   "tradeFromAccount": "發起帳戶",
   "tradeToAccount": "交易對象",
   "tradeValidationFailed": "報價尚未送出。請檢查所選物品和數量；每方最多選擇 256 項。",
-  "friendsProfileOpenFailed": "無法開啟瀏覽器，可複製下方 Steam 官方連結。"
+  "friendsProfileOpenFailed": "無法開啟瀏覽器，可複製下方 Steam 官方連結。",
+  "steamSwitchQrTitle": "用 AVA 帳號掃碼登入",
+  "steamSwitchQrHelp": "選擇 AVA 帳號，在 Steam 顯示登入 QR 碼，再掃碼並確認登入請求。",
+  "steamSwitchQrAccount": "AVA 帳號",
+  "steamSwitchQrNeedsSession": "請先在 AVA 中重新登入此帳號。僅有離線驗證碼無法核准 QR 碼登入。",
+  "steamSwitchQrNoAccounts": "請先向 AVA 新增帳號，再使用掃碼登入。",
+  "approveScreenSelect": "框選螢幕上的 QR 碼",
+  "approveScreenHelp": "點擊後 AVA 會暫時隱藏。拖曳框選 Steam 登入 QR 碼，再核對帳號與登入裝置並確認。",
+  "approveScreenInstruction": "拖曳框選一個 Steam 登入 QR 碼 · Esc / 右鍵取消",
+  "approveScreenNoCode": "未辨識到 QR 碼。請框選完整 QR 碼，保留少許周圍空白後重試。",
+  "approveScreenFailed": "無法擷取螢幕，請重試或貼上 QR 碼連結。",
+  "approveSessionUnavailable": "此 QR 碼已過期或無法核實登入資訊，請在 Steam 重新整理 QR 碼後重試。"
 }

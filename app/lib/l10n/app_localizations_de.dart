@@ -2429,4 +2429,45 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get friendsProfileOpenFailed =>
       'Der Browser konnte nicht geöffnet werden. Kopiere den offiziellen Steam-Link unten.';
+
+  @override
+  String get steamSwitchQrTitle => 'Mit einem AVA-Konto anmelden';
+
+  @override
+  String get steamSwitchQrHelp =>
+      'Wähle ein AVA-Konto, zeige den Anmelde-QR-Code in Steam an, scanne ihn und prüfe die Anmeldung.';
+
+  @override
+  String get steamSwitchQrAccount => 'AVA-Konto';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      'Melde dich zuerst in AVA erneut bei diesem Konto an. Ein Offline-Steam-Guard-Code allein kann keine QR-Anmeldung bestätigen.';
+
+  @override
+  String get steamSwitchQrNoAccounts =>
+      'Füge AVA ein Konto hinzu, um die QR-Anmeldung zu nutzen.';
+
+  @override
+  String get approveScreenSelect => 'QR-Code auf dem Bildschirm auswählen';
+
+  @override
+  String get approveScreenHelp =>
+      'AVA wird kurz ausgeblendet. Ziehe einen Rahmen um Steams Anmelde-QR-Code und prüfe Konto und Gerät vor dem Bestätigen.';
+
+  @override
+  String get approveScreenInstruction =>
+      'Einen Steam-Anmelde-QR-Code einrahmen · Esc / Rechtsklick zum Abbrechen';
+
+  @override
+  String get approveScreenNoCode =>
+      'Kein QR-Code gefunden. Wähle den vollständigen Code mit etwas Rand aus und versuche es erneut.';
+
+  @override
+  String get approveScreenFailed =>
+      'Bildschirmaufnahme fehlgeschlagen. Versuche es erneut oder füge den QR-Link ein.';
+
+  @override
+  String get approveSessionUnavailable =>
+      'Dieser QR-Code ist abgelaufen oder seine Anmeldedaten konnten nicht geprüft werden. Aktualisiere den Code in Steam und versuche es erneut.';
 }

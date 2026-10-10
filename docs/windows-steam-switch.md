@@ -1,4 +1,31 @@
-# Windows Steam account switching (preview)
+# Windows Steam sign-in and account switching (preview)
+
+## Sign in by selecting Steam's QR code on screen
+
+Open an account's overview and choose **Switch Steam account**, or use the
+existing account menu / Settings entry. The top card lets you choose an AVA
+account and open **Sign in with an AVA account**, even if Steam has never
+remembered that account on this PC.
+
+1. Show the Steam client's sign-in QR code. If Steam is already logged in,
+   use Steam's own account menu to reach sign-in when ready.
+2. In AVA choose the intended account, then **Select a QR code on screen**.
+3. AVA briefly hides. Drag around the complete QR code and release; Esc or
+   right-click cancels. The selector supports multiple monitors and follows
+   the current skin's accent color.
+4. AVA decodes the selection locally, shows the chosen account and Steam's
+   login details, and waits for approval. Steam then completes its own sign-in.
+
+Screen images stay in memory and are not uploaded or saved. Invalid codes,
+expired/unverifiable requests, cancellation, a locked vault or a changed
+account cannot submit an approval. An offline TOTP secret alone is not enough:
+the account also needs a usable Steam login session in AVA. The same screen
+offers re-login when that session is missing. Existing remembered-account
+switching remains available below this card.
+
+Synthetic QR images cover scale, rotation and dark backgrounds; UI tests cover
+confirmation and account changes. Real desktop selection, mixed-DPI displays,
+and an actual Steam sign-in still require a manual preview check.
 
 ## Account overview and Android preview additions
 

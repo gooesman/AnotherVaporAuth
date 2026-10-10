@@ -693,5 +693,16 @@
   "tradeFromAccount": "Аккаунт отправителя",
   "tradeToAccount": "Партнёр по обмену",
   "tradeValidationFailed": "Предложение не отправлено. Проверьте предметы и количество: не более 256 позиций с каждой стороны.",
-  "friendsProfileOpenFailed": "Не удалось открыть браузер. Скопируйте официальную ссылку Steam ниже."
+  "friendsProfileOpenFailed": "Не удалось открыть браузер. Скопируйте официальную ссылку Steam ниже.",
+  "steamSwitchQrTitle": "Войти с аккаунтом AVA",
+  "steamSwitchQrHelp": "Выберите аккаунт AVA, откройте QR-код входа в Steam, отсканируйте его и проверьте запрос.",
+  "steamSwitchQrAccount": "Аккаунт AVA",
+  "steamSwitchQrNeedsSession": "Сначала повторно войдите в этот аккаунт в AVA. Одного офлайн-кода Steam Guard недостаточно для подтверждения входа по QR.",
+  "steamSwitchQrNoAccounts": "Добавьте аккаунт в AVA для входа по QR-коду.",
+  "approveScreenSelect": "Выделить QR-код на экране",
+  "approveScreenHelp": "AVA ненадолго скроется. Обведите QR-код входа в Steam и проверьте аккаунт и устройство перед подтверждением.",
+  "approveScreenInstruction": "Обведите один QR-код входа в Steam · Esc / правая кнопка для отмены",
+  "approveScreenNoCode": "QR-код не найден. Выделите код целиком с небольшим полем и повторите попытку.",
+  "approveScreenFailed": "Не удалось захватить экран. Повторите попытку или вставьте ссылку QR-кода.",
+  "approveSessionUnavailable": "QR-код устарел или данные входа не удалось проверить. Обновите код в Steam и повторите попытку."
 }

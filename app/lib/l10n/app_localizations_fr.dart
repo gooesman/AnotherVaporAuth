@@ -2445,4 +2445,45 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get friendsProfileOpenFailed =>
       'Impossible d’ouvrir le navigateur. Copiez le lien officiel Steam ci-dessous.';
+
+  @override
+  String get steamSwitchQrTitle => 'Se connecter avec un compte AVA';
+
+  @override
+  String get steamSwitchQrHelp =>
+      'Choisissez un compte AVA, affichez le QR de connexion Steam, scannez-le et vérifiez la demande.';
+
+  @override
+  String get steamSwitchQrAccount => 'Compte AVA';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      'Reconnectez-vous d’abord à ce compte dans AVA. Un code Steam Guard hors ligne seul ne permet pas d’approuver une connexion par QR.';
+
+  @override
+  String get steamSwitchQrNoAccounts =>
+      'Ajoutez un compte à AVA pour utiliser la connexion par QR.';
+
+  @override
+  String get approveScreenSelect => 'Sélectionner un QR à l’écran';
+
+  @override
+  String get approveScreenHelp =>
+      'AVA se masquera brièvement. Encadrez le QR de connexion Steam, puis vérifiez le compte et l’appareil avant d’approuver.';
+
+  @override
+  String get approveScreenInstruction =>
+      'Encadrez un QR de connexion Steam · Échap / clic droit pour annuler';
+
+  @override
+  String get approveScreenNoCode =>
+      'Aucun QR détecté. Sélectionnez le code entier avec une petite marge et réessayez.';
+
+  @override
+  String get approveScreenFailed =>
+      'Impossible de capturer l’écran. Réessayez ou collez le lien du QR.';
+
+  @override
+  String get approveSessionUnavailable =>
+      'Ce QR a expiré ou ses informations de connexion n’ont pas pu être vérifiées. Actualisez-le dans Steam et réessayez.';
 }

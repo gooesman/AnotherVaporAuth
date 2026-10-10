@@ -1124,5 +1124,16 @@
   "tradeFromAccount": "发起账户",
   "tradeToAccount": "交易对象",
   "tradeValidationFailed": "报价尚未发送。请检查所选物品和数量；每方最多选择 256 项。",
-  "friendsProfileOpenFailed": "无法打开浏览器，可复制下方 Steam 官方链接。"
+  "friendsProfileOpenFailed": "无法打开浏览器，可复制下方 Steam 官方链接。",
+  "steamSwitchQrTitle": "用 AVA 账号扫码登录",
+  "steamSwitchQrHelp": "选择 AVA 账号，在 Steam 显示登录二维码，再扫码并确认登录请求。",
+  "steamSwitchQrAccount": "AVA 账号",
+  "steamSwitchQrNeedsSession": "请先在 AVA 中重新登录此账号。仅有离线令牌码无法批准二维码登录。",
+  "steamSwitchQrNoAccounts": "请先向 AVA 添加账号，再使用扫码登录。",
+  "approveScreenSelect": "拖框扫描屏幕二维码",
+  "approveScreenHelp": "点击后 AVA 会暂时隐藏。拖动框选 Steam 登录二维码，再核对账号与登录设备并确认。",
+  "approveScreenInstruction": "拖动框选一个 Steam 登录二维码 · Esc / 右键取消",
+  "approveScreenNoCode": "未识别到二维码。请框选完整二维码，保留少许周围空白后重试。",
+  "approveScreenFailed": "无法截取屏幕，请重试或粘贴二维码链接。",
+  "approveSessionUnavailable": "此二维码已过期或无法核实登录信息，请在 Steam 刷新二维码后重试。"
 }

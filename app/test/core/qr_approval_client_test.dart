@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ava/src/core/models/session_data.dart';
@@ -44,9 +45,50 @@ SteamGuardAccount _account({String? accessToken, String? refreshToken}) =>
     );
 
 void main() {
+  group('QR approval identity consistency', () {
+    String tokenFor(Object? subject) {
+      final payload = base64Url.encode(
+        utf8.encode(jsonEncode({'sub': subject})),
+      );
+      return 'e30.$payload.signature';
+    }
+
+    test('accepts an access token for the selected SteamID', () {
+      expect(
+        qrApprovalIdentityMatches(
+          _account(accessToken: tokenFor('76561198000000000')),
+        ),
+        isTrue,
+      );
+    });
+
+    test('rejects missing, malformed, numeric, or mismatched subjects', () {
+      for (final token in [
+        null,
+        '',
+        'not-a-jwt',
+        tokenFor(null),
+        tokenFor(76561198000000000),
+        tokenFor('76561198000000001'),
+      ]) {
+        expect(
+          qrApprovalIdentityMatches(_account(accessToken: token)),
+          isFalse,
+        );
+      }
+    });
+
+    test('rejects placeholder SteamIDs even if the token subject matches', () {
+      for (final steamId in [0, -1]) {
+        final account = _account(accessToken: tokenFor('$steamId'));
+        account.session.steamId = steamId;
+        expect(qrApprovalIdentityMatches(account), isFalse);
+      }
+    });
+  });
+
   group('SessionData token predicates', () {
-    test('hasTokens stays true for a refresh-only session (renewal gate)',
-        () {
+    test('hasTokens stays true for a refresh-only session (renewal gate)', () {
       final s = SessionData(refreshToken: 'r');
       expect(s.hasTokens, isTrue);
     });
@@ -69,8 +111,7 @@ void main() {
   });
 
   group('QrApprovalClient — refresh-only session (no access token)', () {
-    test('pendingLoginClientIds fails fast without calling the API',
-        () async {
+    test('pendingLoginClientIds fails fast without calling the API', () async {
       final api = _FakeApi([]);
       final client = QrApprovalClient(api);
       final account = _account(refreshToken: 'r');
@@ -79,8 +120,11 @@ void main() {
         client.pendingLoginClientIds(account),
         throwsA(isA<MissingAccessTokenException>()),
       );
-      expect(api.called, isFalse,
-          reason: 'must not send a request with an empty access token');
+      expect(
+        api.called,
+        isFalse,
+        reason: 'must not send a request with an empty access token',
+      );
     });
 
     test('sessionInfo fails fast without calling the API', () async {
@@ -101,8 +145,12 @@ void main() {
       final account = _account(refreshToken: 'r');
 
       await expectLater(
-        client.respondToSession(account,
-            version: 1, clientId: 123, approve: true),
+        client.respondToSession(
+          account,
+          version: 1,
+          clientId: 123,
+          approve: true,
+        ),
         throwsA(isA<MissingAccessTokenException>()),
       );
       expect(api.called, isFalse);
@@ -147,7 +195,8 @@ void main() {
       final client = QrApprovalClient(api);
 
       final ids = await client.pendingLoginClientIds(
-          _account(accessToken: 'atok'));
+        _account(accessToken: 'atok'),
+      );
       expect(ids, [idSmall, idHuge]);
     });
 
@@ -162,38 +211,90 @@ void main() {
       final client = QrApprovalClient(api);
 
       final ids = await client.pendingLoginClientIds(
-          _account(accessToken: 'atok'));
+        _account(accessToken: 'atok'),
+      );
       expect(ids, [idSmall, idHuge]);
     });
 
-    test('truncated packed payload throws ProtoParseException, not garbage',
-        () async {
-      // A varint cut mid-continuation must not silently under-read into a
-      // bogus id the user could be asked to approve.
-      final w = ProtoWriter()..writeBytes(1, const [0x87, 0x80]);
-      final api = _FakeApi([ProtoReader(w.toBytes())]);
-      final client = QrApprovalClient(api);
+    test(
+      'truncated packed payload throws ProtoParseException, not garbage',
+      () async {
+        // A varint cut mid-continuation must not silently under-read into a
+        // bogus id the user could be asked to approve.
+        final w = ProtoWriter()..writeBytes(1, const [0x87, 0x80]);
+        final api = _FakeApi([ProtoReader(w.toBytes())]);
+        final client = QrApprovalClient(api);
 
-      await expectLater(
-        client.pendingLoginClientIds(_account(accessToken: 'atok')),
-        throwsA(isA<ProtoParseException>()),
-      );
-    });
+        await expectLater(
+          client.pendingLoginClientIds(_account(accessToken: 'atok')),
+          throwsA(isA<ProtoParseException>()),
+        );
+      },
+    );
   });
 
   group('QrApprovalClient — session with an access token', () {
-    test('respondToSession sends the access token through and succeeds',
-        () async {
-      final api = _FakeApi([ProtoReader(Uint8List(0))]); // empty = success
-      final client = QrApprovalClient(api);
-      final account = _account(accessToken: 'atok', refreshToken: 'r');
+    test(
+      'sessionInfo keeps the requested client ID and valid session details',
+      () async {
+        final response = ProtoWriter()
+          ..writeString(1, '192.0.2.1')
+          ..writeString(3, 'Example city')
+          ..writeString(5, 'Example country')
+          ..writeString(7, 'Steam Desktop')
+          ..writeVarint(8, 1);
+        final client = QrApprovalClient(
+          _FakeApi([ProtoReader(response.toBytes())]),
+        );
+        final info = await client.sessionInfo(
+          _account(accessToken: 'atok'),
+          123,
+        );
+        expect(info?.clientId, 123);
+        expect(info?.version, 1);
+        expect(info?.deviceName, 'Steam Desktop');
+        expect(info?.location, 'Example city, Example country');
+      },
+    );
 
-      final ok = await client.respondToSession(account,
-          version: 1, clientId: 123, approve: true);
+    test(
+      'sessionInfo rejects an empty response or an invalid version',
+      () async {
+        for (final response in [
+          ProtoWriter(),
+          ProtoWriter()..writeString(7, 'Steam Desktop'),
+          ProtoWriter()..writeVarint(8, 0),
+          ProtoWriter()..writeVarint(8, 65536),
+        ]) {
+          final client = QrApprovalClient(
+            _FakeApi([ProtoReader(response.toBytes())]),
+          );
+          expect(
+            await client.sessionInfo(_account(accessToken: 'atok'), 123),
+            isNull,
+          );
+        }
+      },
+    );
 
-      expect(ok, isTrue);
-      expect(api.called, isTrue);
-      expect(api.lastAccessToken, 'atok');
-    });
+    test(
+      'respondToSession sends the access token through and succeeds',
+      () async {
+        final api = _FakeApi([ProtoReader(Uint8List(0))]); // empty = success
+        final client = QrApprovalClient(api);
+        final account = _account(accessToken: 'atok', refreshToken: 'r');
+
+        final ok = await client.respondToSession(
+          account,
+          version: 1,
+          clientId: 123,
+          approve: true,
+        );
+
+        expect(ok, isTrue);
+        expect(api.called, isTrue);
+        expect(api.lastAccessToken, 'atok');
+      },
+    );
   });
 }

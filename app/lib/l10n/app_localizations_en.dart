@@ -2411,4 +2411,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsProfileOpenFailed =>
       'Unable to open a browser. Copy the official Steam link below.';
+
+  @override
+  String get steamSwitchQrTitle => 'Sign in with an AVA account';
+
+  @override
+  String get steamSwitchQrHelp =>
+      'Choose an AVA account, show Steam’s sign-in QR code, then scan it and review the login request.';
+
+  @override
+  String get steamSwitchQrAccount => 'AVA account';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      'Sign in to this account again in AVA first. An offline Steam Guard code alone cannot approve a QR login.';
+
+  @override
+  String get steamSwitchQrNoAccounts =>
+      'Add an account to AVA to use QR sign-in.';
+
+  @override
+  String get approveScreenSelect => 'Select a QR code on screen';
+
+  @override
+  String get approveScreenHelp =>
+      'AVA will briefly hide. Drag around the Steam sign-in QR code, then review the account and device before approving.';
+
+  @override
+  String get approveScreenInstruction =>
+      'Drag around one Steam sign-in QR code · Esc / right-click to cancel';
+
+  @override
+  String get approveScreenNoCode =>
+      'No QR code found. Select the complete code with a little space around it and try again.';
+
+  @override
+  String get approveScreenFailed =>
+      'Could not capture the screen. Try again or paste the QR code link.';
+
+  @override
+  String get approveSessionUnavailable =>
+      'This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again.';
 }

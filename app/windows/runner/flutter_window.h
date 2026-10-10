@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "screen_qr_capture.h"
 #include "steam_client_bridge.h"
 #include "win32_window.h"
 
@@ -33,6 +34,7 @@ class FlutterWindow : public Win32Window {
   // Declared after the controller so its channel is detached before the engine
   // is destroyed, including during ordinary member destruction.
   std::unique_ptr<SteamClientBridge> steam_client_bridge_;
+  std::unique_ptr<ScreenQrCapture> screen_qr_capture_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

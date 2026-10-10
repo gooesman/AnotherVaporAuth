@@ -56,9 +56,10 @@
   和 Steam 官方备用登录码入口。设置中可关闭启动身份验证，账户文件仍保持加密。
   Android 试用包为独立的 **AVA dev**，不覆盖已安装版本；详见[试用说明](docs/windows-steam-switch.md)。
 
-- **Windows Steam 账号切换（本分支试用功能）** —— 从设置页或账号右键菜单选择
+- **Windows Steam 账号切换（本分支试用功能）** —— 从账户概览、设置页或账号右键菜单选择
   本机已记住登录信息的 Steam 账号，正常退出并重启 Steam；修改前备份设置，
-  凭据失效时仍需在 Steam 正常登录。见[试用说明](docs/windows-steam-switch.md)。
+  同页也可选择 AVA 账号，拖框识别电脑屏幕上的 Steam 登录二维码，核对后批准登录；
+  截图只在本机内存解码。无 AVA 会话时可先重新登录。见[试用说明](docs/windows-steam-switch.md)。
 
 - **maFile 兼容** —— 读写旧版 `.maFile` 格式（PBKDF2/SHA1 + AES-256-CBC），老账户零成本迁移，随时可导出。还能导入整个 Steam Desktop Authenticator 的 `maFiles/` 文件夹——**包括加密的**（把 `manifest.json` 和 `.maFile` 一起选中；salt 与 IV 存在 manifest 里，孤立的加密 maFile 谁也解不开）——以及其他工具的变体（Steam++ / Watt Toolkit），包括没有 SteamID 的导出（作为「仅验证码」账户导入，验证码离线可用）。
 - **Steam Guard 验证码** —— 每账户列表 + 实时倒计时环、点按复制；点名称在 用户名 / 昵称 / ID 间切换。
@@ -111,7 +112,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 883 项测试
+flutter test                       # 914 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。

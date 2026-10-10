@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import '../../services/steam_api_client.dart';
+import '../jwt.dart';
 import '../models/steam_guard_account.dart';
 import '../proto/protobuf_wire.dart';
 import 'community_session.dart';
@@ -27,20 +28,35 @@ class QrChallenge {
   /// Parses the challenge URL embedded in a login QR code.
   static QrChallenge? tryParse(String raw) {
     final input = raw.trim();
+    // Check the literal authority/path before Uri normalizes them. In
+    // particular, Uri drops empty user info and resolves dot segments.
+    final literal = RegExp(
+      r'^[^:/?#]+://([^/?#]+)(/[^?#]*)(?:\?[^#]*)?$',
+    ).firstMatch(input);
+    if (literal == null || literal.group(1)!.contains('@')) return null;
     final uri = Uri.tryParse(input);
     if (uri == null) return null;
-    if (uri.scheme != 'https' || !_allowedHosts.contains(uri.host)) {
+    if (uri.scheme != 'https' ||
+        !_allowedHosts.contains(uri.host) ||
+        uri.authority.contains('@') ||
+        uri.port != 443 ||
+        uri.hasFragment) {
       return null;
     }
-    // Path looks like /q/<version>/<client_id> (host s.team or steamcommunity).
-    final segs = uri.pathSegments;
-    final qIdx = segs.indexOf('q');
-    if (qIdx >= 0 && segs.length >= qIdx + 3) {
-      final version = int.tryParse(segs[qIdx + 1]);
-      final clientId = _parseUint64(segs[qIdx + 2]);
-      if (version != null && clientId != null) {
-        return QrChallenge(version, clientId);
-      }
+    // Require the whole challenge path. A query is allowed for Steam's
+    // optional metadata, but is never used as an approval destination.
+    final match = RegExp(
+      r'^/q/([0-9]+)/([0-9]+)$',
+    ).firstMatch(literal.group(2)!);
+    if (match == null) return null;
+    final version = int.tryParse(match.group(1)!);
+    final clientId = _parseUint64(match.group(2)!);
+    // The signed challenge encodes the version as an unsigned 16-bit value.
+    if (version != null &&
+        version > 0 &&
+        version <= 0xffff &&
+        clientId != null) {
+      return QrChallenge(version, clientId);
     }
     return null;
   }
@@ -52,9 +68,18 @@ class QrChallenge {
   /// (varint / HMAC little-endian) treats ints as raw 64-bit patterns.
   static int? _parseUint64(String s) {
     final big = BigInt.tryParse(s);
-    if (big == null || big.isNegative || big.bitLength > 64) return null;
+    if (big == null || big <= BigInt.zero || big.bitLength > 64) return null;
     return big.toSigned(64).toInt();
   }
+}
+
+/// A local consistency check before showing the final approval dialog.
+/// Decoding a JWT does not authenticate it; Steam still validates the token
+/// and shared-secret signature when the approval is submitted.
+bool qrApprovalIdentityMatches(SteamGuardAccount account) {
+  if (account.steamId <= 0) return false;
+  final subject = decodeJwtPayload(account.session.accessToken)?['sub'];
+  return subject is String && subject == '${account.steamId}';
 }
 
 /// Details of a pending login session (GetAuthSessionInfo) shown to the user
@@ -99,8 +124,7 @@ class QrApprovalClient {
       request: ProtoWriter(),
       accessToken: token,
       useGet: true,
-    ))
-        .parseAll();
+    )).parseAll();
     final ids = <int>[];
     for (final f in fields) {
       if (f.number != 1) continue;
@@ -115,7 +139,9 @@ class QrApprovalClient {
 
   /// Fetches details (IP / location / device / version) for a pending login.
   Future<AuthSessionInfo?> sessionInfo(
-      SteamGuardAccount account, int clientId) async {
+    SteamGuardAccount account,
+    int clientId,
+  ) async {
     final token = requireAccessToken(account);
     final req = ProtoWriter()..writeUint64(1, clientId);
     final f = (await api.callProtobuf(
@@ -123,11 +149,16 @@ class QrApprovalClient {
       'GetAuthSessionInfo',
       request: req,
       accessToken: token,
-    ))
-        .parse();
+    )).parse();
+    final sessionVersion = f[8]?.asInt;
+    if (sessionVersion == null ||
+        sessionVersion <= 0 ||
+        sessionVersion > 0xffff) {
+      return null;
+    }
     return AuthSessionInfo(
       clientId: clientId,
-      version: f[8]?.asInt ?? 0,
+      version: sessionVersion,
       ip: f[1]?.asString ?? '',
       city: f[3]?.asString ?? '',
       country: f[5]?.asString ?? '',
@@ -140,11 +171,12 @@ class QrApprovalClient {
     SteamGuardAccount account,
     QrChallenge challenge, {
     required bool approve,
-  }) =>
-      respondToSession(account,
-          version: challenge.version,
-          clientId: challenge.clientId,
-          approve: approve);
+  }) => respondToSession(
+    account,
+    version: challenge.version,
+    clientId: challenge.clientId,
+    approve: approve,
+  );
 
   /// Approves/denies a specific auth session (by client id + version). Signs the
   /// (version, client_id, steamid) tuple with the account's shared secret
@@ -156,8 +188,12 @@ class QrApprovalClient {
     required bool approve,
   }) async {
     final accessToken = requireAccessToken(account);
-    final signature = _signature(account,
-        version: version, clientId: clientId, steamId: account.steamId);
+    final signature = _signature(
+      account,
+      version: version,
+      clientId: clientId,
+      steamId: account.steamId,
+    );
 
     final req = ProtoWriter()
       ..writeVarint(1, version) // version (int32)
@@ -172,8 +208,7 @@ class QrApprovalClient {
       'UpdateAuthSessionWithMobileConfirmation',
       request: req,
       accessToken: accessToken,
-    ))
-        .parse();
+    )).parse();
     // Empty success response (eresult OK) means accepted.
     return fields.isEmpty || (fields[1]?.asBool ?? true);
   }

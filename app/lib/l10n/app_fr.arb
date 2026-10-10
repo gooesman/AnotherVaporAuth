@@ -693,5 +693,16 @@
   "tradeFromAccount": "Compte expéditeur",
   "tradeToAccount": "Partenaire d’échange",
   "tradeValidationFailed": "L’offre n’a pas été envoyée. Vérifiez les objets et les quantités ; chaque côté est limité à 256 éléments.",
-  "friendsProfileOpenFailed": "Impossible d’ouvrir le navigateur. Copiez le lien officiel Steam ci-dessous."
+  "friendsProfileOpenFailed": "Impossible d’ouvrir le navigateur. Copiez le lien officiel Steam ci-dessous.",
+  "steamSwitchQrTitle": "Se connecter avec un compte AVA",
+  "steamSwitchQrHelp": "Choisissez un compte AVA, affichez le QR de connexion Steam, scannez-le et vérifiez la demande.",
+  "steamSwitchQrAccount": "Compte AVA",
+  "steamSwitchQrNeedsSession": "Reconnectez-vous d’abord à ce compte dans AVA. Un code Steam Guard hors ligne seul ne permet pas d’approuver une connexion par QR.",
+  "steamSwitchQrNoAccounts": "Ajoutez un compte à AVA pour utiliser la connexion par QR.",
+  "approveScreenSelect": "Sélectionner un QR à l’écran",
+  "approveScreenHelp": "AVA se masquera brièvement. Encadrez le QR de connexion Steam, puis vérifiez le compte et l’appareil avant d’approuver.",
+  "approveScreenInstruction": "Encadrez un QR de connexion Steam · Échap / clic droit pour annuler",
+  "approveScreenNoCode": "Aucun QR détecté. Sélectionnez le code entier avec une petite marge et réessayez.",
+  "approveScreenFailed": "Impossible de capturer l’écran. Réessayez ou collez le lien du QR.",
+  "approveSessionUnavailable": "Ce QR a expiré ou ses informations de connexion n’ont pas pu être vérifiées. Actualisez-le dans Steam et réessayez."
 }

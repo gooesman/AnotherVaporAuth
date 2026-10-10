@@ -8,6 +8,8 @@ import '../app/providers.dart';
 import '../app/responsive.dart';
 import '../core/models/steam_guard_account.dart';
 import '../services/steam_client_service.dart';
+import 'approve_login_screen.dart';
+import 'login_screen.dart';
 
 final steamClientServiceProvider = Provider<SteamClientService>(
   (ref) => SteamClientService(),
@@ -28,6 +30,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
   String? _path;
   List<SteamClientAccount> _accounts = [];
   String? _selected;
+  int? _selectedAvaSteamId;
   bool _loading = true;
   bool _switching = false;
   bool _launched = false;
@@ -169,6 +172,111 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
     }
   }
 
+  SteamGuardAccount? _currentAvaAccount(int steamId) => ref
+      .read(appControllerProvider)
+      .value
+      ?.visibleAccounts
+      .where((account) => account.steamId == steamId)
+      .firstOrNull;
+
+  Future<void> _approveLogin(int steamId) async {
+    final account = _currentAvaAccount(steamId);
+    if (_switching || account == null || !account.session.hasTokens) return;
+    // This only opens the existing approval flow. Its confirmation screen
+    // remains responsible for renewing tokens and approving the QR request.
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ApproveLoginScreen(initialAccount: account),
+      ),
+    );
+  }
+
+  Future<void> _refreshAvaLogin(int steamId) async {
+    final account = _currentAvaAccount(steamId);
+    if (_switching || account == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            LoginScreen(reason: LoginReason.refresh, account: account),
+      ),
+    );
+    // Read accounts from the provider again on return. A refresh may replace
+    // an object, or the account may have been removed while this page was away.
+    if (mounted) setState(() {});
+  }
+
+  Widget _qrLoginCard(
+    AppLocalizations l,
+    List<SteamGuardAccount> accounts,
+    SteamGuardAccount? selected,
+  ) => Card(
+    child: Padding(
+      padding: context.rInsets(all: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.steamSwitchQrTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(l.steamSwitchQrHelp),
+          const SizedBox(height: 16),
+          if (accounts.isEmpty)
+            Text(l.steamSwitchQrNoAccounts)
+          else
+            DropdownButtonFormField<int>(
+              // Recreate the field when a matching local Steam account is
+              // selected, so its displayed value follows that explicit choice.
+              key: ValueKey('steam-client-ava-account-${selected?.steamId}'),
+              initialValue: selected?.steamId,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: l.steamSwitchQrAccount,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                for (final account in accounts)
+                  DropdownMenuItem(
+                    value: account.steamId,
+                    child: Text(
+                      account.accountName ?? '${account.steamId}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: _switching
+                  ? null
+                  : (value) => setState(() => _selectedAvaSteamId = value),
+            ),
+          if (selected != null && !selected.session.hasTokens) ...[
+            const SizedBox(height: 12),
+            Text(l.steamSwitchQrNeedsSession),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const ValueKey('steam-client-ava-login'),
+              onPressed: _switching
+                  ? null
+                  : () => _refreshAvaLogin(selected.steamId),
+              icon: const Icon(Icons.login),
+              label: Text(l.loginButton),
+            ),
+          ],
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const ValueKey('steam-client-qr-login'),
+            onPressed:
+                !_switching && selected != null && selected.session.hasTokens
+                ? () => _approveLogin(selected.steamId)
+                : null,
+            icon: const Icon(Icons.qr_code_scanner),
+            label: Text(l.steamSwitchQrTitle),
+          ),
+        ],
+      ),
+    ),
+  );
+
   String _errorText(AppLocalizations l, Object error) {
     if (error is FormatException) return l.steamSwitchInvalidPath;
     if (error is! SteamClientException) return l.steamSwitchFailed;
@@ -196,6 +304,13 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final avaAccounts =
+        ref.watch(appControllerProvider).value?.visibleAccounts ??
+        const <SteamGuardAccount>[];
+    final selectedAvaId = _selectedAvaSteamId ?? widget.initialAccount?.steamId;
+    final selectedAva =
+        avaAccounts.where((a) => a.steamId == selectedAvaId).firstOrNull ??
+        avaAccounts.firstOrNull;
     SteamClientAccount? selected;
     for (final account in _accounts) {
       if (account.steamId == _selected) selected = account;
@@ -215,6 +330,13 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
         body: ListView(
           padding: context.rSafeInsets(all: 24),
           children: [
+            _qrLoginCard(l, avaAccounts, selectedAva),
+            const SizedBox(height: 24),
+            Text(
+              l.steamSwitchButton,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
             Text(l.steamSwitchHelp),
             const SizedBox(height: 20),
             Text(
@@ -275,6 +397,12 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
                       ? null
                       : () => setState(() {
                           _selected = account.steamId;
+                          final matchingAva = avaAccounts
+                              .where((a) => '${a.steamId}' == account.steamId)
+                              .firstOrNull;
+                          if (matchingAva != null) {
+                            _selectedAvaSteamId = matchingAva.steamId;
+                          }
                           _error = null;
                           _launched = false;
                         }),
@@ -288,6 +416,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
               const SizedBox(height: 12),
             ],
             FilledButton.icon(
+              key: const ValueKey('steam-client-switch'),
               onPressed: canSwitch ? () => _switch(selected!) : null,
               icon: const Icon(Icons.switch_account),
               label: Text(l.steamSwitchButton),

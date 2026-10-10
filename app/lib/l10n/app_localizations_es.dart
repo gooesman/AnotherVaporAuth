@@ -2438,4 +2438,45 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get friendsProfileOpenFailed =>
       'No se pudo abrir el navegador. Copia el enlace oficial de Steam que aparece abajo.';
+
+  @override
+  String get steamSwitchQrTitle => 'Iniciar sesión con una cuenta de AVA';
+
+  @override
+  String get steamSwitchQrHelp =>
+      'Elige una cuenta de AVA, muestra el QR de inicio de sesión de Steam, escanéalo y revisa la solicitud.';
+
+  @override
+  String get steamSwitchQrAccount => 'Cuenta de AVA';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      'Primero vuelve a iniciar sesión en esta cuenta en AVA. Un código de Steam Guard sin conexión no basta para aprobar un inicio mediante QR.';
+
+  @override
+  String get steamSwitchQrNoAccounts =>
+      'Añade una cuenta a AVA para iniciar sesión mediante QR.';
+
+  @override
+  String get approveScreenSelect => 'Seleccionar un QR en la pantalla';
+
+  @override
+  String get approveScreenHelp =>
+      'AVA se ocultará brevemente. Arrastra un marco alrededor del QR de Steam y comprueba la cuenta y el dispositivo antes de aprobar.';
+
+  @override
+  String get approveScreenInstruction =>
+      'Enmarca un QR de inicio de sesión de Steam · Esc / clic derecho para cancelar';
+
+  @override
+  String get approveScreenNoCode =>
+      'No se encontró ningún QR. Selecciona el código completo con un pequeño margen y vuelve a intentarlo.';
+
+  @override
+  String get approveScreenFailed =>
+      'No se pudo capturar la pantalla. Reinténtalo o pega el enlace del QR.';
+
+  @override
+  String get approveSessionUnavailable =>
+      'Este QR ha caducado o no se pudo verificar su información de inicio de sesión. Actualízalo en Steam y vuelve a intentarlo.';
 }

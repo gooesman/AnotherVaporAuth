@@ -4270,6 +4270,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to open a browser. Copy the official Steam link below.'**
   String get friendsProfileOpenFailed;
+
+  /// No description provided for @steamSwitchQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with an AVA account'**
+  String get steamSwitchQrTitle;
+
+  /// No description provided for @steamSwitchQrHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an AVA account, show Steam’s sign-in QR code, then scan it and review the login request.'**
+  String get steamSwitchQrHelp;
+
+  /// No description provided for @steamSwitchQrAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'AVA account'**
+  String get steamSwitchQrAccount;
+
+  /// No description provided for @steamSwitchQrNeedsSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to this account again in AVA first. An offline Steam Guard code alone cannot approve a QR login.'**
+  String get steamSwitchQrNeedsSession;
+
+  /// No description provided for @steamSwitchQrNoAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an account to AVA to use QR sign-in.'**
+  String get steamSwitchQrNoAccounts;
+
+  /// No description provided for @approveScreenSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a QR code on screen'**
+  String get approveScreenSelect;
+
+  /// No description provided for @approveScreenHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'AVA will briefly hide. Drag around the Steam sign-in QR code, then review the account and device before approving.'**
+  String get approveScreenHelp;
+
+  /// No description provided for @approveScreenInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag around one Steam sign-in QR code · Esc / right-click to cancel'**
+  String get approveScreenInstruction;
+
+  /// No description provided for @approveScreenNoCode.
+  ///
+  /// In en, this message translates to:
+  /// **'No QR code found. Select the complete code with a little space around it and try again.'**
+  String get approveScreenNoCode;
+
+  /// No description provided for @approveScreenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture the screen. Try again or paste the QR code link.'**
+  String get approveScreenFailed;
+
+  /// No description provided for @approveSessionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again.'**
+  String get approveSessionUnavailable;
 }
 
 class _AppLocalizationsDelegate

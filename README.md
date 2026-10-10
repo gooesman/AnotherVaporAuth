@@ -57,9 +57,12 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 ## Highlights
 
 - **Windows Steam account switching (branch preview)** — select a locally
-  remembered Steam account from Settings or an account's right-click menu.
+  remembered Steam account from the overview, Settings or the right-click menu.
   Requests a normal Steam restart, backs up settings before editing, and reports
-  when a normal login is still needed. See the [preview guide](docs/windows-steam-switch.md).
+  when a normal login is still needed. The same page can sign in a new account:
+  choose its AVA session, drag-select Steam's on-screen QR code and review the
+  login request. Screen images are decoded locally in memory. See the
+  [preview guide](docs/windows-steam-switch.md).
 
 - **Account overview (branch preview)** — Windows and Android share configurable
   wallet/pending-funds and market-listing cards, friends and two-sided trade-offer
@@ -155,7 +158,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 883 tests
+flutter test                       # 914 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

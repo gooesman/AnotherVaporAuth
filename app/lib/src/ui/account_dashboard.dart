@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -236,6 +238,12 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
           spacing: 8,
           runSpacing: 8,
           children: [
+            if (Platform.isWindows)
+              _action(
+                l.steamSwitchTitle,
+                Icons.switch_account_outlined,
+                'steam-client',
+              ),
             _action(l.dashboardMarket, Icons.storefront_outlined, 'market'),
             _action(l.friendsTitle, Icons.people_outline, 'friends'),
             _action(l.pendingTitle, Icons.fact_check_outlined, 'confirm'),

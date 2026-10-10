@@ -2493,4 +2493,45 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get friendsProfileOpenFailed =>
       'Не удалось открыть браузер. Скопируйте официальную ссылку Steam ниже.';
+
+  @override
+  String get steamSwitchQrTitle => 'Войти с аккаунтом AVA';
+
+  @override
+  String get steamSwitchQrHelp =>
+      'Выберите аккаунт AVA, откройте QR-код входа в Steam, отсканируйте его и проверьте запрос.';
+
+  @override
+  String get steamSwitchQrAccount => 'Аккаунт AVA';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      'Сначала повторно войдите в этот аккаунт в AVA. Одного офлайн-кода Steam Guard недостаточно для подтверждения входа по QR.';
+
+  @override
+  String get steamSwitchQrNoAccounts =>
+      'Добавьте аккаунт в AVA для входа по QR-коду.';
+
+  @override
+  String get approveScreenSelect => 'Выделить QR-код на экране';
+
+  @override
+  String get approveScreenHelp =>
+      'AVA ненадолго скроется. Обведите QR-код входа в Steam и проверьте аккаунт и устройство перед подтверждением.';
+
+  @override
+  String get approveScreenInstruction =>
+      'Обведите один QR-код входа в Steam · Esc / правая кнопка для отмены';
+
+  @override
+  String get approveScreenNoCode =>
+      'QR-код не найден. Выделите код целиком с небольшим полем и повторите попытку.';
+
+  @override
+  String get approveScreenFailed =>
+      'Не удалось захватить экран. Повторите попытку или вставьте ссылку QR-кода.';
+
+  @override
+  String get approveSessionUnavailable =>
+      'QR-код устарел или данные входа не удалось проверить. Обновите код в Steam и повторите попытку.';
 }

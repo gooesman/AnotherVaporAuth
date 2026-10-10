@@ -1212,5 +1212,16 @@
   "tradeFromAccount": "Sending account",
   "tradeToAccount": "Trading partner",
   "tradeValidationFailed": "The offer has not been sent. Check the selected items and quantities; each side allows up to 256 items.",
-  "friendsProfileOpenFailed": "Unable to open a browser. Copy the official Steam link below."
+  "friendsProfileOpenFailed": "Unable to open a browser. Copy the official Steam link below.",
+  "steamSwitchQrTitle": "Sign in with an AVA account",
+  "steamSwitchQrHelp": "Choose an AVA account, show Steam’s sign-in QR code, then scan it and review the login request.",
+  "steamSwitchQrAccount": "AVA account",
+  "steamSwitchQrNeedsSession": "Sign in to this account again in AVA first. An offline Steam Guard code alone cannot approve a QR login.",
+  "steamSwitchQrNoAccounts": "Add an account to AVA to use QR sign-in.",
+  "approveScreenSelect": "Select a QR code on screen",
+  "approveScreenHelp": "AVA will briefly hide. Drag around the Steam sign-in QR code, then review the account and device before approving.",
+  "approveScreenInstruction": "Drag around one Steam sign-in QR code · Esc / right-click to cancel",
+  "approveScreenNoCode": "No QR code found. Select the complete code with a little space around it and try again.",
+  "approveScreenFailed": "Could not capture the screen. Try again or paste the QR code link.",
+  "approveSessionUnavailable": "This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again."
 }

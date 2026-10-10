@@ -27,6 +27,8 @@ dependencies:
   # QR (login direction A render / direction B scan)
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.2.0
+  # Pure-Dart desktop screen-region QR decoding; no uploaded screenshots.
+  zxing2: 0.2.4
 
   # Files / storage
   # file_selector (flutter.dev official) instead of file_picker: file_picker 11
