@@ -1,5 +1,42 @@
 # Windows Steam account switching (preview)
 
+## Account overview and Android preview additions
+
+The same feature branch now also includes an account overview on Windows and
+Android. It uses the existing theme/skin components. Desktop accounts show the
+overview beside the account list; tapping a phone account opens its full overview.
+Wallet, market listings and account-tool cards can be hidden using the tune menu.
+Unavailable balances are never presented as zero. Market records include active,
+held and awaiting-confirmation listings, with separate inventory-context labels.
+
+Friends & trades supports friend search, both sides' inventory selections and
+quantities, review and explicit submission. SteamID/account identity is checked
+when signing back in. No live offers were sent during development. Private
+inventories, Steam restrictions and additional verification can still prevent a
+trade. An uncertain send result must be checked in sent offers before retrying.
+
+Settings offers startup verification (on by default) and Lock now. Disabling
+verification stores a convenience credential in the device's secure storage;
+account files stay encrypted. Changing the PIN re-enables verification. The
+setting and credential are not account-sync data.
+
+Backup login codes opens Steam's official `https://store.steampowered.com/twofactor/manage`
+flow. Check the browser's account and complete Steam's verification there. AVA
+does not generate, retrieve or cache one-use codes in its own UI, and does not
+substitute the authenticator removal/recovery code for them.
+
+The Android artifact is an **ARM64 debug preview**, package
+`pro.dotslash.ava.dev`, labelled **AVA dev**. Its separate vault is empty on first
+installation; it does not upgrade the installed production app. This is a development
+build, not a Play release. Builds from separate CI runs may have different debug
+signatures. Keep the production app and its data; do not uninstall it to test.
+The predictive-back regression is covered with simulated system gestures and
+pixel checks; Xiaomi 15 Pro validation remains a manual step.
+
+Windows preview ZIPs keep DLLs and the `data` directory beside `ava.exe`.
+They use the current Windows user's existing AVA data directory. Close other
+AVA instances before running a preview; this is not an isolated vault.
+
 This branch adds **Switch Steam account** to the Windows account-row context
 menu and to Settings. It opens a list of accounts remembered by the local Steam installation,
 preselecting the matching AVA account by SteamID (or login name when an imported

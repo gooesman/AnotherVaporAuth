@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'route_surface.dart';
 
 /// The visual themes: the two styled ones from the AVA motion design spec
 /// (neon / pixel) and two plain ones (dark / light) — quiet palettes, system
@@ -326,6 +327,15 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
     colorScheme: scheme,
     // Transparent so the app-level backdrop (bg + neon gradient) shows through.
     scaffoldBackgroundColor: Colors.transparent,
+    pageTransitionsTheme: PageTransitionsTheme(builders: {
+      for (final platform in TargetPlatform.values)
+        platform: AvaPageTransitionsBuilder(
+          delegate: base.pageTransitionsTheme.builders[platform] ??
+              const ZoomPageTransitionsBuilder(),
+          color: t.bg,
+          gradient: t.bgGradient,
+        ),
+    }),
     canvasColor: t.bg,
     textTheme: displayCode(base.textTheme),
     extensions: [t],

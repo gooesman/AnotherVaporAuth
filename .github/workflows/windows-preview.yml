@@ -1,4 +1,4 @@
-name: Windows preview
+name: Windows and Android preview
 
 # Build a downloadable preview for this feature branch or on request. It never
 # creates a Release, installs the app, or contacts the upstream deployment.
@@ -59,5 +59,52 @@ jobs:
         with:
           name: AVA-windows-preview-${{ github.sha }}
           path: app/build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 14
+
+  android-preview:
+    name: Build Android preview (separate AVA dev app)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - name: Use runner Java 17
+        run: flutter config --jdk-dir "$JAVA_HOME_17_X64"
+      - name: Clean before packaging
+        run: flutter clean
+      - name: Restore locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Build side-by-side Android preview
+        # The existing debug buildType has applicationIdSuffix=.dev and label
+        # AVA dev. This cannot replace the user's installed production vault.
+        run: flutter build apk --debug --flavor cn --dart-define=AVA_CHANNEL=cn --target-platform android-arm64 --no-pub
+      - name: Verify isolated package identity
+        run: |
+          APK=build/app/outputs/flutter-apk/app-cn-debug.apk
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$APK" | grep -Fx 'pro.dotslash.ava.dev'
+          sha256sum "$APK"
+      - name: Verify cn preview excludes ads and billing
+        # Debug bytecode is not obfuscated, so the dex package names are usable.
+        run: |
+          APK=build/app/outputs/flutter-apk/app-cn-debug.apk
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" dex packages --defined-only "$APK" > "$RUNNER_TEMP/ava-preview-dex.txt"
+          if grep -E 'com[.]google[.]android[.]gms[.]ads([.]|[[:space:]]|$)|com[.]android[.]billingclient([.]|[[:space:]]|$)|com[.]google[.]android[.]ump([.]|[[:space:]]|$)' "$RUNNER_TEMP/ava-preview-dex.txt"; then
+            echo 'Unexpected ads or billing code in cn preview'
+            exit 1
+          fi
+      - name: Upload Android preview
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-android-preview-${{ github.sha }}
+          path: app/build/app/outputs/flutter-apk/app-cn-debug.apk
           if-no-files-found: error
           retention-days: 14

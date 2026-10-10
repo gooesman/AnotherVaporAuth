@@ -2195,4 +2195,220 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get portableUnreadable =>
       'This library is damaged or still depends on another Windows installation’s key. Restore a maFile export; the source files have not been changed.';
+
+  @override
+  String get friendsTitle => 'Friends & trades';
+
+  @override
+  String get friendsSearch => 'Search name or SteamID';
+
+  @override
+  String get friendsEmpty => 'No friends to show';
+
+  @override
+  String get friendsProfile => 'View Steam profile';
+
+  @override
+  String get friendsTrade => 'Create trade offer';
+
+  @override
+  String get friendsOnline => 'Online';
+
+  @override
+  String get friendsOffline => 'Offline';
+
+  @override
+  String get friendsPlaying => 'In game';
+
+  @override
+  String get tradeNewTitle => 'New trade offer';
+
+  @override
+  String get tradeYourItems => 'Items you give';
+
+  @override
+  String get tradeTheirItems => 'Items you receive';
+
+  @override
+  String get tradeSelectItems => 'Select items';
+
+  @override
+  String get tradeNote => 'Message (optional)';
+
+  @override
+  String get tradeReview => 'Review offer';
+
+  @override
+  String get tradeSend => 'Send offer';
+
+  @override
+  String get tradeReviewBody =>
+      'Check the partner SteamID, items and quantities on both sides. Steam may require confirmation or place items on hold.';
+
+  @override
+  String get tradeGiftWarning =>
+      'You are giving these items away and will receive nothing.';
+
+  @override
+  String get tradeNoItems => 'No tradable items available here.';
+
+  @override
+  String get tradeMore => 'Load more';
+
+  @override
+  String get tradeSent => 'Offer sent.';
+
+  @override
+  String get tradeNeedsMobile =>
+      'Offer created. Complete its mobile confirmation in Pending.';
+
+  @override
+  String get tradeNeedsEmail =>
+      'Offer created. Follow Steam’s email to confirm it.';
+
+  @override
+  String get tradeOpenPending => 'View pending & offers';
+
+  @override
+  String get tradeUnknownResult =>
+      'The send result is unknown. Check your sent offers before trying again to avoid duplicates.';
+
+  @override
+  String get tradeChooseGame => 'Choose inventory';
+
+  @override
+  String get tradeQuantity => 'Quantity';
+
+  @override
+  String get tradeLoadFailed =>
+      'Unable to read Steam friends or inventory. Refresh to try again.';
+
+  @override
+  String get tradeSendFailed =>
+      'Steam did not confirm the offer was sent. Check your offers before trying again.';
+
+  @override
+  String get marketListingActive => 'For sale';
+
+  @override
+  String get marketListingOnHold => 'On hold';
+
+  @override
+  String get marketListingPending => 'Awaiting confirmation';
+
+  @override
+  String get marketListingInactive => 'Inactive';
+
+  @override
+  String marketHoldUntil(String date) {
+    return 'On hold until $date';
+  }
+
+  @override
+  String get marketListingsAll => 'All';
+
+  @override
+  String get marketCancelConfirm => 'Cancel this market listing?';
+
+  @override
+  String get settingsStartupVerification => 'Verify identity at startup';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      'When enabled, opening AVA requires your PIN or system authentication. When disabled, anyone using this device can open AVA; local account files remain encrypted.';
+
+  @override
+  String get settingsStartupVerificationError =>
+      'Could not save the startup verification setting. Check device secure storage and try again.';
+
+  @override
+  String get settingsLockNow => 'Lock now';
+
+  @override
+  String get settingsStartupVerificationPinChanged =>
+      'Changing your PIN turns startup verification back on.';
+
+  @override
+  String get settingsStartupVerificationDisable =>
+      'Turn off startup verification?';
+
+  @override
+  String get dashboardTitle => 'Account overview';
+
+  @override
+  String get dashboardWallet => 'Wallet balance';
+
+  @override
+  String get dashboardPendingBalance => 'Pending funds';
+
+  @override
+  String get dashboardUnavailable => 'Unavailable';
+
+  @override
+  String get dashboardMarket => 'Inventory & market';
+
+  @override
+  String get dashboardTools => 'Account tools';
+
+  @override
+  String get dashboardCustomize => 'Choose overview cards';
+
+  @override
+  String get dashboardViewAll => 'View all';
+
+  @override
+  String get dashboardNoListings => 'No market listings.';
+
+  @override
+  String get dashboardFetchFailed =>
+      'Could not load this information. Refresh to try again.';
+
+  @override
+  String get dashboardSaveFailed => 'Could not save the display preference.';
+
+  @override
+  String get backupCodesTitle => 'Backup login codes';
+
+  @override
+  String get backupCodesAccountCheck =>
+      'Your browser may be signed in to a different Steam account. Check that its account name matches the one above before generating codes.';
+
+  @override
+  String get backupCodesHow => 'Get codes from Steam';
+
+  @override
+  String get backupCodesSteps =>
+      '1. Open Steam Guard settings with the button below.\n2. Sign in to the account shown above.\n3. Choose “Get Backup Steam Guard Codes”.\n4. Complete the verification requested by Steam and keep the generated codes in a safe place.';
+
+  @override
+  String get backupCodesExplanation =>
+      'These are one-use login codes, separate from the authenticator removal code. Steam issues and manages them. AVA opens the official flow and does not generate or store these codes.';
+
+  @override
+  String get backupCodesOpenSteam => 'Open Steam to get codes';
+
+  @override
+  String get backupCodesCopyLink => 'Copy official link';
+
+  @override
+  String get backupCodesOpenFailed =>
+      'Could not open the browser. Copy the link and open it manually.';
+
+  @override
+  String get loginAccountMismatch =>
+      'This is a different Steam account. Sign in to the selected account; the original account has not been changed.';
+
+  @override
+  String get tradeFromAccount => 'Sending account';
+
+  @override
+  String get tradeToAccount => 'Trading partner';
+
+  @override
+  String get tradeValidationFailed =>
+      'The offer has not been sent. Check the selected items and quantities; each side allows up to 256 items.';
+
+  @override
+  String get friendsProfileOpenFailed =>
+      'Unable to open a browser. Copy the official Steam link below.';
 }

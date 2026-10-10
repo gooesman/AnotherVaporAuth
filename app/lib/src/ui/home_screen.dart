@@ -26,6 +26,9 @@ import 'widgets/scanline_overlay.dart';
 import 'widgets/update_banner.dart';
 import 'widgets/steam_image_provider.dart';
 import 'approve_login_screen.dart';
+import 'account_dashboard.dart';
+import 'backup_codes_screen.dart';
+import 'friends/friends_screen.dart';
 import 'steam_client_screen.dart';
 import 'paywall_screen.dart';
 import 'pending/pending_screen.dart';
@@ -398,6 +401,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       // Tapping an account polls its pending sign-in requests.
                       checkPendingLogins(context, ref, accounts[i],
                           silent: true);
+                      if (c.maxWidth < 640) _openDashboard(accounts[i]);
                     },
                     onAdd: () => _addMenu(context),
                     nameMode: _nameMode,
@@ -442,6 +446,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     onTapName: _cycleNameMode,
                     onRelogin: () =>
                         _onAction(context, accounts[_selected], 'login'),
+                    onAction: (action) => _onAction(context, accounts[_selected], action),
+                    onOpenDashboard: () => _openDashboard(accounts[_selected]),
                     codeLink: _codeLink,
                   );
                   final Widget content = SafeArea(
@@ -456,7 +462,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           )
                         : Column(
                             children: [
-                              panel,
+                              // Preserve room for accounts on short screens.
+                              ConstrainedBox(
+                                constraints: BoxConstraints(maxHeight: c.maxHeight * 0.56),
+                                child: SingleChildScrollView(child: panel),
+                              ),
                               Divider(height: context.r(1)),
                               Expanded(child: sidebar),
                             ],
@@ -624,10 +634,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  void _openDashboard(SteamGuardAccount account) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => AccountDashboardScreen(
+        account: account,
+        onAction: (action) => _onAction(context, account, action),
+      ),
+    ));
+  }
+
   Future<void> _onAction(
       BuildContext context, SteamGuardAccount account, String value) async {
     final l = AppLocalizations.of(context);
     switch (value) {
+      case 'dashboard':
+        _openDashboard(account);
+        break;
+      case 'friends':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => FriendsScreen(account: account)));
+        break;
+      case 'backup-codes':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => BackupCodesScreen(account: account)));
+        break;
+      case 'listings':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MarketScreen(account: account, initialTab: 1)));
+        break;
       case 'steam-client':
         if (Platform.isWindows) {
           await Navigator.of(context).push(MaterialPageRoute(
@@ -1111,6 +1142,9 @@ class _SidebarRow extends ConsumerWidget {
       position: RelativeRect.fromRect(
           at & const Size(1, 1), Offset.zero & overlay.size),
       items: [
+        item('dashboard', Icons.dashboard_outlined, l.dashboardTitle),
+        item('friends', Icons.people_outline, l.friendsTitle),
+        item('backup-codes', Icons.key_outlined, l.backupCodesTitle),
         if (Platform.isWindows)
           item('steam-client', Icons.switch_account_outlined, l.steamSwitchTitle),
         item('confirm', Icons.verified_user_outlined, l.actionConfirmations),
@@ -1534,6 +1568,8 @@ class _MainPanel extends ConsumerWidget {
   final _NameMode nameMode;
   final VoidCallback onTapName;
   final VoidCallback onRelogin; // invalid-session status line → re-login
+  final ValueChanged<String> onAction;
+  final VoidCallback onOpenDashboard;
   final LayerLink? codeLink; // tutorial spotlight anchor
   const _MainPanel(
       {required this.account,
@@ -1542,6 +1578,8 @@ class _MainPanel extends ConsumerWidget {
       required this.nameMode,
       required this.onTapName,
       required this.onRelogin,
+      required this.onAction,
+      required this.onOpenDashboard,
       this.codeLink,
       this.wide = false});
 
@@ -1557,15 +1595,15 @@ class _MainPanel extends ConsumerWidget {
     final sessionInvalid =
         ref.watch(sessionHealthProvider).contains(account.steamId);
 
-    return Padding(
-      padding: context.rInsets(all: 26),
+    final header = Padding(
+      padding: context.rInsets(h: 16, v: wide ? 24 : 10),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Avatar(account: account, size: context.r(104)),
+              InkWell(onTap: onOpenDashboard, child: _Avatar(account: account, size: context.r(wide ? 76 : 56))),
               SizedBox(width: context.r(18)),
               Flexible(
                 child: Column(
@@ -1640,7 +1678,7 @@ class _MainPanel extends ConsumerWidget {
               ),
             ],
           ),
-          SizedBox(height: context.r(26)),
+          SizedBox(height: context.r(wide ? 20 : 12)),
           // Code + countdown ring on one row. Tap the code to copy it (the
           // explicit copy button is gone). Phone: scale the code relative to the
           // viewport; tablet / two-pane: keep the fixed design size.
@@ -1656,10 +1694,10 @@ class _MainPanel extends ConsumerWidget {
                   _TapScale(
                     onTap: () => onCopy(code),
                     child: wide
-                        ? FlipCode(code: code, fontSize: t.codeSize)
+                        ? FlipCode(code: code, fontSize: 42)
                         : SizedBox(
-                            width: (MediaQuery.sizeOf(context).width * 0.46)
-                                .clamp(120.0, 260.0),
+                            width: (MediaQuery.sizeOf(context).width * 0.40)
+                                .clamp(110.0, 200.0),
                             child: FittedBox(
                               fit: BoxFit.fitWidth,
                               child: FlipCode(code: code, fontSize: 56),
@@ -1671,12 +1709,34 @@ class _MainPanel extends ConsumerWidget {
               SizedBox(width: context.r(18)),
               CountdownRing(
                   remaining: remaining,
-                  size: context.r(wide ? 64 : 70),
+                  size: context.r(wide ? 52 : 42),
                   stroke: context.r(6)),
             ],
           ),
         ],
       ),
+    );
+    final dashboard = AccountDashboard(
+      key: ValueKey(('dashboard', account.steamId, account.fromPortable, wide)),
+      account: account,
+      compact: !wide,
+      onAction: onAction,
+      onExpand: onOpenDashboard,
+    );
+    if (!wide) {
+      return Column(mainAxisSize: MainAxisSize.min, children: [
+        header,
+        Padding(padding: context.rInsets(h: 14, bottom: 4), child: dashboard),
+      ]);
+    }
+    return ListView(
+      padding: context.rSafeInsets(left: 28, right: 96, top: 52, bottom: 96),
+      children: [
+        Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1120), child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [header, const SizedBox(height: 12), dashboard],
+        ))),
+      ],
     );
   }
 }

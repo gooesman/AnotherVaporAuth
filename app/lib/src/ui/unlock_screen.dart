@@ -44,7 +44,9 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
     final enabled = (await bio.isEnabled) && (await bio.isSupported);
     if (!mounted) return;
     setState(() => _canBio = enabled);
-    if (enabled) _biometricUnlock();
+    if (enabled && !ref.read(appControllerProvider.notifier).manuallyLocked) {
+      _biometricUnlock();
+    }
   }
 
   Future<void> _biometricUnlock() async {

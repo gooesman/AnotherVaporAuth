@@ -92,6 +92,7 @@ class SettingsScreen extends ConsumerWidget {
                         : l.settingsSet),
                   ),
                 ),
+                const _StartupVerificationCard(),
                 // Biometric / device-credential unlock
                 const _BiometricCard(),
                 // Account-library sync (WebDAV; spec 2026-08-12)
@@ -845,6 +846,78 @@ class _SyncCard extends ConsumerWidget {
               : const SyncSetupScreen(),
         )),
         child: Text(status.configured ? l.commonOpen : l.settingsSet),
+      ),
+    );
+  }
+}
+
+class _StartupVerificationCard extends ConsumerStatefulWidget {
+  const _StartupVerificationCard();
+
+  @override
+  ConsumerState<_StartupVerificationCard> createState() =>
+      _StartupVerificationCardState();
+}
+
+class _StartupVerificationCardState extends ConsumerState<_StartupVerificationCard> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool required) async {
+    if (_busy) return;
+    final l = AppLocalizations.of(context);
+    if (!required) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l.settingsStartupVerificationDisable),
+          content: Text(l.settingsStartupVerificationDesc),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false),
+                child: Text(l.commonCancel)),
+            FilledButton(onPressed: () => Navigator.pop(context, true),
+                child: Text(l.commonOk)),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ref.read(appControllerProvider.notifier)
+          .setStartupVerificationEnabled(required);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(l.settingsStartupVerificationError)));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final required = ref.watch(startupVerificationEnabledProvider);
+    final data = ref.watch(appControllerProvider).value;
+    return _Card(
+      title: l.settingsStartupVerification,
+      description: '${l.settingsStartupVerificationDesc}\n'
+          '${l.settingsStartupVerificationPinChanged}',
+      trailing: Switch(
+        key: const ValueKey('startup-verification-switch'),
+        value: required.value ?? true,
+        onChanged: _busy || required.isLoading || data == null ||
+            data.locked || !data.store.isVault ? null : _toggle,
+      ),
+      child: OutlinedButton.icon(
+        onPressed: _busy || data == null || data.locked ? null : () {
+          final controller = ref.read(appControllerProvider.notifier);
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          controller.lock();
+        },
+        icon: const Icon(Icons.lock_outline),
+        label: Text(l.settingsLockNow),
       ),
     );
   }

@@ -1355,7 +1355,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get marketTabInventory => '库存';
 
   @override
-  String get marketTabListings => '我的在售';
+  String get marketTabListings => '我的出售';
 
   @override
   String get marketSelectGame => '选择游戏';
@@ -2086,6 +2086,207 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get portableUnreadable =>
       '账号库损坏，或仍依赖原 Windows 的密钥。请从导出的 maFile 恢复，源文件未改动。';
+
+  @override
+  String get friendsTitle => '好友与交易';
+
+  @override
+  String get friendsSearch => '搜索昵称或 SteamID';
+
+  @override
+  String get friendsEmpty => '没有可显示的好友';
+
+  @override
+  String get friendsProfile => '查看 Steam 资料';
+
+  @override
+  String get friendsTrade => '发起交易';
+
+  @override
+  String get friendsOnline => '在线';
+
+  @override
+  String get friendsOffline => '离线';
+
+  @override
+  String get friendsPlaying => '游戏中';
+
+  @override
+  String get tradeNewTitle => '新交易报价';
+
+  @override
+  String get tradeYourItems => '我送出的物品';
+
+  @override
+  String get tradeTheirItems => '我收到的物品';
+
+  @override
+  String get tradeSelectItems => '选择物品';
+
+  @override
+  String get tradeNote => '附言（可选）';
+
+  @override
+  String get tradeReview => '检查报价';
+
+  @override
+  String get tradeSend => '确认发送';
+
+  @override
+  String get tradeReviewBody => '请核对对方 SteamID、双方物品和数量。Steam 可能要求进一步确认或暂挂。';
+
+  @override
+  String get tradeGiftWarning => '此报价只送出物品，你不会收到任何物品。';
+
+  @override
+  String get tradeNoItems => '当前没有可选的可交易物品。';
+
+  @override
+  String get tradeMore => '加载更多';
+
+  @override
+  String get tradeSent => '报价已发送。';
+
+  @override
+  String get tradeNeedsMobile => '报价已创建，请到待办中完成手机令牌确认。';
+
+  @override
+  String get tradeNeedsEmail => '报价已创建，请按 Steam 邮件完成确认。';
+
+  @override
+  String get tradeOpenPending => '查看待办与报价';
+
+  @override
+  String get tradeUnknownResult => '未能确认发送结果。请先查看已发出的报价，确认未发送后再重试，避免重复报价。';
+
+  @override
+  String get tradeChooseGame => '选择库存';
+
+  @override
+  String get tradeQuantity => '数量';
+
+  @override
+  String get tradeLoadFailed => '无法读取 Steam 好友或库存，请刷新重试。';
+
+  @override
+  String get tradeSendFailed => 'Steam 未确认发送成功，请查看报价记录后再试。';
+
+  @override
+  String get marketListingActive => '在售';
+
+  @override
+  String get marketListingOnHold => '暂挂中';
+
+  @override
+  String get marketListingPending => '等待确认';
+
+  @override
+  String get marketListingInactive => '未在售';
+
+  @override
+  String marketHoldUntil(String date) {
+    return '暂挂至 $date';
+  }
+
+  @override
+  String get marketListingsAll => '全部';
+
+  @override
+  String get marketCancelConfirm => '确定取消这件物品的市场上架？';
+
+  @override
+  String get settingsStartupVerification => '启动时验证身份';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      '开启时需输入 AVA PIN 或使用系统验证。关闭后，任何能使用此设备的人都可打开 AVA；账户文件仍加密保存在本机。';
+
+  @override
+  String get settingsStartupVerificationError => '无法保存启动验证设置，请检查系统安全存储后重试。';
+
+  @override
+  String get settingsLockNow => '立即锁定';
+
+  @override
+  String get settingsStartupVerificationPinChanged => '更改 PIN 后会重新开启启动验证。';
+
+  @override
+  String get settingsStartupVerificationDisable => '关闭启动验证？';
+
+  @override
+  String get dashboardTitle => '账户概览';
+
+  @override
+  String get dashboardWallet => '钱包余额';
+
+  @override
+  String get dashboardPendingBalance => '待到账余额';
+
+  @override
+  String get dashboardUnavailable => '暂未获取';
+
+  @override
+  String get dashboardMarket => '库存与市场';
+
+  @override
+  String get dashboardTools => '账户工具';
+
+  @override
+  String get dashboardCustomize => '选择概览卡片';
+
+  @override
+  String get dashboardViewAll => '查看全部';
+
+  @override
+  String get dashboardNoListings => '目前没有出售记录。';
+
+  @override
+  String get dashboardFetchFailed => '暂时无法读取，请刷新重试。';
+
+  @override
+  String get dashboardSaveFailed => '无法保存显示偏好。';
+
+  @override
+  String get backupCodesTitle => '备用登录码';
+
+  @override
+  String get backupCodesAccountCheck =>
+      '浏览器可能登录着另一个 Steam 账号。生成备用码前，请核对网页中的账号是否与上方一致。';
+
+  @override
+  String get backupCodesHow => '通过 Steam 获取备用码';
+
+  @override
+  String get backupCodesSteps =>
+      '1. 点击下方按钮，打开 Steam 令牌管理页。\n2. 登录上方显示的目标账号。\n3. 选择“获取备用 Steam 令牌验证码”。\n4. 按 Steam 提示完成验证，并妥善保存生成的备用码。';
+
+  @override
+  String get backupCodesExplanation =>
+      '这是一次性备用登录码，与移除令牌的恢复码不同。备用码由 Steam 签发和管理；AVA 提供官方流程入口，不在本地生成或保存这些码。';
+
+  @override
+  String get backupCodesOpenSteam => '前往 Steam 获取备用码';
+
+  @override
+  String get backupCodesCopyLink => '复制官方链接';
+
+  @override
+  String get backupCodesOpenFailed => '未能打开浏览器，请复制链接后手动打开。';
+
+  @override
+  String get loginAccountMismatch => '登录的是其他 Steam 账号。请使用当前账户完成验证，原账户未被修改。';
+
+  @override
+  String get tradeFromAccount => '发起账户';
+
+  @override
+  String get tradeToAccount => '交易对象';
+
+  @override
+  String get tradeValidationFailed => '报价尚未发送。请检查所选物品和数量；每方最多选择 256 项。';
+
+  @override
+  String get friendsProfileOpenFailed => '无法打开浏览器，可复制下方 Steam 官方链接。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -3442,7 +3643,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get marketTabInventory => '庫存';
 
   @override
-  String get marketTabListings => '我的上架';
+  String get marketTabListings => '我的出售';
 
   @override
   String get marketSelectGame => '選擇遊戲';
@@ -4175,4 +4376,206 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get portableUnreadable =>
       '帳號庫損毀，或仍依賴原 Windows 的金鑰。請從匯出的 maFile 還原，來源檔案未變更。';
+
+  @override
+  String get friendsTitle => '好友與交易';
+
+  @override
+  String get friendsSearch => '搜尋名稱或 SteamID';
+
+  @override
+  String get friendsEmpty => '沒有可顯示的好友';
+
+  @override
+  String get friendsProfile => '檢視 Steam 個人檔案';
+
+  @override
+  String get friendsTrade => '建立交易報價';
+
+  @override
+  String get friendsOnline => '線上';
+
+  @override
+  String get friendsOffline => '離線';
+
+  @override
+  String get friendsPlaying => '遊戲中';
+
+  @override
+  String get tradeNewTitle => '新的交易報價';
+
+  @override
+  String get tradeYourItems => '你送出的物品';
+
+  @override
+  String get tradeTheirItems => '你收到的物品';
+
+  @override
+  String get tradeSelectItems => '選擇物品';
+
+  @override
+  String get tradeNote => '留言（選填）';
+
+  @override
+  String get tradeReview => '核對報價';
+
+  @override
+  String get tradeSend => '傳送報價';
+
+  @override
+  String get tradeReviewBody =>
+      '請核對交易對象的 SteamID、雙方物品與數量。Steam 可能要求進行確認，或暫掛物品。';
+
+  @override
+  String get tradeGiftWarning => '你將送出這些物品，且不會收到任何物品。';
+
+  @override
+  String get tradeNoItems => '此處沒有可交易的物品。';
+
+  @override
+  String get tradeMore => '載入更多';
+
+  @override
+  String get tradeSent => '報價已傳送。';
+
+  @override
+  String get tradeNeedsMobile => '報價已建立。請至「待處理」完成行動驗證。';
+
+  @override
+  String get tradeNeedsEmail => '報價已建立。請依 Steam 寄出的電子郵件進行確認。';
+
+  @override
+  String get tradeOpenPending => '檢視待處理事項與報價';
+
+  @override
+  String get tradeUnknownResult => '無法確定報價是否已傳送。請先檢查已傳送的報價，再決定是否重試，以免重複傳送。';
+
+  @override
+  String get tradeChooseGame => '選擇物品庫';
+
+  @override
+  String get tradeQuantity => '數量';
+
+  @override
+  String get tradeLoadFailed => '無法讀取 Steam 好友或物品庫。請重新整理後再試。';
+
+  @override
+  String get tradeSendFailed => 'Steam 未確認報價是否已傳送。請先檢查你的報價，再決定是否重試。';
+
+  @override
+  String get marketListingActive => '出售中';
+
+  @override
+  String get marketListingOnHold => '暫掛中';
+
+  @override
+  String get marketListingPending => '等待確認';
+
+  @override
+  String get marketListingInactive => '未生效';
+
+  @override
+  String marketHoldUntil(String date) {
+    return '暫掛至 $date';
+  }
+
+  @override
+  String get marketListingsAll => '全部';
+
+  @override
+  String get marketCancelConfirm => '要取消這筆市場上架嗎？';
+
+  @override
+  String get settingsStartupVerification => '啟動時驗證身分';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      '開啟時需輸入 AVA PIN 或使用系統驗證。關閉後，任何能使用此裝置的人都可開啟 AVA；帳戶檔案仍加密儲存在本機。';
+
+  @override
+  String get settingsStartupVerificationError => '無法儲存啟動驗證設定，請檢查系統安全儲存空間後重試。';
+
+  @override
+  String get settingsLockNow => '立即鎖定';
+
+  @override
+  String get settingsStartupVerificationPinChanged => '變更 PIN 後會重新開啟啟動驗證。';
+
+  @override
+  String get settingsStartupVerificationDisable => '要關閉啟動驗證嗎？';
+
+  @override
+  String get dashboardTitle => '帳戶總覽';
+
+  @override
+  String get dashboardWallet => '錢包餘額';
+
+  @override
+  String get dashboardPendingBalance => '待入帳餘額';
+
+  @override
+  String get dashboardUnavailable => '無法取得';
+
+  @override
+  String get dashboardMarket => '物品庫與市場';
+
+  @override
+  String get dashboardTools => '帳戶工具';
+
+  @override
+  String get dashboardCustomize => '選擇總覽卡片';
+
+  @override
+  String get dashboardViewAll => '檢視全部';
+
+  @override
+  String get dashboardNoListings => '沒有市場上架物品。';
+
+  @override
+  String get dashboardFetchFailed => '無法載入此資訊。請重新整理後再試。';
+
+  @override
+  String get dashboardSaveFailed => '無法儲存顯示偏好設定。';
+
+  @override
+  String get backupCodesTitle => '備用登入碼';
+
+  @override
+  String get backupCodesAccountCheck =>
+      '瀏覽器可能登入了另一個 Steam 帳戶。產生備用碼前，請確認瀏覽器中的帳戶名稱與上方相同。';
+
+  @override
+  String get backupCodesHow => '向 Steam 取得備用碼';
+
+  @override
+  String get backupCodesSteps =>
+      '1. 使用下方按鈕開啟 Steam Guard 設定。\n2. 登入上方顯示的帳戶。\n3. 選擇「取得備用 Steam Guard 驗證碼」。\n4. 完成 Steam 要求的驗證，並妥善保管產生的備用碼。';
+
+  @override
+  String get backupCodesExplanation =>
+      '這些是一次性登入碼，與移除驗證器用的救援碼不同，由 Steam 發放及管理。AVA 會開啟官方流程，不會產生或儲存這些備用碼。';
+
+  @override
+  String get backupCodesOpenSteam => '開啟 Steam 取得備用碼';
+
+  @override
+  String get backupCodesCopyLink => '複製官方連結';
+
+  @override
+  String get backupCodesOpenFailed => '無法開啟瀏覽器。請複製連結後手動開啟。';
+
+  @override
+  String get loginAccountMismatch => '登入的是其他 Steam 帳戶。請使用目前帳戶完成驗證，原帳戶未被修改。';
+
+  @override
+  String get tradeFromAccount => '發起帳戶';
+
+  @override
+  String get tradeToAccount => '交易對象';
+
+  @override
+  String get tradeValidationFailed => '報價尚未送出。請檢查所選物品和數量；每方最多選擇 256 項。';
+
+  @override
+  String get friendsProfileOpenFailed => '無法開啟瀏覽器，可複製下方 Steam 官方連結。';
 }

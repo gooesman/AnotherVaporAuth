@@ -8,6 +8,7 @@ import '../../app/theme.dart';
 import '../../core/models/steam_guard_account.dart';
 import '../../core/models/steam_item.dart';
 import '../../core/protocol/inventory_client.dart';
+import '../../core/steam_currency.dart';
 import '../../services/auto_login.dart';
 import '../../services/steam_api_client.dart' show CommunityAuthException;
 import '../pending/session_retry.dart';
@@ -17,7 +18,9 @@ import '../error_text.dart';
 /// Inventory browser + market listings for one account.
 class MarketScreen extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
-  const MarketScreen({super.key, required this.account});
+  final int initialTab;
+  const MarketScreen({super.key, required this.account, this.initialTab = 0})
+    : assert(initialTab >= 0 && initialTab < 2);
 
   @override
   ConsumerState<MarketScreen> createState() => _MarketScreenState();
@@ -25,7 +28,11 @@ class MarketScreen extends ConsumerStatefulWidget {
 
 class _MarketScreenState extends ConsumerState<MarketScreen>
     with SingleTickerProviderStateMixin, SessionRetryState {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs = TabController(
+    length: 2,
+    vsync: this,
+    initialIndex: widget.initialTab,
+  );
 
   InventoryOverview? _overview;
   String? _error;
@@ -73,7 +80,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       // needs an interactive email code, ...) must not fall through to an
       // inventory fetch that would just come back empty and be mistaken for
       // "no items".
-      final outcome = await ref.read(autoLoginProvider).ensureSession(widget.account);
+      final outcome = await ref
+          .read(autoLoginProvider)
+          .ensureSession(widget.account);
       if (outcome != AutoLoginOutcome.ok) {
         // The session can't be refreshed silently (expired, no stored password,
         // or a code-only import that was never signed in) — offer sign-in, not
@@ -86,7 +95,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         }
         return;
       }
-      final ov = await ref.read(inventoryClientProvider).overview(widget.account);
+      final ov = await ref
+          .read(inventoryClientProvider)
+          .overview(widget.account);
       if (!mounted) return;
       setState(() => _overview = ov);
       if (ov.games.isNotEmpty) _selectGame(ov.games.first);
@@ -129,7 +140,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       _itemsError = null;
     });
     try {
-      final page = await ref.read(inventoryClientProvider).items(
+      final page = await ref
+          .read(inventoryClientProvider)
+          .items(
             widget.account,
             _game!.appid,
             _game!.contextId,
@@ -252,9 +265,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         action: _needsLogin
             ? FilledButton(
                 onPressed: () => signInThen(widget.account, _loadOverview),
-                child: Text(l.loginButton))
-            : TextButton(
-                onPressed: _loadOverview, child: Text(l.commonRetry)),
+                child: Text(l.loginButton),
+              )
+            : TextButton(onPressed: _loadOverview, child: Text(l.commonRetry)),
       );
     }
     final ov = _overview;
@@ -275,12 +288,13 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       height: context.r(64),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: context.rInsets(h: 12, v: 10),
+        padding: context.rSafeInsets(h: 12, v: 10),
         itemCount: games.length,
         separatorBuilder: (_, _) => SizedBox(width: context.r(8)),
         itemBuilder: (context, i) {
           final g = games[i];
-          final selected = _game?.appid == g.appid && _game?.contextId == g.contextId;
+          final selected =
+              _game?.appid == g.appid && _game?.contextId == g.contextId;
           return InkWell(
             onTap: () => _selectGame(g),
             borderRadius: BorderRadius.circular(t.radiusSm),
@@ -290,29 +304,36 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
                 color: selected ? t.panel2 : Colors.transparent,
                 borderRadius: BorderRadius.circular(t.radiusSm),
                 border: Border.all(
-                    color: selected ? t.accent : t.line,
-                    width: t.borderWidth),
+                  color: selected ? t.accent : t.line,
+                  width: t.borderWidth,
+                ),
               ),
               child: Row(
                 children: [
                   if (g.iconUrl.isNotEmpty)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(t.radiusSm),
-                      child: Image.network(g.iconUrl,
-                          width: context.r(28),
-                          height: context.r(28),
-                          cacheWidth: context.rCache(28),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const SizedBox.shrink()),
+                      child: Image.network(
+                        g.iconUrl,
+                        width: context.r(28),
+                        height: context.r(28),
+                        cacheWidth: context.rCache(28),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
                     ),
                   SizedBox(width: context.r(8)),
-                  Text('${g.name}  ',
-                      style: TextStyle(
-                          color: selected ? t.text : t.muted,
-                          fontSize: context.r(13))),
-                  Text('${g.itemCount}',
-                      style: TextStyle(
-                          color: t.accent, fontSize: context.r(12))),
+                  Text(
+                    '${g.displayName}  ',
+                    style: TextStyle(
+                      color: selected ? t.text : t.muted,
+                      fontSize: context.r(13),
+                    ),
+                  ),
+                  Text(
+                    '${g.itemCount}',
+                    style: TextStyle(color: t.accent, fontSize: context.r(12)),
+                  ),
                 ],
               ),
             ),
@@ -330,8 +351,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       if (_itemsError != null) {
         return _Centered(
           text: '${l.commonError}: $_itemsError',
-          action:
-              TextButton(onPressed: _loadItems, child: Text(l.commonRetry)),
+          action: TextButton(onPressed: _loadItems, child: Text(l.commonRetry)),
         );
       }
       return _Centered(text: l.marketNoItems);
@@ -352,15 +372,17 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         if (i >= _stacks.length) {
           return const Center(
             child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2)),
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           );
         }
         return _ItemTile(
           stack: _stacks[i],
-          onTap:
-              _stacks[i].item.marketable ? () => _openSell(_stacks[i]) : null,
+          onTap: _stacks[i].item.marketable
+              ? () => _openSell(_stacks[i])
+              : null,
         );
       },
     );
@@ -405,21 +427,25 @@ class _ItemTile extends StatelessWidget {
                   Expanded(
                     child: item.iconUrl.isEmpty
                         ? const SizedBox.shrink()
-                        : Image.network(item.iconUrl,
+                        : Image.network(
+                            item.iconUrl,
                             fit: BoxFit.contain,
                             cacheWidth: context.rCache(110),
-                            errorBuilder: (_, _, _) => const SizedBox.shrink()),
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          ),
                   ),
                   SizedBox(height: context.r(4)),
-                  Text(item.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(color: t.text, fontSize: context.r(10.5))),
+                  Text(
+                    item.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: t.text, fontSize: context.r(10.5)),
+                  ),
                   if (!item.marketable)
-                    Text(l.marketNotMarketable,
-                        style:
-                            TextStyle(color: t.muted, fontSize: context.r(9))),
+                    Text(
+                      l.marketNotMarketable,
+                      style: TextStyle(color: t.muted, fontSize: context.r(9)),
+                    ),
                 ],
               ),
             ),
@@ -433,11 +459,14 @@ class _ItemTile extends StatelessWidget {
                     color: t.accent,
                     borderRadius: BorderRadius.circular(t.radiusSm),
                   ),
-                  child: Text('×${stack.count}',
-                      style: TextStyle(
-                          color: const Color(0xFF06060F),
-                          fontSize: context.r(11),
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    '×${stack.count}',
+                    style: TextStyle(
+                      color: const Color(0xFF06060F),
+                      fontSize: context.r(11),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -458,8 +487,11 @@ class _MyListingsTab extends ConsumerStatefulWidget {
   ConsumerState<_MyListingsTab> createState() => _MyListingsTabState();
 }
 
-class _MyListingsTabState extends ConsumerState<_MyListingsTab> {
+class _MyListingsTabState extends ConsumerState<_MyListingsTab>
+    with SessionRetryState {
   late Future<List<MarketListing>> _future;
+  MarketListingState? _filter;
+  final _cancelling = <String>{};
 
   @override
   void initState() {
@@ -473,29 +505,70 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab> {
     if (old.reload != widget.reload) _refresh();
   }
 
-  Future<List<MarketListing>> _load() =>
-      ref.read(marketClientProvider).myListings(widget.account);
+  Future<List<MarketListing>> _load() async {
+    final client = ref.read(marketClientProvider);
+    final outcome = await ref
+        .read(autoLoginProvider)
+        .ensureSession(widget.account);
+    if (outcome != AutoLoginOutcome.ok) {
+      throw CommunityAuthException(401, '/market/mylistings/');
+    }
+    return client.myListings(widget.account);
+  }
 
-  void _refresh() => setState(() => _future = _load());
+  Future<void> _refresh() async {
+    final future = _load();
+    setState(() => _future = future);
+    // FutureBuilder displays the failure; don't create an additional unhandled
+    // error from a refresh gesture or the app bar's fire-and-forget callback.
+    try {
+      await future;
+    } catch (_) {}
+  }
 
   /// Wraps empty/error states in a scrollable RefreshIndicator so they can
   /// still be pulled to refresh (list content gets its own indicator below).
   Widget _refreshable(Widget child) => RefreshIndicator(
-        onRefresh: () async => _refresh(),
-        child: LayoutBuilder(
-          builder: (context, c) => ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [SizedBox(height: c.maxHeight, child: child)],
-          ),
-        ),
-      );
+    onRefresh: _refresh,
+    child: LayoutBuilder(
+      builder: (context, c) => ListView(
+        padding: context.rSafeInsets(all: 0),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [SizedBox(height: c.maxHeight, child: child)],
+      ),
+    ),
+  );
 
   Future<void> _cancel(MarketListing l) async {
-    final ok = await ref.read(marketClientProvider).cancel(widget.account, l.listingId);
-    if (!mounted) return;
+    if (_cancelling.contains(l.listingId)) return;
     final loc = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.marketCancel),
+        content: Text('${l.name}\n\n${loc.marketCancelConfirm}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(loc.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(loc.commonConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _cancelling.add(l.listingId));
+    final ok = await ref
+        .read(marketClientProvider)
+        .cancel(widget.account, l.listingId);
+    if (!mounted) return;
+    setState(() => _cancelling.remove(l.listingId));
     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ok ? loc.marketCancelled : loc.commonError)));
+      SnackBar(content: Text(ok ? loc.marketCancelled : loc.commonError)),
+    );
     if (ok) _refresh();
   }
 
@@ -512,50 +585,124 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab> {
         if (snap.hasError) {
           // A stale session reads as "session expired", not a raw exception;
           // re-auth lives on the overview, so retry is still the action here.
-          return _refreshable(_Centered(
-            text: snap.error is CommunityAuthException
-                ? l.sessionExpired
-                : '${l.commonError}: ${snap.error}',
-            action:
-                TextButton(onPressed: _refresh, child: Text(l.commonRetry)),
-          ));
+          return _refreshable(
+            _Centered(
+              text: snap.error is CommunityAuthException
+                  ? l.sessionExpired
+                  : '${l.commonError}: ${snap.error}',
+              action: snap.error is CommunityAuthException
+                  ? FilledButton(
+                      onPressed: () => signInThen(widget.account, _refresh),
+                      child: Text(l.loginButton),
+                    )
+                  : TextButton(onPressed: _refresh, child: Text(l.commonRetry)),
+            ),
+          );
         }
         final listings = snap.data ?? const <MarketListing>[];
         if (listings.isEmpty) {
           return _refreshable(_Centered(text: l.marketNoListings));
         }
-        return RefreshIndicator(
-          onRefresh: () async => _refresh(),
-          child: ListView.separated(
-            padding: context.rSafeInsets(all: 12),
-            itemCount: listings.length,
-            separatorBuilder: (_, _) => Divider(color: t.line, height: context.r(1)),
-            itemBuilder: (context, i) {
-              final lst = listings[i];
-              return ListTile(
-                leading: lst.iconUrl.isEmpty
-                    ? null
-                    : Image.network(lst.iconUrl,
-                        width: context.r(40), cacheWidth: context.rCache(40)),
-                title: Text(lst.name,
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text('${l.marketBuyerPays}: ${_money(lst.buyerPrice)}',
-                    style: TextStyle(color: t.accent)),
-                trailing: IconButton(
-                  tooltip: l.marketCancel,
-                  icon: Icon(Icons.close, color: t.bad),
-                  onPressed: () => _cancel(lst),
+        final visible = _filter == null
+            ? listings
+            : listings.where((item) => item.state == _filter).toList();
+        return Column(
+          children: [
+            Padding(
+              padding: context.rInsets(h: 12, v: 8),
+              child: Wrap(
+                spacing: context.r(8),
+                runSpacing: context.r(4),
+                children: [
+                  ChoiceChip(
+                    label: Text('${l.marketListingsAll} (${listings.length})'),
+                    selected: _filter == null,
+                    onSelected: (_) => setState(() => _filter = null),
+                  ),
+                  for (final state in MarketListingState.values)
+                    if (listings.any((item) => item.state == state))
+                      ChoiceChip(
+                        label: Text(
+                          '${marketListingStateLabel(l, state)} '
+                          '(${listings.where((item) => item.state == state).length})',
+                        ),
+                        selected: _filter == state,
+                        onSelected: (_) => setState(() => _filter = state),
+                      ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: context.rSafeInsets(all: 12),
+                  itemCount: visible.length,
+                  separatorBuilder: (_, _) =>
+                      Divider(color: t.line, height: context.r(1)),
+                  itemBuilder: (context, i) {
+                    final lst = visible[i];
+                    return ListTile(
+                      leading: lst.iconUrl.isEmpty
+                          ? null
+                          : Image.network(
+                              lst.iconUrl,
+                              width: context.r(40),
+                              cacheWidth: context.rCache(40),
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(Icons.inventory_2_outlined),
+                            ),
+                      title: Text(
+                        lst.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        [
+                          marketListingStateLabel(l, lst.state),
+                          if (lst.priceAvailable && lst.currency != null)
+                            '${l.marketBuyerPays}: ${formatSteamMoney(lst.buyerPrice, lst.currency!)}',
+                          if (lst.state == MarketListingState.onHold &&
+                              lst.holdUntil != null)
+                            l.marketHoldUntil(
+                              MaterialLocalizations.of(
+                                context,
+                              ).formatMediumDate(
+                                DateTime.fromMillisecondsSinceEpoch(
+                                  lst.holdUntil! * 1000,
+                                ),
+                              ),
+                            ),
+                        ].join('\n'),
+                        style: TextStyle(color: t.accent),
+                      ),
+                      trailing: IconButton(
+                        tooltip: l.marketCancel,
+                        icon: Icon(Icons.close, color: t.bad),
+                        onPressed: _cancelling.contains(lst.listingId)
+                            ? null
+                            : () => _cancel(lst),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+          ],
         );
       },
     );
   }
-
-  String _money(int minor) => (minor / 100).toStringAsFixed(2);
 }
+
+String marketListingStateLabel(AppLocalizations l, MarketListingState state) =>
+    switch (state) {
+      MarketListingState.active => l.marketListingActive,
+      MarketListingState.onHold => l.marketListingOnHold,
+      MarketListingState.pendingConfirmation => l.marketListingPending,
+      MarketListingState.inactive => l.marketListingInactive,
+    };
 
 class _Centered extends StatelessWidget {
   final String text;
@@ -563,15 +710,15 @@ class _Centered extends StatelessWidget {
   const _Centered({required this.text, this.action});
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: context.rInsets(all: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(text, textAlign: TextAlign.center),
-              if (action != null) ...[const SizedBox(height: 12), action!],
-            ],
-          ),
-        ),
-      );
+    child: Padding(
+      padding: context.rInsets(all: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(text, textAlign: TextAlign.center),
+          if (action != null) ...[const SizedBox(height: 12), action!],
+        ],
+      ),
+    ),
+  );
 }

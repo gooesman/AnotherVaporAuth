@@ -134,6 +134,15 @@ class SettingsStore {
 
   Future<String?> loadLocale() async => (await _read())['locale'] as String?;
 
+  /// Optional account-overview cards. Device-local appearance preference.
+  Future<List<String>?> loadDashboardSections() async {
+    final value = (await _read())['dashboard_sections'];
+    return value is List ? value.whereType<String>().toList() : null;
+  }
+
+  Future<void> saveDashboardSections(List<String> sections) =>
+      _update((data) => data['dashboard_sections'] = List<String>.of(sections));
+
   Future<void> saveLocale(String? code) => _update((data) {
         if (code == null) {
           data.remove('locale');

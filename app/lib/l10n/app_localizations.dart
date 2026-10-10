@@ -3880,6 +3880,396 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This library is damaged or still depends on another Windows installation’s key. Restore a maFile export; the source files have not been changed.'**
   String get portableUnreadable;
+
+  /// No description provided for @friendsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends & trades'**
+  String get friendsTitle;
+
+  /// No description provided for @friendsSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search name or SteamID'**
+  String get friendsSearch;
+
+  /// No description provided for @friendsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends to show'**
+  String get friendsEmpty;
+
+  /// No description provided for @friendsProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View Steam profile'**
+  String get friendsProfile;
+
+  /// No description provided for @friendsTrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Create trade offer'**
+  String get friendsTrade;
+
+  /// No description provided for @friendsOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get friendsOnline;
+
+  /// No description provided for @friendsOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get friendsOffline;
+
+  /// No description provided for @friendsPlaying.
+  ///
+  /// In en, this message translates to:
+  /// **'In game'**
+  String get friendsPlaying;
+
+  /// No description provided for @tradeNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New trade offer'**
+  String get tradeNewTitle;
+
+  /// No description provided for @tradeYourItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items you give'**
+  String get tradeYourItems;
+
+  /// No description provided for @tradeTheirItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items you receive'**
+  String get tradeTheirItems;
+
+  /// No description provided for @tradeSelectItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Select items'**
+  String get tradeSelectItems;
+
+  /// No description provided for @tradeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Message (optional)'**
+  String get tradeNote;
+
+  /// No description provided for @tradeReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review offer'**
+  String get tradeReview;
+
+  /// No description provided for @tradeSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send offer'**
+  String get tradeSend;
+
+  /// No description provided for @tradeReviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the partner SteamID, items and quantities on both sides. Steam may require confirmation or place items on hold.'**
+  String get tradeReviewBody;
+
+  /// No description provided for @tradeGiftWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You are giving these items away and will receive nothing.'**
+  String get tradeGiftWarning;
+
+  /// No description provided for @tradeNoItems.
+  ///
+  /// In en, this message translates to:
+  /// **'No tradable items available here.'**
+  String get tradeNoItems;
+
+  /// No description provided for @tradeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get tradeMore;
+
+  /// No description provided for @tradeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer sent.'**
+  String get tradeSent;
+
+  /// No description provided for @tradeNeedsMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer created. Complete its mobile confirmation in Pending.'**
+  String get tradeNeedsMobile;
+
+  /// No description provided for @tradeNeedsEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer created. Follow Steam’s email to confirm it.'**
+  String get tradeNeedsEmail;
+
+  /// No description provided for @tradeOpenPending.
+  ///
+  /// In en, this message translates to:
+  /// **'View pending & offers'**
+  String get tradeOpenPending;
+
+  /// No description provided for @tradeUnknownResult.
+  ///
+  /// In en, this message translates to:
+  /// **'The send result is unknown. Check your sent offers before trying again to avoid duplicates.'**
+  String get tradeUnknownResult;
+
+  /// No description provided for @tradeChooseGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose inventory'**
+  String get tradeChooseGame;
+
+  /// No description provided for @tradeQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get tradeQuantity;
+
+  /// No description provided for @tradeLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to read Steam friends or inventory. Refresh to try again.'**
+  String get tradeLoadFailed;
+
+  /// No description provided for @tradeSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam did not confirm the offer was sent. Check your offers before trying again.'**
+  String get tradeSendFailed;
+
+  /// No description provided for @marketListingActive.
+  ///
+  /// In en, this message translates to:
+  /// **'For sale'**
+  String get marketListingActive;
+
+  /// No description provided for @marketListingOnHold.
+  ///
+  /// In en, this message translates to:
+  /// **'On hold'**
+  String get marketListingOnHold;
+
+  /// No description provided for @marketListingPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting confirmation'**
+  String get marketListingPending;
+
+  /// No description provided for @marketListingInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get marketListingInactive;
+
+  /// No description provided for @marketHoldUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'On hold until {date}'**
+  String marketHoldUntil(String date);
+
+  /// No description provided for @marketListingsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get marketListingsAll;
+
+  /// No description provided for @marketCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this market listing?'**
+  String get marketCancelConfirm;
+
+  /// No description provided for @settingsStartupVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify identity at startup'**
+  String get settingsStartupVerification;
+
+  /// No description provided for @settingsStartupVerificationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, opening AVA requires your PIN or system authentication. When disabled, anyone using this device can open AVA; local account files remain encrypted.'**
+  String get settingsStartupVerificationDesc;
+
+  /// No description provided for @settingsStartupVerificationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the startup verification setting. Check device secure storage and try again.'**
+  String get settingsStartupVerificationError;
+
+  /// No description provided for @settingsLockNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock now'**
+  String get settingsLockNow;
+
+  /// No description provided for @settingsStartupVerificationPinChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing your PIN turns startup verification back on.'**
+  String get settingsStartupVerificationPinChanged;
+
+  /// No description provided for @settingsStartupVerificationDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off startup verification?'**
+  String get settingsStartupVerificationDisable;
+
+  /// No description provided for @dashboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account overview'**
+  String get dashboardTitle;
+
+  /// No description provided for @dashboardWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet balance'**
+  String get dashboardWallet;
+
+  /// No description provided for @dashboardPendingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending funds'**
+  String get dashboardPendingBalance;
+
+  /// No description provided for @dashboardUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get dashboardUnavailable;
+
+  /// No description provided for @dashboardMarket.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory & market'**
+  String get dashboardMarket;
+
+  /// No description provided for @dashboardTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Account tools'**
+  String get dashboardTools;
+
+  /// No description provided for @dashboardCustomize.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose overview cards'**
+  String get dashboardCustomize;
+
+  /// No description provided for @dashboardViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get dashboardViewAll;
+
+  /// No description provided for @dashboardNoListings.
+  ///
+  /// In en, this message translates to:
+  /// **'No market listings.'**
+  String get dashboardNoListings;
+
+  /// No description provided for @dashboardFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this information. Refresh to try again.'**
+  String get dashboardFetchFailed;
+
+  /// No description provided for @dashboardSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the display preference.'**
+  String get dashboardSaveFailed;
+
+  /// No description provided for @backupCodesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup login codes'**
+  String get backupCodesTitle;
+
+  /// No description provided for @backupCodesAccountCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser may be signed in to a different Steam account. Check that its account name matches the one above before generating codes.'**
+  String get backupCodesAccountCheck;
+
+  /// No description provided for @backupCodesHow.
+  ///
+  /// In en, this message translates to:
+  /// **'Get codes from Steam'**
+  String get backupCodesHow;
+
+  /// No description provided for @backupCodesSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Open Steam Guard settings with the button below.\n2. Sign in to the account shown above.\n3. Choose “Get Backup Steam Guard Codes”.\n4. Complete the verification requested by Steam and keep the generated codes in a safe place.'**
+  String get backupCodesSteps;
+
+  /// No description provided for @backupCodesExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'These are one-use login codes, separate from the authenticator removal code. Steam issues and manages them. AVA opens the official flow and does not generate or store these codes.'**
+  String get backupCodesExplanation;
+
+  /// No description provided for @backupCodesOpenSteam.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Steam to get codes'**
+  String get backupCodesOpenSteam;
+
+  /// No description provided for @backupCodesCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy official link'**
+  String get backupCodesCopyLink;
+
+  /// No description provided for @backupCodesOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the browser. Copy the link and open it manually.'**
+  String get backupCodesOpenFailed;
+
+  /// No description provided for @loginAccountMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a different Steam account. Sign in to the selected account; the original account has not been changed.'**
+  String get loginAccountMismatch;
+
+  /// No description provided for @tradeFromAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending account'**
+  String get tradeFromAccount;
+
+  /// No description provided for @tradeToAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Trading partner'**
+  String get tradeToAccount;
+
+  /// No description provided for @tradeValidationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The offer has not been sent. Check the selected items and quantities; each side allows up to 256 items.'**
+  String get tradeValidationFailed;
+
+  /// No description provided for @friendsProfileOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open a browser. Copy the official Steam link below.'**
+  String get friendsProfileOpenFailed;
 }
 
 class _AppLocalizationsDelegate

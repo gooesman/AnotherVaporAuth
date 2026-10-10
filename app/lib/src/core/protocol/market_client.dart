@@ -1,5 +1,6 @@
 import '../../services/debug_log.dart';
 import '../../services/steam_api_client.dart';
+import '../json_coerce.dart';
 import '../models/steam_guard_account.dart';
 import '../models/steam_item.dart';
 import 'community_session.dart';
@@ -29,15 +30,17 @@ class MarketClient {
   /// Historical sale prices for the item (for a trend sparkline). Returns the
   /// most recent [points] price values, or empty on failure. Requires login.
   Future<List<double>> priceHistory(
-      SteamGuardAccount account, int appid, String marketHashName,
-      {int points = 60}) async {
+    SteamGuardAccount account,
+    int appid,
+    String marketHashName, {
+    int points = 60,
+  }) async {
     final sid = newCommunitySessionId();
     try {
-      final json = await api.communityGetJson(
-        '/market/pricehistory/',
-        {'appid': '$appid', 'market_hash_name': marketHashName},
-        cookies: communityCookies(account, sessionId: sid),
-      );
+      final json = await api.communityGetJson('/market/pricehistory/', {
+        'appid': '$appid',
+        'market_hash_name': marketHashName,
+      }, cookies: communityCookies(account, sessionId: sid));
       if (json['success'] != true) return const [];
       final prices = (json['prices'] as List?) ?? const [];
       final values = <double>[];
@@ -56,7 +59,10 @@ class MarketClient {
 
   /// Reference price for an item (localized strings). Null on failure/rate-limit.
   Future<MarketPrice?> priceOverview(
-      int appid, String marketHashName, int currency) async {
+    int appid,
+    String marketHashName,
+    int currency,
+  ) async {
     try {
       final json = await api.communityGetJson('/market/priceoverview/', {
         'appid': '$appid',
@@ -74,8 +80,11 @@ class MarketClient {
   /// the wallet's minor units. On success Steam usually needs a mobile
   /// confirmation to finalize the listing.
   Future<SellResult> sell(
-      SteamGuardAccount account, InventoryItem item, int priceReceive,
-      {String? assetId}) async {
+    SteamGuardAccount account,
+    InventoryItem item,
+    int priceReceive, {
+    String? assetId,
+  }) async {
     final sid = newCommunitySessionId();
     final json = await api.communityPostJson(
       '/market/sellitem/',
@@ -91,10 +100,13 @@ class MarketClient {
       referer: _inventoryReferer(account),
     );
     final ok = json['success'] == true;
-    final needsConf = json['requires_confirmation'] == 1 ||
+    final needsConf =
+        json['requires_confirmation'] == 1 ||
         json['needs_mobile_confirmation'] == true;
-    dlog('sellitem ${item.marketHashName} price=$priceReceive '
-        '-> success=$ok conf=$needsConf');
+    dlog(
+      'sellitem ${item.marketHashName} price=$priceReceive '
+      '-> success=$ok conf=$needsConf',
+    );
     return SellResult(
       success: ok,
       requiresConfirmation: needsConf,
@@ -102,20 +114,113 @@ class MarketClient {
     );
   }
 
-  /// The account's active listings.
-  Future<List<MarketListing>> myListings(SteamGuardAccount account,
-      {int count = 100}) async {
+  /// The account's listings, including held and unconfirmed ones. Steam sends
+  /// the latter in separate buckets, whose entries are often `active: 0`.
+  /// [count] controls the active-listings page size, not the overall result cap.
+  Future<List<MarketListing>> myListings(
+    SteamGuardAccount account, {
+    int count = 100,
+  }) async {
     final sid = newCommunitySessionId();
-    final json = await api.communityGetJson(
-      '/market/mylistings/',
-      {'norender': '1', 'count': '$count', 'l': api.steamLanguage},
-      cookies: communityCookies(account, sessionId: sid),
-    );
-    final listings = (json['listings'] as List?) ?? const [];
-    return listings
-        .map((e) => MarketListing.fromJson(e as Map<String, dynamic>))
-        .where((l) => l.active)
-        .toList();
+    final pageSize = count.clamp(1, 100);
+    final all = <String, MarketListing>{};
+    final pagedListingIds = <String>{};
+    var start = 0;
+    while (true) {
+      final json = await api.communityGetJson('/market/mylistings/', {
+        'norender': '1',
+        'count': '$pageSize',
+        'start': '$start',
+        'l': api.steamLanguage,
+      }, cookies: communityCookies(account, sessionId: sid));
+      if (json['needauth'] == true || json['needsauth'] == true) {
+        throw CommunityAuthException(401, '/market/mylistings/');
+      }
+      if (json['success'] != true && asInt(json['success']) != 1) {
+        throw const FormatException('Steam market listings are unavailable.');
+      }
+      for (final listing in parseListings(json)) {
+        final existing = all[listing.listingId];
+        // Hold/confirmation buckets may be repeated on every active page.
+        // An explicit pending state wins over a duplicate "active" record.
+        if (existing == null || listing.state != MarketListingState.active) {
+          all[listing.listingId] = listing;
+        }
+      }
+      final activePage = _listingObjects(json['listings']);
+      final next = start + activePage.length;
+      final total = asInt(json['total_count']);
+      if (activePage.isEmpty) {
+        if (start < total) {
+          throw const FormatException('Steam market pagination ended early.');
+        }
+        break;
+      }
+      final before = pagedListingIds.length;
+      for (final raw in activePage) {
+        final id = raw['listingid']?.toString() ?? '';
+        if (RegExp(r'^\d+$').hasMatch(id)) pagedListingIds.add(id);
+      }
+      // Check progress before the final-page condition: a repeated last page
+      // can reach the advertised offset without yielding the missing listing.
+      // Held/confirmation buckets do not participate in active pagination.
+      if (pagedListingIds.length == before) {
+        throw const FormatException('Steam market pagination did not advance.');
+      }
+      if (next >= total) {
+        if (pagedListingIds.length < total) {
+          throw const FormatException(
+            'Steam market pagination was incomplete.',
+          );
+        }
+        break;
+      }
+      start = next;
+    }
+    return all.values.toList();
+  }
+
+  /// The JSON variant of Steam's mylistings response has three independent
+  /// collections. Assets can be inline or referenced via the shared asset map.
+  static List<MarketListing> parseListings(Map<String, dynamic> json) {
+    final result = <String, MarketListing>{};
+    for (final (key, state) in [
+      ('listings', null),
+      ('listings_on_hold', MarketListingState.onHold),
+      ('listings_to_confirm', MarketListingState.pendingConfirmation),
+    ]) {
+      for (final raw in _listingObjects(json[key])) {
+        final id = raw['listingid']?.toString() ?? '';
+        if (!RegExp(r'^\d+$').hasMatch(id)) continue;
+        final asset = raw['asset'];
+        final merged = Map<String, dynamic>.from(raw);
+        if (asset is Map) {
+          dynamic full = json['assets'];
+          for (final part in [
+            asset['appid'],
+            asset['contextid'],
+            asset['id'],
+          ]) {
+            full = full is Map ? full['$part'] : null;
+          }
+          merged['asset'] = <String, dynamic>{
+            if (full is Map) ...Map<String, dynamic>.from(full),
+            ...Map<String, dynamic>.from(asset),
+          };
+        }
+        result[id] = MarketListing.fromJson(merged, state: state);
+      }
+    }
+    return result.values.toList();
+  }
+
+  static List<Map<String, dynamic>> _listingObjects(dynamic value) {
+    final entries = value is List
+        ? value
+        : value is Map
+        ? value.values
+        : const [];
+    return entries.whereType<Map>().map(Map<String, dynamic>.from).toList();
   }
 
   /// Cancels/removes an active listing.

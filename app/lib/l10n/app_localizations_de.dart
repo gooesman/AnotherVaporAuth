@@ -2212,4 +2212,221 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get portableUnreadable =>
       'Die Bibliothek ist beschädigt oder benötigt den Schlüssel der ursprünglichen Windows-Installation. Stelle einen maFile-Export wieder her; die Quelldateien wurden nicht verändert.';
+
+  @override
+  String get friendsTitle => 'Freunde & Handel';
+
+  @override
+  String get friendsSearch => 'Nach Name oder SteamID suchen';
+
+  @override
+  String get friendsEmpty => 'Keine Freunde zum Anzeigen';
+
+  @override
+  String get friendsProfile => 'Steam-Profil ansehen';
+
+  @override
+  String get friendsTrade => 'Handelsangebot erstellen';
+
+  @override
+  String get friendsOnline => 'Online';
+
+  @override
+  String get friendsOffline => 'Offline';
+
+  @override
+  String get friendsPlaying => 'Im Spiel';
+
+  @override
+  String get tradeNewTitle => 'Neues Handelsangebot';
+
+  @override
+  String get tradeYourItems => 'Von dir angebotene Gegenstände';
+
+  @override
+  String get tradeTheirItems => 'Gegenstände, die du erhältst';
+
+  @override
+  String get tradeSelectItems => 'Gegenstände auswählen';
+
+  @override
+  String get tradeNote => 'Nachricht (optional)';
+
+  @override
+  String get tradeReview => 'Angebot prüfen';
+
+  @override
+  String get tradeSend => 'Angebot senden';
+
+  @override
+  String get tradeReviewBody =>
+      'Prüfe die SteamID des Handelspartners sowie Gegenstände und Mengen auf beiden Seiten. Steam kann eine Bestätigung verlangen oder Gegenstände zurückhalten.';
+
+  @override
+  String get tradeGiftWarning =>
+      'Du verschenkst diese Gegenstände und erhältst nichts dafür.';
+
+  @override
+  String get tradeNoItems =>
+      'Hier sind keine handelbaren Gegenstände verfügbar.';
+
+  @override
+  String get tradeMore => 'Mehr laden';
+
+  @override
+  String get tradeSent => 'Angebot gesendet.';
+
+  @override
+  String get tradeNeedsMobile =>
+      'Angebot erstellt. Schließe die mobile Bestätigung unter „Ausstehend“ ab.';
+
+  @override
+  String get tradeNeedsEmail =>
+      'Angebot erstellt. Folge zur Bestätigung der E-Mail von Steam.';
+
+  @override
+  String get tradeOpenPending => 'Ausstehende Aktionen & Angebote ansehen';
+
+  @override
+  String get tradeUnknownResult =>
+      'Das Ergebnis ist unklar. Prüfe deine gesendeten Angebote, bevor du es erneut versuchst, um doppelte Angebote zu vermeiden.';
+
+  @override
+  String get tradeChooseGame => 'Inventar auswählen';
+
+  @override
+  String get tradeQuantity => 'Menge';
+
+  @override
+  String get tradeLoadFailed =>
+      'Steam-Freunde oder Inventar konnten nicht geladen werden. Aktualisiere die Ansicht und versuche es erneut.';
+
+  @override
+  String get tradeSendFailed =>
+      'Steam hat den Versand des Angebots nicht bestätigt. Prüfe deine Angebote, bevor du es erneut versuchst.';
+
+  @override
+  String get marketListingActive => 'Zum Verkauf';
+
+  @override
+  String get marketListingOnHold => 'Zurückgehalten';
+
+  @override
+  String get marketListingPending => 'Bestätigung ausstehend';
+
+  @override
+  String get marketListingInactive => 'Inaktiv';
+
+  @override
+  String marketHoldUntil(String date) {
+    return 'Zurückgehalten bis $date';
+  }
+
+  @override
+  String get marketListingsAll => 'Alle';
+
+  @override
+  String get marketCancelConfirm => 'Dieses Marktangebot zurückziehen?';
+
+  @override
+  String get settingsStartupVerification => 'Identität beim Start prüfen';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      'Wenn aktiviert, erfordert das Öffnen von AVA deine PIN oder die Systemauthentifizierung. Wenn deaktiviert, kann jeder Benutzer dieses Geräts AVA öffnen; lokale Kontodateien bleiben verschlüsselt.';
+
+  @override
+  String get settingsStartupVerificationError =>
+      'Die Startprüfung konnte nicht gespeichert werden. Prüfe den sicheren Gerätespeicher und versuche es erneut.';
+
+  @override
+  String get settingsLockNow => 'Jetzt sperren';
+
+  @override
+  String get settingsStartupVerificationPinChanged =>
+      'Nach einer PIN-Änderung wird die Startprüfung wieder aktiviert.';
+
+  @override
+  String get settingsStartupVerificationDisable => 'Startprüfung deaktivieren?';
+
+  @override
+  String get dashboardTitle => 'Kontoübersicht';
+
+  @override
+  String get dashboardWallet => 'Guthaben';
+
+  @override
+  String get dashboardPendingBalance => 'Ausstehendes Guthaben';
+
+  @override
+  String get dashboardUnavailable => 'Nicht verfügbar';
+
+  @override
+  String get dashboardMarket => 'Inventar & Markt';
+
+  @override
+  String get dashboardTools => 'Kontowerkzeuge';
+
+  @override
+  String get dashboardCustomize => 'Übersichtskarten auswählen';
+
+  @override
+  String get dashboardViewAll => 'Alle anzeigen';
+
+  @override
+  String get dashboardNoListings => 'Keine Marktangebote.';
+
+  @override
+  String get dashboardFetchFailed =>
+      'Diese Informationen konnten nicht geladen werden. Aktualisiere die Ansicht und versuche es erneut.';
+
+  @override
+  String get dashboardSaveFailed =>
+      'Die Anzeigeeinstellung konnte nicht gespeichert werden.';
+
+  @override
+  String get backupCodesTitle => 'Backup-Anmeldecodes';
+
+  @override
+  String get backupCodesAccountCheck =>
+      'Dein Browser ist möglicherweise mit einem anderen Steam-Konto angemeldet. Prüfe vor dem Erstellen der Codes, dass der Kontoname mit dem oben angezeigten übereinstimmt.';
+
+  @override
+  String get backupCodesHow => 'Codes von Steam abrufen';
+
+  @override
+  String get backupCodesSteps =>
+      '1. Öffne über die Schaltfläche unten die Steam-Guard-Einstellungen.\n2. Melde dich mit dem oben angezeigten Konto an.\n3. Wähle die Option zum Abrufen von Steam-Guard-Backupcodes.\n4. Schließe die von Steam verlangte Verifizierung ab und bewahre die erstellten Codes sicher auf.';
+
+  @override
+  String get backupCodesExplanation =>
+      'Dies sind einmalig verwendbare Anmeldecodes, unabhängig vom Code zum Entfernen des Authentifikators. Steam stellt sie aus und verwaltet sie. AVA öffnet den offiziellen Ablauf und erstellt oder speichert diese Codes nicht.';
+
+  @override
+  String get backupCodesOpenSteam => 'Steam öffnen und Codes abrufen';
+
+  @override
+  String get backupCodesCopyLink => 'Offiziellen Link kopieren';
+
+  @override
+  String get backupCodesOpenFailed =>
+      'Der Browser konnte nicht geöffnet werden. Kopiere den Link und öffne ihn manuell.';
+
+  @override
+  String get loginAccountMismatch =>
+      'Dies ist ein anderes Steam-Konto. Melde dich mit dem ausgewählten Konto an; das ursprüngliche Konto wurde nicht geändert.';
+
+  @override
+  String get tradeFromAccount => 'Absendendes Konto';
+
+  @override
+  String get tradeToAccount => 'Handelspartner';
+
+  @override
+  String get tradeValidationFailed =>
+      'Das Angebot wurde nicht gesendet. Prüfe die Gegenstände und Mengen; pro Seite sind höchstens 256 Einträge erlaubt.';
+
+  @override
+  String get friendsProfileOpenFailed =>
+      'Der Browser konnte nicht geöffnet werden. Kopiere den offiziellen Steam-Link unten.';
 }

@@ -24,6 +24,7 @@ import '../skins/skin_spec.dart';
 import '../services/auto_login.dart';
 import '../services/avatar_service.dart';
 import '../services/biometric_unlock.dart';
+import '../services/startup_unlock.dart';
 import '../services/credential_store.dart';
 import '../core/entitlement.dart';
 import '../core/update_check.dart';
@@ -62,6 +63,13 @@ final avatarServiceProvider = Provider<AvatarService>((ref) => AvatarService());
 /// System-credential (biometric / device PIN) app unlock.
 final biometricUnlockProvider =
     Provider<BiometricUnlock>((ref) => BiometricUnlock());
+
+final startupUnlockProvider = Provider<StartupUnlock>((ref) =>
+    StartupUnlock(vaultKeys: ref.read(vaultKeyStoreProvider)));
+
+/// Device-local security preference, intentionally excluded from sync.
+final startupVerificationEnabledProvider = FutureProvider<bool>(
+    (ref) => ref.watch(startupUnlockProvider).verificationRequired);
 
 /// Keystore-backed holder for the vault DEK (PIN-wrapped).
 final vaultKeyStoreProvider =
@@ -722,6 +730,7 @@ class AppData {
   final PortableLibrary? portable;
 
   List<SteamGuardAccount> get visibleAccounts {
+    if (locked) return const [];
     final merged = {for (final account in accounts) account.steamId: account};
     for (final account in portable?.accounts ?? <SteamGuardAccount>[]) {
       if (portable!.enabled || !merged.containsKey(account.steamId)) {
@@ -803,6 +812,11 @@ final appControllerProvider =
     AsyncNotifierProvider<AppController, AppData>(AppController.new);
 
 class AppController extends AsyncNotifier<AppData> {
+  bool _manuallyLocked = false;
+  bool get manuallyLocked => _manuallyLocked;
+  Future<bool>? _pinChange;
+  Future<void>? _vaultReset;
+
   @override
   Future<AppData> build() async {
     final storage = ref.read(storageProvider);
@@ -819,6 +833,32 @@ class AppController extends AsyncNotifier<AppData> {
     }
 
     if (store.encrypted) {
+      // Only the opted-in platform secure-store credential can skip the gate.
+      // Failure, absence and a stale PIN all fall through to manual unlock.
+      final pin = await ref.read(startupUnlockProvider).readPasskey();
+      if (pin != null) {
+        try {
+          final accounts = await _accountsWithPin(store, pin);
+          if (accounts != null) {
+            if (privacyAccepted) {
+              // Give AsyncNotifier time to publish the returned unlocked
+              // state before background refreshes check the lock gate.
+              Future<void>(refreshSessions);
+              Future<void>(refreshAvatars);
+            }
+            return AppData(
+                store: store,
+                portable: portable,
+                accounts: accounts,
+                locked: false,
+                passKey: pin,
+                privacyVersion: privacyVersion);
+          }
+          await ref.read(startupUnlockProvider).forget();
+        } catch (_) {
+          store.setDek(null);
+        }
+      }
       return AppData(
           store: store,
           portable: portable,
@@ -845,13 +885,56 @@ class AppController extends AsyncNotifier<AppData> {
   /// passkey copy, the manifest and every maFile, then re-bootstraps into a
   /// clean, unlocked state. Settings survive. The user re-imports from their
   /// maFile backups; nothing on the Steam side is touched.
-  Future<void> resetVault() async {
+  Future<void> resetVault() =>
+      _vaultReset ??= _resetVault().whenComplete(() => _vaultReset = null);
+
+  Future<void> _resetVault() async {
+    // A platform key write cannot be cancelled by locking or changing routes.
+    // Finish it before clearing the old vault so it can never overwrite the
+    // key of a vault created after this reset. A failed change still permits
+    // recovery; the reset itself keeps its existing failure semantics.
+    try { await _pinChange; } catch (_) {}
     await performVaultReset(
       storage: ref.read(storageProvider),
       clearKeys: () => ref.read(vaultKeyStoreProvider).clear(),
       disableBiometric: () => ref.read(biometricUnlockProvider).disable(),
     );
+    // A leftover convenience credential is bound to the old PIN wrap and
+    // cannot open any fresh vault, even when the user reuses the same PIN.
+    try { await ref.read(startupUnlockProvider).forget(); } catch (_) {}
+    ref.invalidate(startupVerificationEnabledProvider);
     ref.invalidateSelf();
+  }
+
+  Future<void> setStartupVerificationEnabled(bool required) async {
+    final data = state.value;
+    if (data == null || data.locked || !data.store.isVault || data.passKey == null) {
+      throw StateError('Unlock the vault before changing startup verification');
+    }
+    final startup = ref.read(startupUnlockProvider);
+    if (required) {
+      await startup.forget();
+    } else {
+      await startup.remember(data.passKey!);
+    }
+    ref.invalidate(startupVerificationEnabledProvider);
+  }
+
+  /// Locks this session; automatic unlock only runs once in [build]. Existing
+  /// refreshes cannot republish account data after the vault has been locked.
+  void lock() {
+    final data = state.value;
+    if (data == null || data.locked || !data.encrypted) return;
+    _manuallyLocked = true;
+    data.store.setDek(null);
+    data.portable?.lock();
+    state = AsyncData(AppData(
+      store: data.store,
+      portable: data.portable,
+      accounts: const [],
+      locked: true,
+      privacyVersion: data.privacyVersion,
+    ));
   }
 
   /// Records acceptance of the current notice, then kicks off the network
@@ -942,7 +1025,7 @@ class AppController extends AsyncNotifier<AppData> {
           }
         }
       }
-      if (changed && state.value != null) {
+      if (changed && state.value != null && !state.value!.locked) {
         if (!identical(state.value?.accounts, data.accounts)) {
           // A concurrent reload/unlock/import replaced the account list
           // mid-refresh: the renewed tokens live on the old instances (and
@@ -991,7 +1074,8 @@ class AppController extends AsyncNotifier<AppData> {
       // the actual disk mutations.
       final results = await Future.wait(
           [for (final acc in targets) _refreshOneAvatar(acc, svc, data)]);
-      if (results.any((changed) => changed) && state.value != null) {
+      if (results.any((changed) => changed) &&
+          state.value != null && !state.value!.locked) {
         if (!identical(state.value?.accounts, data.accounts)) {
           // Same concurrent-replacement hazard as refreshSessions above.
           await reload();
@@ -1062,6 +1146,21 @@ class AppController extends AsyncNotifier<AppData> {
     }
   }
 
+  Future<List<SteamGuardAccount>?> _accountsWithPin(
+      AccountStore store, String pin) async {
+    if (store.isVault) {
+      final dek = await ref.read(vaultKeyStoreProvider).unwrapWithPin(pin);
+      if (dek == null) return null;
+      store.setDek(dek);
+      return store.entries.isEmpty ? const [] : store.getAllAccounts();
+    }
+    if (store.entries.isEmpty) {
+      return await store.verifyPasskey(pin) ? const [] : null;
+    }
+    final accounts = await store.getAllAccounts(passKey: pin);
+    return accounts.isEmpty ? null : accounts;
+  }
+
   /// Attempts to unlock an encrypted store with the 6-digit [pin].
   ///
   /// Vault store: the PIN unwraps the Keystore-held DEK. Legacy store: the PIN
@@ -1072,46 +1171,20 @@ class AppController extends AsyncNotifier<AppData> {
     if (data == null) return false;
     final store = data.store;
     final sw = Stopwatch()..start();
-
-    if (store.isVault) {
-      final dek = await ref.read(vaultKeyStoreProvider).unwrapWithPin(pin);
-      if (dek == null) return false; // wrong PIN (GCM tag fails)
-      store.setDek(dek);
-      final accounts = store.entries.isEmpty
-          ? const <SteamGuardAccount>[]
-          : await store.getAllAccounts();
-      if (store.entries.isNotEmpty && accounts.isEmpty) {
-        dlog('unlock(vault): DEK ok but 0/${store.entries.length} decoded');
-      }
-      dlog('unlock(vault): ${sw.elapsedMilliseconds}ms, '
-          '${accounts.length} accounts');
-      state = AsyncData(
-        data.copyWith(accounts: accounts, locked: false, passKey: pin),
-      );
-      Future.microtask(refreshSessions);
-      Future.microtask(refreshAvatars);
-      return true;
-    }
-
-    // Legacy (PIN-derived CBC) store.
-    List<SteamGuardAccount> accounts;
-    if (store.entries.isEmpty) {
-      if (!await store.verifyPasskey(pin)) return false;
-      accounts = const [];
-    } else {
-      // getAllAccounts validates the key (empty == wrong key).
-      accounts = await store.getAllAccounts(passKey: pin);
-      if (accounts.isEmpty) return false;
-    }
-    dlog('unlock(legacy): ${sw.elapsedMilliseconds}ms, '
+    final accounts = await _accountsWithPin(store, pin);
+    if (accounts == null) return false;
+    _manuallyLocked = false;
+    dlog('unlock: ${sw.elapsedMilliseconds}ms, '
         '${accounts.length} accounts');
     state = AsyncData(
       data.copyWith(accounts: accounts, locked: false, passKey: pin),
     );
-    Future.microtask(refreshSessions);
-    Future.microtask(refreshAvatars);
+    if (data.privacyAccepted) {
+      Future.microtask(refreshSessions);
+      Future.microtask(refreshAvatars);
+    }
     // One-time upgrade of the weak PIN-derived scheme to the Keystore DEK vault.
-    unawaited(_migrateToVault(pin, accounts));
+    if (!store.isVault) unawaited(_migrateToVault(pin, accounts));
     return true;
   }
 
@@ -1125,6 +1198,7 @@ class AppController extends AsyncNotifier<AppData> {
     final dek = VaultCrypto.generateDek();
     await ref.read(vaultKeyStoreProvider).storePinWrap(pin, dek);
     await store.migrateToVault(dek, accounts);
+    if (state.value?.locked ?? true) store.setDek(null);
     return true;
   }
 
@@ -1142,8 +1216,9 @@ class AppController extends AsyncNotifier<AppData> {
 
   Future<void> reload() async {
     final data = state.value;
-    if (data == null) return;
+    if (data == null || data.locked) return;
     final accounts = await data.store.getAllAccounts(passKey: data.passKey);
+    if (state.value?.locked ?? true) return;
     state = AsyncData(data.copyWith(accounts: accounts));
   }
 
@@ -1313,7 +1388,7 @@ class AppController extends AsyncNotifier<AppData> {
 
   Future<bool> _saveToSource(SteamGuardAccount account, {bool allowNew = false}) async {
     final data = state.value;
-    if (data == null) return false;
+    if (data == null || data.locked) return false;
     final isNew = !data.store.entries.any((e) => e.steamId == account.steamId) &&
         !(data.portable?.ids.contains(account.steamId) ?? false);
     if (account.fromPortable || (allowNew && isNew && (data.portable?.enabled ?? false))) {
@@ -1368,29 +1443,60 @@ class AppController extends AsyncNotifier<AppData> {
   /// - Changing the PIN on a vault store re-wraps the DEK under the new PIN.
   /// - Legacy encrypted stores rotate the CBC key (and migrate to vault on the
   ///   next unlock).
-  Future<bool> changePasskey(String? oldKey, String? newKey) async {
+  Future<bool> changePasskey(String? oldKey, String? newKey) {
+    if (_pinChange != null || _vaultReset != null) return Future.value(false);
+    final operation = _changePasskey(oldKey, newKey);
+    _pinChange = operation;
+    return operation.whenComplete(() {
+      if (identical(_pinChange, operation)) _pinChange = null;
+    });
+  }
+
+  Future<bool> _changePasskey(String? oldKey, String? newKey) async {
     final data = state.value;
-    if (data == null || newKey == null) return false;
+    if (data == null || data.locked || newKey == null) return false;
     final store = data.store;
+
+    // Re-read after every async key operation. In particular, settings can be
+    // closed and "Lock now" pressed while the platform key store is writing.
+    // Publishing the captured [data] would restore its accounts and unlocked
+    // state. Preserve the latest session, and never install a PIN into a
+    // manually locked session or a different (reset/reloaded) store.
+    void publishChangedPin() {
+      final current = state.value;
+      if (current == null || !identical(current.store, store)) return;
+      if (current.locked) {
+        store.setDek(null);
+        state = AsyncData(current.copyWith());
+      } else {
+        state = AsyncData(current.copyWith(passKey: newKey));
+      }
+    }
 
     if (store.isVault) {
       final ok = await ref
           .read(vaultKeyStoreProvider)
           .rewrapPin(oldKey ?? '', newKey);
-      if (ok) state = AsyncData(data.copyWith(passKey: newKey));
+      if (ok) {
+        publishChangedPin();
+        // The new PIN wrap invalidates the convenience credential even if
+        // best-effort deletion fails. PIN changes restore verification.
+        try { await ref.read(startupUnlockProvider).forget(); } catch (_) {}
+        ref.invalidate(startupVerificationEnabledProvider);
+      }
       return ok;
     }
 
     // First PIN on a brand-new store → go straight to the vault scheme.
     if (oldKey == null && !store.encrypted) {
       final ok = await _establishVault(newKey, data.accounts);
-      if (ok) state = AsyncData(data.copyWith(passKey: newKey));
+      if (ok) publishChangedPin();
       return ok;
     }
 
     // Legacy rotate (migrates to vault on next unlock).
     final ok = await store.changeEncryptionKey(oldKey, newKey);
-    if (ok) state = AsyncData(data.copyWith(passKey: newKey));
+    if (ok) publishChangedPin();
     return ok;
   }
 }

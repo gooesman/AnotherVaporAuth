@@ -11,7 +11,12 @@ import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
 import 'package:ava/src/app/theme.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
+import 'package:ava/src/core/models/steam_item.dart';
+import 'package:ava/src/core/protocol/inventory_client.dart';
+import 'package:ava/src/core/protocol/market_client.dart';
+import 'package:ava/src/services/steam_api_client.dart';
 import 'package:ava/src/services/storage_provider.dart';
+import 'package:ava/src/ui/account_dashboard.dart';
 import 'package:ava/src/ui/import_helper.dart';
 import 'package:ava/src/ui/home_screen.dart';
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
@@ -23,6 +28,24 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
 
 import '../support/temp_dir.dart';
+
+class _SearchInventoryClient extends InventoryClient {
+  _SearchInventoryClient() : super(SteamApiClient());
+
+  @override
+  Future<WalletInfo> wallet(SteamGuardAccount account) async =>
+      WalletInfo.fallback;
+}
+
+class _SearchMarketClient extends MarketClient {
+  _SearchMarketClient() : super(SteamApiClient());
+
+  @override
+  Future<List<MarketListing>> myListings(
+    SteamGuardAccount account, {
+    int count = 100,
+  }) async => const [];
+}
 
 /// Points `getTemporaryDirectory()` at a real, disposable directory so the
 /// export flow's file I/O runs against the filesystem instead of a missing
@@ -415,6 +438,8 @@ void main() {
               MemoryStorageProvider(tempDir.path),
             ),
             timeAlignerProvider.overrideWithValue(() async {}),
+            inventoryClientProvider.overrideWithValue(_SearchInventoryClient()),
+            marketClientProvider.overrideWithValue(_SearchMarketClient()),
           ],
         );
         addTearDown(container.dispose);
@@ -452,7 +477,19 @@ void main() {
         await tester.pump();
         expect(find.text('TargetUser'), findsOneWidget);
         await tester.tap(find.text('TargetUser'));
+        await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
+        if (width < 640) {
+          final dashboard = tester.widget<AccountDashboardScreen>(
+            find.byType(AccountDashboardScreen),
+          );
+          expect(dashboard.account.accountName, 'TargetUser');
+          expect(dashboard.account.steamId, 76561198000000124);
+          await tester.pageBack();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(find.byType(AccountDashboardScreen), findsNothing);
+        }
         expect(find.text('TargetUser'), findsNWidgets(2));
         await tester.enterText(find.byType(TextField), 'not-present');
         await tester.pump();

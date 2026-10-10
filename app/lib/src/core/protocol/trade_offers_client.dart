@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import '../../services/debug_log.dart';
 import '../../services/steam_api_client.dart';
 import '../models/steam_guard_account.dart';
 import '../models/trade_offer.dart';
+import '../models/steam_friend.dart';
+import '../models/trade_draft.dart';
 import 'community_session.dart';
 
 /// Result of accepting a trade offer.
@@ -23,6 +27,53 @@ class TradeOffersClient {
   final SteamApiClient api;
   TradeOffersClient(this.api);
 
+  /// Creates an offer only; mobile/email confirmation remains a separate,
+  /// explicit user action. This write must never be automatically retried.
+  /// Protocol: Steam's own public/javascript/economy_tradeoffer.js,
+  /// CTradeOfferStateManager.ConfirmTradeOffer (verified 2026-10-10).
+  Future<TradeSendResult> send(
+    SteamGuardAccount account,
+    TradeDraft draft,
+  ) async {
+    requireAccessToken(account);
+    draft.validate('${account.steamId}');
+    final sid = newCommunitySessionId();
+    final json = await api.communityPostJson(
+      '/tradeoffer/new/send',
+      {
+        'sessionid': sid,
+        'serverid': '1',
+        'partner': draft.partnerSteamId,
+        'tradeoffermessage': draft.message,
+        'json_tradeoffer': jsonEncode(draft.toJson()),
+        'captcha': '',
+        'trade_offer_create_params': '{}',
+      },
+      cookies: communityCookies(account, sessionId: sid),
+      referer:
+          '${SteamApiClient.communityBase}/tradeoffer/new/'
+          '?partner=${steamAccountId(draft.partnerSteamId)}',
+    );
+    if (json['needauth'] == true || json['needsauth'] == true) {
+      throw const CommunityAuthException(401, '/tradeoffer/new/send');
+    }
+    final error = json['strError'];
+    if (error is String && error.isNotEmpty) {
+      throw SteamApiException(2, error, 'SendTradeOffer');
+    }
+    final id = '${json['tradeofferid'] ?? ''}';
+    if (!RegExp(r'^[1-9]\d*$').hasMatch(id) ||
+        json['success'] == false ||
+        json['success'] == 0) {
+      throw const TradeSendUnconfirmed();
+    }
+    return TradeSendResult(
+      offerId: id,
+      needsMobileConfirmation: json['needs_mobile_confirmation'] == true,
+      needsEmailConfirmation: json['needs_email_confirmation'] == true,
+    );
+  }
+
   /// Safely narrows a decoded-JSON value to `Map<String, dynamic>`. A plain
   /// `as Map<String, dynamic>?` cast throws when the value is a
   /// `Map<dynamic, dynamic>` (e.g. an empty `{}` literal in tests, or some
@@ -33,25 +84,24 @@ class TradeOffersClient {
 
   /// Active (default) or historical offers, both directions, with
   /// descriptions joined. Historical == the "历史" segment.
-  Future<TradeOffersPage> fetch(SteamGuardAccount account,
-      {bool historical = false}) async {
+  Future<TradeOffersPage> fetch(
+    SteamGuardAccount account, {
+    bool historical = false,
+  }) async {
     final token = requireAccessToken(account);
-    final json = await api.apiGetJson(
-      'IEconService',
-      'GetTradeOffers',
-      {
-        'get_received_offers': '1',
-        'get_sent_offers': '1',
-        'get_descriptions': '1',
-        'language': api.steamLanguage,
-        'active_only': historical ? '0' : '1',
-        'historical_only': historical ? '1' : '0',
-      },
-      accessToken: token,
-    );
+    final json = await api.apiGetJson('IEconService', 'GetTradeOffers', {
+      'get_received_offers': '1',
+      'get_sent_offers': '1',
+      'get_descriptions': '1',
+      'language': api.steamLanguage,
+      'active_only': historical ? '0' : '1',
+      'historical_only': historical ? '1' : '0',
+    }, accessToken: token);
     final page = TradeOffersPage.fromResponse(_asMap(json['response']));
-    dlog('trade offers: ${page.received.length} received, '
-        '${page.sent.length} sent (historical=$historical)');
+    dlog(
+      'trade offers: ${page.received.length} received, '
+      '${page.sent.length} sent (historical=$historical)',
+    );
     return page;
   }
 
@@ -59,8 +109,11 @@ class TradeOffersClient {
   Future<int> pendingReceivedCount(SteamGuardAccount account) async {
     final token = requireAccessToken(account);
     final json = await api.apiGetJson(
-        'IEconService', 'GetTradeOffersSummary', const {},
-        accessToken: token);
+      'IEconService',
+      'GetTradeOffersSummary',
+      const {},
+      accessToken: token,
+    );
     final resp = _asMap(json['response']);
     final v = resp['pending_received_count'];
     return v is num ? v.toInt() : int.tryParse('$v') ?? 0;
@@ -71,9 +124,13 @@ class TradeOffersClient {
   Future<(String, String)> miniProfile(int accountId) async {
     try {
       final json = await api.communityGetJson(
-          '/miniprofile/$accountId/json', const {});
-      return ((json['persona_name'] ?? '') as String,
-          (json['avatar_url'] ?? '') as String);
+        '/miniprofile/$accountId/json',
+        const {},
+      );
+      return (
+        (json['persona_name'] ?? '') as String,
+        (json['avatar_url'] ?? '') as String,
+      );
     } catch (_) {
       return ('', '');
     }
@@ -83,7 +140,9 @@ class TradeOffersClient {
   /// on success or `{strError}` on failure. A mobileconf (type 2) usually
   /// follows — the caller routes the user to the confirmations tab.
   Future<TradeAcceptResult> accept(
-      SteamGuardAccount account, TradeOffer offer) async {
+    SteamGuardAccount account,
+    TradeOffer offer,
+  ) async {
     requireAccessToken(account);
     final sid = newCommunitySessionId();
     final Map<String, dynamic> json;
@@ -117,7 +176,8 @@ class TradeOffersClient {
     // flag. (Steam can also reply `needs_email_confirmation` for accounts
     // without a mobile authenticator — near-theoretical for AVA users, so
     // it's not handled, but noting the shape here for posterity.)
-    final ok = err == null &&
+    final ok =
+        err == null &&
         (json.containsKey('tradeid') ||
             json['needs_mobile_confirmation'] == true);
     dlog('tradeoffer accept ${offer.id} -> ok=$ok err=${err ?? '-'}');
@@ -140,7 +200,10 @@ class TradeOffersClient {
       _writeOp(account, offerId, 'cancel');
 
   Future<bool> _writeOp(
-      SteamGuardAccount account, String offerId, String op) async {
+    SteamGuardAccount account,
+    String offerId,
+    String op,
+  ) async {
     requireAccessToken(account);
     final sid = newCommunitySessionId();
     try {
@@ -156,8 +219,10 @@ class TradeOffersClient {
       // Success must be positively confirmed by the offer-id echo — an empty
       // body (expired session decoded as {}) must NOT read as "declined".
       final ok = json['tradeofferid'] != null;
-      dlog('tradeoffer $op $offerId -> '
-          '${ok ? 'ok' : 'no confirmation in reply'}');
+      dlog(
+        'tradeoffer $op $offerId -> '
+        '${ok ? 'ok' : 'no confirmation in reply'}',
+      );
       return ok;
     } on CommunityAuthException {
       // HTTP-level stale session: propagate so the tab can point the user at

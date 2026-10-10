@@ -30,42 +30,104 @@ class InventoryClient {
   InventoryClient(this.api);
 
   /// Fetches the game picker + wallet info by scraping the inventory page.
-  Future<InventoryOverview> overview(SteamGuardAccount account) async {
+  Future<InventoryOverview> overview(
+    SteamGuardAccount account, {
+    String? ownerSteamId,
+  }) async {
+    final owner = _ownerId(account, ownerSteamId);
     final html = await api.communityGetText(
-      '/profiles/${account.steamId}/inventory/',
+      '/profiles/$owner/inventory/',
+      query: {'l': api.steamLanguage},
       cookies: communityCookies(account),
     );
+    _ensureLoggedIn(html, '/profiles/$owner/inventory/');
     final apps = _extractJsonObject(html, 'g_rgAppContextData');
+    if (apps == null) {
+      throw const FormatException('Steam inventory overview is unavailable.');
+    }
     final walletJson = _extractJsonObject(html, 'g_rgWalletInfo');
     final wallet = walletJson != null
         ? WalletInfo.fromJson(walletJson)
         : WalletInfo.fallback;
 
     final games = <InventoryGame>[];
-    if (apps != null) {
-      apps.forEach((appid, raw) {
-        if (raw is! Map) return;
-        // rgContexts is an object of {contextid: {...}}, but Steam encodes an
-        // empty one as a JSON array [] — skip those.
-        final ctxRaw = raw['rgContexts'];
-        if (ctxRaw is! Map) return;
-        ctxRaw.forEach((cid, craw) {
-          if (craw is! Map) return;
-          final count = asInt(craw['asset_count']);
-          if (count <= 0) return;
-          games.add(InventoryGame(
+    apps.forEach((appid, raw) {
+      if (raw is! Map) return;
+      // rgContexts is an object of {contextid: {...}}, but Steam encodes an
+      // empty one as a JSON array [] — skip those.
+      final ctxRaw = raw['rgContexts'];
+      if (ctxRaw is! Map) return;
+      final contexts = ctxRaw.entries
+          .where((e) => e.value is Map && asInt(e.value['asset_count']) > 0)
+          .toList();
+      final contextNames = <String, int>{};
+      for (final entry in contexts) {
+        final name = (entry.value['name'] as String?)?.trim() ?? '';
+        contextNames[name] = (contextNames[name] ?? 0) + 1;
+      }
+      for (final entry in contexts) {
+        final cid = entry.key;
+        final craw = entry.value as Map;
+        final count = asInt(craw['asset_count']);
+        final contextName = (craw['name'] as String?)?.trim() ?? '';
+        games.add(
+          InventoryGame(
             appid: int.tryParse(appid) ?? 0,
             contextId: '$cid',
             name: (raw['name'] ?? '') as String,
             iconUrl: (raw['icon'] ?? '') as String,
             itemCount: count,
-          ));
-        });
-      });
-    }
+            // Even if Steam gives two contexts the same name, retain the IDs
+            // so the picker never shows indistinguishable entries.
+            contextName:
+                contextName.isNotEmpty && contextNames[contextName] == 1
+                ? contextName
+                : contextName.isEmpty
+                ? '$cid'
+                : '$contextName ($cid)',
+            showContext: contexts.length > 1,
+          ),
+        );
+      }
+    });
     games.sort((a, b) => b.itemCount.compareTo(a.itemCount));
-    dlog('inventory overview: ${games.length} games, wallet=${wallet.currency}');
+    dlog(
+      'inventory overview: ${games.length} games, wallet=${wallet.currency}',
+    );
     return InventoryOverview(games, wallet);
+  }
+
+  /// Read-only wallet fetch for account dashboards. This reads Steam's own
+  /// market page and never opens a purchase/listing flow. A missing balance is
+  /// returned as null, so a locked/unavailable wallet cannot look like zero.
+  Future<WalletInfo> wallet(SteamGuardAccount account) async {
+    final html = await api.communityGetText(
+      '/market/',
+      query: {'l': api.steamLanguage},
+      cookies: communityCookies(account),
+    );
+    _ensureLoggedIn(html, '/market/');
+    final data = _extractJsonObject(html, 'g_rgWalletInfo');
+    if (data == null) {
+      throw const FormatException('Steam wallet information is unavailable.');
+    }
+    return WalletInfo.fromJson(data);
+  }
+
+  static void _ensureLoggedIn(String html, String path) {
+    // The market is also a public page: an expired cookie can return HTTP 200
+    // with an anonymous page rather than redirecting to login.
+    if (RegExp(r'\bg_bLoggedIn\s*=\s*false\b').hasMatch(html)) {
+      throw CommunityAuthException(401, path);
+    }
+  }
+
+  static String _ownerId(SteamGuardAccount account, String? ownerSteamId) {
+    final owner = ownerSteamId ?? '${account.steamId}';
+    if (!RegExp(r'^\d{17}$').hasMatch(owner)) {
+      throw ArgumentError.value(owner, 'ownerSteamId', 'Invalid Steam ID');
+    }
+    return owner;
   }
 
   /// Fetches one page of items for a game/context.
@@ -73,11 +135,12 @@ class InventoryClient {
     SteamGuardAccount account,
     int appid,
     String contextId, {
+    String? ownerSteamId,
     String? startAssetId,
     int count = 75,
   }) async {
     final json = await api.communityGetJson(
-      '/inventory/${account.steamId}/$appid/$contextId',
+      '/inventory/${_ownerId(account, ownerSteamId)}/$appid/$contextId',
       {
         'l': api.steamLanguage,
         'count': '$count',
@@ -85,6 +148,12 @@ class InventoryClient {
       },
       cookies: communityCookies(account),
     );
+    if (json['needauth'] == true || json['needsauth'] == true) {
+      throw CommunityAuthException(401, '/inventory/');
+    }
+    if (json['success'] != true && asInt(json['success']) != 1) {
+      throw const FormatException('Steam inventory is private or unavailable.');
+    }
     final assets = (json['assets'] as List?) ?? const [];
     final descriptions = (json['descriptions'] as List?) ?? const [];
     // Index descriptions by classid_instanceid.
@@ -99,21 +168,23 @@ class InventoryClient {
       final d = descByKey['${m['classid']}_${m['instanceid']}'];
       if (d == null) continue;
       final feeApp = d['market_fee'];
-      items.add(InventoryItem(
-        appid: asInt(m['appid']),
-        contextId: '${m['contextid']}',
-        assetId: '${m['assetid']}',
-        classId: '${m['classid']}',
-        instanceId: '${m['instanceid']}',
-        amount: asInt(m['amount']),
-        marketHashName: (d['market_hash_name'] ?? '') as String,
-        name: (d['name'] ?? '') as String,
-        type: (d['type'] ?? '') as String,
-        iconUrl: itemImageUrl(d['icon_url'] as String?),
-        marketable: asInt(d['marketable']) == 1,
-        tradable: asInt(d['tradable']) == 1,
-        publisherFeePct: feeApp is num ? feeApp.toDouble() : null,
-      ));
+      items.add(
+        InventoryItem(
+          appid: asInt(m['appid']),
+          contextId: '${m['contextid']}',
+          assetId: '${m['assetid']}',
+          classId: '${m['classid']}',
+          instanceId: '${m['instanceid']}',
+          amount: asInt(m['amount']),
+          marketHashName: (d['market_hash_name'] ?? '') as String,
+          name: (d['name'] ?? '') as String,
+          type: (d['type'] ?? '') as String,
+          iconUrl: itemImageUrl(d['icon_url'] as String?),
+          marketable: asInt(d['marketable']) == 1,
+          tradable: asInt(d['tradable']) == 1,
+          publisherFeePct: feeApp is num ? feeApp.toDouble() : null,
+        ),
+      );
     }
     return InventoryPage(
       items,

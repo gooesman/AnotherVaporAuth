@@ -61,6 +61,12 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   Requests a normal Steam restart, backs up settings before editing, and reports
   when a normal login is still needed. See the [preview guide](docs/windows-steam-switch.md).
 
+- **Account overview (branch preview)** — Windows and Android share configurable
+  wallet/pending-funds and market-listing cards, friends and two-sided trade-offer
+  editing, and an entry to Steam's official backup-login-code flow. Startup
+  verification can be disabled in Settings while keeping account files encrypted at rest.
+  The Android preview is a separate **AVA dev** app with its own data.
+
 - **maFile compatible** — reads/writes the legacy `.maFile` format
   (PBKDF2/SHA1 + AES-256-CBC), so existing accounts migrate with no changes.
   Also imports a whole Steam Desktop Authenticator `maFiles/` folder — **including
@@ -81,9 +87,10 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 - **Steam Family groups** — a read-only group page (members, roles, slots, cooldown)
   from an account's menu, where incoming invites also live: pre-join checks first,
   then hold-to-join. *(experimental)*
-- **Hold-to-confirm** — every irreversible action (a trade offer, a confirmation, a
-  family join, deleting an account) is one press-and-hold with accelerating
-  haptics; each gate and the haptics have their own Settings toggles.
+- **Hold-to-confirm** — decisions on existing trade offers and confirmations,
+  joining a family and deleting an account use press-and-hold with accelerating
+  haptics; each gate and the haptics have their own Settings toggles. New trade
+  offers use a review dialog followed by an explicit Send action.
 - **Inventory & Market** — browse an account's Steam inventory (Steam-style game
   picker, identical items stacked) and list items on the Community Market with
   live Steam fees, a high/low price trend, linked "you receive ⇄ buyer pays"
@@ -94,9 +101,11 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   plus the account's own TOTP when the refresh token expires.
 - **Login flows** — password + **QR**, session refresh, add authenticator, and
   approving another device's login by scanning its QR.
-- **App lock** — a mandatory 6-digit PIN gates a random 256-bit key held in the
+- **App lock** — a 6-digit PIN gates a random 256-bit key held in the
   platform's secure storage, which encrypts the local store (AES-256-GCM); with
   biometric / device-credential unlock, it signs in as soon as the PIN is entered.
+  Verification is enabled by default. Opting out stores a device-local convenience
+  credential only in platform secure storage; changing the PIN enables verification again.
 - **Encrypted sync (optional)** — put your accounts on a WebDAV server you
   control (Nextcloud, Synology, any of them). Everything is encrypted on your
   device before it leaves — the server stores ciphertext and never sees a
@@ -146,7 +155,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 795 tests
+flutter test                       # 883 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.
