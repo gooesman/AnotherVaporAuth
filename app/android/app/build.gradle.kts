@@ -74,6 +74,15 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         resValue("string", "ava_app_label", if (avaForkPreview) "AVA Fork" else "AVA")
+        if (avaForkPreview) {
+            // --target-platform limits Flutter's own binaries, while plugins
+            // may still contribute other ABIs. Match the bundled ARM64 core
+            // and avoid shipping unusable native libraries in this preview.
+            ndk {
+                abiFilters.clear()
+                abiFilters += "arm64-v8a"
+            }
+        }
     }
 
     // Distribution channels. Same applicationId on purpose: play and cn have
