@@ -9,6 +9,89 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get steamSwitchTitle => 'Switch Steam account';
+
+  @override
+  String get steamSwitchHelp =>
+      'Switch between Steam accounts that have already signed in on this PC with their sign-in details remembered. Importing an authenticator into AVA does not sign that account in to the Steam client.';
+
+  @override
+  String get steamSwitchPath => 'Steam installation folder';
+
+  @override
+  String get steamSwitchNotFound =>
+      'Steam was not found. Choose steam.exe to locate your installation.';
+
+  @override
+  String get steamSwitchBrowse => 'Choose steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      'No saved Steam accounts were found on this PC. Sign in to Steam, enable remembering your sign-in details, then refresh.';
+
+  @override
+  String get steamSwitchNoMatch =>
+      'The selected AVA account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.';
+
+  @override
+  String get steamSwitchNeedsLogin =>
+      'Sign in to this account in Steam and enable remembering your sign-in details, then refresh.';
+
+  @override
+  String get steamSwitchButton => 'Switch account';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam will close and restart to sign in as $account. First close your games and wait for Steam Cloud saves to finish syncing. Continue?';
+  }
+
+  @override
+  String get steamSwitchStopping => 'Waiting for Steam to exit…';
+
+  @override
+  String get steamSwitchBackingUp => 'Backing up Steam settings…';
+
+  @override
+  String get steamSwitchConfiguring => 'Selecting the Steam account…';
+
+  @override
+  String get steamSwitchStarting => 'Starting Steam…';
+
+  @override
+  String get steamSwitchRestoring => 'Restoring Steam settings…';
+
+  @override
+  String get steamSwitchLaunched =>
+      'Steam has started. Check the signed-in account in the client. Sign in again if prompted.';
+
+  @override
+  String get steamSwitchBackup => 'Settings backup location';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      'This Steam installation or its settings could not be read. Choose the correct steam.exe and try again.';
+
+  @override
+  String get steamSwitchCloseFailed =>
+      'Steam could not exit normally. Exit Steam manually, then try again.';
+
+  @override
+  String get steamSwitchBusy =>
+      'Another account switch is in progress. Try again shortly.';
+
+  @override
+  String get steamSwitchChanged =>
+      'Steam settings changed during the switch. Exit Steam, refresh the list, then try again.';
+
+  @override
+  String get steamSwitchFailed =>
+      'The account switch could not finish. Check Steam and try again.';
+
+  @override
+  String get steamSwitchRecoveryNeeded =>
+      'The account switch failed and some settings could not be restored. Keep the backup below and restore the settings before trying again.';
+
+  @override
   String get appTitle => 'AVA';
 
   @override

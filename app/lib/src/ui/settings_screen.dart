@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,6 +15,7 @@ import '../services/screen_security.dart';
 import '../app/sync_providers.dart';
 import 'debug_log_screen.dart';
 import 'portable_mode_card.dart';
+import 'steam_client_screen.dart';
 import 'paywall_screen.dart';
 import 'sync/sync_screen.dart';
 import 'sync/sync_setup_screen.dart';
@@ -65,6 +68,19 @@ class SettingsScreen extends ConsumerWidget {
               padding: context.rSafeInsets(all: 16),
               children: [
                 const PortableModeCard(),
+                if (Platform.isWindows)
+                  _Card(
+                    title: l.steamSwitchTitle,
+                    description: l.steamSwitchHelp,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const SteamClientScreen()),
+                      ),
+                      icon: const Icon(Icons.switch_account_outlined),
+                      label: Text(l.steamSwitchTitle),
+                    ),
+                  ),
                 // Encryption
                 _Card(
                   title: l.settingsEncryption,

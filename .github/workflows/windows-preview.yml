@@ -1,0 +1,63 @@
+name: Windows preview
+
+# Build a downloadable preview for this feature branch or on request. It never
+# creates a Release, installs the app, or contacts the upstream deployment.
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/windows-steam-account-switch]
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.44.4'
+  FLUTTER_SUPPRESS_ANALYTICS: 'true'
+  PUB_CACHE: ${{ github.workspace }}/.pub-cache
+
+jobs:
+  windows-preview:
+    name: Check and build Windows preview
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2  # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Restore locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Test
+        run: flutter test --no-pub
+
+      - name: Clean before packaging
+        run: flutter clean
+
+      - name: Restore locked dependencies after cleaning
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build Windows release
+        run: flutter build windows --release --no-pub
+
+      # GitHub packages this complete directory as a downloadable ZIP.
+      # Keep the DLLs and data directory alongside ava.exe after extracting.
+      - name: Upload Windows preview
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: AVA-windows-preview-${{ github.sha }}
+          path: app/build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 14

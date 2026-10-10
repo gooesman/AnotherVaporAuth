@@ -9,6 +9,81 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get steamSwitchTitle => '切换 Steam 账号';
+
+  @override
+  String get steamSwitchHelp =>
+      '可切换已在本机 Steam 登录过并记住登录信息的账号。将令牌导入 AVA 不代表该账号已在 Steam 客户端登录。';
+
+  @override
+  String get steamSwitchPath => 'Steam 安装目录';
+
+  @override
+  String get steamSwitchNotFound => '未找到 Steam，请选择 steam.exe 以定位安装目录。';
+
+  @override
+  String get steamSwitchBrowse => '选择 steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      '本机尚无 Steam 登录记录。请先在 Steam 登录并记住登录信息，再刷新列表。';
+
+  @override
+  String get steamSwitchNoMatch =>
+      'AVA 所选账号不在本机 Steam 登录记录中。请先在 Steam 登录该账号并记住登录信息，再刷新列表。';
+
+  @override
+  String get steamSwitchNeedsLogin => '请先在 Steam 登录此账号并记住登录信息，再刷新列表。';
+
+  @override
+  String get steamSwitchButton => '切换账号';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam 将关闭并重新启动，以登录 $account。请先结束游戏，并等待 Steam 云存档同步完成。是否继续？';
+  }
+
+  @override
+  String get steamSwitchStopping => '正在等待 Steam 退出…';
+
+  @override
+  String get steamSwitchBackingUp => '正在备份 Steam 设置…';
+
+  @override
+  String get steamSwitchConfiguring => '正在设置 Steam 登录账号…';
+
+  @override
+  String get steamSwitchStarting => '正在启动 Steam…';
+
+  @override
+  String get steamSwitchRestoring => '正在恢复 Steam 设置…';
+
+  @override
+  String get steamSwitchLaunched => '已启动 Steam，请在客户端确认登录账号。若出现提示，请重新登录。';
+
+  @override
+  String get steamSwitchBackup => '设置备份位置';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      '无法读取此 Steam 安装目录或设置。请选择正确的 steam.exe 后重试。';
+
+  @override
+  String get steamSwitchCloseFailed => 'Steam 未能正常退出。请手动退出 Steam 后重试。';
+
+  @override
+  String get steamSwitchBusy => '另一个账号切换操作正在进行，请稍后重试。';
+
+  @override
+  String get steamSwitchChanged => '切换期间 Steam 设置发生了变化。请退出 Steam，刷新列表后重试。';
+
+  @override
+  String get steamSwitchFailed => '未能完成账号切换。请检查 Steam 后重试。';
+
+  @override
+  String get steamSwitchRecoveryNeeded => '切换失败，部分设置未能恢复。请保留下方备份，恢复设置后再重试。';
+
+  @override
   String get appTitle => 'AVA';
 
   @override
@@ -2016,6 +2091,81 @@ class AppLocalizationsZh extends AppLocalizations {
 /// The translations for Chinese, using the Han script (`zh_Hant`).
 class AppLocalizationsZhHant extends AppLocalizationsZh {
   AppLocalizationsZhHant() : super('zh_Hant');
+
+  @override
+  String get steamSwitchTitle => '切換 Steam 帳號';
+
+  @override
+  String get steamSwitchHelp =>
+      '可切換已在這台電腦的 Steam 登入過並記住登入資訊的帳號。將驗證器匯入 AVA 不代表該帳號已登入 Steam 用戶端。';
+
+  @override
+  String get steamSwitchPath => 'Steam 安裝資料夾';
+
+  @override
+  String get steamSwitchNotFound => '找不到 Steam，請選擇 steam.exe 以指定安裝位置。';
+
+  @override
+  String get steamSwitchBrowse => '選擇 steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      '這台電腦尚無 Steam 登入紀錄。請先在 Steam 登入並記住登入資訊，再重新整理清單。';
+
+  @override
+  String get steamSwitchNoMatch =>
+      'AVA 所選帳號不在這台電腦的 Steam 登入紀錄中。請先在 Steam 登入該帳號並記住登入資訊，再重新整理清單。';
+
+  @override
+  String get steamSwitchNeedsLogin => '請先在 Steam 登入此帳號並記住登入資訊，再重新整理清單。';
+
+  @override
+  String get steamSwitchButton => '切換帳號';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam 將關閉並重新啟動，以登入 $account。請先結束遊戲，並等待 Steam 雲端存檔同步完成。是否繼續？';
+  }
+
+  @override
+  String get steamSwitchStopping => '正在等待 Steam 結束…';
+
+  @override
+  String get steamSwitchBackingUp => '正在備份 Steam 設定…';
+
+  @override
+  String get steamSwitchConfiguring => '正在設定 Steam 登入帳號…';
+
+  @override
+  String get steamSwitchStarting => '正在啟動 Steam…';
+
+  @override
+  String get steamSwitchRestoring => '正在還原 Steam 設定…';
+
+  @override
+  String get steamSwitchLaunched => '已啟動 Steam，請在用戶端確認登入帳號。若出現提示，請重新登入。';
+
+  @override
+  String get steamSwitchBackup => '設定備份位置';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      '無法讀取此 Steam 安裝資料夾或設定。請選擇正確的 steam.exe 後再試。';
+
+  @override
+  String get steamSwitchCloseFailed => 'Steam 未能正常結束。請手動結束 Steam 後再試。';
+
+  @override
+  String get steamSwitchBusy => '另一個帳號切換作業正在進行，請稍後再試。';
+
+  @override
+  String get steamSwitchChanged => '切換期間 Steam 設定有所變更。請結束 Steam，重新整理清單後再試。';
+
+  @override
+  String get steamSwitchFailed => '無法完成帳號切換。請檢查 Steam 後再試。';
+
+  @override
+  String get steamSwitchRecoveryNeeded => '切換失敗，部分設定無法還原。請保留下方備份，還原設定後再試。';
 
   @override
   String get appTitle => 'AVA';

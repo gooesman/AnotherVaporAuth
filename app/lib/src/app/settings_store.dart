@@ -216,6 +216,13 @@ class SettingsStore {
   Future<void> saveWindowGeometry(Map<String, dynamic> value) =>
       _update((d) => d['window_geometry'] = value);
 
+  /// This computer's Steam installation; intentionally excluded from sync.
+  Future<String?> loadSteamClientPath() async =>
+      (await _read())['steam_client_path'] as String?;
+
+  Future<void> saveSteamClientPath(String value) =>
+      _update((d) => d['steam_client_path'] = value);
+
   Future<String?> loadSkin() async {
     final data = await _read();
     final skin = data['skin'] as String?;

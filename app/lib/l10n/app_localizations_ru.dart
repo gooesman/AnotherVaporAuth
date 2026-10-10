@@ -9,6 +9,89 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get steamSwitchTitle => 'Сменить аккаунт Steam';
+
+  @override
+  String get steamSwitchHelp =>
+      'Переключайтесь между аккаунтами, в которые уже входили в Steam на этом ПК и для которых сохранены данные входа. Импорт аутентификатора в AVA не выполняет вход в этот аккаунт в клиенте Steam.';
+
+  @override
+  String get steamSwitchPath => 'Папка установки Steam';
+
+  @override
+  String get steamSwitchNotFound =>
+      'Steam не найден. Выберите steam.exe, чтобы указать папку установки.';
+
+  @override
+  String get steamSwitchBrowse => 'Выбрать steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      'На этом ПК не найдены сохранённые аккаунты Steam. Войдите в Steam, включите сохранение данных входа, затем обновите список.';
+
+  @override
+  String get steamSwitchNoMatch =>
+      'Выбранного в AVA аккаунта нет в записях Steam на этом ПК. Войдите в этот аккаунт в Steam, включите сохранение данных входа, затем обновите список.';
+
+  @override
+  String get steamSwitchNeedsLogin =>
+      'Войдите в этот аккаунт в Steam, включите сохранение данных входа, затем обновите список.';
+
+  @override
+  String get steamSwitchButton => 'Сменить аккаунт';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam закроется и перезапустится для входа в аккаунт $account. Сначала закройте игры и дождитесь завершения синхронизации сохранений со Steam Cloud. Продолжить?';
+  }
+
+  @override
+  String get steamSwitchStopping => 'Ожидание закрытия Steam…';
+
+  @override
+  String get steamSwitchBackingUp => 'Создание резервной копии настроек Steam…';
+
+  @override
+  String get steamSwitchConfiguring => 'Выбор аккаунта Steam…';
+
+  @override
+  String get steamSwitchStarting => 'Запуск Steam…';
+
+  @override
+  String get steamSwitchRestoring => 'Восстановление настроек Steam…';
+
+  @override
+  String get steamSwitchLaunched =>
+      'Steam запущен. Проверьте в клиенте, в какой аккаунт выполнен вход. При появлении запроса войдите снова.';
+
+  @override
+  String get steamSwitchBackup => 'Расположение резервной копии настроек';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      'Не удалось прочитать эту установку Steam или её настройки. Выберите правильный файл steam.exe и повторите попытку.';
+
+  @override
+  String get steamSwitchCloseFailed =>
+      'Steam не удалось завершить обычным способом. Закройте Steam вручную и повторите попытку.';
+
+  @override
+  String get steamSwitchBusy =>
+      'Уже выполняется другая смена аккаунта. Повторите попытку чуть позже.';
+
+  @override
+  String get steamSwitchChanged =>
+      'Настройки Steam изменились во время переключения. Закройте Steam, обновите список и повторите попытку.';
+
+  @override
+  String get steamSwitchFailed =>
+      'Не удалось завершить смену аккаунта. Проверьте Steam и повторите попытку.';
+
+  @override
+  String get steamSwitchRecoveryNeeded =>
+      'Смена аккаунта не удалась, и часть настроек не удалось восстановить. Сохраните резервную копию, указанную ниже, и восстановите настройки перед новой попыткой.';
+
+  @override
   String get appTitle => 'AVA';
 
   @override

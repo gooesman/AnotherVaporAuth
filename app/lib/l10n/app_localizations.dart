@@ -107,6 +107,144 @@ abstract class AppLocalizations {
     Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
   ];
 
+  /// No description provided for @steamSwitchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Steam account'**
+  String get steamSwitchTitle;
+
+  /// No description provided for @steamSwitchHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between Steam accounts that have already signed in on this PC with their sign-in details remembered. Importing an authenticator into AVA does not sign that account in to the Steam client.'**
+  String get steamSwitchHelp;
+
+  /// No description provided for @steamSwitchPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam installation folder'**
+  String get steamSwitchPath;
+
+  /// No description provided for @steamSwitchNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam was not found. Choose steam.exe to locate your installation.'**
+  String get steamSwitchNotFound;
+
+  /// No description provided for @steamSwitchBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose steam.exe'**
+  String get steamSwitchBrowse;
+
+  /// No description provided for @steamSwitchNoAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved Steam accounts were found on this PC. Sign in to Steam, enable remembering your sign-in details, then refresh.'**
+  String get steamSwitchNoAccounts;
+
+  /// No description provided for @steamSwitchNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected AVA account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.'**
+  String get steamSwitchNoMatch;
+
+  /// No description provided for @steamSwitchNeedsLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to this account in Steam and enable remembering your sign-in details, then refresh.'**
+  String get steamSwitchNeedsLogin;
+
+  /// No description provided for @steamSwitchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch account'**
+  String get steamSwitchButton;
+
+  /// Confirmation before restarting the local Steam client to select a remembered account.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam will close and restart to sign in as {account}. First close your games and wait for Steam Cloud saves to finish syncing. Continue?'**
+  String steamSwitchConfirm(String account);
+
+  /// No description provided for @steamSwitchStopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Steam to exit…'**
+  String get steamSwitchStopping;
+
+  /// No description provided for @steamSwitchBackingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Backing up Steam settings…'**
+  String get steamSwitchBackingUp;
+
+  /// No description provided for @steamSwitchConfiguring.
+  ///
+  /// In en, this message translates to:
+  /// **'Selecting the Steam account…'**
+  String get steamSwitchConfiguring;
+
+  /// No description provided for @steamSwitchStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting Steam…'**
+  String get steamSwitchStarting;
+
+  /// No description provided for @steamSwitchRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring Steam settings…'**
+  String get steamSwitchRestoring;
+
+  /// No description provided for @steamSwitchLaunched.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam has started. Check the signed-in account in the client. Sign in again if prompted.'**
+  String get steamSwitchLaunched;
+
+  /// No description provided for @steamSwitchBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings backup location'**
+  String get steamSwitchBackup;
+
+  /// No description provided for @steamSwitchInvalidPath.
+  ///
+  /// In en, this message translates to:
+  /// **'This Steam installation or its settings could not be read. Choose the correct steam.exe and try again.'**
+  String get steamSwitchInvalidPath;
+
+  /// No description provided for @steamSwitchCloseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam could not exit normally. Exit Steam manually, then try again.'**
+  String get steamSwitchCloseFailed;
+
+  /// No description provided for @steamSwitchBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Another account switch is in progress. Try again shortly.'**
+  String get steamSwitchBusy;
+
+  /// No description provided for @steamSwitchChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam settings changed during the switch. Exit Steam, refresh the list, then try again.'**
+  String get steamSwitchChanged;
+
+  /// No description provided for @steamSwitchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The account switch could not finish. Check Steam and try again.'**
+  String get steamSwitchFailed;
+
+  /// No description provided for @steamSwitchRecoveryNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'The account switch failed and some settings could not be restored. Keep the backup below and restore the settings before trying again.'**
+  String get steamSwitchRecoveryNeeded;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:

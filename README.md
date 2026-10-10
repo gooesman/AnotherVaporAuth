@@ -56,6 +56,11 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 
 ## Highlights
 
+- **Windows Steam account switching (branch preview)** — select a locally
+  remembered Steam account from Settings or an account's right-click menu.
+  Requests a normal Steam restart, backs up settings before editing, and reports
+  when a normal login is still needed. See the [preview guide](docs/windows-steam-switch.md).
+
 - **maFile compatible** — reads/writes the legacy `.maFile` format
   (PBKDF2/SHA1 + AES-256-CBC), so existing accounts migrate with no changes.
   Also imports a whole Steam Desktop Authenticator `maFiles/` folder — **including
@@ -141,7 +146,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 757 tests
+flutter test                       # 795 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

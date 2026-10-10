@@ -9,6 +9,91 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get steamSwitchTitle => 'Cambiar de cuenta de Steam';
+
+  @override
+  String get steamSwitchHelp =>
+      'Cambia entre cuentas que ya hayan iniciado sesión en Steam en este PC y cuyos datos de acceso estén guardados. Importar un autenticador a AVA no inicia sesión con esa cuenta en el cliente de Steam.';
+
+  @override
+  String get steamSwitchPath => 'Carpeta de instalación de Steam';
+
+  @override
+  String get steamSwitchNotFound =>
+      'No se encontró Steam. Selecciona steam.exe para indicar dónde está instalado.';
+
+  @override
+  String get steamSwitchBrowse => 'Seleccionar steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      'No se encontraron cuentas de Steam guardadas en este PC. Inicia sesión en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.';
+
+  @override
+  String get steamSwitchNoMatch =>
+      'La cuenta seleccionada en AVA no aparece en los registros de Steam de este PC. Inicia sesión con esa cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.';
+
+  @override
+  String get steamSwitchNeedsLogin =>
+      'Inicia sesión con esta cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.';
+
+  @override
+  String get steamSwitchButton => 'Cambiar de cuenta';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam se cerrará y se reiniciará para iniciar sesión como $account. Primero cierra tus juegos y espera a que termine la sincronización de las partidas guardadas en Steam Cloud. ¿Continuar?';
+  }
+
+  @override
+  String get steamSwitchStopping => 'Esperando a que Steam se cierre…';
+
+  @override
+  String get steamSwitchBackingUp =>
+      'Creando una copia de seguridad de los ajustes de Steam…';
+
+  @override
+  String get steamSwitchConfiguring => 'Seleccionando la cuenta de Steam…';
+
+  @override
+  String get steamSwitchStarting => 'Iniciando Steam…';
+
+  @override
+  String get steamSwitchRestoring => 'Restaurando los ajustes de Steam…';
+
+  @override
+  String get steamSwitchLaunched =>
+      'Steam se ha iniciado. Comprueba en el cliente qué cuenta ha iniciado sesión. Vuelve a iniciar sesión si se te solicita.';
+
+  @override
+  String get steamSwitchBackup =>
+      'Ubicación de la copia de seguridad de los ajustes';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      'No se pudo leer esta instalación de Steam o sus ajustes. Selecciona el archivo steam.exe correcto e inténtalo de nuevo.';
+
+  @override
+  String get steamSwitchCloseFailed =>
+      'Steam no pudo cerrarse normalmente. Cierra Steam manualmente e inténtalo de nuevo.';
+
+  @override
+  String get steamSwitchBusy =>
+      'Ya hay otro cambio de cuenta en curso. Inténtalo de nuevo en unos instantes.';
+
+  @override
+  String get steamSwitchChanged =>
+      'Los ajustes de Steam cambiaron durante la operación. Cierra Steam, actualiza la lista e inténtalo de nuevo.';
+
+  @override
+  String get steamSwitchFailed =>
+      'No se pudo completar el cambio de cuenta. Comprueba Steam e inténtalo de nuevo.';
+
+  @override
+  String get steamSwitchRecoveryNeeded =>
+      'El cambio de cuenta falló y no se pudieron restaurar algunos ajustes. Conserva la copia de seguridad indicada abajo y restaura los ajustes antes de volver a intentarlo.';
+
+  @override
   String get appTitle => 'AVA';
 
   @override

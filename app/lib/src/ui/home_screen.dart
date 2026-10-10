@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import 'widgets/scanline_overlay.dart';
 import 'widgets/update_banner.dart';
 import 'widgets/steam_image_provider.dart';
 import 'approve_login_screen.dart';
+import 'steam_client_screen.dart';
 import 'paywall_screen.dart';
 import 'pending/pending_screen.dart';
 import 'widgets/ava_banner.dart';
@@ -626,6 +628,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       BuildContext context, SteamGuardAccount account, String value) async {
     final l = AppLocalizations.of(context);
     switch (value) {
+      case 'steam-client':
+        if (Platform.isWindows) {
+          await Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => SteamClientScreen(initialAccount: account)));
+        }
+        break;
       case 'confirm':
         Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => PendingScreen(account: account)));
@@ -1103,6 +1111,8 @@ class _SidebarRow extends ConsumerWidget {
       position: RelativeRect.fromRect(
           at & const Size(1, 1), Offset.zero & overlay.size),
       items: [
+        if (Platform.isWindows)
+          item('steam-client', Icons.switch_account_outlined, l.steamSwitchTitle),
         item('confirm', Icons.verified_user_outlined, l.actionConfirmations),
         item('market', Icons.inventory_2_outlined, l.actionMarket),
         item('family', Icons.family_restroom, l.famAccountAction),
