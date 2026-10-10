@@ -66,8 +66,7 @@ AVA instances before running a preview; this is not an isolated vault.
 
 This branch adds **Switch Steam account** to the Windows account-row context
 menu and to Settings. It opens a list of accounts remembered by the local Steam installation,
-preselecting the matching AVA account by SteamID (or login name when an imported
-authenticator has no SteamID). The local account list can include accounts that
+preselecting the matching AVA account by SteamID. The local account list can include accounts that
 have no authenticator in AVA.
 
 ## Trying the preview
@@ -78,7 +77,7 @@ have no authenticator in AVA.
    same page is available from Settings without importing an authenticator.
 3. Check the Steam installation path. **Choose steam.exe** can select another
    installation; this path is stored only on this computer and is not synced.
-4. Select a local account, choose **Switch Steam**, and confirm. Finish any game
+4. Select a local account, choose **Switch account**, and confirm. Finish any game
    and let cloud saves complete before restarting Steam.
 5. Check the resulting account in Steam. AVA reports that Steam was started;
    it does not claim that the Steam servers accepted the login.
