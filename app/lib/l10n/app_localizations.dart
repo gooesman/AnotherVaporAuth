@@ -4336,6 +4336,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again.'**
   String get approveSessionUnavailable;
+
+  /// No description provided for @itemMarketActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Item market options'**
+  String get itemMarketActions;
+
+  /// No description provided for @itemMarketViewPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'View market price'**
+  String get itemMarketViewPrice;
+
+  /// No description provided for @itemMarketOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Steam Market'**
+  String get itemMarketOpen;
+
+  /// No description provided for @itemMarketVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent volume'**
+  String get itemMarketVolume;
+
+  /// No description provided for @itemMarketReferenceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam Community Market reference price per item; not seller proceeds. Prices may change.'**
+  String get itemMarketReferenceNote;
+
+  /// No description provided for @itemMarketCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency: {currency}'**
+  String itemMarketCurrency(String currency);
+
+  /// No description provided for @itemMarketNoIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'This item has no market listing name.'**
+  String get itemMarketNoIdentity;
+
+  /// No description provided for @itemMarketOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the Steam Market page.'**
+  String get itemMarketOpenFailed;
+
+  /// No description provided for @steamClientRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is running'**
+  String get steamClientRunning;
+
+  /// No description provided for @steamClientStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is not running'**
+  String get steamClientStopped;
+
+  /// No description provided for @steamClientStatusLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Steam status…'**
+  String get steamClientStatusLoading;
+
+  /// No description provided for @steamClientStatusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam status is temporarily unavailable'**
+  String get steamClientStatusUnavailable;
+
+  /// No description provided for @steamClientCurrentAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently signed in: {account}'**
+  String steamClientCurrentAccount(String account);
+
+  /// No description provided for @steamClientAccountUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Current account not yet identified'**
+  String get steamClientAccountUnknown;
+
+  /// No description provided for @steamClientCurrentBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently signed in'**
+  String get steamClientCurrentBadge;
 }
 
 class _AppLocalizationsDelegate

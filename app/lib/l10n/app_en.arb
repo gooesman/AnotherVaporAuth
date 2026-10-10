@@ -1223,5 +1223,34 @@
   "approveScreenInstruction": "Drag around one Steam sign-in QR code · Esc / right-click to cancel",
   "approveScreenNoCode": "No QR code found. Select the complete code with a little space around it and try again.",
   "approveScreenFailed": "Could not capture the screen. Try again or paste the QR code link.",
-  "approveSessionUnavailable": "This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again."
+  "approveSessionUnavailable": "This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again.",
+  "itemMarketActions": "Item market options",
+  "itemMarketViewPrice": "View market price",
+  "itemMarketOpen": "Open Steam Market",
+  "itemMarketVolume": "Recent volume",
+  "itemMarketReferenceNote": "Steam Community Market reference price per item; not seller proceeds. Prices may change.",
+  "itemMarketCurrency": "Currency: {currency}",
+  "itemMarketNoIdentity": "This item has no market listing name.",
+  "itemMarketOpenFailed": "Could not open the Steam Market page.",
+  "@itemMarketCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "steamClientRunning": "Steam is running",
+  "steamClientStopped": "Steam is not running",
+  "steamClientStatusLoading": "Reading Steam status…",
+  "steamClientStatusUnavailable": "Steam status is temporarily unavailable",
+  "steamClientCurrentAccount": "Currently signed in: {account}",
+  "steamClientAccountUnknown": "Current account not yet identified",
+  "steamClientCurrentBadge": "Currently signed in",
+  "@steamClientCurrentAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  }
 }

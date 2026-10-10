@@ -2479,4 +2479,57 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get approveSessionUnavailable =>
       'Este QR ha caducado o no se pudo verificar su información de inicio de sesión. Actualízalo en Steam y vuelve a intentarlo.';
+
+  @override
+  String get itemMarketActions => 'Opciones de mercado del objeto';
+
+  @override
+  String get itemMarketViewPrice => 'Ver precio de mercado';
+
+  @override
+  String get itemMarketOpen => 'Abrir el Mercado de Steam';
+
+  @override
+  String get itemMarketVolume => 'Volumen reciente';
+
+  @override
+  String get itemMarketReferenceNote =>
+      'Precio de referencia por objeto en el Mercado de Steam; no es el importe recibido por el vendedor. Los precios pueden cambiar.';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return 'Moneda: $currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => 'Este objeto no tiene nombre de mercado.';
+
+  @override
+  String get itemMarketOpenFailed =>
+      'No se pudo abrir la página del Mercado de Steam.';
+
+  @override
+  String get steamClientRunning => 'Steam está abierto';
+
+  @override
+  String get steamClientStopped => 'Steam no está abierto';
+
+  @override
+  String get steamClientStatusLoading => 'Consultando el estado de Steam…';
+
+  @override
+  String get steamClientStatusUnavailable =>
+      'El estado de Steam no está disponible temporalmente';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return 'Sesión actual: $account';
+  }
+
+  @override
+  String get steamClientAccountUnknown =>
+      'Aún no se ha identificado la cuenta actual';
+
+  @override
+  String get steamClientCurrentBadge => 'Sesión actual';
 }

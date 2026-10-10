@@ -25,6 +25,19 @@ class SteamClientAccount {
   final bool isMostRecent;
 }
 
+/// A read-only snapshot of the selected desktop installation. A running client
+/// can still be at its login screen, so [activeSteamId] may be unknown/null.
+class SteamClientStatus {
+  const SteamClientStatus({required this.running, this.activeSteamId});
+
+  final bool running;
+
+  /// Present only when the native bridge verified ActiveProcess.pid belongs
+  /// to this installation's live steam.exe and read a nonzero ActiveUser.
+  /// MostRecent and AutoLoginUser are intentionally never used here.
+  final String? activeSteamId;
+}
+
 class SteamSwitchResult {
   const SteamSwitchResult({required this.backupPath});
 
@@ -73,6 +86,7 @@ abstract interface class SteamClientPlatform {
   bool get isSupported;
   Future<String?> discoverPath();
   Future<bool> isRunning(String path);
+  Future<SteamClientStatus> status(String path);
   Future<void> shutdown(String path);
   Future<void> start(String path);
   Future<SteamAutoLogin> readAutoLogin();
@@ -92,6 +106,35 @@ class MethodChannelSteamClientPlatform implements SteamClientPlatform {
   @override
   Future<bool> isRunning(String path) async =>
       await channel.invokeMethod<bool>('isRunning', {'path': path}) ?? true;
+
+  @override
+  Future<SteamClientStatus> status(String path) async {
+    final value = await channel.invokeMapMethod<String, Object?>('readStatus', {
+      'path': path,
+    });
+    final running = value?['running'];
+    if (running is! bool) {
+      throw const SteamClientException(
+        'status_unavailable',
+        'Steam runtime status could not be read.',
+      );
+    }
+    final accountId = value?['activeAccountId'];
+    final verified = running && value?['activeProcessVerified'] == true;
+    // CSteamID public universe + individual account type + desktop instance 1.
+    // Keep the full unsigned 32-bit account ID, including its high bit.
+    const individualSteamIdBase = 76561197960265728;
+    return SteamClientStatus(
+      running: running,
+      activeSteamId:
+          verified &&
+              accountId is int &&
+              accountId > 0 &&
+              accountId <= 0xffffffff
+          ? '${individualSteamIdBase + accountId}'
+          : null,
+    );
+  }
 
   @override
   Future<void> shutdown(String path) =>
@@ -241,6 +284,21 @@ class SteamClientService {
   Future<String?> discoverPath() async {
     _requireSupported();
     return _platform.discoverPath();
+  }
+
+  /// Reads process/ActiveProcess state only. Does not inspect saved credentials
+  /// or assume that a previous switch request completed authentication.
+  Future<SteamClientStatus> status(String path) async {
+    _requireSupported();
+    await _validatePath(path);
+    try {
+      return await _platform.status(path);
+    } catch (_) {
+      throw const SteamClientException(
+        'status_unavailable',
+        'Steam runtime status could not be read.',
+      );
+    }
   }
 
   Future<List<SteamClientAccount>> listAccounts(String path) async {

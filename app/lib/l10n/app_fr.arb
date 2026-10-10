@@ -704,5 +704,20 @@
   "approveScreenInstruction": "Encadrez un QR de connexion Steam · Échap / clic droit pour annuler",
   "approveScreenNoCode": "Aucun QR détecté. Sélectionnez le code entier avec une petite marge et réessayez.",
   "approveScreenFailed": "Impossible de capturer l’écran. Réessayez ou collez le lien du QR.",
-  "approveSessionUnavailable": "Ce QR a expiré ou ses informations de connexion n’ont pas pu être vérifiées. Actualisez-le dans Steam et réessayez."
+  "approveSessionUnavailable": "Ce QR a expiré ou ses informations de connexion n’ont pas pu être vérifiées. Actualisez-le dans Steam et réessayez.",
+  "itemMarketActions": "Options du marché de l’objet",
+  "itemMarketViewPrice": "Voir le prix du marché",
+  "itemMarketOpen": "Ouvrir le marché Steam",
+  "itemMarketVolume": "Volume récent",
+  "itemMarketReferenceNote": "Prix indicatif par objet sur le marché Steam, et non le montant reçu par le vendeur. Les prix peuvent varier.",
+  "itemMarketCurrency": "Devise : {currency}",
+  "itemMarketNoIdentity": "Cet objet n’a pas de nom sur le marché.",
+  "itemMarketOpenFailed": "Impossible d’ouvrir la page du marché Steam.",
+  "steamClientRunning": "Steam est lancé",
+  "steamClientStopped": "Steam n’est pas lancé",
+  "steamClientStatusLoading": "Lecture de l’état de Steam…",
+  "steamClientStatusUnavailable": "L’état de Steam est temporairement indisponible",
+  "steamClientCurrentAccount": "Compte connecté : {account}",
+  "steamClientAccountUnknown": "Compte connecté pas encore identifié",
+  "steamClientCurrentBadge": "Compte connecté"
 }

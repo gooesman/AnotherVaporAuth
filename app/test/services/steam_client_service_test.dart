@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ava/src/core/steam_vdf.dart';
 import 'package:ava/src/services/steam_client_service.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -40,6 +41,7 @@ TypeMatcher<SteamClientException> _code(String code) =>
     isA<SteamClientException>().having((e) => e.code, 'code', code);
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late _Files files;
   late _Platform platform;
   late SteamClientService service;
@@ -52,6 +54,128 @@ void main() {
       platform: platform,
       shutdownTimeout: Duration.zero,
       pollInterval: Duration.zero,
+    );
+  });
+
+  test(
+    'status reads runtime identity without reading or writing login files',
+    () async {
+      // Remembered MostRecent and AutoLoginUser are Alice, while live Steam is Bob.
+      platform.running = true;
+      platform.activeSteamId = _secondId;
+      final status = await service.status(_path);
+      expect(status.running, isTrue);
+      expect(status.activeSteamId, _secondId);
+      expect(files.reads, 0);
+      expect(files.writes, 0);
+      expect(files.backups, isNull);
+      expect(platform.calls, ['status']);
+    },
+  );
+
+  test('status does not assume a saved account is logged in', () async {
+    platform.running = true;
+    final unknown = await service.status(_path);
+    expect(unknown.running, isTrue);
+    expect(unknown.activeSteamId, isNull);
+    platform.running = false;
+    final stopped = await service.status(_path);
+    expect(stopped.running, isFalse);
+    expect(stopped.activeSteamId, isNull);
+    expect(files.reads, 0);
+    expect(files.writes, 0);
+  });
+
+  test(
+    'status errors stay unavailable rather than claiming Steam is stopped',
+    () async {
+      platform.failStatus = true;
+      await expectLater(
+        service.status(_path),
+        throwsA(_code('status_unavailable')),
+      );
+      expect(files.reads, 0);
+      expect(files.writes, 0);
+      files.data.remove(p.join(_path, 'steam.exe'));
+      await expectLater(service.status(_path), throwsA(_code('invalid_path')));
+    },
+  );
+
+  group('native runtime status bridge', () {
+    const channel = MethodChannelSteamClientPlatform.channel;
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final bridge = MethodChannelSteamClientPlatform();
+    Map<String, Object?>? snapshot;
+    final calls = <MethodCall>[];
+
+    setUp(() {
+      calls.clear();
+      snapshot = {
+        'running': true,
+        'activeProcessVerified': true,
+        'activeAccountId': 39734274,
+      };
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        return snapshot;
+      });
+    });
+    tearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+    test(
+      'uses only fixed readStatus method and preserves unsigned account IDs',
+      () async {
+        final status = await bridge.status(_path);
+        expect(status.running, isTrue);
+        expect(status.activeSteamId, _secondId);
+        expect(calls.single.method, 'readStatus');
+        expect(calls.single.arguments, {'path': _path});
+        snapshot!['activeAccountId'] = 0xffffffff;
+        expect((await bridge.status(_path)).activeSteamId, '76561202255233023');
+      },
+    );
+
+    test(
+      'stopped process or unverified PID cannot expose a stale ActiveUser',
+      () async {
+        snapshot!['running'] = false;
+        expect((await bridge.status(_path)).activeSteamId, isNull);
+        snapshot!['running'] = true;
+        snapshot!['activeProcessVerified'] = false;
+        expect((await bridge.status(_path)).activeSteamId, isNull);
+        snapshot!.remove('activeProcessVerified');
+        expect((await bridge.status(_path)).activeSteamId, isNull);
+      },
+    );
+
+    test(
+      'zero, absent, and malformed ActiveUser values stay unknown',
+      () async {
+        for (final id in [null, 0, -1, 0x100000000, '39734274', 123.0, true]) {
+          snapshot!['activeAccountId'] = id;
+          final status = await bridge.status(_path);
+          expect(status.running, isTrue);
+          expect(status.activeSteamId, isNull);
+        }
+      },
+    );
+
+    test(
+      'missing or invalid process state is not converted into stopped',
+      () async {
+        for (final invalid in [
+          null,
+          <String, Object?>{},
+          {'running': 0},
+        ]) {
+          snapshot = invalid;
+          await expectLater(
+            bridge.status(_path),
+            throwsA(_code('status_unavailable')),
+          );
+        }
+      },
     );
   });
 
@@ -396,6 +520,8 @@ class _Platform implements SteamClientPlatform {
   bool exits = true;
   bool failRegistry = false;
   bool failStart = false;
+  bool failStatus = false;
+  String? activeSteamId;
   void Function()? onShutdown;
   void Function()? onStart;
   SteamAutoLogin registry = const SteamAutoLogin(
@@ -410,6 +536,16 @@ class _Platform implements SteamClientPlatform {
   Future<String?> discoverPath() async => _path;
   @override
   Future<bool> isRunning(String path) async => running;
+  @override
+  Future<SteamClientStatus> status(String path) async {
+    calls.add('status');
+    if (failStatus) throw StateError('process query failed');
+    return SteamClientStatus(
+      running: running,
+      activeSteamId: running ? activeSteamId : null,
+    );
+  }
+
   @override
   Future<void> shutdown(String path) async {
     calls.add('shutdown');

@@ -168,6 +168,7 @@ class InventoryClient {
       final d = descByKey['${m['classid']}_${m['instanceid']}'];
       if (d == null) continue;
       final feeApp = d['market_fee'];
+      final rarity = _rarity(d);
       items.add(
         InventoryItem(
           appid: asInt(m['appid']),
@@ -183,6 +184,8 @@ class InventoryClient {
           marketable: asInt(d['marketable']) == 1,
           tradable: asInt(d['tradable']) == 1,
           publisherFeePct: feeApp is num ? feeApp.toDouble() : null,
+          rarityColor: rarity.color,
+          rarityName: rarity.name,
         ),
       );
     }
@@ -191,6 +194,36 @@ class InventoryClient {
       json['last_assetid'] as String?,
       json['more_items'] == 1 || json['more_items'] == true,
     );
+  }
+
+  /// Categories are machine-readable keys; localized names are display-only.
+  /// Prefer the game's rarity tag over quality (e.g. StatTrak), then use its
+  /// item-name color when no usable tag color was provided.
+  static ({String color, String name}) _rarity(Map<String, dynamic> item) {
+    final tags = item['tags'];
+    if (tags is List) {
+      for (final category in const ['rarity', 'quality']) {
+        for (final tag in tags.whereType<Map>()) {
+          final rawCategory = tag['category'];
+          if (rawCategory is! String || rawCategory.toLowerCase() != category) {
+            continue;
+          }
+          final color = _rgbHex(tag['color']);
+          if (color.isEmpty) continue;
+          final name = tag['localized_tag_name'];
+          return (color: color, name: name is String ? name.trim() : '');
+        }
+      }
+    }
+    // name_color is a presentation fallback, not proof of a named rarity.
+    return (color: _rgbHex(item['name_color']), name: '');
+  }
+
+  static String _rgbHex(dynamic raw) {
+    if (raw is! String) return '';
+    final value = raw.trim();
+    if (!RegExp(r'^#?[0-9a-fA-F]{6}$').hasMatch(value)) return '';
+    return value.replaceFirst('#', '').toLowerCase();
   }
 
   /// Extracts a `var <name> = { … };` JSON object from page HTML by matching

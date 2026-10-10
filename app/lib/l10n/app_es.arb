@@ -704,5 +704,20 @@
   "approveScreenInstruction": "Enmarca un QR de inicio de sesión de Steam · Esc / clic derecho para cancelar",
   "approveScreenNoCode": "No se encontró ningún QR. Selecciona el código completo con un pequeño margen y vuelve a intentarlo.",
   "approveScreenFailed": "No se pudo capturar la pantalla. Reinténtalo o pega el enlace del QR.",
-  "approveSessionUnavailable": "Este QR ha caducado o no se pudo verificar su información de inicio de sesión. Actualízalo en Steam y vuelve a intentarlo."
+  "approveSessionUnavailable": "Este QR ha caducado o no se pudo verificar su información de inicio de sesión. Actualízalo en Steam y vuelve a intentarlo.",
+  "itemMarketActions": "Opciones de mercado del objeto",
+  "itemMarketViewPrice": "Ver precio de mercado",
+  "itemMarketOpen": "Abrir el Mercado de Steam",
+  "itemMarketVolume": "Volumen reciente",
+  "itemMarketReferenceNote": "Precio de referencia por objeto en el Mercado de Steam; no es el importe recibido por el vendedor. Los precios pueden cambiar.",
+  "itemMarketCurrency": "Moneda: {currency}",
+  "itemMarketNoIdentity": "Este objeto no tiene nombre de mercado.",
+  "itemMarketOpenFailed": "No se pudo abrir la página del Mercado de Steam.",
+  "steamClientRunning": "Steam está abierto",
+  "steamClientStopped": "Steam no está abierto",
+  "steamClientStatusLoading": "Consultando el estado de Steam…",
+  "steamClientStatusUnavailable": "El estado de Steam no está disponible temporalmente",
+  "steamClientCurrentAccount": "Sesión actual: {account}",
+  "steamClientAccountUnknown": "Aún no se ha identificado la cuenta actual",
+  "steamClientCurrentBadge": "Sesión actual"
 }

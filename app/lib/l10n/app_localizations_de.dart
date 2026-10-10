@@ -2470,4 +2470,56 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get approveSessionUnavailable =>
       'Dieser QR-Code ist abgelaufen oder seine Anmeldedaten konnten nicht geprüft werden. Aktualisiere den Code in Steam und versuche es erneut.';
+
+  @override
+  String get itemMarketActions => 'Marktoptionen des Gegenstands';
+
+  @override
+  String get itemMarketViewPrice => 'Marktpreis ansehen';
+
+  @override
+  String get itemMarketOpen => 'Steam-Markt öffnen';
+
+  @override
+  String get itemMarketVolume => 'Letzte Verkäufe';
+
+  @override
+  String get itemMarketReferenceNote =>
+      'Referenzpreis pro Gegenstand auf dem Steam-Communitymarkt, nicht der Verkäufererlös. Preise können sich ändern.';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return 'Währung: $currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => 'Dieser Gegenstand hat keinen Marktnamen.';
+
+  @override
+  String get itemMarketOpenFailed =>
+      'Die Steam-Marktseite konnte nicht geöffnet werden.';
+
+  @override
+  String get steamClientRunning => 'Steam läuft';
+
+  @override
+  String get steamClientStopped => 'Steam läuft nicht';
+
+  @override
+  String get steamClientStatusLoading => 'Steam-Status wird gelesen…';
+
+  @override
+  String get steamClientStatusUnavailable =>
+      'Steam-Status ist vorübergehend nicht verfügbar';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return 'Aktuell angemeldet: $account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => 'Aktuelles Konto noch nicht erkannt';
+
+  @override
+  String get steamClientCurrentBadge => 'Aktuell angemeldet';
 }

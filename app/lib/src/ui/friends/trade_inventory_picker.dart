@@ -9,8 +9,9 @@ import '../../core/models/steam_item.dart';
 import '../../core/models/trade_draft.dart';
 import '../../core/protocol/inventory_client.dart';
 import '../error_text.dart';
+import '../market/item_market_actions.dart';
 import '../pending/session_retry.dart';
-import '../widgets/steam_image_provider.dart';
+import '../widgets/inventory_item_icon.dart';
 
 class TradeInventoryPicker extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
@@ -221,66 +222,91 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
               child: Text(l.tradeNoItems),
             ),
           for (final entry in _items.entries)
-            Card(
-              child: Column(
-                children: [
-                  CheckboxListTile(
-                    key: ValueKey('asset-${entry.key}'),
-                    value: _selected.containsKey(entry.key),
-                    onChanged:
-                        !_selected.containsKey(entry.key) &&
-                            _selected.length >= 256
-                        ? null
-                        : (selected) => _quantity(
-                            entry.key,
-                            entry.value,
-                            selected == true ? 1 : 0,
-                          ),
-                    title: Text(entry.value.name),
-                    subtitle: Text(
-                      '${entry.value.type}\n${entry.value.assetId}',
-                    ),
-                    secondary: SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: entry.value.iconUrl.isEmpty
-                          ? const Icon(Icons.inventory_2_outlined)
-                          : Image(
-                              image: SteamImageProvider(entry.value.iconUrl),
-                              errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.inventory_2_outlined),
-                            ),
-                    ),
-                  ),
-                  if (_selected.containsKey(entry.key) &&
-                      entry.value.amount > 1)
+            ItemMarketActions(
+              key: ValueKey('market-${entry.key}'),
+              item: entry.value,
+              // Steam embeds the signed-in viewer's wallet even when this
+              // inventory belongs to the trade partner.
+              currency:
+                  _overview?.wallet.currency ?? WalletInfo.fallback.currency,
+              builder: (context, priceLabel, showActions) => Card(
+                child: Column(
+                  children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text(l.tradeQuantity),
-                        IconButton(
-                          onPressed: () => _quantity(
-                            entry.key,
-                            entry.value,
-                            _selected[entry.key]!.amount - 1,
-                          ),
-                          icon: const Icon(Icons.remove),
-                        ),
-                        Text('${_selected[entry.key]!.amount}'),
-                        IconButton(
-                          onPressed:
-                              _selected[entry.key]!.amount >= entry.value.amount
-                              ? null
-                              : () => _quantity(
-                                  entry.key,
-                                  entry.value,
-                                  _selected[entry.key]!.amount + 1,
+                        Expanded(
+                          child: CheckboxListTile(
+                            key: ValueKey('asset-${entry.key}'),
+                            value: _selected.containsKey(entry.key),
+                            onChanged:
+                                !_selected.containsKey(entry.key) &&
+                                    _selected.length >= 256
+                                ? null
+                                : (selected) => _quantity(
+                                    entry.key,
+                                    entry.value,
+                                    selected == true ? 1 : 0,
+                                  ),
+                            title: Text(entry.value.name),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${entry.value.type}\n${entry.value.assetId}',
                                 ),
-                          icon: const Icon(Icons.add),
+                                if (priceLabel != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: priceLabel,
+                                  ),
+                              ],
+                            ),
+                            secondary: InventoryItemIcon(
+                              item: entry.value,
+                              size: 44,
+                            ),
+                          ),
                         ),
+                        IconButton(
+                          key: ValueKey('item-actions-${entry.key}'),
+                          tooltip: l.itemMarketActions,
+                          onPressed: showActions,
+                          icon: const Icon(Icons.more_horiz),
+                        ),
+                        const SizedBox(width: 4),
                       ],
                     ),
-                ],
+                    if (_selected.containsKey(entry.key) &&
+                        entry.value.amount > 1)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(l.tradeQuantity),
+                          IconButton(
+                            onPressed: () => _quantity(
+                              entry.key,
+                              entry.value,
+                              _selected[entry.key]!.amount - 1,
+                            ),
+                            icon: const Icon(Icons.remove),
+                          ),
+                          Text('${_selected[entry.key]!.amount}'),
+                          IconButton(
+                            onPressed:
+                                _selected[entry.key]!.amount >=
+                                    entry.value.amount
+                                ? null
+                                : () => _quantity(
+                                    entry.key,
+                                    entry.value,
+                                    _selected[entry.key]!.amount + 1,
+                                  ),
+                            icon: const Icon(Icons.add),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
           if (_loading)

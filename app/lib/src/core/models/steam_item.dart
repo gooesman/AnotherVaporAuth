@@ -102,6 +102,11 @@ class InventoryItem {
   final bool marketable;
   final bool tradable;
   final double? publisherFeePct; // per-item override, if any
+  /// Steam's RGB hex color, without '#'. Empty when no valid color is supplied.
+  final String rarityColor;
+
+  /// Localized rarity/quality label supplied by Steam, never inferred from name.
+  final String rarityName;
 
   const InventoryItem({
     required this.appid,
@@ -117,6 +122,8 @@ class InventoryItem {
     required this.marketable,
     required this.tradable,
     this.publisherFeePct,
+    this.rarityColor = '',
+    this.rarityName = '',
   });
 }
 

@@ -3,7 +3,7 @@
 ## Sign in by selecting Steam's QR code on screen
 
 Open an account's overview and choose **Switch Steam account**, or use the
-existing account menu / Settings entry. The top card lets you choose an AVA
+existing account menu / Settings entry. The QR sign-in card lets you choose an AVA
 account and open **Sign in with an AVA account**, even if Steam has never
 remembered that account on this PC.
 
@@ -71,6 +71,15 @@ have no authenticator in AVA.
 
 ## Trying the preview
 
+The switcher shows whether the selected Steam installation is running. When the
+active process and its local account ID can be verified, it displays the current
+account and marks its matching row. A remembered/most-recent account is never
+presented as the current login just because it was used previously. If the
+active account cannot be identified, the UI says so; this does not establish
+whether Steam's servers consider the client online. Refresh updates the status,
+as do returning to the page after QR login, completing an account switch, and
+bringing AVA back to the foreground while this page is open.
+
 1. Extract the complete Windows preview ZIP to its own directory. Keep the
    `data` folder and DLLs beside `ava.exe`.
 2. Unlock AVA, right-click an account, and choose **Switch Steam account**. The
@@ -119,3 +128,26 @@ The Windows preview workflow analyzes, tests, and compiles the full application.
 Real two-account switching, expired credentials, and behavior after future
 Steam client updates still require a manual check on a suitable Steam setup.
 The Android interface does not expose this Windows-only action.
+
+## Inventory rarity and read-only market prices
+
+Inventory thumbnails and trade selections use a thin rarity-colored border and
+a faint tint, retaining the existing skin and selection styling. Colors come
+from Steam's Rarity/Quality tags, with its item-name color as a fallback. Missing
+or malformed colors keep a neutral frame; localized names are not used to guess
+rarity.
+
+Right-click an item on desktop, long-press on mobile, or choose its **…** menu to
+view a Steam market reference or open the exact market listing. A lookup shows
+the available lowest price, median and recent volume, with the requested currency.
+It also leaves a compact reference below that item's name. This is a single-item
+market quote, not the seller's net proceeds or a guaranteed trade valuation.
+Temporarily unmarketable items can still be queried when they have a market name.
+Unavailable quotes are shown as unavailable, never invented as a zero price.
+
+Prices are requested only when chosen, with identical requests combined and
+memory-only caching (five minutes for quotes, thirty seconds for failures).
+Reopening the price action after expiry fetches a fresh quote; displayed labels
+are not continuously polled. Queries are keyed by game, exact market name,
+currency and language. These actions do not select items, submit offers or list
+items for sale.

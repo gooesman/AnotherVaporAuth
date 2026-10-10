@@ -1,7 +1,7 @@
 /// Steam's wallet and market amounts use hundredths even for currencies whose
 /// ordinary cash denomination has no decimals. Unknown currency IDs are shown
 /// explicitly instead of silently being presented as USD.
-String formatSteamMoney(int minor, int currency) {
+String steamCurrencyCode(int currency) {
   const codes = {
     1: 'USD',
     2: 'GBP',
@@ -36,8 +36,12 @@ String formatSteamMoney(int minor, int currency) {
     31: 'SAR',
     32: 'AED',
   };
+  return codes[currency] ?? 'Steam #$currency';
+}
+
+String formatSteamMoney(int minor, int currency) {
   final magnitude = minor.abs();
   final amount =
       '${minor < 0 ? '-' : ''}${magnitude ~/ 100}.${(magnitude % 100).toString().padLeft(2, '0')}';
-  return '${codes[currency] ?? 'Steam #$currency'} $amount';
+  return '${steamCurrencyCode(currency)} $amount';
 }

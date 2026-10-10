@@ -774,5 +774,20 @@
   "approveScreenInstruction": "Einen Steam-Anmelde-QR-Code einrahmen · Esc / Rechtsklick zum Abbrechen",
   "approveScreenNoCode": "Kein QR-Code gefunden. Wähle den vollständigen Code mit etwas Rand aus und versuche es erneut.",
   "approveScreenFailed": "Bildschirmaufnahme fehlgeschlagen. Versuche es erneut oder füge den QR-Link ein.",
-  "approveSessionUnavailable": "Dieser QR-Code ist abgelaufen oder seine Anmeldedaten konnten nicht geprüft werden. Aktualisiere den Code in Steam und versuche es erneut."
+  "approveSessionUnavailable": "Dieser QR-Code ist abgelaufen oder seine Anmeldedaten konnten nicht geprüft werden. Aktualisiere den Code in Steam und versuche es erneut.",
+  "itemMarketActions": "Marktoptionen des Gegenstands",
+  "itemMarketViewPrice": "Marktpreis ansehen",
+  "itemMarketOpen": "Steam-Markt öffnen",
+  "itemMarketVolume": "Letzte Verkäufe",
+  "itemMarketReferenceNote": "Referenzpreis pro Gegenstand auf dem Steam-Communitymarkt, nicht der Verkäufererlös. Preise können sich ändern.",
+  "itemMarketCurrency": "Währung: {currency}",
+  "itemMarketNoIdentity": "Dieser Gegenstand hat keinen Marktnamen.",
+  "itemMarketOpenFailed": "Die Steam-Marktseite konnte nicht geöffnet werden.",
+  "steamClientRunning": "Steam läuft",
+  "steamClientStopped": "Steam läuft nicht",
+  "steamClientStatusLoading": "Steam-Status wird gelesen…",
+  "steamClientStatusUnavailable": "Steam-Status ist vorübergehend nicht verfügbar",
+  "steamClientCurrentAccount": "Aktuell angemeldet: {account}",
+  "steamClientAccountUnknown": "Aktuelles Konto noch nicht erkannt",
+  "steamClientCurrentBadge": "Aktuell angemeldet"
 }

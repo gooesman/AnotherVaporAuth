@@ -70,6 +70,13 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   verification can be disabled in Settings while keeping account files encrypted at rest.
   The Android preview is a separate **AVA dev** app with its own data.
 
+- **Inventory rarity and prices (branch preview)** — restrained rarity-colored
+  icon borders in the inventory and trade picker. Right-click, long-press or
+  use the item menu for a read-only Steam price reference and market-page link.
+  Prices load on demand, include their currency, and do not change item selection.
+  The Windows account switcher also shows Steam's running state and an account
+  verified against the active local Steam process, when it can be identified.
+
 - **maFile compatible** — reads/writes the legacy `.maFile` format
   (PBKDF2/SHA1 + AES-256-CBC), so existing accounts migrate with no changes.
   Also imports a whole Steam Desktop Authenticator `maFiles/` folder — **including
@@ -158,7 +165,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 914 tests
+flutter test                       # 958 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

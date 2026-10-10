@@ -774,5 +774,20 @@
   "approveScreenInstruction": "拖曳框選一個 Steam 登入 QR 碼 · Esc / 右鍵取消",
   "approveScreenNoCode": "未辨識到 QR 碼。請框選完整 QR 碼，保留少許周圍空白後重試。",
   "approveScreenFailed": "無法擷取螢幕，請重試或貼上 QR 碼連結。",
-  "approveSessionUnavailable": "此 QR 碼已過期或無法核實登入資訊，請在 Steam 重新整理 QR 碼後重試。"
+  "approveSessionUnavailable": "此 QR 碼已過期或無法核實登入資訊，請在 Steam 重新整理 QR 碼後重試。",
+  "itemMarketActions": "物品市集選項",
+  "itemMarketViewPrice": "查看市集價格",
+  "itemMarketOpen": "在 Steam 市集查看",
+  "itemMarketVolume": "近期成交量",
+  "itemMarketReferenceNote": "Steam 市集單件參考價，非出售實收；價格會變動。",
+  "itemMarketCurrency": "幣別：{currency}",
+  "itemMarketNoIdentity": "此物品沒有可用於查價的市集名稱。",
+  "itemMarketOpenFailed": "無法開啟 Steam 市集頁面。",
+  "steamClientRunning": "Steam 已啟動",
+  "steamClientStopped": "Steam 未啟動",
+  "steamClientStatusLoading": "正在讀取 Steam 狀態…",
+  "steamClientStatusUnavailable": "暫時無法讀取 Steam 狀態",
+  "steamClientCurrentAccount": "目前登入：{account}",
+  "steamClientAccountUnknown": "尚未辨識目前登入帳戶",
+  "steamClientCurrentBadge": "目前登入"
 }

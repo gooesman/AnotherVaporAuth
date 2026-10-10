@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
+import 'package:ava/src/app/theme.dart';
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_friend.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
@@ -107,6 +108,7 @@ Future<void> _show(
         tradeOffersClientProvider.overrideWithValue(trade),
       ],
       child: MaterialApp(
+        theme: buildAvaTheme(AvaThemeVariant.light),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),

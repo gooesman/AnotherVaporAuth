@@ -12,6 +12,8 @@ import '../../core/steam_currency.dart';
 import '../../services/auto_login.dart';
 import '../../services/steam_api_client.dart' show CommunityAuthException;
 import '../pending/session_retry.dart';
+import '../widgets/inventory_item_icon.dart';
+import 'item_market_actions.dart';
 import 'sell_sheet.dart';
 import '../error_text.dart';
 
@@ -365,7 +367,11 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         maxCrossAxisExtent: context.r(110),
         mainAxisSpacing: context.r(10),
         crossAxisSpacing: context.r(10),
-        childAspectRatio: 0.82,
+        // Reserve thumbnail space even when names, status and a price are
+        // shown together with the user's larger text setting.
+        mainAxisExtent:
+            context.r(90) +
+            MediaQuery.textScalerOf(context).scale(context.r(70)),
       ),
       itemCount: _stacks.length + (footer ? 1 : 0),
       itemBuilder: (context, i) {
@@ -379,7 +385,11 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           );
         }
         return _ItemTile(
+          key: ValueKey(
+            'inventory-${_stacks[i].item.appid}-${_stacks[i].item.contextId}-${_stacks[i].item.assetId}',
+          ),
           stack: _stacks[i],
+          currency: _overview!.wallet.currency,
           onTap: _stacks[i].item.marketable
               ? () => _openSell(_stacks[i])
               : null,
@@ -399,77 +409,105 @@ class ItemStack {
 
 class _ItemTile extends StatelessWidget {
   final ItemStack stack;
+  final int currency;
   final VoidCallback? onTap;
-  const _ItemTile({required this.stack, this.onTap});
+  const _ItemTile({
+    super.key,
+    required this.stack,
+    required this.currency,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final l = AppLocalizations.of(context);
     final item = stack.item;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(t.radiusSm),
-      child: Opacity(
-        opacity: item.marketable ? 1 : 0.45,
-        child: Stack(
-          children: [
-            Container(
-              padding: context.rInsets(all: 6),
-              decoration: BoxDecoration(
-                color: t.panel2.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(t.radiusSm),
-                border: Border.all(color: t.line, width: t.borderWidth),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: item.iconUrl.isEmpty
-                        ? const SizedBox.shrink()
-                        : Image.network(
-                            item.iconUrl,
-                            fit: BoxFit.contain,
-                            cacheWidth: context.rCache(110),
-                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+    return ItemMarketActions(
+      item: item,
+      currency: currency,
+      builder: (context, priceLabel, showActions) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(t.radiusSm),
+        child: Container(
+          padding: context.rInsets(all: 6),
+          decoration: BoxDecoration(
+            color: t.panel2.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(t.radiusSm),
+            border: Border.all(color: t.line, width: t.borderWidth),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: InventoryItemIcon(item: item)),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                        tooltip: l.itemMarketActions,
+                        onPressed: showActions,
+                        icon: const Icon(Icons.more_horiz),
+                        iconSize: context.r(18),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints.tightFor(
+                          width: context.r(28),
+                          height: context.r(28),
+                        ),
+                        style: IconButton.styleFrom(
+                          foregroundColor: t.muted,
+                          backgroundColor: t.panel.withValues(alpha: 0.9),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(t.radiusSm),
                           ),
-                  ),
-                  SizedBox(height: context.r(4)),
-                  Text(
-                    item.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: t.text, fontSize: context.r(10.5)),
-                  ),
-                  if (!item.marketable)
-                    Text(
-                      l.marketNotMarketable,
-                      style: TextStyle(color: t.muted, fontSize: context.r(9)),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
                     ),
-                ],
-              ),
-            ),
-            if (stack.count > 1)
-              Positioned(
-                top: context.r(4),
-                right: context.r(4),
-                child: Container(
-                  padding: context.rInsets(h: 6, v: 2),
-                  decoration: BoxDecoration(
-                    color: t.accent,
-                    borderRadius: BorderRadius.circular(t.radiusSm),
-                  ),
-                  child: Text(
-                    '×${stack.count}',
-                    style: TextStyle(
-                      color: const Color(0xFF06060F),
-                      fontSize: context.r(11),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                    if (stack.count > 1)
+                      Positioned(
+                        bottom: context.r(2),
+                        right: context.r(2),
+                        child: Container(
+                          padding: context.rInsets(h: 5, v: 1),
+                          decoration: BoxDecoration(
+                            color: t.panel.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(t.radiusSm),
+                          ),
+                          child: Text(
+                            '×${stack.count}',
+                            style: TextStyle(
+                              color: t.text,
+                              fontSize: context.r(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-          ],
+              SizedBox(height: context.r(4)),
+              Text(
+                item.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: t.text, fontSize: context.r(10.5)),
+              ),
+              if (priceLabel != null) ...[
+                SizedBox(height: context.r(2)),
+                priceLabel,
+              ],
+              if (!item.marketable)
+                Text(
+                  l.marketNotMarketable,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: t.muted, fontSize: context.r(9)),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -44,7 +44,120 @@ String _page(Map<String, dynamic> apps, [Map<String, dynamic>? wallet]) =>
     'var g_rgAppContextData = ${jsonEncode(apps)};\n'
     'var g_rgWalletInfo = ${jsonEncode(wallet ?? {'success': false})};';
 
+Future<InventoryItem> _item(Map<String, dynamic> description) async {
+  final api = _InventoryApi()
+    ..json = {
+      'success': 1,
+      'assets': [
+        {
+          'appid': 730,
+          'contextid': '2',
+          'assetid': '123',
+          'classid': '456',
+          'instanceid': '0',
+          'amount': '1',
+        },
+      ],
+      'descriptions': [
+        {'classid': '456', 'instanceid': '0', ...description},
+      ],
+    };
+  return (await InventoryClient(api).items(_account(), 730, '2')).items.single;
+}
+
 void main() {
+  test(
+    'rarity tag takes precedence over quality regardless of order',
+    () async {
+      final item = await _item({
+        'name_color': 'ffffff',
+        'tags': [
+          {
+            'category': 'Quality',
+            'color': 'CF6A32',
+            'localized_tag_name': 'StatTrak™',
+          },
+          {'category': 'Rarity', 'color': '8847FF', 'localized_tag_name': '受限'},
+        ],
+      });
+      expect(item.rarityColor, '8847ff');
+      expect(item.rarityName, '受限');
+    },
+  );
+
+  test('missing rarity color falls back to valid quality metadata', () async {
+    final item = await _item({
+      'tags': [
+        {'category': 'Rarity', 'localized_tag_name': 'Rare'},
+        {
+          'category': 'quality',
+          'color': '#4B69FF',
+          'localized_tag_name': ' Unique ',
+        },
+      ],
+    });
+    expect(item.rarityColor, '4b69ff');
+    expect(item.rarityName, 'Unique');
+  });
+
+  test(
+    'name color fallback does not invent a rarity from localized text',
+    () async {
+      final item = await _item({
+        'name': 'StatTrak™ Knife',
+        'type': 'Covert Knife',
+        'name_color': 'eb4b4b',
+        'tags': [
+          {
+            'category': 'Weapon',
+            'color': '8847ff',
+            'localized_category_name': 'Rarity',
+            'localized_tag_name': 'Covert',
+          },
+        ],
+      });
+      expect(item.rarityColor, 'eb4b4b');
+      expect(item.rarityName, isEmpty);
+    },
+  );
+
+  test(
+    'malformed optional tags and colors cannot break inventory loading',
+    () async {
+      for (final raw in [
+        null,
+        123,
+        {},
+        'not-a-list',
+        <Object?>[null, 1],
+      ]) {
+        final item = await _item({'tags': raw, 'name_color': 'b0c3d9'});
+        expect(item.rarityColor, 'b0c3d9');
+        expect(item.rarityName, isEmpty);
+      }
+      for (final color in [null, 123, 'red', 'ffffff00', '#fff', 'xyzxyz']) {
+        final item = await _item({
+          'name_color': color,
+          'tags': [
+            {'category': 42, 'color': 'ff0000'},
+            {'category': 'Rarity', 'color': color, 'localized_tag_name': {}},
+          ],
+        });
+        expect(item.rarityColor, isEmpty);
+        expect(item.rarityName, isEmpty);
+      }
+    },
+  );
+
+  test(
+    'missing metadata remains neutral instead of assuming a CS2 rarity',
+    () async {
+      final item = await _item({'name': '军规级', 'type': 'Mil-Spec Grade'});
+      expect(item.rarityColor, isEmpty);
+      expect(item.rarityName, isEmpty);
+    },
+  );
+
   test(
     'same game retains distinct contexts and exposes Steam context names',
     () async {

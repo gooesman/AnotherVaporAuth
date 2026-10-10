@@ -704,5 +704,20 @@
   "approveScreenInstruction": "Обведите один QR-код входа в Steam · Esc / правая кнопка для отмены",
   "approveScreenNoCode": "QR-код не найден. Выделите код целиком с небольшим полем и повторите попытку.",
   "approveScreenFailed": "Не удалось захватить экран. Повторите попытку или вставьте ссылку QR-кода.",
-  "approveSessionUnavailable": "QR-код устарел или данные входа не удалось проверить. Обновите код в Steam и повторите попытку."
+  "approveSessionUnavailable": "QR-код устарел или данные входа не удалось проверить. Обновите код в Steam и повторите попытку.",
+  "itemMarketActions": "Действия с предметом на рынке",
+  "itemMarketViewPrice": "Посмотреть рыночную цену",
+  "itemMarketOpen": "Открыть Торговую площадку Steam",
+  "itemMarketVolume": "Недавний объём продаж",
+  "itemMarketReferenceNote": "Справочная цена одного предмета на Торговой площадке Steam, а не сумма для продавца. Цены могут меняться.",
+  "itemMarketCurrency": "Валюта: {currency}",
+  "itemMarketNoIdentity": "У этого предмета нет названия на Торговой площадке.",
+  "itemMarketOpenFailed": "Не удалось открыть страницу Торговой площадки Steam.",
+  "steamClientRunning": "Steam запущен",
+  "steamClientStopped": "Steam не запущен",
+  "steamClientStatusLoading": "Проверка состояния Steam…",
+  "steamClientStatusUnavailable": "Состояние Steam временно недоступно",
+  "steamClientCurrentAccount": "Текущий аккаунт: {account}",
+  "steamClientAccountUnknown": "Текущий аккаунт пока не определён",
+  "steamClientCurrentBadge": "Текущий аккаунт"
 }

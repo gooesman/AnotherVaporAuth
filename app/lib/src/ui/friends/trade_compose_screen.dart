@@ -11,6 +11,7 @@ import '../../services/steam_api_client.dart';
 import '../error_text.dart';
 import '../pending/session_retry.dart';
 import '../pending/pending_screen.dart';
+import '../widgets/inventory_item_icon.dart';
 import 'trade_inventory_picker.dart';
 
 class TradeComposeScreen extends ConsumerStatefulWidget {
@@ -244,6 +245,7 @@ class _TradeComposeScreenState extends ConsumerState<TradeComposeScreen>
             for (final selection in selections)
               ListTile(
                 contentPadding: EdgeInsets.zero,
+                leading: InventoryItemIcon(item: selection.item, size: 40),
                 title: Text(selection.item.name),
                 subtitle: Text('× ${selection.amount}'),
                 trailing: IconButton(

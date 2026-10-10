@@ -2534,4 +2534,57 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get approveSessionUnavailable =>
       'QR-код устарел или данные входа не удалось проверить. Обновите код в Steam и повторите попытку.';
+
+  @override
+  String get itemMarketActions => 'Действия с предметом на рынке';
+
+  @override
+  String get itemMarketViewPrice => 'Посмотреть рыночную цену';
+
+  @override
+  String get itemMarketOpen => 'Открыть Торговую площадку Steam';
+
+  @override
+  String get itemMarketVolume => 'Недавний объём продаж';
+
+  @override
+  String get itemMarketReferenceNote =>
+      'Справочная цена одного предмета на Торговой площадке Steam, а не сумма для продавца. Цены могут меняться.';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return 'Валюта: $currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity =>
+      'У этого предмета нет названия на Торговой площадке.';
+
+  @override
+  String get itemMarketOpenFailed =>
+      'Не удалось открыть страницу Торговой площадки Steam.';
+
+  @override
+  String get steamClientRunning => 'Steam запущен';
+
+  @override
+  String get steamClientStopped => 'Steam не запущен';
+
+  @override
+  String get steamClientStatusLoading => 'Проверка состояния Steam…';
+
+  @override
+  String get steamClientStatusUnavailable =>
+      'Состояние Steam временно недоступно';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return 'Текущий аккаунт: $account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => 'Текущий аккаунт пока не определён';
+
+  @override
+  String get steamClientCurrentBadge => 'Текущий аккаунт';
 }

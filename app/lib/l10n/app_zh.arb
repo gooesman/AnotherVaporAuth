@@ -1135,5 +1135,20 @@
   "approveScreenInstruction": "拖动框选一个 Steam 登录二维码 · Esc / 右键取消",
   "approveScreenNoCode": "未识别到二维码。请框选完整二维码，保留少许周围空白后重试。",
   "approveScreenFailed": "无法截取屏幕，请重试或粘贴二维码链接。",
-  "approveSessionUnavailable": "此二维码已过期或无法核实登录信息，请在 Steam 刷新二维码后重试。"
+  "approveSessionUnavailable": "此二维码已过期或无法核实登录信息，请在 Steam 刷新二维码后重试。",
+  "itemMarketActions": "物品市场选项",
+  "itemMarketViewPrice": "查看市场价格",
+  "itemMarketOpen": "在 Steam 市场查看",
+  "itemMarketVolume": "近期成交量",
+  "itemMarketReferenceNote": "Steam 市场单件参考价，非卖出实收；价格会变动。",
+  "itemMarketCurrency": "币种：{currency}",
+  "itemMarketNoIdentity": "此物品没有可用于查价的市场名称。",
+  "itemMarketOpenFailed": "无法打开 Steam 市场页面。",
+  "steamClientRunning": "Steam 已启动",
+  "steamClientStopped": "Steam 未启动",
+  "steamClientStatusLoading": "正在读取 Steam 状态…",
+  "steamClientStatusUnavailable": "暂时无法读取 Steam 状态",
+  "steamClientCurrentAccount": "当前登录：{account}",
+  "steamClientAccountUnknown": "当前登录账户尚未识别",
+  "steamClientCurrentBadge": "当前登录"
 }

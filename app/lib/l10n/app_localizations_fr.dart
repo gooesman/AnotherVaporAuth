@@ -2486,4 +2486,57 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get approveSessionUnavailable =>
       'Ce QR a expiré ou ses informations de connexion n’ont pas pu être vérifiées. Actualisez-le dans Steam et réessayez.';
+
+  @override
+  String get itemMarketActions => 'Options du marché de l’objet';
+
+  @override
+  String get itemMarketViewPrice => 'Voir le prix du marché';
+
+  @override
+  String get itemMarketOpen => 'Ouvrir le marché Steam';
+
+  @override
+  String get itemMarketVolume => 'Volume récent';
+
+  @override
+  String get itemMarketReferenceNote =>
+      'Prix indicatif par objet sur le marché Steam, et non le montant reçu par le vendeur. Les prix peuvent varier.';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return 'Devise : $currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => 'Cet objet n’a pas de nom sur le marché.';
+
+  @override
+  String get itemMarketOpenFailed =>
+      'Impossible d’ouvrir la page du marché Steam.';
+
+  @override
+  String get steamClientRunning => 'Steam est lancé';
+
+  @override
+  String get steamClientStopped => 'Steam n’est pas lancé';
+
+  @override
+  String get steamClientStatusLoading => 'Lecture de l’état de Steam…';
+
+  @override
+  String get steamClientStatusUnavailable =>
+      'L’état de Steam est temporairement indisponible';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return 'Compte connecté : $account';
+  }
+
+  @override
+  String get steamClientAccountUnknown =>
+      'Compte connecté pas encore identifié';
+
+  @override
+  String get steamClientCurrentBadge => 'Compte connecté';
 }

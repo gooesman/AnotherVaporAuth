@@ -22,6 +22,7 @@ using Map = flutter::EncodableMap;
 using Result = flutter::MethodResult<Value>;
 
 constexpr wchar_t kSteamKey[] = L"Software\\Valve\\Steam";
+constexpr wchar_t kSteamActiveProcessKey[] = L"Software\\Valve\\Steam\\ActiveProcess";
 constexpr wchar_t kAutoLoginUser[] = L"AutoLoginUser";
 constexpr wchar_t kRememberPassword[] = L"RememberPassword";
 constexpr DWORD kMaxRegistryBytes = 65536;
@@ -309,7 +310,8 @@ bool PathArgument(const Map& arguments, std::wstring* executable, Error* error) 
           ValidateDirectory(directory, executable, error);
 }
 
-bool IsRunning(const std::wstring& executable, bool* running, Error* error) {
+bool IsRunning(const std::wstring& executable, bool* running, Error* error,
+               bool include_helpers = true) {
   *running = false;
   Handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
   if (snapshot.get() == INVALID_HANDLE_VALUE) {
@@ -333,7 +335,8 @@ bool IsRunning(const std::wstring& executable, bool* running, Error* error) {
   }
   do {
     const bool steam = EqualPath(entry.szExeFile, L"steam.exe");
-    const bool helper = EqualPath(entry.szExeFile, L"steamwebhelper.exe");
+    const bool helper = include_helpers &&
+        EqualPath(entry.szExeFile, L"steamwebhelper.exe");
     if (!steam && !helper) {
       continue;
     }
@@ -383,6 +386,82 @@ bool IsRunning(const std::wstring& executable, bool* running, Error* error) {
     return false;
   }
   return true;
+}
+
+std::optional<DWORD> ReadStatusDword(HKEY key, const wchar_t* name) {
+  RegistryValue value;
+  Error ignored;
+  if (!ReadRegistryValue(key, name, &value, &ignored) || !value.exists ||
+      value.type != REG_DWORD || value.bytes.size() != sizeof(DWORD)) {
+    return std::nullopt;
+  }
+  DWORD number = 0;
+  memcpy(&number, value.bytes.data(), sizeof(number));
+  return number;
+}
+
+void ReadStatus(const std::wstring& executable, Result* result) {
+  bool running = false;
+  Error error;
+  // The status label describes the client itself. Orphaned web helpers must
+  // still block switching writes, but do not mean the client is open.
+  if (!IsRunning(executable, &running, &error, false)) {
+    ReportError(result, error);
+    return;
+  }
+  Map values{{Value("running"), Value(running)},
+             {Value("activeProcessVerified"), Value(false)},
+             {Value("activeAccountId"), Value()}};
+  const auto unknown = [&]() { result->Success(Value(values)); };
+  if (!running) {
+    unknown();
+    return;
+  }
+
+  // This registry key and the two value names are fixed; Dart cannot request
+  // arbitrary registry/process reads. Windows value names are case-insensitive
+  // (Steam versions have used both pid and PID).
+  RegistryKey key;
+  if (RegOpenKeyExW(HKEY_CURRENT_USER, kSteamActiveProcessKey, 0,
+                   KEY_QUERY_VALUE, &key.value) != ERROR_SUCCESS) {
+    unknown();
+    return;
+  }
+  const auto pid = ReadStatusDword(key.value, L"pid");
+  const auto account_id = ReadStatusDword(key.value, L"ActiveUser");
+  if (!pid || *pid == 0 || !account_id || *account_id == 0) {
+    unknown();
+    return;
+  }
+  Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE,
+                             FALSE, *pid));
+  if (process.get() == nullptr ||
+      WaitForSingleObject(process.get(), 0) != WAIT_TIMEOUT) {
+    unknown();
+    return;
+  }
+  std::vector<wchar_t> buffer(32768);
+  DWORD length = static_cast<DWORD>(buffer.size());
+  std::wstring image_path;
+  if (!QueryFullProcessImageNameW(process.get(), 0, buffer.data(), &length) ||
+      !CanonicalFile(std::wstring(buffer.data(), length), &image_path, &error) ||
+      !EqualPath(image_path, executable)) {
+    // A stale/reused PID, another installation, or an inaccessible process
+    // cannot establish who is logged in to the selected Steam installation.
+    unknown();
+    return;
+  }
+  // Hold the process handle and recheck both DWORDs after path verification.
+  // If Steam switched/exited mid-read, report unknown instead of an old user.
+  if (ReadStatusDword(key.value, L"pid") != pid ||
+      ReadStatusDword(key.value, L"ActiveUser") != account_id ||
+      WaitForSingleObject(process.get(), 0) != WAIT_TIMEOUT) {
+    unknown();
+    return;
+  }
+  values[Value("activeProcessVerified")] = Value(true);
+  values[Value("activeAccountId")] = Value(static_cast<int64_t>(*account_id));
+  result->Success(Value(values));
 }
 
 bool LaunchSteam(const std::wstring& executable, bool shutdown, Error* error) {
@@ -850,7 +929,8 @@ void HandleMethod(const flutter::MethodCall<Value>& call,
     ReadAutoLogin(result.get());
     return;
   }
-  if (call.method_name() != "isRunning" && call.method_name() != "shutdown" &&
+  if (call.method_name() != "isRunning" && call.method_name() != "readStatus" &&
+      call.method_name() != "shutdown" &&
       call.method_name() != "start" && call.method_name() != "writeAutoLogin" &&
       call.method_name() != "secureDirectory" && call.method_name() != "replaceFile") {
     result->NotImplemented();
@@ -878,6 +958,10 @@ void HandleMethod(const flutter::MethodCall<Value>& call,
   std::wstring executable;
   if (!PathArgument(*arguments, &executable, &error)) {
     ReportError(result.get(), error);
+    return;
+  }
+  if (call.method_name() == "readStatus") {
+    ReadStatus(executable, result.get());
     return;
   }
   if (call.method_name() == "isRunning") {

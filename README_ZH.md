@@ -56,6 +56,10 @@
   和 Steam 官方备用登录码入口。设置中可关闭启动身份验证，账户文件仍保持加密。
   Android 试用包为独立的 **AVA dev**，不覆盖已安装版本；详见[试用说明](docs/windows-steam-switch.md)。
 
+- **库存品质与查价（本分支试用功能）** —— 库存和交易选物图标增加淡品质色细边框。
+  右键、长按或点击物品菜单可按需查看 Steam 市场参考价与币种，并打开对应市场页面，
+  不改变物品勾选。Windows 账号切换页同时显示 Steam 是否运行；能核实本机活动进程时显示当前账号。
+
 - **Windows Steam 账号切换（本分支试用功能）** —— 从账户概览、设置页或账号右键菜单选择
   本机已记住登录信息的 Steam 账号，正常退出并重启 Steam；修改前备份设置，
   同页也可选择 AVA 账号，拖框识别电脑屏幕上的 Steam 登录二维码，核对后批准登录；
@@ -112,7 +116,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 914 项测试
+flutter test                       # 958 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。

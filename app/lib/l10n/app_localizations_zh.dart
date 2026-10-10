@@ -2321,6 +2321,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get approveSessionUnavailable => '此二维码已过期或无法核实登录信息，请在 Steam 刷新二维码后重试。';
+
+  @override
+  String get itemMarketActions => '物品市场选项';
+
+  @override
+  String get itemMarketViewPrice => '查看市场价格';
+
+  @override
+  String get itemMarketOpen => '在 Steam 市场查看';
+
+  @override
+  String get itemMarketVolume => '近期成交量';
+
+  @override
+  String get itemMarketReferenceNote => 'Steam 市场单件参考价，非卖出实收；价格会变动。';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return '币种：$currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => '此物品没有可用于查价的市场名称。';
+
+  @override
+  String get itemMarketOpenFailed => '无法打开 Steam 市场页面。';
+
+  @override
+  String get steamClientRunning => 'Steam 已启动';
+
+  @override
+  String get steamClientStopped => 'Steam 未启动';
+
+  @override
+  String get steamClientStatusLoading => '正在读取 Steam 状态…';
+
+  @override
+  String get steamClientStatusUnavailable => '暂时无法读取 Steam 状态';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return '当前登录：$account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => '当前登录账户尚未识别';
+
+  @override
+  String get steamClientCurrentBadge => '当前登录';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -4648,4 +4697,53 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get approveSessionUnavailable =>
       '此 QR 碼已過期或無法核實登入資訊，請在 Steam 重新整理 QR 碼後重試。';
+
+  @override
+  String get itemMarketActions => '物品市集選項';
+
+  @override
+  String get itemMarketViewPrice => '查看市集價格';
+
+  @override
+  String get itemMarketOpen => '在 Steam 市集查看';
+
+  @override
+  String get itemMarketVolume => '近期成交量';
+
+  @override
+  String get itemMarketReferenceNote => 'Steam 市集單件參考價，非出售實收；價格會變動。';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return '幣別：$currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => '此物品沒有可用於查價的市集名稱。';
+
+  @override
+  String get itemMarketOpenFailed => '無法開啟 Steam 市集頁面。';
+
+  @override
+  String get steamClientRunning => 'Steam 已啟動';
+
+  @override
+  String get steamClientStopped => 'Steam 未啟動';
+
+  @override
+  String get steamClientStatusLoading => '正在讀取 Steam 狀態…';
+
+  @override
+  String get steamClientStatusUnavailable => '暫時無法讀取 Steam 狀態';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return '目前登入：$account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => '尚未辨識目前登入帳戶';
+
+  @override
+  String get steamClientCurrentBadge => '目前登入';
 }

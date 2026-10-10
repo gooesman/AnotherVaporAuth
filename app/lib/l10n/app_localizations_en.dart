@@ -2452,4 +2452,55 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get approveSessionUnavailable =>
       'This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again.';
+
+  @override
+  String get itemMarketActions => 'Item market options';
+
+  @override
+  String get itemMarketViewPrice => 'View market price';
+
+  @override
+  String get itemMarketOpen => 'Open Steam Market';
+
+  @override
+  String get itemMarketVolume => 'Recent volume';
+
+  @override
+  String get itemMarketReferenceNote =>
+      'Steam Community Market reference price per item; not seller proceeds. Prices may change.';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return 'Currency: $currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => 'This item has no market listing name.';
+
+  @override
+  String get itemMarketOpenFailed => 'Could not open the Steam Market page.';
+
+  @override
+  String get steamClientRunning => 'Steam is running';
+
+  @override
+  String get steamClientStopped => 'Steam is not running';
+
+  @override
+  String get steamClientStatusLoading => 'Reading Steam status…';
+
+  @override
+  String get steamClientStatusUnavailable =>
+      'Steam status is temporarily unavailable';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return 'Currently signed in: $account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => 'Current account not yet identified';
+
+  @override
+  String get steamClientCurrentBadge => 'Currently signed in';
 }

@@ -26,7 +26,8 @@ class SteamClientScreen extends ConsumerStatefulWidget {
   ConsumerState<SteamClientScreen> createState() => _SteamClientScreenState();
 }
 
-class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
+class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
+    with WidgetsBindingObserver {
   String? _path;
   List<SteamClientAccount> _accounts = [];
   String? _selected;
@@ -38,20 +39,70 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
   SteamSwitchStage? _stage;
   Object? _error;
   String? _backupPath;
+  SteamClientStatus? _status;
+  bool _statusLoading = true;
+  int _statusGeneration = 0;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        !_loading &&
+        !_switching &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      _refreshStatus();
+    }
+  }
+
+  Future<void> _refreshStatus() async {
+    if (!mounted) return;
+    final generation = ++_statusGeneration;
+    final path = _path;
+    setState(() {
+      _statusLoading = true;
+      // A previous login must not remain labeled current during a new read.
+      _status = null;
+    });
+    try {
+      if (path == null) return;
+      final status = await ref.read(steamClientServiceProvider).status(path);
+      if (mounted && generation == _statusGeneration && !_switching) {
+        setState(() => _status = status);
+      }
+    } catch (_) {
+      // Reading status is advisory; a detection failure must not look stopped
+      // or prevent QR login and the separate remembered-account operations.
+    } finally {
+      if (mounted && generation == _statusGeneration) {
+        setState(() => _statusLoading = false);
+      }
+    }
+  }
+
   Future<void> _load({String? selectedPath}) async {
+    final generation = ++_loadGeneration;
+    ++_statusGeneration;
     setState(() {
       _loading = true;
       _error = null;
       _launched = false;
       _missingInitial = false;
       _accounts = [];
+      _status = null;
+      _statusLoading = true;
     });
     try {
       final service = ref.read(steamClientServiceProvider);
@@ -61,14 +112,20 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
           _path ??
           await settings.loadSteamClientPath() ??
           await service.discoverPath();
+      if (!mounted || generation != _loadGeneration) return;
       if (path == null) {
-        if (mounted) setState(() => _path = null);
+        setState(() {
+          _path = null;
+          _statusLoading = false;
+        });
         return;
       }
-      if (mounted) setState(() => _path = path);
+      setState(() => _path = path);
+      await _refreshStatus();
+      if (!mounted || generation != _loadGeneration) return;
       final accounts = await service.listAccounts(path);
       if (selectedPath != null) await settings.saveSteamClientPath(path);
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration) return;
       final initial = widget.initialAccount;
       String? selected = _selected;
       if (!accounts.any((a) => a.steamId == selected)) selected = null;
@@ -93,9 +150,16 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
         _missingInitial = initial != null && selected == null;
       });
     } catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted && generation == _loadGeneration) {
+        setState(() {
+          _error = error;
+          _statusLoading = false;
+        });
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _loadGeneration) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -118,6 +182,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
   }
 
   Future<void> _switch(SteamClientAccount account) async {
+    if (_loading || _switching || _path == null) return;
     final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -136,13 +201,16 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted || _switching || _loading) return;
+    ++_statusGeneration;
     setState(() {
       _switching = true;
       _launched = false;
       _error = null;
       _backupPath = null;
       _stage = SteamSwitchStage.stopping;
+      _status = null;
+      _statusLoading = true;
     });
     try {
       final result = await ref
@@ -168,7 +236,11 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
         });
       }
     } finally {
-      if (mounted) setState(() => _switching = false);
+      if (mounted) {
+        setState(() => _switching = false);
+        // Launch success does not prove Steam has signed in to the target.
+        await _refreshStatus();
+      }
     }
   }
 
@@ -187,6 +259,87 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ApproveLoginScreen(initialAccount: account),
+      ),
+    );
+    if (mounted) await _refreshStatus();
+  }
+
+  bool _isCurrentAccount(SteamClientAccount account) =>
+      !_statusLoading &&
+      _status?.running == true &&
+      _status?.activeSteamId == account.steamId;
+
+  Widget _statusCard(AppLocalizations l, List<SteamGuardAccount> avaAccounts) {
+    final status = _status;
+    final activeId = status?.running == true ? status?.activeSteamId : null;
+    final local = _accounts.where((a) => a.steamId == activeId).firstOrNull;
+    final ava = avaAccounts
+        .where((a) => '${a.steamId}' == activeId)
+        .firstOrNull;
+    final name = local != null
+        ? local.personaName.isNotEmpty
+              ? local.personaName
+              : local.accountName
+        : ava?.personaName?.isNotEmpty == true
+        ? ava!.personaName
+        : ava?.accountName;
+    final label = _statusLoading
+        ? l.steamClientStatusLoading
+        : status == null
+        ? l.steamClientStatusUnavailable
+        : status.running
+        ? l.steamClientRunning
+        : l.steamClientStopped;
+    return Card(
+      key: const ValueKey('steam-client-status'),
+      child: Padding(
+        padding: context.rInsets(all: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_statusLoading)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(
+                status?.running == true
+                    ? Icons.desktop_windows_outlined
+                    : Icons.power_settings_new,
+                color: status?.running == true
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: Theme.of(context).textTheme.titleSmall),
+                  if (!_statusLoading && status?.running == true) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      activeId == null
+                          ? l.steamClientAccountUnknown
+                          : l.steamClientCurrentAccount(
+                              name?.isNotEmpty == true
+                                  ? name!
+                                  : 'SteamID: $activeId',
+                            ),
+                    ),
+                    if (activeId != null && name?.isNotEmpty == true)
+                      Text(
+                        'SteamID: $activeId',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -330,6 +483,8 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
         body: ListView(
           padding: context.rSafeInsets(all: 24),
           children: [
+            _statusCard(l, avaAccounts),
+            const SizedBox(height: 12),
             _qrLoginCard(l, avaAccounts, selectedAva),
             const SizedBox(height: 24),
             Text(
@@ -393,6 +548,18 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen> {
                     '${account.rememberPassword ? '' : '\n${l.steamSwitchNeedsLogin}'}',
                   ),
                   isThreeLine: true,
+                  trailing: _isCurrentAccount(account)
+                      ? Text(
+                          l.steamClientCurrentBadge,
+                          key: ValueKey(
+                            'steam-client-current-${account.steamId}',
+                          ),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 12,
+                          ),
+                        )
+                      : null,
                   onTap: _switching
                       ? null
                       : () => setState(() {
