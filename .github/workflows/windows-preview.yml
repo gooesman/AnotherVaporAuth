@@ -214,7 +214,18 @@ jobs:
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
           "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'AVA Fork'"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/ava-preview-signature.txt"
-          grep -Fi 'Signer #1 certificate SHA-256 digest: a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f' "$RUNNER_TEMP/ava-preview-signature.txt"
+          python3 - "$RUNNER_TEMP/ava-preview-signature.txt" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+          lines = Path(sys.argv[1]).read_text().splitlines()
+          assert 'Number of signers: 1' in lines, 'Expected exactly one APK signer'
+          pattern = re.compile(r'^(?:Signer #\d+|V\d+(?:\.\d+)? Signer):? certificate SHA-256 digest: ([0-9a-fA-F]{64})$')
+          digests = {match.group(1).lower() for line in lines if (match := pattern.fullmatch(line))}
+          expected = 'a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f'
+          assert digests == {expected}, 'APK certificate does not match the fixed fork signing identity'
+          print('Verified: exactly one signer with the fixed fork certificate')
+          PY
           sha256sum "$APK"
       - name: Verify cn preview excludes ads and billing
         # Debug bytecode is not obfuscated, so the dex package names are usable.
