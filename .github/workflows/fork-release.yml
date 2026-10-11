@@ -12,6 +12,11 @@ on:
         description: User-facing notes for this exact preview build
         required: true
         type: string
+      resume_draft_id:
+        description: Existing draft ID to resume after reviewing its uploaded files (normally blank)
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -37,6 +42,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PREVIEW_RUN_ID: ${{ inputs.preview_run_id }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
+          RESUME_DRAFT_ID: ${{ inputs.resume_draft_id }}
         run: |
           python3 - <<'PY'
           import base64
@@ -71,6 +77,35 @@ jobs:
               if not condition:
                   raise SystemExit(message)
 
+          def select_release_draft(releases, tag, commit, resume_id):
+              matches = [release for release in releases if release.get('tag_name') == tag]
+              if resume_id is None:
+                  require(not matches, 'This release already exists; review its draft before resuming')
+                  return None
+              require(len(matches) == 1, 'Exactly one matching draft is required to resume')
+              draft = matches[0]
+              require(type(draft.get('id')) is int and draft['id'] == resume_id
+                      and draft.get('draft') is True and draft.get('prerelease') is False
+                      and draft.get('target_commitish') == commit,
+                      'The requested draft must match this exact preview commit')
+              return draft['id']
+
+          def verify_release_draft(uploaded, tag, commit, assets, notes):
+              require(uploaded.get('draft') is True and uploaded.get('prerelease') is False
+                      and uploaded.get('tag_name') == tag and uploaded.get('target_commitish') == commit,
+                      'Expected the draft for this exact stable release')
+              require(isinstance(uploaded.get('body'), str) and uploaded['body'].strip() == notes.strip(),
+                      'Draft release notes differ from the requested notes')
+              remote = uploaded.get('assets', [])
+              require(len(remote) == len(assets) and {a['name'] for a in remote} == {p.name for p in assets},
+                      'Unexpected or duplicate release assets')
+              for path in assets:
+                  asset = next(a for a in remote if a['name'] == path.name)
+                  with path.open('rb') as stream:
+                      digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+                  require(asset.get('state') == 'uploaded' and asset.get('size') == path.stat().st_size
+                          and asset.get('digest') == 'sha256:' + digest, 'Uploaded asset digest or state mismatch')
+
           workflow_path = '.github/workflows/windows-preview.yml'
           workflow = api('actions/workflows/windows-preview.yml')
           run = api(f'actions/runs/{run_id}')
@@ -94,9 +129,12 @@ jobs:
           require(0 < build <= 2100000000, 'Build number exceeds the Android limit')
           tag = f'v{version}+{build}'
           tag_pattern = re.compile(r'^v([0-9]+)\.([0-9]+)\.([0-9]+)\+([1-9][0-9]*)$')
+          resume_text = os.environ.get('RESUME_DRAFT_ID', '').strip()
+          require(not resume_text or re.fullmatch(r'[1-9][0-9]*', resume_text), 'Invalid draft ID')
+          resume_id = int(resume_text) if resume_text else None
           releases = [item for page in api('releases?per_page=100', paginate=True) for item in page]
+          draft_id = select_release_draft(releases, tag, commit, resume_id)
           for release in releases:
-              require(release.get('tag_name') != tag, 'This release already exists; never overwrite a published package')
               previous = tag_pattern.fullmatch(release.get('tag_name', ''))
               if previous and not release.get('draft') and not release.get('prerelease'):
                   require(int(previous[4]) < build, 'Refusing to publish a stale build')
@@ -204,17 +242,26 @@ jobs:
           notes_file = output / 'notes.md'
           notes_file.write_text(notes + f'\n\nSource preview: {run["html_url"]}\nCommit: `{commit}`\nBuild: `{build}`\n')
           # Keep the release hidden until GitHub confirms every uploaded byte.
-          # On failure, leave the draft for review; never replace existing assets.
-          subprocess.run(['gh', 'release', 'create', tag, *map(str, assets), '--repo', repo,
-                          '--target', commit, '--title', f'AVA Fork {tag}', '--notes-file', str(notes_file), '--draft'], check=True)
-          uploaded = api(f'releases/tags/{quote(tag, safe="")}')
-          require(uploaded.get('draft') and not uploaded.get('prerelease'), 'Expected a draft stable release')
-          require({a['name'] for a in uploaded['assets']} == {p.name for p in assets}, 'Unexpected release assets')
-          for path in assets:
-              asset = next(a for a in uploaded['assets'] if a['name'] == path.name)
-              with path.open('rb') as stream:
-                  digest = hashlib.file_digest(stream, 'sha256').hexdigest()
-              require(asset['size'] == path.stat().st_size and asset.get('digest') == 'sha256:' + digest, 'Uploaded asset digest mismatch')
-          subprocess.run(['gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', '--latest'], check=True)
+          # On failure, leave the draft for review. Explicit resumption only
+          # verifies its existing files; it never replaces or uploads an asset.
+          if draft_id is None:
+              subprocess.run(['gh', 'release', 'create', tag, *map(str, assets), '--repo', repo,
+                              '--target', commit, '--title', f'AVA Fork {tag}', '--notes-file', str(notes_file), '--draft'], check=True)
+              # Drafts may not have a Git tag yet, so the by-tag REST endpoint
+              # can return 404. Discover the draft and use its stable numeric ID.
+              created = [item for page in api('releases?per_page=100', paginate=True) for item in page
+                         if item.get('tag_name') == tag]
+              require(len(created) == 1 and type(created[0].get('id')) is int, 'Expected one new release draft')
+              draft_id = select_release_draft(created, tag, commit, created[0]['id'])
+          uploaded = api(f'releases/{draft_id}')
+          verify_release_draft(uploaded, tag, commit, assets, notes_file.read_text())
+          subprocess.run(['gh', 'api', '--method', 'PATCH', f'repos/{repo}/releases/{draft_id}', '--input', '-'],
+                         input=json.dumps({'draft': False, 'make_latest': 'true'}).encode(),
+                         stdout=subprocess.DEVNULL, check=True)
+          published = api(f'releases/{draft_id}')
+          latest = api('releases/latest')
+          require(published.get('draft') is False and published.get('prerelease') is False
+                  and published.get('tag_name') == tag and latest.get('id') == draft_id,
+                  'Release was not published as the latest stable version')
           print(f'Published verified stable release {tag}')
           PY
