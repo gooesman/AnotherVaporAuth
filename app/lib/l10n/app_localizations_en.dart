@@ -2920,4 +2920,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get steamConnectionPacHelp =>
       'PAC is detected but not evaluated by AVA. This check uses the current system route.';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/s';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return 'About ${seconds}s left';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return 'About ${minutes}min left';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => 'Waiting for data…';
+
+  @override
+  String get forkUpdateVerifying => 'Verifying installer…';
+
+  @override
+  String get forkUpdateConnectionHint =>
+      'Downloads use an available system proxy or built-in acceleration that is already running; otherwise they connect directly.';
 }

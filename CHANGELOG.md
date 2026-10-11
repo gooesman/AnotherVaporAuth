@@ -5,15 +5,31 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
 trigger automated releases.
 
-## [Unreleased] — Fork preview
+## [v1.5.2] — 2026-10-11
+
+### Fixed
+- In-app updates now use an already-enabled system HTTP proxy or internal accelerator, with external routing taking priority. Opening updates does not start another proxy.
+- Large update packages download in up to four parallel ranges, with bounded retries and ordinary-download fallback when ranges are unsupported. Official GitHub TLS and full-package SHA-256 checks remain enabled.
+- Update downloads show transferred size, recent speed, estimated time remaining and a separate verification stage. Progress refreshes are limited to four per second to keep the interface responsive.
+
+### 修复
+- 应用内更新可使用已开启的系统 HTTP 代理或内置加速，外部线路优先；打开更新页不会启动第二个代理。
+- 大安装包支持最多四路分段下载、有限重试，以及不支持分段时的普通下载回退，保持 GitHub 官方连接的 TLS 与整包 SHA-256 校验。
+- 下载新增已传输大小、近期速度、预计剩余时间和独立校验状态；进度最多每秒刷新四次，避免频繁刷新界面。
+
+## [v1.5.1+100014] — 2026-10-11 · Fork
 
 ### Fixed
 - Desktop account cards no longer slide sideways; their right-click actions remain available. Phone gestures are unchanged.
 - Steam acceleration accepts HTTP and HTTPS subscriptions with URL-encoded Basic authentication and custom ports. A Clash-compatible client identifier requests the provider’s Clash format.
+- Smoother home/countdown updates, lazy inventory/friend rows and bounded image decoding; Android uses an optimized ARM64 release build while preserving its signing identity.
+- Acceleration distinguishes core operation from Steam connectivity, inventory offers type/rarity filters, and uncertain trade results can be checked without automatically resending.
 
 ### 修复
 - 电脑账户卡片取消左右滑动，保留右键菜单；手机手势保持不变。
 - Steam 加速支持 HTTP／HTTPS、地址内编码的用户名密码和自定义端口，并使用 Clash 客户端标识取得兼容的订阅格式。
+- 优化首页倒计时、好友及库存列表加载和图片解码；Android 改用 ARM64 release 优化包，保持原有签名。
+- 加速状态区分组件运行和 Steam 连通性；库存增加类型与品质筛选，报价结果不明确时可核实状态，不自动重发。
 
 ## [v1.5.1] — 2026-10-09
 

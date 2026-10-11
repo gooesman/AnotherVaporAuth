@@ -57,8 +57,8 @@ class SteamNetworkProxy {
   String toString() => 'SteamNetworkProxy(configured)';
 }
 
-/// Only AVA's Steam clients use this factory. Updates, WebDAV, subscription
-/// downloads and all other software keep their own network configuration.
+/// Steam clients have their own routing scope. The update client reuses only
+/// the low-level scoped CONNECT transport, never Steam sessions or headers.
 class SteamNetwork {
   static SteamNetworkProxy? Function() _proxy = () => null;
   static Future<bool>? _readiness;
@@ -101,9 +101,28 @@ class SteamNetwork {
     SecurityContext? securityContext,
     Future<ConnectionTask<Socket>> Function(String host, int port)?
     socketConnector,
+  }) => createScopedDio(
+    options,
+    proxy: () => _proxy(),
+    isAllowedRequest: isSteamRequest,
+    readiness: () => _readiness,
+    securityContext: securityContext,
+    socketConnector: socketConnector,
+  );
+
+  /// Creates an independent client for an explicit set of HTTPS destinations.
+  /// No cookies, credentials or headers are shared with any existing client.
+  static Dio createScopedDio(
+    BaseOptions options, {
+    required SteamNetworkProxy? Function() proxy,
+    required bool Function(Uri) isAllowedRequest,
+    Future<bool>? Function()? readiness,
+    SecurityContext? securityContext,
+    Future<ConnectionTask<Socket>> Function(String host, int port)?
+    socketConnector,
   }) {
     final dio = Dio(options);
-    var active = _proxy();
+    var active = proxy();
     IOHttpClientAdapter adapter(SteamNetworkProxy? proxy) =>
         IOHttpClientAdapter(
           createHttpClient: () {
@@ -114,7 +133,7 @@ class SteamNetwork {
             client.findProxy = (_) => 'DIRECT';
             client.connectionFactory = (uri, _, _) => _connect(
               uri,
-              isSteamRequest(uri) ? proxy : null,
+              isAllowedRequest(uri) ? proxy : null,
               securityContext,
               socketConnector ??
                   ((host, port) => Socket.startConnect(host, port)),
@@ -126,18 +145,21 @@ class SteamNetwork {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          if (isSteamRequest(options.uri) && await _readiness == false) {
+          if (isAllowedRequest(options.uri) &&
+              await readiness?.call() == false) {
             handler.reject(
               DioException(
                 requestOptions: options,
                 type: DioExceptionType.connectionError,
-                message: 'Steam network initialization failed',
-                error: const SteamConnectionSetupException(),
+                message: 'Network initialization failed',
+                error: isSteamRequest(options.uri)
+                    ? const SteamConnectionSetupException()
+                    : const SocketException('Network initialization failed'),
               ),
             );
             return;
           }
-          final current = _proxy();
+          final current = proxy();
           if (current != active) {
             final old = dio.httpClientAdapter;
             dio.httpClientAdapter = adapter(current);

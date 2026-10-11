@@ -150,7 +150,7 @@ class _Service extends SteamAccelerationService {
   }
 
   @override
-  Future<void> checkEnvironment() async {
+  Future<void> checkEnvironment({bool allowAutomaticStart = true}) async {
     checks++;
   }
 

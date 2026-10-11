@@ -88,8 +88,11 @@ including URL-encoded Basic authentication and custom ports, and a selected
 supported node. Subscription requests identify as Clash so providers return
 Clash YAML instead of a generic link list. Credentials are not forwarded across
 origins; HTTPS certificate checks remain enabled. It starts manually by default; **Start automatically**
-is optional. Only AVA's Steam HTTPS requests use the connection, including QR
-approval, community, market, images and backup codes. It does not accelerate the
+is optional. AVA's Steam HTTPS requests use the connection, including QR
+approval, community, market, images and backup codes. The app's official GitHub
+update checks/downloads can also reuse the already-active connection, with
+external proxies taking priority. Opening updates does not start another core.
+It does not accelerate the
 Steam desktop client, games, a browser or other apps, and never changes the
 system proxy, DNS, certificates or TUN routing. Unsupported nodes are reported;
 subscription rules, scripts, plugins and listeners are not imported.

@@ -226,6 +226,37 @@ void main() {
     },
   );
 
+  test(
+    'read-only environment check refreshes routing without resuming a core',
+    () async {
+      await configure(auto: true);
+      await service.start(automatic: true);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        systemProxyDetected: true,
+        externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+      );
+      await service.checkEnvironment(allowAutomaticStart: false);
+      expect(service.state.environment.externalHttpProxy!.port, 7890);
+      expect(service.state.phase, SteamAccelerationPhase.pausedExternal);
+      expect(runtime.running, isFalse);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+      );
+      await service.checkEnvironment(allowAutomaticStart: false);
+      expect(service.state.environment.hasExternal, isFalse);
+      expect(service.state.phase, SteamAccelerationPhase.pausedExternal);
+      expect(service.proxyEndpoint, isNull);
+      expect(runtime.starts, 1);
+      expect(fetches, 1);
+      // The normal monitor still follows the saved automatic preference.
+      await service.checkEnvironment();
+      expect(runtime.starts, 2);
+      expect(runtime.running, isTrue);
+      expect(fetches, 1);
+    },
+  );
+
   test('manual mode stays paused until another explicit start', () async {
     await configure();
     await service.start();

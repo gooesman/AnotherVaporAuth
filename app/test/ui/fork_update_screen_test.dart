@@ -22,6 +22,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 ForkUpdateRelease _release({
   ForkUpdateTarget target = ForkUpdateTarget.androidArm64,
+  int size = 100,
 }) => ForkUpdateRelease(
   target: target,
   tag: 'v1.5.1+161',
@@ -36,7 +37,7 @@ ForkUpdateRelease _release({
     url: Uri.parse(
       'https://github.com/gooesman/AnotherVaporAuth/releases/download/v1.5.1%2B161/ava-fork-android-arm64.apk',
     ),
-    size: 100,
+    size: size,
     sha256: 'a' * 64,
   ),
 );
@@ -134,6 +135,7 @@ Future<void> _show(
   double width = 393,
   double textScale = 1,
   Locale locale = const Locale('en'),
+  Future<void> Function()? prepareNetwork,
 }) async {
   tester.view.physicalSize = Size(width, 852);
   tester.view.devicePixelRatio = 1;
@@ -146,6 +148,9 @@ Future<void> _show(
       overrides: [
         forkUpdateServiceProvider.overrideWithValue(service),
         forkUpdateInstallerProvider.overrideWithValue(installer),
+        forkUpdatePrepareNetworkProvider.overrideWithValue(
+          prepareNetwork ?? () async {},
+        ),
         forkUpdateTargetProvider.overrideWithValue(target),
         forkUpdatePackageInfoProvider.overrideWith(
           (ref) async => PackageInfo(
@@ -193,14 +198,46 @@ Future<void> _tap(WidgetTester tester, String key) async {
 
 _Service _available({
   ForkUpdateTarget target = ForkUpdateTarget.androidArm64,
+  int size = 100,
 }) => _Service(
   ForkUpdateCheck(
     status: ForkUpdateCheckStatus.available,
-    release: _release(target: target),
+    release: _release(target: target, size: size),
   ),
 );
 
 void main() {
+  testWidgets('refreshes routing before checking and downloading', (
+    tester,
+  ) async {
+    final service = _available();
+    final checkReady = Completer<void>();
+    final downloadReady = Completer<void>();
+    var preparations = 0;
+    await _show(
+      tester,
+      service,
+      _Installer(),
+      prepareNetwork: () {
+        preparations++;
+        return preparations == 1 ? checkReady.future : downloadReady.future;
+      },
+    );
+    expect(preparations, 1);
+    expect(service.checks, 0);
+    checkReady.complete();
+    await tester.pump();
+    expect(service.checks, 1);
+    await _tap(tester, 'fork-update-download');
+    expect(preparations, 2);
+    expect(service.downloads, 0);
+    await _tap(tester, 'fork-update-cancel-download');
+    downloadReady.complete();
+    await tester.pump();
+    expect(service.downloads, 0);
+    expect(find.byKey(const ValueKey('fork-update-install')), findsNothing);
+  });
+
   testWidgets(
     'checking state disables repeated checks and exposes no download',
     (tester) async {
@@ -315,7 +352,7 @@ void main() {
     await _show(tester, service, installer);
     await _tap(tester, 'fork-update-download');
     service.progress!(42, 100);
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
     expect(find.textContaining('42%'), findsOneWidget);
     await _tap(tester, 'fork-update-cancel-download');
     expect(service.downloadCancel!.isCancelled, isTrue);
@@ -328,6 +365,163 @@ void main() {
     expect(installer.installs, 0);
   });
 
+  testWidgets('chunk bursts repaint at most four times per second with recent '
+      'speed and ETA, then clear stalled estimates', (tester) async {
+    const mib = 1024 * 1024;
+    final service = _available(size: 10 * mib)
+      ..pendingDownload = Completer<VerifiedForkUpdate>();
+    await _show(tester, service, _Installer());
+    await _tap(tester, 'fork-update-download');
+    var rebuilds = 0;
+    final previousRebuildHook = debugOnRebuildDirtyWidget;
+    debugOnRebuildDirtyWidget = (element, _) {
+      if (element.widget is ForkUpdateScreen) rebuilds++;
+    };
+    addTearDown(() => debugOnRebuildDirtyWidget = previousRebuildHook);
+    // 200 transport callbacks in two seconds, observed across 200 frames.
+    for (var chunk = 1; chunk <= 200; chunk++) {
+      service.progress!(chunk * mib ~/ 100, 10 * mib);
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    debugOnRebuildDirtyWidget = previousRebuildHook;
+    expect(rebuilds, inInclusiveRange(1, 8));
+    expect(find.text('2.0 / 10.0 MiB'), findsOneWidget);
+    expect(find.text('1.0 MiB/s'), findsOneWidget);
+    expect(find.text('About 8s left'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    final l = AppLocalizations.of(
+      tester.element(find.byType(ForkUpdateScreen)),
+    );
+    expect(find.text(l.forkUpdateWaitingForData), findsOneWidget);
+    expect(find.byKey(const ValueKey('fork-update-remaining')), findsNothing);
+    await _tap(tester, 'fork-update-cancel-download');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('complete bytes show verification until the service succeeds', (
+    tester,
+  ) async {
+    const mib = 1024 * 1024;
+    final pending = Completer<VerifiedForkUpdate>();
+    final service = _available(size: 2 * mib)..pendingDownload = pending;
+    await _show(tester, service, _Installer());
+    await _tap(tester, 'fork-update-download');
+    service.progress!(2 * mib, 2 * mib);
+    await tester.pump(const Duration(milliseconds: 250));
+    final l = AppLocalizations.of(
+      tester.element(find.byType(ForkUpdateScreen)),
+    );
+    expect(find.text(l.forkUpdateVerifying), findsOneWidget);
+    expect(find.text('2.0 / 2.0 MiB'), findsOneWidget);
+    expect(find.byKey(const ValueKey('fork-update-speed')), findsNothing);
+    expect(find.byKey(const ValueKey('fork-update-install')), findsNothing);
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value,
+      isNull,
+    );
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text(l.forkUpdateVerifying), findsOneWidget);
+    pending.complete(
+      VerifiedForkUpdate(
+        file: File('synthetic-verified.apk'),
+        release: service.result.release!,
+      ),
+    );
+    await tester.pump();
+    expect(find.text(l.forkUpdateVerifying), findsNothing);
+    expect(find.text(l.forkUpdateReady), findsOneWidget);
+    expect(find.byKey(const ValueKey('fork-update-install')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'retry resets progress and ignores the cancelled download callbacks',
+    (tester) async {
+      const mib = 1024 * 1024;
+      final oldPending = Completer<VerifiedForkUpdate>();
+      final service = _available(size: 8 * mib)..pendingDownload = oldPending;
+      await _show(tester, service, _Installer());
+      await _tap(tester, 'fork-update-download');
+      final oldProgress = service.progress!;
+      oldProgress(4 * mib, 8 * mib);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text('4.0 / 8.0 MiB'), findsOneWidget);
+      // Leave one sample queued when cancelling; its timer must not affect retry.
+      oldProgress(6 * mib, 8 * mib);
+      await _tap(tester, 'fork-update-cancel-download');
+      final nextPending = Completer<VerifiedForkUpdate>();
+      service.pendingDownload = nextPending;
+      await _tap(tester, 'fork-update-download');
+      expect(find.text('0.0 / 8.0 MiB'), findsOneWidget);
+      oldProgress(8 * mib, 8 * mib);
+      oldPending.complete(
+        VerifiedForkUpdate(
+          file: File('synthetic-cancelled.apk'),
+          release: service.result.release!,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text('0.0 / 8.0 MiB'), findsOneWidget);
+      expect(find.byKey(const ValueKey('fork-update-install')), findsNothing);
+      service.progress!(2 * mib, 8 * mib);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text('2.0 / 8.0 MiB'), findsOneWidget);
+      await _tap(tester, 'fork-update-cancel-download');
+      expect(service.downloadCancel!.isCancelled, isTrue);
+      await tester.pump(const Duration(seconds: 3));
+      expect(
+        find.byKey(const ValueKey('fork-update-transfer-size')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final locale in [
+    const Locale('en'),
+    const Locale('zh'),
+    const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+    const Locale('de'),
+    const Locale('fr'),
+    const Locale('es'),
+    const Locale('ru'),
+  ]) {
+    testWidgets('download statistics fit narrow large-text phone in $locale', (
+      tester,
+    ) async {
+      const mib = 1024 * 1024;
+      final service = _available(size: 100 * mib)
+        ..pendingDownload = Completer<VerifiedForkUpdate>();
+      await _show(
+        tester,
+        service,
+        _Installer(),
+        width: 320,
+        textScale: 1.8,
+        locale: locale,
+      );
+      await _tap(tester, 'fork-update-download');
+      service.progress!(128 * 1024, 100 * mib);
+      await tester.pump(const Duration(milliseconds: 250));
+      final speed = tester.widget<Text>(
+        find.byKey(const ValueKey('fork-update-speed')),
+      );
+      expect(speed.data, contains('KiB'));
+      expect(
+        find.byKey(const ValueKey('fork-update-remaining')),
+        findsOneWidget,
+      );
+      final l = AppLocalizations.of(
+        tester.element(find.byType(ForkUpdateScreen)),
+      );
+      expect(find.text(l.forkUpdateConnectionHint), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await _tap(tester, 'fork-update-cancel-download');
+    });
+  }
+
   testWidgets(
     'leaving the screen cancels download without late state updates',
     (tester) async {
@@ -335,6 +529,7 @@ void main() {
       final service = _available()..pendingDownload = pending;
       await _show(tester, service, _Installer());
       await _tap(tester, 'fork-update-download');
+      service.progress!(42, 100);
       await tester.pumpWidget(const SizedBox());
       expect(service.downloadCancel!.isCancelled, isTrue);
       service.progress!(90, 100);
@@ -344,7 +539,7 @@ void main() {
           release: _release(),
         ),
       );
-      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
       expect(tester.takeException(), isNull);
     },
   );

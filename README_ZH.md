@@ -29,10 +29,12 @@
 ## 关于本分支
 
 这是 gooesman 基于 freefrank 的 AVA 维护的独立 Fork。本地功能和所有皮肤直接开放，
-无需 Pro 验证或付费；保留原作者的 MIT 许可及署名。试用包来自
+无需 Pro 验证或付费；保留原作者的 MIT 许可及署名。正式安装包见
+[本分支发布页](https://github.com/gooesman/AnotherVaporAuth/releases/latest)，试用包来自
 [本分支构建](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml)，
 下方下载链接仍属于原项目。电脑端名为 **AVA-pc**，可在设置里的“软件更新”中查询
 本分支正式发布的版本、下载并打开安装程序；手机端也有同样入口，由系统确认安装。
+更新会复用已开启的系统代理或内置加速，支持并行下载、速度和剩余时间显示，并保留整包 SHA-256 校验。
 
 Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固定 Fork
 签名的 ARM64 release 优化构建，可与原版 AVA、此前的 **AVA dev** 同时安装并保留旧应用数据。
@@ -72,7 +74,7 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
   市场、好友和其他账号功能从概览进入，不再经过长按菜单。
 
 - **可选 Steam 加速（本分支试用功能）** —— 导入 HTTP／HTTPS Clash 订阅（支持用户名和密码）并选择节点，
-  仅用于 AVA 内的 Steam 请求。默认手动开启，可选自动启动；检测到外部代理或 VPN 时
+  用于 AVA 内的 Steam 请求，软件更新也可复用已经开启的线路。默认手动开启，可选自动启动；检测到外部代理或 VPN 时
   暂停内置组件，不修改系统代理或接管其他软件。首页小入口区分组件运行和登录接口/社区连接结果，
   不依赖系统 VPN 图标。见[范围与限制](docs/windows-steam-switch.md#optional-steam-connectivity)。
 
@@ -137,7 +139,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1208 项测试
+flutter test                       # 1244 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。

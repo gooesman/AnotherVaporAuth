@@ -50,7 +50,12 @@ No token is fabricated and no access to the author's online services is granted.
 
 Opening the update page in Settings checks this fork's public GitHub releases.
 Downloading an update contacts GitHub's release asset servers; no Steam account,
-authenticator secret or entitlement token is sent with those requests. The app
+authenticator secret or entitlement token is sent with those requests. Update
+requests prefer a detected system HTTP proxy or existing VPN/TUN; otherwise they
+can reuse an already-running internal accelerator. The proxy operator can see
+GitHub connection destinations, timing and volume. Normal TLS checks remain
+enabled, no public download mirror is used, and updates never start an extra
+proxy automatically. Large files may be requested in parallel byte ranges. The app
 verifies the download against GitHub's SHA-256 digest before handing it to the
 system installer after your confirmation. It does not check the original
 project's update service or install updates in the background.

@@ -324,7 +324,7 @@ class SteamAccelerationService extends ChangeNotifier {
     });
   }
 
-  Future<void> checkEnvironment() async {
+  Future<void> checkEnvironment({bool allowAutomaticStart = true}) async {
     if (_disposed || _checking) return;
     _checking = true;
     try {
@@ -355,7 +355,8 @@ class SteamAccelerationService extends ChangeNotifier {
       } else {
         _publish(_state.phase, _state.error);
       }
-      if (!_environment.hasExternal &&
+      if (allowAutomaticStart &&
+          !_environment.hasExternal &&
           _environment.detectionAvailable &&
           _state.phase == SteamAccelerationPhase.pausedExternal &&
           _autoStart &&

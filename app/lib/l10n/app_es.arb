@@ -859,5 +859,12 @@
   },
   "tradeSendRejected": "Steam rechazó esta oferta sin un motivo detallado. Revisa los objetos seleccionados y las restricciones de intercambio.",
   "tradeSendUnreadableResponse": "Steam no devolvió una confirmación de envío completa.",
-  "steamConnectionPacHelp": "AVA detecta PAC, pero no interpreta sus reglas. Esta comprobación usa la ruta actual del sistema."
+  "steamConnectionPacHelp": "AVA detecta PAC, pero no interpreta sus reglas. Esta comprobación usa la ruta actual del sistema.",
+  "forkUpdateTransferSize": "{received} / {total} MiB",
+  "forkUpdateTransferSpeed": "{speed} {unit}/s",
+  "forkUpdateRemainingSeconds": "Quedan aprox. {seconds} s",
+  "forkUpdateRemainingMinutes": "Quedan aprox. {minutes} min",
+  "forkUpdateWaitingForData": "Esperando datos…",
+  "forkUpdateVerifying": "Verificando el instalador…",
+  "forkUpdateConnectionHint": "Las descargas usan un proxy del sistema disponible o la aceleración integrada si ya está activa. De lo contrario, se conectan directamente."
 }

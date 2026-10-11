@@ -2756,6 +2756,35 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp => 'AVA 仅检测 PAC，不解析其规则；本次检查使用当前系统线路。';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/秒';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return '预计还需 $seconds 秒';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return '预计还需 $minutes 分钟';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => '等待数据…';
+
+  @override
+  String get forkUpdateVerifying => '正在校验安装包…';
+
+  @override
+  String get forkUpdateConnectionHint => '下载会复用可用的系统代理或已开启的内置加速，否则直接连接。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5518,4 +5547,33 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamConnectionPacHelp => 'AVA 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/秒';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return '預計還需 $seconds 秒';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return '預計還需 $minutes 分鐘';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => '等待資料…';
+
+  @override
+  String get forkUpdateVerifying => '正在驗證安裝套件…';
+
+  @override
+  String get forkUpdateConnectionHint => '下載會使用可用的系統代理或已開啟的內建加速，否則直接連線。';
 }

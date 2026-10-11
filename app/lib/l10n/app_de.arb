@@ -929,5 +929,12 @@
   },
   "tradeSendRejected": "Steam hat das Angebot ohne genaue Begründung abgelehnt. Prüfe die ausgewählten Gegenstände und Handelsbeschränkungen.",
   "tradeSendUnreadableResponse": "Steam hat keine vollständige Sendebestätigung geliefert.",
-  "steamConnectionPacHelp": "AVA erkennt PAC, wertet dessen Regeln jedoch nicht aus. Diese Prüfung nutzt die aktuelle Systemverbindung."
+  "steamConnectionPacHelp": "AVA erkennt PAC, wertet dessen Regeln jedoch nicht aus. Diese Prüfung nutzt die aktuelle Systemverbindung.",
+  "forkUpdateTransferSize": "{received} / {total} MiB",
+  "forkUpdateTransferSpeed": "{speed} {unit}/s",
+  "forkUpdateRemainingSeconds": "Noch ca. {seconds} s",
+  "forkUpdateRemainingMinutes": "Noch ca. {minutes} min",
+  "forkUpdateWaitingForData": "Warten auf Daten…",
+  "forkUpdateVerifying": "Installationsdatei wird geprüft…",
+  "forkUpdateConnectionHint": "Downloads nutzen einen verfügbaren System-Proxy oder die bereits laufende integrierte Beschleunigung. Andernfalls wird eine direkte Verbindung verwendet."
 }

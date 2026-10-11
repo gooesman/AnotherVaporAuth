@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/steam_acceleration.dart';
+import '../services/fork_update_network.dart';
 import '../services/steam_connectivity.dart';
 import '../services/steam_network.dart';
 
@@ -52,9 +53,14 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
     super.initState();
     _service = ref.read(steamAccelerationServiceProvider);
     WidgetsBinding.instance.addObserver(this);
+    final environmentReady = _initializeEnvironment();
     SteamNetwork.configureProxy(
       () => steamProxyFor(_service),
-      readiness: _initialize(),
+      readiness: _startAutomatically(environmentReady),
+    );
+    ForkUpdateNetwork.configureProxy(
+      () => forkUpdateProxyFor(_service),
+      readiness: environmentReady,
     );
     // Start observing after installing routing. Its asynchronous probe waits
     // for readiness without holding up initialization, avoiding a dependency
@@ -62,15 +68,24 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
     _connectivity = ref.read(steamConnectivityProvider);
   }
 
-  Future<void> _initialize() async {
+  Future<void> _initializeEnvironment() async {
     if (!_service.supported) return;
     try {
       await _service.load();
       await _service.checkEnvironment();
-      if (mounted) await _service.start(automatic: true);
     } catch (_) {
       // The service reports credential-free status to its settings page.
       // Optional routing must never prevent offline app use or expose secrets.
+    }
+  }
+
+  Future<void> _startAutomatically(Future<void> environmentReady) async {
+    await environmentReady;
+    if (!mounted || !_service.supported) return;
+    try {
+      await _service.start(automatic: true);
+    } catch (_) {
+      // Optional startup is reported by the service, not the offline home.
     }
   }
 
@@ -89,6 +104,7 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     SteamNetwork.configureProxy(() => null);
+    ForkUpdateNetwork.configureProxy(() => null);
     super.dispose();
   }
 
@@ -113,6 +129,31 @@ SteamNetworkProxy? steamProxyFor(SteamAccelerationService service) {
     }
   }
   if (environment.hasExternal) return null;
+  final internal = service.proxyEndpoint;
+  if (internal == null) return null;
+  return SteamNetworkProxy(
+    host: internal.host,
+    port: internal.port,
+    username: internal.username,
+    password: internal.password,
+  );
+}
+
+/// Updates honor an external HTTP proxy even without a saved subscription.
+/// VPN/TUN sockets use OS routing. PAC is not evaluated; it prevents adding an
+/// internal proxy. Internal acceleration is reused only while already running
+/// and the last environment check is known-clear.
+SteamNetworkProxy? forkUpdateProxyFor(SteamAccelerationService service) {
+  final environment = service.state.environment;
+  final external = environment.externalHttpProxy;
+  if (external != null) {
+    try {
+      return SteamNetworkProxy(host: external.host, port: external.port);
+    } on ArgumentError {
+      return null;
+    }
+  }
+  if (environment.hasExternal || !environment.detectionAvailable) return null;
   final internal = service.proxyEndpoint;
   if (internal == null) return null;
   return SteamNetworkProxy(

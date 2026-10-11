@@ -48,8 +48,10 @@ Implemented and statically verified end-to-end:
   unlock until the user enables and authorizes it again.
 - Backup login codes: explicit in-app SMS request, verification and memory-only
   display, with no automatic retry or persistent code cache.
-- Optional Steam-only app connectivity via an HTTPS Clash node subscription;
+- Optional Steam app connectivity via an HTTP/HTTPS Clash node subscription;
   manual start by default, optional automatic start, external-proxy detection.
+  Official GitHub updates reuse an active route, preferring external proxies,
+  and download large packages in up to four parallel ranges with full hashing.
   It never writes system proxy/DNS settings or routes other apps.
 - Import existing `.maFile`
 - **Pending center** (tabbed): trade/market confirmations with **batch**
@@ -114,7 +116,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1208 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1244 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -150,7 +152,7 @@ old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1208 tests
+flutter test                       # 1244 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

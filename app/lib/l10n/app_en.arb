@@ -1420,5 +1420,46 @@
   },
   "tradeSendRejected": "Steam rejected this offer without a detailed reason. Check the selected items and trading restrictions.",
   "tradeSendUnreadableResponse": "Steam did not return a complete send receipt.",
-  "steamConnectionPacHelp": "PAC is detected but not evaluated by AVA. This check uses the current system route."
+  "steamConnectionPacHelp": "PAC is detected but not evaluated by AVA. This check uses the current system route.",
+  "forkUpdateTransferSize": "{received} / {total} MiB",
+  "forkUpdateTransferSpeed": "{speed} {unit}/s",
+  "forkUpdateRemainingSeconds": "About {seconds}s left",
+  "forkUpdateRemainingMinutes": "About {minutes}min left",
+  "forkUpdateWaitingForData": "Waiting for data…",
+  "forkUpdateVerifying": "Verifying installer…",
+  "forkUpdateConnectionHint": "Downloads use an available system proxy or built-in acceleration that is already running; otherwise they connect directly.",
+  "@forkUpdateTransferSize": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateTransferSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateRemainingSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "@forkUpdateRemainingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

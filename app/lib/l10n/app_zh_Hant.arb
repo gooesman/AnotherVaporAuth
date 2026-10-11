@@ -929,5 +929,12 @@
   },
   "tradeSendRejected": "Steam 拒絕了這筆報價，但未提供詳細原因。請檢查所選物品與交易限制。",
   "tradeSendUnreadableResponse": "Steam 未傳回完整的傳送回執。",
-  "steamConnectionPacHelp": "AVA 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。"
+  "steamConnectionPacHelp": "AVA 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。",
+  "forkUpdateTransferSize": "{received} / {total} MiB",
+  "forkUpdateTransferSpeed": "{speed} {unit}/秒",
+  "forkUpdateRemainingSeconds": "預計還需 {seconds} 秒",
+  "forkUpdateRemainingMinutes": "預計還需 {minutes} 分鐘",
+  "forkUpdateWaitingForData": "等待資料…",
+  "forkUpdateVerifying": "正在驗證安裝套件…",
+  "forkUpdateConnectionHint": "下載會使用可用的系統代理或已開啟的內建加速，否則直接連線。"
 }

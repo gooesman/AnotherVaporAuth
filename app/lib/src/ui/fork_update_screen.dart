@@ -4,10 +4,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app/responsive.dart';
+import '../app/steam_acceleration_providers.dart';
 import '../app/theme.dart';
 import '../core/fork_update.dart';
 import '../services/fork_update_installer.dart';
@@ -21,6 +23,16 @@ final forkUpdateServiceProvider = Provider<ForkUpdateService>(
 final forkUpdateInstallerProvider = Provider<ForkUpdateInstaller>(
   (ref) => ForkUpdateInstaller(),
 );
+final forkUpdatePrepareNetworkProvider = Provider<Future<void> Function()>((
+  ref,
+) {
+  final service = ref.watch(steamAccelerationServiceProvider);
+  return () async {
+    if (service.supported) {
+      await service.checkEnvironment(allowAutomaticStart: false);
+    }
+  };
+});
 final forkUpdateTargetProvider = Provider<ForkUpdateTarget?>((ref) {
   if (kIsWeb) return null;
   return switch (defaultTargetPlatform) {
@@ -57,7 +69,16 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
   bool _installStarted = false;
   int _received = 0;
   int _total = 0;
+  int _latestReceived = 0;
+  int _latestTotal = 0;
+  double _bytesPerSecond = 0;
+  bool _verifying = false;
+  Timer? _progressTimer;
+  final _progressSamples = <(int, int)>[];
   int _operation = 0;
+
+  static const _progressInterval = Duration(milliseconds: 250);
+  static const _speedWindowMilliseconds = 2000;
 
   bool get _busy => _checking || _downloading || _installing;
 
@@ -71,6 +92,7 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
   void dispose() {
     _operation++;
     _downloadCancel?.cancel();
+    _stopProgress();
     super.dispose();
   }
 
@@ -100,6 +122,8 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
       final installed = await ref.read(forkUpdatePackageInfoProvider.future);
       if (!mounted || operation != _operation) return;
       setState(() => _installed = installed);
+      await ref.read(forkUpdatePrepareNetworkProvider)();
+      if (!mounted || operation != _operation) return;
       final result = await ref
           .read(forkUpdateServiceProvider)
           .check(
@@ -142,19 +166,31 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
       _installStarted = false;
       _received = 0;
       _total = release.asset.size;
+      _latestReceived = 0;
+      _latestTotal = release.asset.size;
+      _bytesPerSecond = 0;
+      _verifying = false;
     });
+    _startProgress(operation);
     try {
+      await ref.read(forkUpdatePrepareNetworkProvider)();
+      if (!mounted || operation != _operation || cancel.isCancelled) return;
       final verified = await ref
           .read(forkUpdateServiceProvider)
           .download(
             release,
             cancelToken: cancel,
             onProgress: (received, total) {
-              if (!mounted || operation != _operation) return;
-              setState(() {
-                _received = received;
-                _total = total;
-              });
+              if (!mounted ||
+                  operation != _operation ||
+                  !_downloading ||
+                  cancel.isCancelled) {
+                return;
+              }
+              // Transport chunks can arrive far more often than the screen
+              // needs to repaint. A fixed sampler coalesces them to 4 Hz.
+              _latestTotal = total > 0 ? total : release.asset.size;
+              _latestReceived = received.clamp(0, _latestTotal);
             },
           );
       if (!mounted || operation != _operation || cancel.isCancelled) return;
@@ -170,10 +206,75 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
       });
     } finally {
       if (mounted && operation == _operation) {
+        _stopProgress();
         setState(() => _downloading = false);
         _downloadCancel = null;
       }
     }
+  }
+
+  void _stopProgress() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
+    _progressSamples.clear();
+  }
+
+  void _startProgress(int operation) {
+    _stopProgress();
+    _progressSamples.add((0, 0));
+    _progressTimer = Timer.periodic(_progressInterval, (timer) {
+      if (!mounted || operation != _operation || !_downloading) {
+        timer.cancel();
+        return;
+      }
+      // Timer.tick includes elapsed periods when the event loop is busy, so
+      // skipped frames do not inflate the transfer rate. The two-second
+      // window also drops stale speed/ETA when a connection stops delivering.
+      final elapsed = timer.tick * _progressInterval.inMilliseconds;
+      _progressSamples.add((elapsed, _latestReceived));
+      while (_progressSamples.length > 2 &&
+          elapsed - _progressSamples.first.$1 > _speedWindowMilliseconds) {
+        _progressSamples.removeAt(0);
+      }
+      final (started, previousBytes) = _progressSamples.first;
+      final duration = elapsed - started;
+      final rate = duration > 0
+          ? ((_latestReceived - previousBytes).clamp(0, _latestTotal) *
+                1000 /
+                duration)
+          : 0.0;
+      final verifying = _latestTotal > 0 && _latestReceived >= _latestTotal;
+      if (_received != _latestReceived ||
+          _total != _latestTotal ||
+          _bytesPerSecond != rate ||
+          _verifying != verifying) {
+        setState(() {
+          _received = _latestReceived;
+          _total = _latestTotal;
+          _bytesPerSecond = rate;
+          _verifying = verifying;
+        });
+      }
+      // Hash verification can take time, but it needs no transfer timer.
+      if (verifying) _stopProgress();
+    });
+  }
+
+  String _speedText(AppLocalizations l) {
+    const mib = 1024 * 1024;
+    final useMib = _bytesPerSecond >= mib;
+    final speed = _bytesPerSecond / (useMib ? mib : 1024);
+    return l.forkUpdateTransferSpeed(
+      NumberFormat('0.0', l.localeName).format(speed),
+      useMib ? 'MiB' : 'KiB',
+    );
+  }
+
+  String _remainingText(AppLocalizations l) {
+    final seconds = ((_total - _received) / _bytesPerSecond).ceil();
+    return seconds < 60
+        ? l.forkUpdateRemainingSeconds(seconds)
+        : l.forkUpdateRemainingMinutes((seconds / 60).ceil());
   }
 
   bool _isHashFailure(Object error) =>
@@ -185,6 +286,7 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
     // the same moment the user cancels. A cancelled result cannot be installed.
     _operation++;
     _downloadCancel?.cancel();
+    _stopProgress();
     _downloadCancel = null;
     setState(() {
       _downloading = false;
@@ -307,6 +409,7 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
     final release = _checkResult?.release;
     final installed = _installed;
     final progress = _total > 0 ? (_received / _total).clamp(0.0, 1.0) : null;
+    final amountFormat = NumberFormat('0.0', l.localeName);
     return Scaffold(
       appBar: AppBar(title: Text(l.forkUpdateTitle)),
       body: ScanlineOverlay(
@@ -381,14 +484,52 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                       children: [
                         if (_downloading) ...[
                           Text(
-                            l.forkUpdateDownloading(
-                              progress == null
-                                  ? '…'
-                                  : '${(progress * 100).round()}%',
-                            ),
+                            _verifying
+                                ? l.forkUpdateVerifying
+                                : l.forkUpdateDownloading(
+                                    progress == null
+                                        ? '…'
+                                        : '${(progress * 100).round()}%',
+                                  ),
+                            key: const ValueKey('fork-update-progress-label'),
                           ),
                           const SizedBox(height: 12),
-                          LinearProgressIndicator(value: progress),
+                          LinearProgressIndicator(
+                            value: _verifying ? null : progress,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l.forkUpdateTransferSize(
+                              amountFormat.format(_received / (1024 * 1024)),
+                              amountFormat.format(_total / (1024 * 1024)),
+                            ),
+                            key: const ValueKey('fork-update-transfer-size'),
+                            style: TextStyle(color: t.muted),
+                          ),
+                          if (!_verifying) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              children: [
+                                Text(
+                                  _bytesPerSecond > 0
+                                      ? _speedText(l)
+                                      : l.forkUpdateWaitingForData,
+                                  key: const ValueKey('fork-update-speed'),
+                                  style: TextStyle(color: t.muted),
+                                ),
+                                if (_bytesPerSecond > 0 && _total > _received)
+                                  Text(
+                                    _remainingText(l),
+                                    key: const ValueKey(
+                                      'fork-update-remaining',
+                                    ),
+                                    style: TextStyle(color: t.muted),
+                                  ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 8),
                           TextButton(
                             key: const ValueKey('fork-update-cancel-download'),
@@ -412,6 +553,11 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                             label: Text(l.forkUpdateDownload),
                           ),
                         if (_cancelled) Text(l.forkUpdateCancelled),
+                        const SizedBox(height: 12),
+                        Text(
+                          l.forkUpdateConnectionHint,
+                          style: TextStyle(color: t.muted),
+                        ),
                       ],
                     ),
                   ),

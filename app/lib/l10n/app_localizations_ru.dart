@@ -3006,4 +3006,34 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get steamConnectionPacHelp =>
       'AVA обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут.';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/с';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return 'Осталось ~$seconds с';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return 'Осталось ~$minutes мин';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => 'Ожидание данных…';
+
+  @override
+  String get forkUpdateVerifying => 'Проверка установщика…';
+
+  @override
+  String get forkUpdateConnectionHint =>
+      'Загрузки используют доступный системный прокси или уже включённое встроенное ускорение. Иначе используется прямое подключение.';
 }

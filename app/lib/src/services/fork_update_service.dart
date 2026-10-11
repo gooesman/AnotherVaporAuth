@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../core/fork_update.dart';
+import 'fork_update_network.dart';
 
 const kForkReleasesUrl =
     'https://github.com/gooesman/AnotherVaporAuth/releases';
@@ -25,14 +26,21 @@ class ForkUpdateService {
   ForkUpdateService({
     Dio? dio,
     Future<Directory> Function()? temporaryDirectory,
-  }) : _dio = dio ?? Dio(),
+    this.parallelDownloads = true,
+  }) : _dio = dio ?? ForkUpdateNetwork.createDio(),
        _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory;
 
   final Dio _dio;
   final Future<Directory> Function() _temporaryDirectory;
 
+  /// Allows deterministic comparison with the serial transport in diagnostics.
+  final bool parallelDownloads;
+
   static const maxInstallerBytes = 512 * 1024 * 1024;
   static const maxMetadataBytes = 1024 * 1024;
+  static const _parallelThreshold = 8 * 1024 * 1024;
+  static const _rangeBytes = 2 * 1024 * 1024;
+  static const _rangeWorkers = 4;
   static const _requestTimeout = Duration(seconds: 20);
   static const _chunkTimeout = Duration(seconds: 30);
   static const _downloadTimeout = Duration(minutes: 30);
@@ -237,43 +245,30 @@ class ForkUpdateService {
       await partial.create(exclusive: true);
       await _assertFile(partial);
       output = await partial.open(mode: FileMode.writeOnly);
-      final response = await _downloadResponse(release, cancel);
-      final body = response.data!;
-      final length = int.tryParse(
-        response.headers.value('content-length') ?? '',
-      );
-      if (length != null && length != release.asset.size) {
-        await _discard(body);
-        throw ForkUpdateException(
-          length > maxInstallerBytes
-              ? ForkUpdateErrorCode.tooLarge
-              : ForkUpdateErrorCode.invalidMetadata,
-        );
-      }
-      var received = 0;
-      final result = _DigestSink();
-      final hasher = sha256.startChunkedConversion(result);
-      onProgress?.call(0, release.asset.size);
-      await for (final chunk in body.stream.timeout(_chunkTimeout)) {
-        _checkCancelled(cancel);
-        received += chunk.length;
-        if (received > maxInstallerBytes || received > release.asset.size) {
-          throw const ForkUpdateException(ForkUpdateErrorCode.tooLarge);
+      final progress = _DownloadProgress(release.asset.size, onProgress);
+      progress.start();
+      if (parallelDownloads && release.asset.size >= _parallelThreshold) {
+        try {
+          await _downloadParallel(release, cancel, output, progress);
+        } on _RangeUnsupported {
+          // All workers have stopped before reusing this owned file. Never
+          // accept a malformed 206 as evidence that ranges are unsupported.
+          _checkCancelled(cancel);
+          await output.truncate(0);
+          await output.setPosition(0);
+          await _downloadSerial(release, cancel, output, progress);
         }
-        hasher.add(chunk);
-        await output.writeFrom(chunk);
-        onProgress?.call(received, release.asset.size);
+      } else {
+        await _downloadSerial(release, cancel, output, progress);
       }
-      _checkCancelled(cancel);
-      hasher.close();
-      if (received != release.asset.size ||
-          result.digest.toString() != release.asset.sha256) {
-        throw const ForkUpdateException(ForkUpdateErrorCode.hashMismatch);
-      }
+      // This marks byte transfer completion, not a verified installer. The UI
+      // now shows its verification phase until this future returns successfully.
+      progress.transferred();
       await output.flush();
       await output.close();
       output = null;
       _checkCancelled(cancel);
+      await _verifyPartial(partial, release, cancel);
       await _assertDirectory(ownedDirectory);
       await _assertFile(partial);
       final destination = File(p.join(ownedDirectory.path, release.asset.name));
@@ -301,6 +296,232 @@ class ForkUpdateService {
       if (partial != null && ownedDirectory != null) {
         await _removePartial(partial, ownedDirectory);
       }
+    }
+  }
+
+  Future<void> _downloadSerial(
+    ForkUpdateRelease release,
+    CancelToken cancel,
+    RandomAccessFile output,
+    _DownloadProgress progress,
+  ) async {
+    final response = await _downloadResponse(release, cancel);
+    final body = response.data!;
+    final length = int.tryParse(response.headers.value('content-length') ?? '');
+    if (length != null && length != release.asset.size) {
+      await _discard(body);
+      throw ForkUpdateException(
+        length > maxInstallerBytes
+            ? ForkUpdateErrorCode.tooLarge
+            : ForkUpdateErrorCode.invalidMetadata,
+      );
+    }
+    var received = 0;
+    await for (final chunk in body.stream.timeout(_chunkTimeout)) {
+      _checkCancelled(cancel);
+      received += chunk.length;
+      if (received > maxInstallerBytes || received > release.asset.size) {
+        throw const ForkUpdateException(ForkUpdateErrorCode.tooLarge);
+      }
+      await output.writeFrom(chunk);
+      progress.update(received);
+    }
+    _checkCancelled(cancel);
+    if (received != release.asset.size) {
+      throw const ForkUpdateException(ForkUpdateErrorCode.hashMismatch);
+    }
+  }
+
+  Future<void> _downloadParallel(
+    ForkUpdateRelease release,
+    CancelToken cancel,
+    RandomAccessFile output,
+    _DownloadProgress progress,
+  ) async {
+    final group = CancelToken();
+    unawaited(cancel.whenCancel.then((error) => group.cancel(error.error)));
+    final writer = _RangeFileWriter(output, group);
+    final highestReceived = <int, int>{};
+    var aggregate = 0;
+    void received(int start, int count) {
+      final previous = highestReceived[start] ?? 0;
+      if (count <= previous) return;
+      highestReceived[start] = count;
+      aggregate += count - previous;
+      progress.update(aggregate);
+    }
+
+    try {
+      _checkCancelled(cancel);
+      // Probe one byte rather than waiting for an entire segment before the
+      // other connections can start. A 200/416 is cancelled before fallback.
+      final resolved = await _downloadRange(
+        release,
+        group,
+        writer,
+        0,
+        0,
+        onProgress: (count) => received(0, count),
+      );
+      var next = 1;
+      Object? failure;
+      Future<void> worker() async {
+        try {
+          while (next < release.asset.size) {
+            _checkCancelled(group);
+            final start = next;
+            final end = (start + _rangeBytes - 1) < release.asset.size
+                ? start + _rangeBytes - 1
+                : release.asset.size - 1;
+            next = end + 1;
+            await _downloadRange(
+              release,
+              group,
+              writer,
+              start,
+              end,
+              initialUrl: resolved,
+              onProgress: (count) => received(start, count),
+            );
+          }
+        } catch (error) {
+          failure ??= error;
+          group.cancel('workerStopped');
+        }
+      }
+
+      // Await every worker, including any queued disk write, before returning
+      // an error or allowing serial fallback to truncate the shared file.
+      await Future.wait(List.generate(_rangeWorkers, (_) => worker()));
+      if (failure != null) throw failure!;
+      _checkCancelled(cancel);
+    } finally {
+      group.cancel();
+    }
+  }
+
+  Future<Uri> _downloadRange(
+    ForkUpdateRelease release,
+    CancelToken group,
+    _RangeFileWriter writer,
+    int start,
+    int end, {
+    Uri? initialUrl,
+    required void Function(int received) onProgress,
+  }) async {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      _checkCancelled(group);
+      final requestCancel = CancelToken();
+      unawaited(
+        group.whenCancel.then((error) => requestCancel.cancel(error.error)),
+      );
+      ResponseBody? body;
+      try {
+        final response = await _downloadResponse(
+          release,
+          requestCancel,
+          range: 'bytes=$start-$end',
+          // A retry resolves the official release URL again in case GitHub's
+          // short-lived signed URL has expired.
+          initialUrl: attempt == 0 ? initialUrl : null,
+        );
+        body = response.data;
+        if (response.statusCode == 200 || response.statusCode == 416) {
+          await _discard(body);
+          body = null;
+          throw const _RangeUnsupported();
+        }
+        _validateRangeHeaders(response, start, end, release.asset.size);
+        var received = 0;
+        final expected = end - start + 1;
+        final stream = body!;
+        body = null; // The await-for owns and cancels its subscription.
+        await for (final chunk in stream.stream.timeout(_chunkTimeout)) {
+          _checkCancelled(group);
+          if (received + chunk.length > expected) {
+            throw const ForkUpdateException(ForkUpdateErrorCode.tooLarge);
+          }
+          await writer.write(start + received, chunk);
+          received += chunk.length;
+          onProgress(received);
+        }
+        _checkCancelled(group);
+        if (received != expected) {
+          throw const ForkUpdateException(ForkUpdateErrorCode.networkError);
+        }
+        return response.requestOptions.uri;
+      } on _RangeUnsupported {
+        rethrow;
+      } catch (error) {
+        _checkCancelled(group);
+        // Dio parses Content-Length before returning a streamed response.
+        // Malformed metadata must not be treated as a retryable outage.
+        if (error is FormatException ||
+            error is DioException && error.error is FormatException) {
+          throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
+        }
+        final classified = _downloadError(error, requestCancel);
+        if (classified.code != ForkUpdateErrorCode.networkError ||
+            attempt == 2) {
+          throw classified;
+        }
+      } finally {
+        await _discard(body);
+        requestCancel.cancel();
+      }
+    }
+    throw const ForkUpdateException(ForkUpdateErrorCode.networkError);
+  }
+
+  static void _validateRangeHeaders(
+    Response<ResponseBody> response,
+    int start,
+    int end,
+    int total,
+  ) {
+    String? header(String name) {
+      final values = response.headers[name];
+      if (values == null) return null;
+      if (values.length != 1) {
+        throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
+      }
+      return values.single.trim();
+    }
+
+    final range = header('content-range');
+    final length = header('content-length');
+    final encoding = header('content-encoding');
+    if (response.statusCode != 206 ||
+        response.data == null ||
+        range != 'bytes $start-$end/$total' ||
+        (length != null && int.tryParse(length) != end - start + 1) ||
+        (encoding != null && encoding.toLowerCase() != 'identity')) {
+      throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
+    }
+  }
+
+  static Future<void> _verifyPartial(
+    File file,
+    ForkUpdateRelease release,
+    CancelToken cancel,
+  ) async {
+    await _assertFile(file);
+    final result = _DigestSink();
+    final hasher = sha256.startChunkedConversion(result);
+    var count = 0;
+    await for (final chunk in file.openRead()) {
+      _checkCancelled(cancel);
+      count += chunk.length;
+      if (count > release.asset.size) {
+        throw const ForkUpdateException(ForkUpdateErrorCode.hashMismatch);
+      }
+      hasher.add(chunk);
+    }
+    hasher.close();
+    _checkCancelled(cancel);
+    if (count != release.asset.size ||
+        result.digest.toString() != release.asset.sha256) {
+      throw const ForkUpdateException(ForkUpdateErrorCode.hashMismatch);
     }
   }
 
@@ -350,6 +571,7 @@ class ForkUpdateService {
     Uri url,
     CancelToken cancel, {
     int byteLimit = maxMetadataBytes,
+    String? range,
   }) => _dio
       .getUri<ResponseBody>(
         url,
@@ -371,6 +593,8 @@ class ForkUpdateService {
                 ? 'application/vnd.github+json'
                 : 'application/octet-stream',
             'User-Agent': 'AVA-Fork-Updater',
+            'Range': ?range,
+            if (range != null) 'Accept-Encoding': 'identity',
             if (url.host == 'api.github.com')
               'X-GitHub-Api-Version': '2026-03-10',
           },
@@ -386,13 +610,28 @@ class ForkUpdateService {
 
   Future<Response<ResponseBody>> _downloadResponse(
     ForkUpdateRelease release,
-    CancelToken cancel,
-  ) async {
-    var url = release.asset.url;
+    CancelToken cancel, {
+    String? range,
+    Uri? initialUrl,
+  }) async {
+    var url = initialUrl ?? release.asset.url;
+    if (!_allowedRedirect(url, release)) {
+      throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
+    }
     for (var redirects = 0; redirects <= 5; redirects++) {
       _checkCancelled(cancel);
-      final response = await _get(url, cancel, byteLimit: release.asset.size);
-      if (response.statusCode == 200 && response.data != null) return response;
+      final response = await _get(
+        url,
+        cancel,
+        byteLimit: release.asset.size,
+        range: range,
+      );
+      if ((response.statusCode == 200 ||
+              range != null &&
+                  const [206, 416].contains(response.statusCode)) &&
+          response.data != null) {
+        return response;
+      }
       await _discard(response.data);
       if (![301, 302, 303, 307, 308].contains(response.statusCode)) {
         throw const ForkUpdateException(ForkUpdateErrorCode.networkError);
@@ -582,4 +821,48 @@ class _DigestSink implements Sink<Digest> {
 
   @override
   void close() {}
+}
+
+class _RangeUnsupported implements Exception {
+  const _RangeUnsupported();
+}
+
+/// At most one queued chunk per worker; RAF seeks/writes cannot overlap.
+class _RangeFileWriter {
+  _RangeFileWriter(this.output, this.cancel);
+
+  final RandomAccessFile output;
+  final CancelToken cancel;
+  Future<void> _tail = Future<void>.value();
+
+  Future<void> write(int offset, List<int> bytes) {
+    final next = _tail.then((_) async {
+      ForkUpdateService._checkCancelled(cancel);
+      await output.setPosition(offset);
+      await output.writeFrom(bytes);
+    });
+    _tail = next.catchError((_) {});
+    return next;
+  }
+}
+
+/// Per-range high water marks feed this monotonic UI value. Retried bytes and
+/// serial fallback never add to progress twice. 100% starts hash verification;
+/// only download() returning VerifiedForkUpdate authorizes the next UI step.
+class _DownloadProgress {
+  _DownloadProgress(this.total, this.callback);
+
+  final int total;
+  final void Function(int received, int total)? callback;
+  int _shown = 0;
+
+  void start() => callback?.call(0, total);
+
+  void update(int value) {
+    if (value <= _shown || value >= total) return;
+    _shown = value;
+    callback?.call(value, total);
+  }
+
+  void transferred() => callback?.call(total, total);
 }

@@ -5140,6 +5140,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PAC is detected but not evaluated by AVA. This check uses the current system route.'**
   String get steamConnectionPacHelp;
+
+  /// No description provided for @forkUpdateTransferSize.
+  ///
+  /// In en, this message translates to:
+  /// **'{received} / {total} MiB'**
+  String forkUpdateTransferSize(String received, String total);
+
+  /// No description provided for @forkUpdateTransferSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed} {unit}/s'**
+  String forkUpdateTransferSpeed(String speed, String unit);
+
+  /// No description provided for @forkUpdateRemainingSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'About {seconds}s left'**
+  String forkUpdateRemainingSeconds(int seconds);
+
+  /// No description provided for @forkUpdateRemainingMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'About {minutes}min left'**
+  String forkUpdateRemainingMinutes(int minutes);
+
+  /// No description provided for @forkUpdateWaitingForData.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for data…'**
+  String get forkUpdateWaitingForData;
+
+  /// No description provided for @forkUpdateVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying installer…'**
+  String get forkUpdateVerifying;
+
+  /// No description provided for @forkUpdateConnectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads use an available system proxy or built-in acceleration that is already running; otherwise they connect directly.'**
+  String get forkUpdateConnectionHint;
 }
 
 class _AppLocalizationsDelegate

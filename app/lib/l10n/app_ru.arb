@@ -859,5 +859,12 @@
   },
   "tradeSendRejected": "Steam отклонил предложение без подробной причины. Проверьте выбранные предметы и ограничения обмена.",
   "tradeSendUnreadableResponse": "Steam не вернул полное подтверждение отправки.",
-  "steamConnectionPacHelp": "AVA обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут."
+  "steamConnectionPacHelp": "AVA обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут.",
+  "forkUpdateTransferSize": "{received} / {total} MiB",
+  "forkUpdateTransferSpeed": "{speed} {unit}/с",
+  "forkUpdateRemainingSeconds": "Осталось ~{seconds} с",
+  "forkUpdateRemainingMinutes": "Осталось ~{minutes} мин",
+  "forkUpdateWaitingForData": "Ожидание данных…",
+  "forkUpdateVerifying": "Проверка установщика…",
+  "forkUpdateConnectionHint": "Загрузки используют доступный системный прокси или уже включённое встроенное ускорение. Иначе используется прямое подключение."
 }
