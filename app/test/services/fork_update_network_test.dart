@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:ava/src/core/fork_update.dart';
 import 'package:ava/src/services/fork_update_network.dart';
 import 'package:ava/src/services/steam_network.dart';
 import 'package:dio/dio.dart';
@@ -53,6 +54,158 @@ void main() {
       );
     }
   });
+
+  test('mirror mapping permits only the exact public fork asset wrapper', () {
+    final official = Uri.parse(
+      'https://github.com/gooesman/AnotherVaporAuth/releases/download/v1.5.2+100015/AVA-Fork-v1.5.2+100015-android-arm64.apk',
+    );
+    for (final source in [
+      ForkUpdateDownloadSource.axisNow,
+      ForkUpdateDownloadSource.v4,
+    ]) {
+      final url = ForkUpdateNetwork.mirrorAssetUrl(source, official);
+      expect(
+        url.toString(),
+        contains('v1.5.2%2B100015/AVA-Fork-v1.5.2%2B100015-android-arm64.apk'),
+      );
+      expect(ForkUpdateNetwork.isMirrorRequest(url), isTrue);
+      for (final invalid in [
+        url.replace(scheme: 'http'),
+        url.replace(host: 'unlisted.gh-proxy.org'),
+        url.replace(host: '${url.host}.evil.example'),
+        url.replace(userInfo: 'private:credential'),
+        url.replace(port: 444),
+        url.replace(query: 'private=token'),
+        url.replace(fragment: 'fragment'),
+        Uri.parse(
+          'https://${url.host}/https://api.github.com/repos/gooesman/AnotherVaporAuth/releases/latest',
+        ),
+        Uri.parse(
+          'https://${url.host}/https://github.com/other/project/releases/download/v1/package.apk',
+        ),
+        Uri.parse(
+          'https://${url.host}/https://github.com/gooesman/AnotherVaporAuth/releases/download/v1/file.apk/extra',
+        ),
+      ]) {
+        expect(
+          ForkUpdateNetwork.isMirrorRequest(invalid),
+          isFalse,
+          reason: invalid.toString(),
+        );
+      }
+    }
+    for (final invalid in [
+      Uri.parse(_latest),
+      official.replace(scheme: 'http'),
+      official.replace(query: 'private=token'),
+      Uri.parse(
+        'https://github.com/other/project/releases/download/v1/package.apk',
+      ),
+      Uri.parse('https://release-assets.githubusercontent.com/asset'),
+    ]) {
+      expect(
+        () => ForkUpdateNetwork.mirrorAssetUrl(
+          ForkUpdateDownloadSource.axisNow,
+          invalid,
+        ),
+        throwsArgumentError,
+      );
+    }
+    expect(
+      () => ForkUpdateNetwork.mirrorAssetUrl(
+        ForkUpdateDownloadSource.github,
+        official,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test(
+    'mirror factory connects directly despite pending readiness and active proxies',
+    () async {
+      final ready = Completer<void>();
+      final steamReady = Completer<void>();
+      final proxy = SteamNetworkProxy(
+        host: '127.0.0.1',
+        port: 34567,
+        username: 'synthetic',
+        password: 'never-forward',
+      );
+      ForkUpdateNetwork.configureProxy(() => proxy, readiness: ready.future);
+      SteamNetwork.configureProxy(() => proxy, readiness: steamReady.future);
+      final destinations = <String>[];
+      final dio = ForkUpdateNetwork.createMirrorDio(
+        socketConnector: (host, port) async {
+          destinations.add('$host:$port');
+          // No external traffic is permitted by this test seam.
+          throw const SocketException('synthetic direct connection reached');
+        },
+      );
+      addTearDown(() => dio.close(force: true));
+      final headers = <String, dynamic>{};
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (request, handler) {
+            headers.addAll(request.headers);
+            handler.next(request);
+          },
+        ),
+      );
+      await expectLater(
+        dio
+            .get<String>(
+              'https://axisnow.gh-proxy.org/https://github.com/gooesman/AnotherVaporAuth/releases/download/v1/file.apk',
+            )
+            .timeout(const Duration(seconds: 2)),
+        throwsA(isA<DioException>()),
+      );
+      expect(destinations, ['axisnow.gh-proxy.org:443']);
+      expect(ready.isCompleted, isFalse);
+      expect(steamReady.isCompleted, isFalse);
+      expect(
+        headers.keys.map((key) => key.toLowerCase()),
+        isNot(
+          contains(anyOf('authorization', 'cookie', 'proxy-authorization')),
+        ),
+      );
+      ready.complete();
+      steamReady.complete();
+    },
+  );
+
+  test(
+    'direct mirror transport retains certificate and hostname validation',
+    () async {
+      final fixture = await _NetworkFixture.create();
+      addTearDown(fixture.close);
+      final destinations = <String>[];
+      final dio = ForkUpdateNetwork.createMirrorDio(
+        securityContext: fixture.trust,
+        socketConnector: (host, port) {
+          destinations.add('$host:$port');
+          return Socket.startConnect(
+            InternetAddress.loopbackIPv4,
+            fixture.server.port,
+          );
+        },
+      );
+      addTearDown(() => dio.close(force: true));
+      await expectLater(
+        dio.get<String>(
+          'https://axisnow.gh-proxy.org/https://github.com/gooesman/AnotherVaporAuth/releases/download/v1/file.apk',
+        ),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.error,
+            'TLS error',
+            isA<HandshakeException>(),
+          ),
+        ),
+      );
+      expect(destinations, ['axisnow.gh-proxy.org:443']);
+      expect(fixture.originHosts, isEmpty);
+    },
+  );
 
   test(
     'real update CONNECT isolates credentials and adopts route changes',

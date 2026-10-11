@@ -5180,8 +5180,32 @@ abstract class AppLocalizations {
   /// No description provided for @forkUpdateConnectionHint.
   ///
   /// In en, this message translates to:
-  /// **'Downloads use an available system proxy or built-in acceleration that is already running; otherwise they connect directly.'**
+  /// **'Automatic mode downloads through GH-Proxy without starting a proxy, then falls back to GitHub if needed. Files are checked against GitHub’s SHA-256.'**
   String get forkUpdateConnectionHint;
+
+  /// No description provided for @forkUpdateSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Download source'**
+  String get forkUpdateSourceLabel;
+
+  /// No description provided for @forkUpdateSourceAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic acceleration'**
+  String get forkUpdateSourceAutomatic;
+
+  /// No description provided for @forkUpdateSourceOfficial.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub official'**
+  String get forkUpdateSourceOfficial;
+
+  /// No description provided for @forkUpdateSourceAccelerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct acceleration · {provider}'**
+  String forkUpdateSourceAccelerated(String provider);
 }
 
 class _AppLocalizationsDelegate

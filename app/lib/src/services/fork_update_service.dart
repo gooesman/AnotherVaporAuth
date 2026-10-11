@@ -15,8 +15,9 @@ const kForkReleasesUrl =
 const kForkLatestReleaseApi =
     'https://api.github.com/repos/gooesman/AnotherVaporAuth/releases/latest';
 
-/// Only this fork's public, stable GitHub releases are accepted. This service
-/// never installs anything and never shares Steam authentication headers.
+/// Only this fork's public, stable GitHub release metadata is trusted. Optional
+/// direct mirrors transport bytes checked against the official asset SHA256.
+/// This service never installs anything or shares Steam authentication headers.
 ///
 /// Release metadata (including asset.digest):
 /// https://docs.github.com/en/rest/releases/releases#get-the-latest-release
@@ -25,12 +26,19 @@ const kForkLatestReleaseApi =
 class ForkUpdateService {
   ForkUpdateService({
     Dio? dio,
+    Dio? mirrorDio,
     Future<Directory> Function()? temporaryDirectory,
     this.parallelDownloads = true,
   }) : _dio = dio ?? ForkUpdateNetwork.createDio(),
+       // Existing injected official clients remain fully isolated: tests and
+       // diagnostic callers must explicitly inject a mirror client to use it.
+       _mirrorDio =
+           mirrorDio ??
+           (dio == null ? ForkUpdateNetwork.createMirrorDio() : null),
        _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory;
 
   final Dio _dio;
+  final Dio? _mirrorDio;
   final Future<Directory> Function() _temporaryDirectory;
 
   /// Allows deterministic comparison with the serial transport in diagnostics.
@@ -44,6 +52,11 @@ class ForkUpdateService {
   static const _requestTimeout = Duration(seconds: 20);
   static const _chunkTimeout = Duration(seconds: 30);
   static const _downloadTimeout = Duration(minutes: 30);
+  static const _mirrorRequestTimeout = Duration(seconds: 8);
+  static const _mirrorChunkTimeout = Duration(seconds: 12);
+  // Fail idle mirrors quickly without discarding a steadily progressing
+  // download on slower mobile networks. The overall 30-minute cap still holds.
+  static const _mirrorDownloadTimeout = Duration(minutes: 10);
   static const _maxBuild = 2100000000;
   static final _releaseTag = RegExp(
     r'^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\+([1-9]\d*)$',
@@ -226,6 +239,8 @@ class ForkUpdateService {
     ForkUpdateRelease release, {
     CancelToken? cancelToken,
     void Function(int received, int total)? onProgress,
+    ForkUpdateDownloadMode mode = ForkUpdateDownloadMode.automatic,
+    void Function(ForkUpdateDownloadSource source)? onSourceChanged,
   }) async {
     _validateRelease(release);
     final cancel = CancelToken();
@@ -234,7 +249,6 @@ class ForkUpdateService {
     final deadline = Timer(_downloadTimeout, () => cancel.cancel('timeout'));
     Directory? ownedDirectory;
     File? partial;
-    RandomAccessFile? output;
     try {
       _checkCancelled(cancel);
       final updates = await _updatesDirectory();
@@ -244,31 +258,59 @@ class ForkUpdateService {
       partial = File(p.join(ownedDirectory.path, '${release.asset.name}.part'));
       await partial.create(exclusive: true);
       await _assertFile(partial);
-      output = await partial.open(mode: FileMode.writeOnly);
-      final progress = _DownloadProgress(release.asset.size, onProgress);
-      progress.start();
-      if (parallelDownloads && release.asset.size >= _parallelThreshold) {
+      final routes = [
+        if (mode == ForkUpdateDownloadMode.automatic && _mirrorDio != null)
+          for (final source in [
+            ForkUpdateDownloadSource.axisNow,
+            ForkUpdateDownloadSource.v4,
+          ])
+            _DownloadRoute(
+              source,
+              _mirrorDio,
+              ForkUpdateNetwork.mirrorAssetUrl(source, release.asset.url),
+            ),
+        _DownloadRoute(
+          ForkUpdateDownloadSource.github,
+          _dio,
+          release.asset.url,
+        ),
+      ];
+      for (final route in routes) {
+        _checkCancelled(cancel);
+        onSourceChanged?.call(route.source);
+        final attempt = CancelToken();
+        unawaited(
+          cancel.whenCancel.then((error) => attempt.cancel(error.error)),
+        );
+        final sourceDeadline = route.isMirror
+            ? Timer(_mirrorDownloadTimeout, () => attempt.cancel('timeout'))
+            : null;
         try {
-          await _downloadParallel(release, cancel, output, progress);
-        } on _RangeUnsupported {
-          // All workers have stopped before reusing this owned file. Never
-          // accept a malformed 206 as evidence that ranges are unsupported.
+          await _downloadFromSource(
+            partial,
+            ownedDirectory,
+            release,
+            route,
+            attempt,
+            onProgress,
+          );
           _checkCancelled(cancel);
-          await output.truncate(0);
-          await output.setPosition(0);
-          await _downloadSerial(release, cancel, output, progress);
+          break;
+        } catch (error) {
+          // User cancellation never starts another source. Mirror failures,
+          // including corrupt data, get one clean attempt from the next route.
+          _checkCancelled(cancel);
+          final classified = _downloadError(error, attempt);
+          if (!route.isMirror ||
+              classified.code == ForkUpdateErrorCode.ioError) {
+            throw classified;
+          }
+        } finally {
+          sourceDeadline?.cancel();
+          attempt.cancel();
         }
-      } else {
-        await _downloadSerial(release, cancel, output, progress);
       }
-      // This marks byte transfer completion, not a verified installer. The UI
-      // now shows its verification phase until this future returns successfully.
-      progress.transferred();
-      await output.flush();
-      await output.close();
-      output = null;
       _checkCancelled(cancel);
-      await _verifyPartial(partial, release, cancel);
       await _assertDirectory(ownedDirectory);
       await _assertFile(partial);
       final destination = File(p.join(ownedDirectory.path, release.asset.name));
@@ -288,25 +330,71 @@ class ForkUpdateService {
     } finally {
       deadline.cancel();
       cancel.cancel();
-      try {
-        await output?.close();
-      } catch (_) {
-        // Preserve the original failure while still trying to remove partials.
-      }
       if (partial != null && ownedDirectory != null) {
         await _removePartial(partial, ownedDirectory);
       }
     }
   }
 
+  Future<void> _downloadFromSource(
+    File partial,
+    Directory owner,
+    ForkUpdateRelease release,
+    _DownloadRoute route,
+    CancelToken cancel,
+    void Function(int received, int total)? onProgress,
+  ) async {
+    await _assertDirectory(owner);
+    await _assertFile(partial);
+    _checkCancelled(cancel);
+    // Every source starts from an empty owned file; data from a failed mirror
+    // cannot be mixed with the next mirror or the official package.
+    RandomAccessFile? output = await partial.open(mode: FileMode.writeOnly);
+    try {
+      final progress = _DownloadProgress(release.asset.size, onProgress);
+      progress.start();
+      if (parallelDownloads && release.asset.size >= _parallelThreshold) {
+        try {
+          await _downloadParallel(release, route, cancel, output, progress);
+        } on _RangeUnsupported {
+          // All range workers stop before serial fallback reuses this file.
+          _checkCancelled(cancel);
+          await output.truncate(0);
+          await output.setPosition(0);
+          await _downloadSerial(release, route, cancel, output, progress);
+        }
+      } else {
+        await _downloadSerial(release, route, cancel, output, progress);
+      }
+      progress.transferred();
+      await output.flush();
+      await output.close();
+      output = null;
+      _checkCancelled(cancel);
+      await _verifyPartial(partial, release, cancel);
+    } finally {
+      // Each transfer waits for its workers before returning. Close the file
+      // before the caller can truncate it for a different source.
+      await output?.close();
+    }
+  }
+
   Future<void> _downloadSerial(
     ForkUpdateRelease release,
+    _DownloadRoute route,
     CancelToken cancel,
     RandomAccessFile output,
     _DownloadProgress progress,
   ) async {
-    final response = await _downloadResponse(release, cancel);
+    final response = await _downloadResponse(release, route, cancel);
     final body = response.data!;
+    final encoding = response.headers.value('content-encoding');
+    if (route.isMirror &&
+        encoding != null &&
+        encoding.toLowerCase() != 'identity') {
+      await _discard(body);
+      throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
+    }
     final length = int.tryParse(response.headers.value('content-length') ?? '');
     if (length != null && length != release.asset.size) {
       await _discard(body);
@@ -317,7 +405,7 @@ class ForkUpdateService {
       );
     }
     var received = 0;
-    await for (final chunk in body.stream.timeout(_chunkTimeout)) {
+    await for (final chunk in body.stream.timeout(route.chunkTimeout)) {
       _checkCancelled(cancel);
       received += chunk.length;
       if (received > maxInstallerBytes || received > release.asset.size) {
@@ -334,6 +422,7 @@ class ForkUpdateService {
 
   Future<void> _downloadParallel(
     ForkUpdateRelease release,
+    _DownloadRoute route,
     CancelToken cancel,
     RandomAccessFile output,
     _DownloadProgress progress,
@@ -357,6 +446,7 @@ class ForkUpdateService {
       // other connections can start. A 200/416 is cancelled before fallback.
       final resolved = await _downloadRange(
         release,
+        route,
         group,
         writer,
         0,
@@ -376,6 +466,7 @@ class ForkUpdateService {
             next = end + 1;
             await _downloadRange(
               release,
+              route,
               group,
               writer,
               start,
@@ -402,6 +493,7 @@ class ForkUpdateService {
 
   Future<Uri> _downloadRange(
     ForkUpdateRelease release,
+    _DownloadRoute route,
     CancelToken group,
     _RangeFileWriter writer,
     int start,
@@ -409,7 +501,8 @@ class ForkUpdateService {
     Uri? initialUrl,
     required void Function(int received) onProgress,
   }) async {
-    for (var attempt = 0; attempt < 3; attempt++) {
+    final attempts = route.isMirror ? 1 : 3;
+    for (var attempt = 0; attempt < attempts; attempt++) {
       _checkCancelled(group);
       final requestCancel = CancelToken();
       unawaited(
@@ -419,6 +512,7 @@ class ForkUpdateService {
       try {
         final response = await _downloadResponse(
           release,
+          route,
           requestCancel,
           range: 'bytes=$start-$end',
           // A retry resolves the official release URL again in case GitHub's
@@ -436,7 +530,7 @@ class ForkUpdateService {
         final expected = end - start + 1;
         final stream = body!;
         body = null; // The await-for owns and cancels its subscription.
-        await for (final chunk in stream.stream.timeout(_chunkTimeout)) {
+        await for (final chunk in stream.stream.timeout(route.chunkTimeout)) {
           _checkCancelled(group);
           if (received + chunk.length > expected) {
             throw const ForkUpdateException(ForkUpdateErrorCode.tooLarge);
@@ -462,7 +556,7 @@ class ForkUpdateService {
         }
         final classified = _downloadError(error, requestCancel);
         if (classified.code != ForkUpdateErrorCode.networkError ||
-            attempt == 2) {
+            attempt == attempts - 1) {
           throw classified;
         }
       } finally {
@@ -572,7 +666,8 @@ class ForkUpdateService {
     CancelToken cancel, {
     int byteLimit = maxMetadataBytes,
     String? range,
-  }) => _dio
+    _DownloadRoute? route,
+  }) => (route?.client ?? _dio)
       .getUri<ResponseBody>(
         url,
         cancelToken: cancel,
@@ -585,8 +680,8 @@ class ForkUpdateService {
           responseType: ResponseType.stream,
           followRedirects: false,
           maxRedirects: 0,
-          sendTimeout: _requestTimeout,
-          receiveTimeout: _chunkTimeout,
+          sendTimeout: route?.requestTimeout ?? _requestTimeout,
+          receiveTimeout: route?.chunkTimeout ?? _chunkTimeout,
           validateStatus: (_) => true,
           headers: {
             'Accept': url.host == 'api.github.com'
@@ -594,14 +689,15 @@ class ForkUpdateService {
                 : 'application/octet-stream',
             'User-Agent': 'AVA-Fork-Updater',
             'Range': ?range,
-            if (range != null) 'Accept-Encoding': 'identity',
+            if (range != null || (route?.isMirror ?? false))
+              'Accept-Encoding': 'identity',
             if (url.host == 'api.github.com')
               'X-GitHub-Api-Version': '2026-03-10',
           },
         ),
       )
       .timeout(
-        _requestTimeout,
+        route?.requestTimeout ?? _requestTimeout,
         onTimeout: () {
           cancel.cancel('timeout');
           throw const ForkUpdateException(ForkUpdateErrorCode.networkError);
@@ -610,12 +706,13 @@ class ForkUpdateService {
 
   Future<Response<ResponseBody>> _downloadResponse(
     ForkUpdateRelease release,
+    _DownloadRoute route,
     CancelToken cancel, {
     String? range,
     Uri? initialUrl,
   }) async {
-    var url = initialUrl ?? release.asset.url;
-    if (!_allowedRedirect(url, release)) {
+    var url = initialUrl ?? route.url;
+    if (route.isMirror ? url != route.url : !_allowedRedirect(url, release)) {
       throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
     }
     for (var redirects = 0; redirects <= 5; redirects++) {
@@ -625,6 +722,7 @@ class ForkUpdateService {
         cancel,
         byteLimit: release.asset.size,
         range: range,
+        route: route,
       );
       if ((response.statusCode == 200 ||
               range != null &&
@@ -635,6 +733,12 @@ class ForkUpdateService {
       await _discard(response.data);
       if (![301, 302, 303, 307, 308].contains(response.statusCode)) {
         throw const ForkUpdateException(ForkUpdateErrorCode.networkError);
+      }
+      // Mirrors may only serve the exact canonical GitHub asset wrapped by
+      // their fixed prefix. Never follow a mirror-selected redirect, even back
+      // to an official host; fallback starts a fresh trusted source instead.
+      if (route.isMirror) {
+        throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
       }
       final location = response.headers.value('location');
       if (location == null || redirects == 5) {
@@ -811,6 +915,22 @@ class ForkUpdateService {
       // A failed cleanup must not hide cancellation or hash validation errors.
     }
   }
+}
+
+class _DownloadRoute {
+  const _DownloadRoute(this.source, this.client, this.url);
+
+  final ForkUpdateDownloadSource source;
+  final Dio client;
+  final Uri url;
+
+  bool get isMirror => source != ForkUpdateDownloadSource.github;
+  Duration get requestTimeout => isMirror
+      ? ForkUpdateService._mirrorRequestTimeout
+      : ForkUpdateService._requestTimeout;
+  Duration get chunkTimeout => isMirror
+      ? ForkUpdateService._mirrorChunkTimeout
+      : ForkUpdateService._chunkTimeout;
 }
 
 class _DigestSink implements Sink<Digest> {

@@ -866,5 +866,9 @@
   "forkUpdateRemainingMinutes": "Осталось ~{minutes} мин",
   "forkUpdateWaitingForData": "Ожидание данных…",
   "forkUpdateVerifying": "Проверка установщика…",
-  "forkUpdateConnectionHint": "Загрузки используют доступный системный прокси или уже включённое встроенное ускорение. Иначе используется прямое подключение."
+  "forkUpdateConnectionHint": "Автоматический режим загружает через GH-Proxy без запуска прокси и при необходимости переключается на GitHub. Файлы проверяются по SHA-256 от GitHub.",
+  "forkUpdateSourceLabel": "Источник загрузки",
+  "forkUpdateSourceAutomatic": "Автоматическое ускорение",
+  "forkUpdateSourceOfficial": "Официальный GitHub",
+  "forkUpdateSourceAccelerated": "Прямое ускорение · {provider}"
 }

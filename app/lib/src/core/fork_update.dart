@@ -2,6 +2,10 @@ import 'dart:io';
 
 enum ForkUpdateTarget { windowsX64, androidArm64 }
 
+enum ForkUpdateDownloadMode { automatic, github }
+
+enum ForkUpdateDownloadSource { axisNow, v4, github }
+
 enum ForkUpdateCheckStatus {
   available,
   upToDate,

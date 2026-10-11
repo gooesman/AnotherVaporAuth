@@ -92,6 +92,9 @@ is optional. AVA's Steam HTTPS requests use the connection, including QR
 approval, community, market, images and backup codes. The app's official GitHub
 update checks/downloads can also reuse the already-active connection, with
 external proxies taking priority. Opening updates does not start another core.
+Automatic package downloads first try GH-Proxy's direct acceleration routes,
+independent of this app proxy, and fall back to GitHub. GitHub-only downloading
+is selectable; metadata and SHA-256 remain sourced from official GitHub.
 It does not accelerate the
 Steam desktop client, games, a browser or other apps, and never changes the
 system proxy, DNS, certificates or TUN routing. Unsupported nodes are reported;
@@ -311,6 +314,13 @@ type and rarity filters. Categories come from Steam's inventory tags and use
 its localized labels, so CS weapon types, graffiti, music kits and other item
 types can be selected separately. Items with missing metadata remain accessible.
 Changing a filter does not discard already selected trade items or quantities.
+
+On phones, a compact game/context menu remains visible in portrait and landscape,
+including screens with large corner insets or enlarged text. Desktop retains
+horizontal game tabs and an all-context menu. The interior selector does not
+consume the bottom system/corner safe area. Category options and filtered stacks
+are cached until inventory, filters or relevant localized labels change;
+reselecting the current context keeps its items, while Refresh reloads them.
 
 Inventory thumbnails and trade selections use a thin rarity-colored border and
 a faint tint, retaining the existing skin and selection styling. Colors come

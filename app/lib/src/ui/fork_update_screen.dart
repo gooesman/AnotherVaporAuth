@@ -73,6 +73,8 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
   int _latestTotal = 0;
   double _bytesPerSecond = 0;
   bool _verifying = false;
+  ForkUpdateDownloadMode _downloadMode = ForkUpdateDownloadMode.automatic;
+  ForkUpdateDownloadSource? _downloadSource;
   Timer? _progressTimer;
   final _progressSamples = <(int, int)>[];
   int _operation = 0;
@@ -106,6 +108,7 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
       _failure = null;
       _cancelled = false;
       _installStarted = false;
+      _downloadSource = null;
     });
     try {
       final target = ref.read(forkUpdateTargetProvider);
@@ -170,6 +173,7 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
       _latestTotal = release.asset.size;
       _bytesPerSecond = 0;
       _verifying = false;
+      _downloadSource = null;
     });
     _startProgress(operation);
     try {
@@ -179,7 +183,26 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
           .read(forkUpdateServiceProvider)
           .download(
             release,
+            mode: _downloadMode,
             cancelToken: cancel,
+            onSourceChanged: (source) {
+              if (!mounted ||
+                  operation != _operation ||
+                  !_downloading ||
+                  cancel.isCancelled) {
+                return;
+              }
+              setState(() {
+                _downloadSource = source;
+                _received = _latestReceived = 0;
+                _total = _latestTotal = release.asset.size;
+                _bytesPerSecond = 0;
+                _verifying = false;
+              });
+              // A fallback starts a separate, fully verified transfer. Do not
+              // carry the previous source's bytes or speed into its estimate.
+              _startProgress(operation);
+            },
             onProgress: (received, total) {
               if (!mounted ||
                   operation != _operation ||
@@ -482,6 +505,66 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (_failure == _Failure.download ||
+                            _failure == _Failure.hash) ...[
+                          Text(
+                            _failureText(l, _failure!),
+                            key: const ValueKey('fork-update-error'),
+                            style: TextStyle(color: t.bad),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (_verified == null) ...[
+                          DropdownButtonFormField<ForkUpdateDownloadMode>(
+                            key: const ValueKey('fork-update-source-mode'),
+                            initialValue: _downloadMode,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: l.forkUpdateSourceLabel,
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: ForkUpdateDownloadMode.automatic,
+                                child: Text(
+                                  l.forkUpdateSourceAutomatic,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: ForkUpdateDownloadMode.github,
+                                child: Text(
+                                  l.forkUpdateSourceOfficial,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                            onChanged: _busy
+                                ? null
+                                : (value) {
+                                    if (value != null) {
+                                      setState(() => _downloadMode = value);
+                                    }
+                                  },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (_downloadSource case final source?) ...[
+                          Text(
+                            switch (source) {
+                              ForkUpdateDownloadSource.axisNow =>
+                                l.forkUpdateSourceAccelerated('AxisNow'),
+                              ForkUpdateDownloadSource.v4 =>
+                                l.forkUpdateSourceAccelerated('IPv4'),
+                              ForkUpdateDownloadSource.github =>
+                                l.forkUpdateSourceOfficial,
+                            },
+                            key: const ValueKey('fork-update-active-source'),
+                            style: TextStyle(color: t.muted),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         if (_downloading) ...[
                           Text(
                             _verifying
@@ -562,7 +645,9 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                     ),
                   ),
                 ],
-                if (_failure case final failure?) ...[
+                if (_failure case final failure?
+                    when failure != _Failure.download &&
+                        failure != _Failure.hash) ...[
                   const SizedBox(height: 16),
                   Text(
                     _failureText(l, failure),

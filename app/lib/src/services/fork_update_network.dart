@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
+import '../core/fork_update.dart';
 import 'steam_network.dart';
 
 /// A separate, unauthenticated client for this fork's official GitHub updater.
@@ -10,6 +11,59 @@ import 'steam_network.dart';
 class ForkUpdateNetwork {
   static SteamNetworkProxy? Function() _proxy = () => null;
   static Future<bool>? _readiness;
+
+  static const _mirrorHosts = {
+    ForkUpdateDownloadSource.axisNow: 'axisnow.gh-proxy.org',
+    ForkUpdateDownloadSource.v4: 'v4.gh-proxy.org',
+  };
+
+  /// Only a validated public asset in this fork may be wrapped in a mirror
+  /// URL. The official URL and SHA256 stay unchanged in release metadata.
+  static Uri mirrorAssetUrl(ForkUpdateDownloadSource source, Uri official) {
+    final host = _mirrorHosts[source];
+    if (host == null ||
+        official.host != 'github.com' ||
+        !isOfficialRequest(official)) {
+      throw ArgumentError('Unsupported update download route');
+    }
+    final path = official.pathSegments.map(Uri.encodeComponent).join('/');
+    return Uri.parse('https://$host/https://github.com/$path');
+  }
+
+  static bool isMirrorRequest(Uri uri) {
+    if (uri.scheme != 'https' ||
+        uri.port != 443 ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasFragment ||
+        uri.hasQuery ||
+        !_mirrorHosts.values.contains(uri.host)) {
+      return false;
+    }
+    final parts = uri.pathSegments;
+    if (parts.length != 9 ||
+        parts[0] != 'https:' ||
+        parts[1].isNotEmpty ||
+        parts[2] != 'github.com') {
+      return false;
+    }
+    return isOfficialRequest(
+      Uri(scheme: 'https', host: 'github.com', pathSegments: parts.skip(3)),
+    );
+  }
+
+  /// Mirrors always connect directly. This client never reads the configured
+  /// Steam proxy or its readiness future and has no shared headers or cookies.
+  static Dio createMirrorDio({
+    SecurityContext? securityContext,
+    Future<ConnectionTask<Socket>> Function(String host, int port)?
+    socketConnector,
+  }) => SteamNetwork.createScopedDio(
+    BaseOptions(),
+    proxy: () => null,
+    isAllowedRequest: isMirrorRequest,
+    securityContext: securityContext,
+    socketConnector: socketConnector,
+  );
 
   static void configureProxy(
     SteamNetworkProxy? Function() proxy, {

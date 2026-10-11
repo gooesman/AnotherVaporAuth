@@ -37,9 +37,11 @@ come from this fork's [builds](https://github.com/gooesman/AnotherVaporAuth/acti
 the download links below belong to the original project. Windows is named
 **AVA-pc**. Settings → Software updates checks this fork's published releases and
 lets you download and open the installer. Android uses the same update page;
-installation still requires the system confirmation. Updates reuse an active
-system proxy or internal accelerator and support parallel package downloads,
-with speed/remaining-time display and complete SHA-256 verification.
+installation still requires the system confirmation. Automatic downloads use
+GH-Proxy's direct acceleration routes, with GitHub as fallback; GitHub-only
+downloads remain selectable. Official requests can reuse an active proxy.
+Both routes support parallel downloads, speed/remaining-time display and full
+SHA-256 verification against the official GitHub metadata.
 
 The Android preview is **AVA Fork** (`pro.dotslash.ava.fork`), an ARM64 optimized release-mode
 build with a stable fork signing key. It installs alongside the original AVA
@@ -200,7 +202,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1244 tests
+flutter test                       # 1269 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

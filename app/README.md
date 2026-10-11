@@ -50,8 +50,9 @@ Implemented and statically verified end-to-end:
   display, with no automatic retry or persistent code cache.
 - Optional Steam app connectivity via an HTTP/HTTPS Clash node subscription;
   manual start by default, optional automatic start, external-proxy detection.
-  Official GitHub updates reuse an active route, preferring external proxies,
-  and download large packages in up to four parallel ranges with full hashing.
+  Update files default to GH-Proxy direct routes with GitHub fallback and an
+  official-only option. Official metadata/requests can reuse an active proxy.
+  Large packages use up to four ranges and the official SHA-256 for full hashing.
   It never writes system proxy/DNS settings or routes other apps.
 - Import existing `.maFile`
 - **Pending center** (tabbed): trade/market confirmations with **batch**
@@ -116,7 +117,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1244 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1269 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -152,7 +153,7 @@ old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1244 tests
+flutter test                       # 1269 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

@@ -1297,5 +1297,9 @@
   "forkUpdateRemainingMinutes": "预计还需 {minutes} 分钟",
   "forkUpdateWaitingForData": "等待数据…",
   "forkUpdateVerifying": "正在校验安装包…",
-  "forkUpdateConnectionHint": "下载会复用可用的系统代理或已开启的内置加速，否则直接连接。"
+  "forkUpdateConnectionHint": "自动模式通过 GH-Proxy 直连下载，无需开启代理；失败时切回 GitHub。安装包始终按 GitHub 的 SHA-256 校验。",
+  "forkUpdateSourceLabel": "下载来源",
+  "forkUpdateSourceAutomatic": "自动加速（推荐）",
+  "forkUpdateSourceOfficial": "GitHub 官方",
+  "forkUpdateSourceAccelerated": "加速源直连 · {provider}"
 }

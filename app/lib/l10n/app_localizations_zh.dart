@@ -2784,7 +2784,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forkUpdateVerifying => '正在校验安装包…';
 
   @override
-  String get forkUpdateConnectionHint => '下载会复用可用的系统代理或已开启的内置加速，否则直接连接。';
+  String get forkUpdateConnectionHint =>
+      '自动模式通过 GH-Proxy 直连下载，无需开启代理；失败时切回 GitHub。安装包始终按 GitHub 的 SHA-256 校验。';
+
+  @override
+  String get forkUpdateSourceLabel => '下载来源';
+
+  @override
+  String get forkUpdateSourceAutomatic => '自动加速（推荐）';
+
+  @override
+  String get forkUpdateSourceOfficial => 'GitHub 官方';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return '加速源直连 · $provider';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5575,5 +5590,20 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get forkUpdateVerifying => '正在驗證安裝套件…';
 
   @override
-  String get forkUpdateConnectionHint => '下載會使用可用的系統代理或已開啟的內建加速，否則直接連線。';
+  String get forkUpdateConnectionHint =>
+      '自動模式透過 GH-Proxy 直接下載，無需開啟代理；失敗時切回 GitHub。安裝檔一律依 GitHub 的 SHA-256 驗證。';
+
+  @override
+  String get forkUpdateSourceLabel => '下載來源';
+
+  @override
+  String get forkUpdateSourceAutomatic => '自動加速（建議）';
+
+  @override
+  String get forkUpdateSourceOfficial => 'GitHub 官方';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return '加速來源直連 · $provider';
+  }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -59,6 +61,35 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   // items to the freshly cleared grid.
   int _loadGen = 0;
   InventoryFilter _filter = const InventoryFilter();
+  List<ItemStack>? _visibleStacks;
+  List<InventoryFacetOption>? _typeOptions;
+  List<InventoryFacetOption>? _rarityOptions;
+  String? _facetUnknownLabel;
+
+  void _invalidateInventoryViews() {
+    _visibleStacks = null;
+    _typeOptions = null;
+    _rarityOptions = null;
+  }
+
+  void _ensureFacetOptions(AppLocalizations l) {
+    if (_facetUnknownLabel != l.inventoryFilterOther) {
+      _typeOptions = null;
+      _rarityOptions = null;
+      _facetUnknownLabel = l.inventoryFilterOther;
+    }
+    final items = _stacks.map((stack) => stack.item);
+    _typeOptions ??= inventoryFacetOptions(
+      items,
+      InventoryFacet.type,
+      unknownLabel: l.inventoryFilterOther,
+    );
+    _rarityOptions ??= inventoryFacetOptions(
+      items,
+      InventoryFacet.rarity,
+      unknownLabel: l.inventoryFilterOther,
+    );
+  }
 
   @override
   void initState() {
@@ -105,7 +136,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           .overview(widget.account);
       if (!mounted) return;
       setState(() => _overview = ov);
-      if (ov.games.isNotEmpty) _selectGame(ov.games.first);
+      if (ov.games.isNotEmpty) _selectGame(ov.games.first, refresh: true);
     } on CommunityAuthException {
       // The session died between the ensureSession pre-check and the fetch —
       // same routing as the pre-check failure: sign-in, not a raw exception.
@@ -123,18 +154,25 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
     }
   }
 
-  Future<void> _selectGame(InventoryGame g) async {
+  Future<void> _selectGame(InventoryGame g, {bool refresh = false}) async {
+    if (!refresh &&
+        _game?.appid == g.appid &&
+        _game?.contextId == g.contextId) {
+      return;
+    }
     setState(() {
       _game = g;
       _stacks.clear();
       _stackByKey.clear();
       _filter = const InventoryFilter();
+      _invalidateInventoryViews();
       _lastAssetId = null;
       _moreItems = false;
       _itemsError = null;
       _loadGen++; // discard any in-flight page
       _loadingItems = false;
     });
+    if (_scroll.hasClients) _scroll.jumpTo(0);
     await _loadItems();
   }
 
@@ -173,6 +211,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         }
         _lastAssetId = page.lastAssetId;
         _moreItems = page.more;
+        _invalidateInventoryViews();
       });
     } on CommunityAuthException {
       // Session died mid-browse: route to the overview's sign-in affordance
@@ -243,7 +282,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
               if (g == null) {
                 _loadOverview();
               } else {
-                _selectGame(g);
+                _selectGame(g, refresh: true);
               }
               setState(() => _listingsReload++);
             },
@@ -285,6 +324,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
     if (ov == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    _ensureFacetOptions(l);
     // The filter header shares the grid's scroll area. Keeping it fixed can
     // consume the entire short-screen viewport when the keyboard is open.
     return CustomScrollView(
@@ -295,13 +335,21 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         if (_game != null)
           SliverToBoxAdapter(
             child: Padding(
-              padding: context.rSafeInsets(left: 12, right: 12, bottom: 8),
+              // This is an interior header; the grid owns bottom safe space.
+              padding: context
+                  .rSafeInsets(left: 12, right: 12)
+                  .copyWith(top: 0, bottom: context.r(8)),
               child: InventoryFilterBar(
                 items: _stacks.map((stack) => stack.item),
+                typeOptions: _typeOptions,
+                rarityOptions: _rarityOptions,
                 value: _filter,
                 hasMore: _moreItems,
                 onChanged: (filter) {
-                  setState(() => _filter = filter);
+                  setState(() {
+                    _filter = filter;
+                    _visibleStacks = null;
+                  });
                   if (_scroll.hasClients) _scroll.jumpTo(0);
                 },
               ),
@@ -313,59 +361,182 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   }
 
   Widget _gamePicker(List<InventoryGame> games) {
+    if (games.isEmpty) return const SizedBox.shrink();
     final t = Theme.of(context).extension<AvaTokens>()!;
-    return SizedBox(
-      height: context.r(64),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: context.rSafeInsets(h: 12, v: 10),
-        itemCount: games.length,
-        separatorBuilder: (_, _) => SizedBox(width: context.r(8)),
-        itemBuilder: (context, i) {
-          final g = games[i];
-          final selected =
-              _game?.appid == g.appid && _game?.contextId == g.contextId;
-          return InkWell(
-            onTap: () => _selectGame(g),
-            borderRadius: BorderRadius.circular(t.radiusSm),
-            child: Container(
-              padding: context.rInsets(h: 10, v: 6),
-              decoration: BoxDecoration(
-                color: selected ? t.panel2 : Colors.transparent,
-                borderRadius: BorderRadius.circular(t.radiusSm),
-                border: Border.all(
-                  color: selected ? t.accent : t.line,
-                  width: t.borderWidth,
-                ),
-              ),
+    final l = AppLocalizations.of(context);
+    final selectedGame = _game ?? games.first;
+    bool isSelected(InventoryGame game) =>
+        game.appid == selectedGame.appid &&
+        game.contextId == selectedGame.contextId;
+    Widget icon(InventoryGame game) => Padding(
+      padding: EdgeInsets.only(right: context.r(8)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(t.radiusSm),
+        child: Image.network(
+          game.iconUrl,
+          width: context.r(28),
+          height: context.r(28),
+          cacheWidth: context.rCache(28),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+    BoxDecoration decoration(bool selected) => BoxDecoration(
+      color: selected ? t.panel2 : Colors.transparent,
+      borderRadius: BorderRadius.circular(t.radiusSm),
+      border: Border.all(
+        color: selected ? t.accent : t.line,
+        width: t.borderWidth,
+      ),
+    );
+    Widget picker({Widget? child}) => PopupMenuButton<InventoryGame>(
+      key: const ValueKey('market-game-menu'),
+      tooltip: l.marketTabInventory,
+      initialValue: selectedGame,
+      onSelected: _selectGame,
+      borderRadius: BorderRadius.circular(t.radiusSm),
+      color: t.panel,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(t.radiusSm),
+      ),
+      constraints: BoxConstraints(
+        minWidth: 200,
+        maxWidth: math.min(480, MediaQuery.sizeOf(context).width - 32),
+      ),
+      itemBuilder: (context) => [
+        for (final game in games)
+          PopupMenuItem(
+            key: ValueKey('market-game-option-${game.appid}-${game.contextId}'),
+            value: game,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
-                  if (g.iconUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(t.radiusSm),
-                      child: Image.network(
-                        g.iconUrl,
-                        width: context.r(28),
-                        height: context.r(28),
-                        cacheWidth: context.rCache(28),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                      ),
-                    ),
-                  SizedBox(width: context.r(8)),
-                  Text(
-                    '${g.displayName}  ',
-                    style: TextStyle(
-                      color: selected ? t.text : t.muted,
-                      fontSize: context.r(13),
+                  if (game.iconUrl.isNotEmpty) icon(game),
+                  Expanded(
+                    child: Text(
+                      game.displayName,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text(
-                    '${g.itemCount}',
-                    style: TextStyle(color: t.accent, fontSize: context.r(12)),
-                  ),
+                  const SizedBox(width: 8),
+                  Text('${game.itemCount}', style: TextStyle(color: t.accent)),
+                  if (isSelected(game)) ...[
+                    const SizedBox(width: 8),
+                    Icon(Icons.check, size: 18, color: t.accent),
+                  ],
                 ],
               ),
+            ),
+          ),
+      ],
+      icon: child == null ? const Icon(Icons.expand_more) : null,
+      child: child,
+    );
+    return Padding(
+      // Bottom bars and display corners belong to the scroll view's bottom,
+      // not this short header: including them can collapse the entire row.
+      padding: context
+          .rSafeInsets(h: 12)
+          .copyWith(top: context.r(10), bottom: context.r(10)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // A phone keeps the selected context in view in both orientations.
+          // Its menu exposes every game/context without a hidden horizontal row.
+          final compact =
+              constraints.maxWidth < 600 ||
+              MediaQuery.sizeOf(context).shortestSide < 600;
+          if (compact) {
+            return picker(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 48),
+                padding: context.rInsets(h: 12, v: 10),
+                decoration: decoration(true),
+                child: Row(
+                  children: [
+                    if (selectedGame.iconUrl.isNotEmpty) icon(selectedGame),
+                    Expanded(
+                      child: Text(
+                        '${selectedGame.displayName}  ',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: t.text,
+                          fontSize: context.r(13),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: context.r(8)),
+                    Text(
+                      '${selectedGame.itemCount}',
+                      style: TextStyle(
+                        color: t.accent,
+                        fontSize: context.r(12),
+                      ),
+                    ),
+                    SizedBox(width: context.r(8)),
+                    Icon(Icons.expand_more, color: t.accent),
+                  ],
+                ),
+              ),
+            );
+          }
+          final height = math.max(
+            48.0,
+            MediaQuery.textScalerOf(context).scale(context.r(13)) * 1.5 +
+                context.r(16),
+          );
+          return SizedBox(
+            height: height,
+            child: Row(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.zero,
+                    itemCount: games.length,
+                    separatorBuilder: (_, _) => SizedBox(width: context.r(8)),
+                    itemBuilder: (context, i) {
+                      final game = games[i];
+                      final selected = isSelected(game);
+                      return Semantics(
+                        selected: selected,
+                        child: InkWell(
+                          onTap: () => _selectGame(game),
+                          borderRadius: BorderRadius.circular(t.radiusSm),
+                          child: Container(
+                            padding: context.rInsets(h: 10, v: 6),
+                            decoration: decoration(selected),
+                            child: Row(
+                              children: [
+                                if (game.iconUrl.isNotEmpty) icon(game),
+                                Text(
+                                  '${game.displayName}  ',
+                                  style: TextStyle(
+                                    color: selected ? t.text : t.muted,
+                                    fontSize: context.r(13),
+                                  ),
+                                ),
+                                Text(
+                                  '${game.itemCount}',
+                                  style: TextStyle(
+                                    color: t.accent,
+                                    fontSize: context.r(12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: context.r(8)),
+                SizedBox(width: 48, child: picker()),
+              ],
             ),
           );
         },
@@ -374,7 +545,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   }
 
   Widget _itemGrid(AppLocalizations l) {
-    final visible = _stacks
+    final visible = _visibleStacks ??= _stacks
         .where((stack) => _filter.matches(stack.item))
         .toList(growable: false);
     if (visible.isEmpty) {

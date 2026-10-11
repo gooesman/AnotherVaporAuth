@@ -3035,5 +3035,19 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get forkUpdateConnectionHint =>
-      'Загрузки используют доступный системный прокси или уже включённое встроенное ускорение. Иначе используется прямое подключение.';
+      'Автоматический режим загружает через GH-Proxy без запуска прокси и при необходимости переключается на GitHub. Файлы проверяются по SHA-256 от GitHub.';
+
+  @override
+  String get forkUpdateSourceLabel => 'Источник загрузки';
+
+  @override
+  String get forkUpdateSourceAutomatic => 'Автоматическое ускорение';
+
+  @override
+  String get forkUpdateSourceOfficial => 'Официальный GitHub';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return 'Прямое ускорение · $provider';
+  }
 }

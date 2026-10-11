@@ -936,5 +936,9 @@
   "forkUpdateRemainingMinutes": "預計還需 {minutes} 分鐘",
   "forkUpdateWaitingForData": "等待資料…",
   "forkUpdateVerifying": "正在驗證安裝套件…",
-  "forkUpdateConnectionHint": "下載會使用可用的系統代理或已開啟的內建加速，否則直接連線。"
+  "forkUpdateConnectionHint": "自動模式透過 GH-Proxy 直接下載，無需開啟代理；失敗時切回 GitHub。安裝檔一律依 GitHub 的 SHA-256 驗證。",
+  "forkUpdateSourceLabel": "下載來源",
+  "forkUpdateSourceAutomatic": "自動加速（建議）",
+  "forkUpdateSourceOfficial": "GitHub 官方",
+  "forkUpdateSourceAccelerated": "加速來源直連 · {provider}"
 }

@@ -5,6 +5,24 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
 trigger automated releases.
 
+## [v1.5.3] — 2026-10-11 · Fork
+
+### Added
+- Windows and Android updates offer direct GH-Proxy acceleration with a backup route and GitHub fallback. GitHub-only downloads remain selectable; official GitHub metadata and full SHA-256 verification remain authoritative.
+
+### Fixed
+- Phone market game/context selectors remain visible with screen-corner insets, enlarged text and landscape layouts. Desktop keeps horizontal game tabs.
+- Market category and filter results are cached to reduce repeated inventory scans; selecting the current context no longer clears and reloads its items.
+- Update downloads show the active source and reset progress and speed when switching sources.
+
+### 新增
+- 电脑和手机更新支持 GH-Proxy 直连加速、备用线路及 GitHub 回退，也可手动选择官方源；版本与可信 SHA-256 仍由 GitHub 官方提供，保留整包校验。
+
+### 修复
+- 修复手机圆角屏、大字体或横屏下市场游戏／库存选择栏消失的问题；电脑保留横向游戏标签。
+- 缓存市场分类及筛选结果，减少重复扫描库存；重选当前库存不再清空并重复加载。
+- 下载显示实际来源，切换来源时同步重置进度与速度。
+
 ## [v1.5.2] — 2026-10-11
 
 ### Fixed

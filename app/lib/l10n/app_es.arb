@@ -866,5 +866,9 @@
   "forkUpdateRemainingMinutes": "Quedan aprox. {minutes} min",
   "forkUpdateWaitingForData": "Esperando datos…",
   "forkUpdateVerifying": "Verificando el instalador…",
-  "forkUpdateConnectionHint": "Las descargas usan un proxy del sistema disponible o la aceleración integrada si ya está activa. De lo contrario, se conectan directamente."
+  "forkUpdateConnectionHint": "El modo automático descarga mediante GH-Proxy sin iniciar un proxy y recurre a GitHub si es necesario. Los archivos se verifican con el SHA-256 de GitHub.",
+  "forkUpdateSourceLabel": "Fuente de descarga",
+  "forkUpdateSourceAutomatic": "Aceleración automática",
+  "forkUpdateSourceOfficial": "GitHub oficial",
+  "forkUpdateSourceAccelerated": "Aceleración directa · {provider}"
 }

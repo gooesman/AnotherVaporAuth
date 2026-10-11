@@ -1,5 +1,6 @@
 import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
+import 'package:ava/src/app/screen_corners.dart';
 import 'package:ava/src/app/theme.dart';
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
@@ -23,41 +24,46 @@ class _AutoLogin extends AutoLogin {
       AutoLoginOutcome.ok;
 }
 
+const _defaultGames = [
+  InventoryGame(
+    appid: 730,
+    contextId: '2',
+    name: 'CS2',
+    iconUrl: '',
+    itemCount: 24,
+    contextName: 'Backpack',
+    showContext: true,
+  ),
+  InventoryGame(
+    appid: 730,
+    contextId: '16',
+    name: 'CS2',
+    iconUrl: '',
+    itemCount: 4,
+    contextName: 'Trade Protected',
+    showContext: true,
+  ),
+];
+
 class _Inventory extends InventoryClient {
   _Inventory({
     this.inventoryItems = const [],
     this.walletInfo = WalletInfo.fallback,
     this.nextPage = const [],
+    this.games = _defaultGames,
   }) : super(SteamApiClient());
   final List<InventoryItem> inventoryItems;
   final WalletInfo walletInfo;
   final List<InventoryItem> nextPage;
+  final List<InventoryGame> games;
   final selectedContexts = <String>[];
+  final selectedInventories = <(int, String)>[];
 
   @override
   Future<InventoryOverview> overview(
     SteamGuardAccount account, {
     String? ownerSteamId,
-  }) async => InventoryOverview(const [
-    InventoryGame(
-      appid: 730,
-      contextId: '2',
-      name: 'CS2',
-      iconUrl: '',
-      itemCount: 24,
-      contextName: 'Backpack',
-      showContext: true,
-    ),
-    InventoryGame(
-      appid: 730,
-      contextId: '16',
-      name: 'CS2',
-      iconUrl: '',
-      itemCount: 4,
-      contextName: 'Trade Protected',
-      showContext: true,
-    ),
-  ], walletInfo);
+  }) async => InventoryOverview(games, walletInfo);
 
   @override
   Future<InventoryPage> items(
@@ -69,6 +75,7 @@ class _Inventory extends InventoryClient {
     int count = 75,
   }) async {
     selectedContexts.add(contextId);
+    selectedInventories.add((appid, contextId));
     return startAssetId == null && nextPage.isNotEmpty
         ? InventoryPage(inventoryItems, 'cursor', true)
         : InventoryPage(
@@ -111,6 +118,34 @@ class _Market extends MarketClient {
   }
 }
 
+class _CountedItem extends InventoryItem {
+  _CountedItem(int id)
+    : super(
+        appid: 730,
+        contextId: '2',
+        assetId: '$id',
+        classId: '$id',
+        instanceId: '0',
+        amount: 1,
+        marketHashName: 'Rifle $id',
+        name: 'Rifle $id',
+        type: 'Rifle',
+        iconUrl: '',
+        marketable: true,
+        tradable: true,
+        tags: const [
+          InventoryTag(category: 'Type', internalName: 'Rifle', label: 'Rifle'),
+        ],
+      );
+
+  int tagReads = 0;
+  @override
+  List<InventoryTag> get tags {
+    tagReads++;
+    return super.tags;
+  }
+}
+
 MarketListing _listing(String id, String name, MarketListingState state) =>
     MarketListing(
       listingId: id,
@@ -135,12 +170,16 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
   AvaThemeVariant variant = AvaThemeVariant.light,
   Locale locale = const Locale('en'),
   double textScale = 1,
+  double cornerRadius = 0,
+  EdgeInsets? systemPadding,
+  List<InventoryGame> games = _defaultGames,
 }) async {
   final market = _Market();
   final inventory = _Inventory(
     inventoryItems: items,
     walletInfo: wallet,
     nextPage: nextPage,
+    games: games,
   );
   await tester.pumpWidget(
     ProviderScope(
@@ -152,10 +191,11 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
       child: MaterialApp(
         locale: locale,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: child!,
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+            padding: systemPadding,
+          ),
+          child: ScreenCorners(bottom: cornerRadius, child: child!),
         ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -207,6 +247,183 @@ Future<void> _filter(WidgetTester tester, String control, String label) async {
 }
 
 void main() {
+  const games = [
+    InventoryGame(
+      appid: 570,
+      contextId: '2',
+      name: 'Dota 2',
+      iconUrl: '',
+      itemCount: 46,
+    ),
+    InventoryGame(
+      appid: 730,
+      contextId: '16',
+      name: 'Counter-Strike 2',
+      iconUrl: '',
+      itemCount: 24,
+      contextName: 'Trade-protected Items with a very long localized label',
+      showContext: true,
+    ),
+    InventoryGame(
+      appid: 753,
+      contextId: '6',
+      name: 'Steam',
+      iconUrl: '',
+      itemCount: 15,
+    ),
+    InventoryGame(
+      appid: 730,
+      contextId: '2',
+      name: 'Counter-Strike 2',
+      iconUrl: '',
+      itemCount: 4,
+      contextName: 'Inventory with a very long localized label',
+      showContext: true,
+    ),
+  ];
+  for (final size in [const Size(320, 640), const Size(844, 390)]) {
+    for (final textScale in [1.0, 1.8]) {
+      testWidgets(
+        '${size.width}x${size.height} phone at $textScale text scale exposes every game context',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final (_, inventory, _) = await _show(
+            tester,
+            initialTab: 0,
+            games: games,
+            textScale: textScale,
+            cornerRadius: 48,
+            systemPadding: const EdgeInsets.fromLTRB(24, 0, 16, 34),
+          );
+          final menu = find.byKey(const ValueKey('market-game-menu'));
+          final bounds = tester.getRect(menu);
+          expect(bounds.left, greaterThanOrEqualTo(24));
+          expect(bounds.right, lessThanOrEqualTo(size.width - 16));
+          expect(bounds.height, greaterThanOrEqualTo(48));
+          for (final game in games) {
+            await tester.tap(menu);
+            await tester.pumpAndSettle();
+            expect(find.byType(PopupMenuItem<InventoryGame>), findsNWidgets(4));
+            final option = find.byKey(
+              ValueKey('market-game-option-${game.appid}-${game.contextId}'),
+            );
+            await tester.ensureVisible(option);
+            await tester.pumpAndSettle();
+            await tester.tap(option);
+            await tester.pumpAndSettle();
+            expect(
+              find.text('${game.displayName}  ').hitTestable(),
+              findsOneWidget,
+            );
+            expect(tester.takeException(), isNull);
+          }
+          expect(inventory.selectedInventories, [
+            (570, '2'),
+            (730, '16'),
+            (753, '6'),
+            (730, '2'),
+          ]);
+        },
+      );
+    }
+  }
+
+  testWidgets('cached facet labels update when the app language changes', (
+    tester,
+  ) async {
+    final items = [_categoryItem('1', 'Unknown item', '', '')];
+    final (_, _, english) = await _show(tester, initialTab: 0, items: items);
+    await _filter(tester, 'inventory-type', english.inventoryFilterOther);
+    final (_, _, chinese) = await _show(
+      tester,
+      initialTab: 0,
+      items: items,
+      locale: const Locale('zh'),
+    );
+    expect(
+      find.text(chinese.inventoryFilterOther).hitTestable(),
+      findsOneWidget,
+    );
+    expect(find.text(english.inventoryFilterOther), findsNothing);
+    expect(find.byKey(const ValueKey('inventory-730-2-1')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'search does not rebuild facets and resize does not rescan inventory',
+    (tester) async {
+      final items = List.generate(200, _CountedItem.new);
+      await _show(tester, initialTab: 0, items: items);
+      for (final item in items) {
+        item.tagReads = 0;
+      }
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'unmatched search',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        items.fold(0, (reads, item) => reads + item.tagReads),
+        items.length,
+      );
+      for (final item in items) {
+        item.tagReads = 0;
+      }
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpAndSettle();
+      expect(items.fold(0, (reads, item) => reads + item.tagReads), 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'reselecting a game preserves items and filters, refresh reloads',
+    (tester) async {
+      final (_, inventory, l) = await _show(tester, initialTab: 0);
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'kept filter',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('CS2 · Backpack  '));
+      await tester.pumpAndSettle();
+      expect(inventory.selectedContexts, ['2']);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('inventory-search')))
+            .controller!
+            .text,
+        'kept filter',
+      );
+      await tester.tap(find.byTooltip(l.commonRefresh));
+      await tester.pumpAndSettle();
+      expect(inventory.selectedContexts, ['2', '2']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('phone rounded corners do not collapse the game selector', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _show(tester, initialTab: 0, cornerRadius: 48);
+    expect(tester.takeException(), isNull);
+    expect(find.text('CS2 · Backpack  ').hitTestable(), findsOneWidget);
+    expect(
+      tester.getSize(find.text('CS2 · Backpack  ')).height,
+      greaterThanOrEqualTo(13),
+    );
+  });
+
   testWidgets(
     'market type filtering preserves matching items and combines with search',
     (tester) async {

@@ -49,13 +49,18 @@ subscription. Existing entitlement records are left untouched for compatibility.
 No token is fabricated and no access to the author's online services is granted.
 
 Opening the update page in Settings checks this fork's public GitHub releases.
-Downloading an update contacts GitHub's release asset servers; no Steam account,
-authenticator secret or entitlement token is sent with those requests. Update
-requests prefer a detected system HTTP proxy or existing VPN/TUN; otherwise they
-can reuse an already-running internal accelerator. The proxy operator can see
-GitHub connection destinations, timing and volume. Normal TLS checks remain
-enabled, no public download mirror is used, and updates never start an extra
-proxy automatically. Large files may be requested in parallel byte ranges. The app
+Automatic downloads first contact GH-Proxy's `axisnow.gh-proxy.org`, then
+`v4.gh-proxy.org`, falling back to GitHub. You can select GitHub only before
+downloading. Mirror requests use a separate direct client without application
+proxy credentials; an existing system VPN/TUN may still carry that traffic.
+The mirror operator can see your IP address, public file path, user agent,
+request timing and traffic volume. No Steam account, authenticator secret,
+entitlement token or subscription URL is sent. Version metadata and trusted
+digests still come directly from GitHub's official API. Official requests prefer
+a detected system HTTP proxy or can reuse an already-running internal
+accelerator; its operator can see connection destinations, timing and volume.
+Normal TLS checks remain enabled, and updates never start an extra proxy.
+Large files may be requested in parallel byte ranges. The app
 verifies the download against GitHub's SHA-256 digest before handing it to the
 system installer after your confirmation. It does not check the original
 project's update service or install updates in the background.

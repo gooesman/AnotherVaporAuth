@@ -55,6 +55,8 @@ class _Service extends ForkUpdateService {
   Completer<VerifiedForkUpdate>? pendingDownload;
   CancelToken? downloadCancel;
   void Function(int, int)? progress;
+  ForkUpdateDownloadMode? requestedMode;
+  void Function(ForkUpdateDownloadSource)? sourceChanged;
 
   @override
   Future<ForkUpdateCheck> check({
@@ -73,12 +75,21 @@ class _Service extends ForkUpdateService {
   @override
   Future<VerifiedForkUpdate> download(
     ForkUpdateRelease release, {
+    ForkUpdateDownloadMode mode = ForkUpdateDownloadMode.automatic,
     CancelToken? cancelToken,
     void Function(int received, int total)? onProgress,
+    void Function(ForkUpdateDownloadSource source)? onSourceChanged,
   }) async {
     downloads++;
     downloadCancel = cancelToken;
     progress = onProgress;
+    requestedMode = mode;
+    sourceChanged = onSourceChanged;
+    onSourceChanged?.call(
+      mode == ForkUpdateDownloadMode.github
+          ? ForkUpdateDownloadSource.github
+          : ForkUpdateDownloadSource.axisNow,
+    );
     if (downloadError != null) throw downloadError!;
     if (pendingDownload case final pending?) return pending.future;
     return VerifiedForkUpdate(
@@ -207,6 +218,61 @@ _Service _available({
 );
 
 void main() {
+  testWidgets('automatic source is default and official can be selected', (
+    tester,
+  ) async {
+    final service = _available()..pendingDownload = Completer();
+    await _show(tester, service, _Installer());
+    final l = AppLocalizations.of(
+      tester.element(find.byType(ForkUpdateScreen)),
+    );
+    await _tap(tester, 'fork-update-source-mode');
+    await tester.tap(find.text(l.forkUpdateSourceOfficial).last);
+    await tester.pumpAndSettle();
+    await _tap(tester, 'fork-update-download');
+    expect(service.requestedMode, ForkUpdateDownloadMode.github);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('fork-update-active-source')))
+          .data,
+      l.forkUpdateSourceOfficial,
+    );
+    final picker = tester
+        .widget<DropdownButtonFormField<ForkUpdateDownloadMode>>(
+          find.byKey(const ValueKey('fork-update-source-mode')),
+        );
+    expect(picker.onChanged, isNull);
+    await _tap(tester, 'fork-update-cancel-download');
+  });
+
+  testWidgets('source fallback resets transfer and verification state', (
+    tester,
+  ) async {
+    final service = _available()..pendingDownload = Completer();
+    await _show(tester, service, _Installer());
+    await _tap(tester, 'fork-update-download');
+    expect(service.requestedMode, ForkUpdateDownloadMode.automatic);
+    service.progress!(100, 100);
+    await tester.pump(const Duration(milliseconds: 300));
+    final l = AppLocalizations.of(
+      tester.element(find.byType(ForkUpdateScreen)),
+    );
+    expect(find.text(l.forkUpdateVerifying), findsOneWidget);
+    service.sourceChanged!(ForkUpdateDownloadSource.v4);
+    await tester.pump();
+    expect(find.text(l.forkUpdateVerifying), findsNothing);
+    expect(find.text(l.forkUpdateSourceAccelerated('IPv4')), findsOneWidget);
+    expect(find.text(l.forkUpdateDownloading('0%')), findsOneWidget);
+    service.progress!(25, 100);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(l.forkUpdateDownloading('25%')), findsOneWidget);
+    await _tap(tester, 'fork-update-cancel-download');
+    service.sourceChanged!(ForkUpdateDownloadSource.github);
+    await tester.pump();
+    expect(find.text(l.forkUpdateSourceAccelerated('IPv4')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('refreshes routing before checking and downloading', (
     tester,
   ) async {

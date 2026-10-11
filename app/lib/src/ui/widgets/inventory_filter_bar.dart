@@ -11,12 +11,19 @@ class InventoryFilterBar extends StatefulWidget {
   final InventoryFilter value;
   final ValueChanged<InventoryFilter> onChanged;
   final bool hasMore;
+
+  /// Optional snapshots for large inventories; callers invalidate these when
+  /// loaded items or the localized unknown-category label change.
+  final List<InventoryFacetOption>? typeOptions;
+  final List<InventoryFacetOption>? rarityOptions;
   const InventoryFilterBar({
     super.key,
     required this.items,
     required this.value,
     required this.onChanged,
     this.hasMore = false,
+    this.typeOptions,
+    this.rarityOptions,
   });
 
   @override
@@ -41,16 +48,20 @@ class _InventoryFilterBarState extends State<InventoryFilterBar> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final types = inventoryFacetOptions(
-      widget.items,
-      InventoryFacet.type,
-      unknownLabel: l.inventoryFilterOther,
-    );
-    final rarities = inventoryFacetOptions(
-      widget.items,
-      InventoryFacet.rarity,
-      unknownLabel: l.inventoryFilterOther,
-    );
+    final types =
+        widget.typeOptions ??
+        inventoryFacetOptions(
+          widget.items,
+          InventoryFacet.type,
+          unknownLabel: l.inventoryFilterOther,
+        );
+    final rarities =
+        widget.rarityOptions ??
+        inventoryFacetOptions(
+          widget.items,
+          InventoryFacet.rarity,
+          unknownLabel: l.inventoryFilterOther,
+        );
     Widget select(
       String label,
       String key,

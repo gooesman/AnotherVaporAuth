@@ -2988,5 +2988,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get forkUpdateConnectionHint =>
-      'Les téléchargements utilisent un proxy système disponible ou l’accélération intégrée déjà active. Sinon, la connexion est directe.';
+      'Le mode automatique utilise GH-Proxy sans démarrer de proxy, puis revient à GitHub si nécessaire. Les fichiers sont vérifiés avec le SHA-256 fourni par GitHub.';
+
+  @override
+  String get forkUpdateSourceLabel => 'Source du téléchargement';
+
+  @override
+  String get forkUpdateSourceAutomatic => 'Accélération automatique';
+
+  @override
+  String get forkUpdateSourceOfficial => 'GitHub officiel';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return 'Accélération directe · $provider';
+  }
 }
