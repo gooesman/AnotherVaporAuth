@@ -1232,7 +1232,7 @@
   "steamAccelerationDetectionUnavailable": "无法确认外部代理；自动启动已暂停，可手动开启。",
   "steamAccelerationEnvironmentHelp": "内置加速会避让检测到的外部代理。检测结果可能受系统权限影响。",
   "steamAccelerationSkipped": "已跳过 {count} 个不支持的节点。",
-  "steamAccelerationInvalidSubscription": "请输入有效的 HTTPS 订阅地址。",
+  "steamAccelerationInvalidSubscription": "请输入有效的 HTTP 或 HTTPS 订阅地址。",
   "steamAccelerationNetworkError": "无法获取订阅，请检查网络后重试。",
   "steamAccelerationUnsupportedSubscription": "订阅中没有支持的节点，请使用兼容的 Clash 订阅。",
   "steamAccelerationStorageError": "系统安全存储不可用，无法保存设置。",

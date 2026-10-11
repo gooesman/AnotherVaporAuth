@@ -42,7 +42,8 @@ directly, without an intermediate menu. Market, friends, backup codes, family,
 devices and key redemption are reached from that overview. Long-pressing the
 large selected-account avatar also opens the overview on phones (desktop keeps
 its avatar click). Wallet and market data are not fetched just to show
-the phone home. Swipe actions and the desktop context menu remain available.
+the phone home. Swipe actions are phone-only; desktop account cards do not
+slide and retain their right-click context menu, including in narrow windows.
 Wallet, market listings and account-tool cards can be hidden using the tune menu.
 Unavailable balances are never presented as zero. Market records include active,
 held and awaiting-confirmation listings, with separate inventory-context labels.
@@ -82,8 +83,11 @@ real-account compatibility still requires a manual check.
 
 ## Optional Steam connectivity
 
-Settings → Steam acceleration accepts an HTTPS Clash-format subscription and a
-selected supported node. It starts manually by default; **Start automatically**
+Settings → Steam acceleration accepts HTTP or HTTPS Clash-format subscriptions,
+including URL-encoded Basic authentication and custom ports, and a selected
+supported node. Subscription requests identify as Clash so providers return
+Clash YAML instead of a generic link list. Credentials are not forwarded across
+origins; HTTPS certificate checks remain enabled. It starts manually by default; **Start automatically**
 is optional. Only AVA's Steam HTTPS requests use the connection, including QR
 approval, community, market, images and backup codes. It does not accelerate the
 Steam desktop client, games, a browser or other apps, and never changes the

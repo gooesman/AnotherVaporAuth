@@ -22,6 +22,10 @@ Steam acceleration is optional and starts manually by default. Subscription
 URLs and sanitized node credentials are kept in local secure storage, separately
 from account synchronization. Explicit synchronization contacts your subscription
 provider; automatic startup may fetch it when no cached node is available.
+HTTP and HTTPS subscriptions are supported; credentials in the URL are sent as
+HTTP Basic authentication to that origin only. An HTTP subscription sends its
+URL, credentials and response without transport encryption. This does not change
+the TLS validation used by Steam connections or component downloads.
 Windows first-use core downloads contact the pinned upstream GitHub release.
 The Android package includes the same core. The core uses a private local
 listener and receives its configuration in memory, with no retained diagnostics.

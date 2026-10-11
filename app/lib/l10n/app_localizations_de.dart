@@ -2809,7 +2809,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get steamAccelerationInvalidSubscription =>
-      'Gib eine gültige HTTPS-Abonnement-URL ein.';
+      'Gib eine gültige HTTP- oder HTTPS-Abonnement-URL ein.';
 
   @override
   String get steamAccelerationNetworkError =>

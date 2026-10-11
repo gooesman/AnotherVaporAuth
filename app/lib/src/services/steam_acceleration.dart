@@ -9,8 +9,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'steam_acceleration_runtime.dart';
 import 'steam_acceleration_subscription.dart';
 import 'steam_acceleration_types.dart';
+import 'steam_subscription_download.dart';
 
 export 'steam_acceleration_types.dart';
+export 'steam_subscription_download.dart' show validateSteamSubscriptionUrl;
 
 class SteamAccelerationStore {
   SteamAccelerationStore({FlutterSecureStorage? storage})
@@ -37,7 +39,7 @@ class SteamAccelerationService extends ChangeNotifier {
     this.environmentInterval = const Duration(seconds: 15),
   }) : _store = store ?? SteamAccelerationStore(),
        _runtime = runtime ?? PlatformSteamAccelerationRuntime(),
-       _fetchSubscription = fetchSubscription ?? _fetch;
+       _fetchSubscription = fetchSubscription ?? downloadSteamSubscription;
 
   final SteamAccelerationStore _store;
   final SteamAccelerationRuntime _runtime;
@@ -63,16 +65,15 @@ class SteamAccelerationService extends ChangeNotifier {
   bool _manuallyStopped = false;
   bool _startedAutomatically = false;
 
-  static Future<String> _fetch(Uri uri) async =>
-      utf8.decode(await downloadBoundedHttps(uri, maxBytes: 2 * 1024 * 1024));
-
   Future<void> load() => _load ??= _enqueue(() async {
     try {
       final raw = await _store.read();
       if (raw != null) {
         final saved = jsonDecode(raw);
         if (saved is! Map || saved['v'] != 1) throw const FormatException();
-        _subscriptionUrl = _validatedUrl(saved['url'] as String).toString();
+        _subscriptionUrl = validateSteamSubscriptionUrl(
+          saved['url'] as String,
+        ).toString();
         _autoStart = saved['auto'] == true;
         if (saved['nodes'] is String) {
           _catalog = SteamAccelerationSubscription.parse(
@@ -102,7 +103,7 @@ class SteamAccelerationService extends ChangeNotifier {
     await load();
     Uri uri;
     try {
-      uri = _validatedUrl(subscriptionUrl.trim());
+      uri = validateSteamSubscriptionUrl(subscriptionUrl);
     } catch (_) {
       _publish(
         SteamAccelerationPhase.error,
@@ -483,22 +484,6 @@ class SteamAccelerationService extends ChangeNotifier {
       skippedNodes: _catalog?.skipped ?? 0,
     );
     notifyListeners();
-  }
-
-  static Uri _validatedUrl(String text) {
-    final uri = Uri.tryParse(text);
-    if (text.length > 4096 ||
-        uri == null ||
-        uri.scheme != 'https' ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty ||
-        uri.hasFragment ||
-        uri.port < 1 ||
-        uri.port > 65535 ||
-        text.contains(RegExp(r'[\x00-\x20]'))) {
-      throw const FormatException();
-    }
-    return uri;
   }
 
   @override

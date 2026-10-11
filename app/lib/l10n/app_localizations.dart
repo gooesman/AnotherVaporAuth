@@ -4916,7 +4916,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationInvalidSubscription.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid HTTPS subscription URL.'**
+  /// **'Enter a valid HTTP or HTTPS subscription URL.'**
   String get steamAccelerationInvalidSubscription;
 
   /// No description provided for @steamAccelerationNetworkError.

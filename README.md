@@ -91,8 +91,8 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   tap an account to select its code, or long-press it to open its overview directly.
   Market, friends and other account tools are available in that overview.
 
-- **Optional Steam acceleration (branch preview)** — choose a node from an HTTPS
-  Clash subscription for AVA's Steam requests. Manual start is the default;
+- **Optional Steam acceleration (branch preview)** — choose a node from an HTTP
+  or HTTPS Clash subscription, including Basic-auth URLs, for AVA's Steam requests. Manual start is the default;
   automatic start pauses when an external proxy or VPN is detected. System
   proxy settings and other apps are untouched. A compact status entry separates
   core operation from checked API/community reachability; no system VPN icon is
@@ -119,7 +119,7 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   tap-to-copy; tap a name to cycle username / persona / id.
 - **In-app sign-in approval** — approve or deny Steam logins from a dialog inside
   AVA (device + location shown), just like the official app — by polling, no push.
-- **Pending center** — one tabbed screen (swipe right on an account) for everything
+- **Pending center** — one tabbed screen (swipe right on a phone account, or use the desktop context menu) for everything
   awaiting a decision: **Confirmations** (trade / market, batch accept/reject, native
   JSON, no WebView), **Trade offers** (received / sent / history, expandable cards
   with both sides' items, gift / one-sided / escrow banners, accept then hand off to
@@ -197,7 +197,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1182 tests
+flutter test                       # 1208 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

@@ -114,7 +114,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1182 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1208 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -150,7 +150,7 @@ old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1182 tests
+flutter test                       # 1208 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

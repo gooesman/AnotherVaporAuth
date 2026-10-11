@@ -801,7 +801,7 @@
   "steamAccelerationDetectionUnavailable": "Состояние внешнего прокси неизвестно. Автозапуск приостановлен; можно запустить вручную.",
   "steamAccelerationEnvironmentHelp": "Встроенное ускорение уступает обнаруженным внешним прокси. Обнаружение может зависеть от системных разрешений.",
   "steamAccelerationSkipped": "Пропущено неподдерживаемых узлов: {count}.",
-  "steamAccelerationInvalidSubscription": "Введите действительный HTTPS-адрес подписки.",
+  "steamAccelerationInvalidSubscription": "Введите действительный HTTP- или HTTPS-адрес подписки.",
   "steamAccelerationNetworkError": "Не удалось получить подписку. Проверьте подключение и повторите попытку.",
   "steamAccelerationUnsupportedSubscription": "В подписке нет поддерживаемых узлов. Используйте совместимую подписку Clash.",
   "steamAccelerationStorageError": "Защищённое хранилище недоступно. Не удалось сохранить настройку.",

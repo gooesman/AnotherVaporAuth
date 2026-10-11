@@ -801,7 +801,7 @@
   "steamAccelerationDetectionUnavailable": "Se desconoce el estado del proxy externo. El inicio automático está pausado; puedes iniciar manualmente.",
   "steamAccelerationEnvironmentHelp": "La aceleración integrada cede ante los proxies externos detectados. La detección puede depender de los permisos del sistema.",
   "steamAccelerationSkipped": "Se omitieron {count} nodos no compatibles.",
-  "steamAccelerationInvalidSubscription": "Introduce una URL de suscripción HTTPS válida.",
+  "steamAccelerationInvalidSubscription": "Introduce una URL de suscripción HTTP o HTTPS válida.",
   "steamAccelerationNetworkError": "No se pudo obtener la suscripción. Comprueba la conexión e inténtalo de nuevo.",
   "steamAccelerationUnsupportedSubscription": "La suscripción no contiene nodos compatibles. Usa una suscripción Clash compatible.",
   "steamAccelerationStorageError": "El almacenamiento seguro no está disponible. No se pudo guardar el ajuste.",

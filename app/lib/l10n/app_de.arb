@@ -871,7 +871,7 @@
   "steamAccelerationDetectionUnavailable": "Der Status externer Proxys ist unbekannt. Der automatische Start ist pausiert; ein manueller Start ist möglich.",
   "steamAccelerationEnvironmentHelp": "Die interne Beschleunigung weicht erkannten externen Proxys aus. Die Erkennung kann von Systemberechtigungen abhängen.",
   "steamAccelerationSkipped": "{count} nicht unterstützte Knoten übersprungen.",
-  "steamAccelerationInvalidSubscription": "Gib eine gültige HTTPS-Abonnement-URL ein.",
+  "steamAccelerationInvalidSubscription": "Gib eine gültige HTTP- oder HTTPS-Abonnement-URL ein.",
   "steamAccelerationNetworkError": "Das Abonnement konnte nicht abgerufen werden. Prüfe die Verbindung und versuche es erneut.",
   "steamAccelerationUnsupportedSubscription": "Das Abonnement enthält keine unterstützten Knoten. Verwende ein kompatibles Clash-Abonnement.",
   "steamAccelerationStorageError": "Der sichere Speicher ist nicht verfügbar. Die Einstellung konnte nicht gespeichert werden.",

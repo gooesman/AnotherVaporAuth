@@ -2633,7 +2633,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get steamAccelerationInvalidSubscription => '请输入有效的 HTTPS 订阅地址。';
+  String get steamAccelerationInvalidSubscription =>
+      '请输入有效的 HTTP 或 HTTPS 订阅地址。';
 
   @override
   String get steamAccelerationNetworkError => '无法获取订阅，请检查网络后重试。';
@@ -5394,7 +5395,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
-  String get steamAccelerationInvalidSubscription => '請輸入有效的 HTTPS 訂閱網址。';
+  String get steamAccelerationInvalidSubscription =>
+      '請輸入有效的 HTTP 或 HTTPS 訂閱網址。';
 
   @override
   String get steamAccelerationNetworkError => '無法取得訂閱，請檢查網路後重試。';

@@ -2825,7 +2825,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamAccelerationInvalidSubscription =>
-      'Saisissez une URL d’abonnement HTTPS valide.';
+      'Saisissez une URL d’abonnement HTTP ou HTTPS valide.';
 
   @override
   String get steamAccelerationNetworkError =>

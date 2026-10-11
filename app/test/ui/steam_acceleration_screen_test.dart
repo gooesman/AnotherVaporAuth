@@ -360,7 +360,7 @@ void main() {
   );
 
   testWidgets(
-    'subscription input stays masked, validates HTTPS and saves without starting',
+    'subscription input stays masked, validates its scheme and saves without starting',
     (tester) async {
       final service = _Service();
       await _pump(tester, service);
@@ -372,7 +372,7 @@ void main() {
         tester.widget<TextField>(input).enableIMEPersonalizedLearning,
         isFalse,
       );
-      await tester.enterText(input, 'http://invalid.example/subscription');
+      await tester.enterText(input, 'ftp://invalid.example/subscription');
       await _tap(tester, 'save-subscription');
       expect(service.urls, isEmpty);
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -391,6 +391,28 @@ void main() {
       expect(find.text('演示节点 A'), findsOneWidget);
     },
   );
+
+  for (final url in [
+    'http://fixture:password%40encoded@subscription.example.invalid/list.yml',
+    'https://192.0.2.1:55356/api/subscribe?token=synthetic-private',
+  ]) {
+    testWidgets(
+      'subscription dialog accepts compatible URL ${url.startsWith('http:') ? 'with basic authentication' : 'with a custom port'}',
+      (tester) async {
+        final service = _Service();
+        await _pump(tester, service);
+        await _tap(tester, 'configure');
+        await tester.enterText(_key('subscription-input'), url);
+        await _tap(tester, 'save-subscription');
+        expect(service.urls, [url]);
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.textContaining('synthetic-private'), findsNothing);
+        expect(find.textContaining('password%40encoded'), findsNothing);
+        expect(service.starts, 0);
+        expect(service.refreshes, 0);
+      },
+    );
+  }
 
   testWidgets(
     'replacing a saved subscription opens a blank field and cancel preserves it',

@@ -801,7 +801,7 @@
   "steamAccelerationDetectionUnavailable": "L’état des proxys externes est inconnu. Le démarrage automatique est suspendu ; vous pouvez démarrer manuellement.",
   "steamAccelerationEnvironmentHelp": "L’accélération intégrée laisse la priorité aux proxys externes détectés. La détection peut dépendre des autorisations système.",
   "steamAccelerationSkipped": "{count} nœuds non pris en charge ont été ignorés.",
-  "steamAccelerationInvalidSubscription": "Saisissez une URL d’abonnement HTTPS valide.",
+  "steamAccelerationInvalidSubscription": "Saisissez une URL d’abonnement HTTP ou HTTPS valide.",
   "steamAccelerationNetworkError": "Impossible de récupérer l’abonnement. Vérifiez la connexion et réessayez.",
   "steamAccelerationUnsupportedSubscription": "L’abonnement ne contient aucun nœud pris en charge. Utilisez un abonnement Clash compatible.",
   "steamAccelerationStorageError": "Le stockage sécurisé est indisponible. Le réglage n’a pas pu être enregistré.",

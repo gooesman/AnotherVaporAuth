@@ -301,7 +301,7 @@ void main() {
       final entered = Completer<void>();
       runtime.pendingStop = stopped;
       runtime.stopEntered = entered;
-      await service.configure(subscriptionUrl: 'http://invalid.example/secret');
+      await service.configure(subscriptionUrl: 'ftp://invalid.example/secret');
       expect(service.proxyEndpoint, isNull);
       expect(service.state.error, SteamAccelerationError.invalidSubscription);
       await entered.future;
@@ -352,7 +352,7 @@ void main() {
       expect(service.state.error, SteamAccelerationError.invalidSubscription);
       expect(runtime.starts, 0);
       await service.configure(
-        subscriptionUrl: 'http://untrusted.invalid/secret',
+        subscriptionUrl: 'ftp://untrusted.invalid/secret',
       );
       expect(service.state.error, SteamAccelerationError.invalidSubscription);
     },

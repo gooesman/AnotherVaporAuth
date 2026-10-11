@@ -17,8 +17,10 @@ import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/skins/skin_spec.dart';
 import 'package:ava/src/ui/account_dashboard.dart';
 import 'package:ava/src/ui/home_screen.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final homePreviewAccounts = [
@@ -135,6 +137,7 @@ class _CountingMarket extends _PreviewMarket {
 Widget dashboardHomePreviewApp({
   required AvaThemeVariant variant,
   bool mobile = false,
+  TargetPlatform? platform,
   Locale locale = const Locale('en'),
   SkinSpec? skinSpec,
   InventoryClient? inventory,
@@ -165,7 +168,9 @@ Widget dashboardHomePreviewApp({
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: buildAvaTheme(variant).copyWith(
-        platform: mobile ? TargetPlatform.android : TargetPlatform.windows,
+        platform:
+            platform ??
+            (mobile ? TargetPlatform.android : TargetPlatform.windows),
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -194,6 +199,114 @@ Future<void> pumpDashboardHome(WidgetTester tester) async {
 }
 
 void main() {
+  for (final (platform, size) in [
+    (TargetPlatform.windows, const Size(1400, 900)),
+    (TargetPlatform.windows, const Size(393, 852)),
+    (TargetPlatform.macOS, const Size(1400, 900)),
+    (TargetPlatform.linux, const Size(1400, 900)),
+  ]) {
+    testWidgets(
+      '${platform.name} ${size.width} account rows stay still on horizontal '
+      'drag and retain right-click actions',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          dashboardHomePreviewApp(
+            variant: AvaThemeVariant.light,
+            platform: platform,
+          ),
+        );
+        await pumpDashboardHome(tester);
+        final row = find.text('demo_trading');
+        final originalCenter = tester.getCenter(row);
+        for (final dx in [-120.0, 120.0]) {
+          await tester.timedDrag(
+            row,
+            Offset(dx, 0),
+            const Duration(milliseconds: 500),
+          );
+          await pumpDashboardHome(tester);
+          expect(tester.getCenter(row), originalCenter);
+          expect(find.byType(CustomSlidableAction), findsNothing);
+        }
+        final l = AppLocalizations.of(tester.element(find.byType(HomeScreen)));
+        await tester.tap(row, buttons: kSecondaryMouseButton);
+        await pumpDashboardHome(tester);
+        final menu = find.byType(PopupMenuItem<String>);
+        for (final label in [
+          l.dashboardTitle,
+          l.actionConfirmations,
+          l.commonRefresh,
+          l.commonExport,
+          l.commonDelete,
+        ]) {
+          expect(
+            find.descendant(of: menu, matching: find.text(label)),
+            findsOneWidget,
+          );
+        }
+        await tester.tap(
+          find.descendant(of: menu, matching: find.text(l.dashboardTitle)),
+        );
+        await pumpDashboardHome(tester);
+        expect(find.byType(AccountDashboardScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  for (final (platform, size) in [
+    (TargetPlatform.android, const Size(393, 852)),
+    (TargetPlatform.android, const Size(900, 500)),
+    (TargetPlatform.iOS, const Size(393, 852)),
+  ]) {
+    testWidgets(
+      '${platform.name} ${size.width} account rows keep both swipe actions',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          dashboardHomePreviewApp(
+            variant: AvaThemeVariant.light,
+            platform: platform,
+          ),
+        );
+        await pumpDashboardHome(tester);
+        final row = find.text('demo_trading');
+        final originalCenter = tester.getCenter(row);
+        final l = AppLocalizations.of(tester.element(find.byType(HomeScreen)));
+        await tester.timedDrag(
+          row,
+          const Offset(-120, 0),
+          const Duration(milliseconds: 500),
+        );
+        await pumpDashboardHome(tester);
+        expect(tester.getCenter(row).dx, lessThan(originalCenter.dx));
+        expect(find.text(l.commonExport), findsOneWidget);
+        expect(find.text(l.commonDelete), findsOneWidget);
+        await Slidable.of(tester.element(row))!.close(duration: Duration.zero);
+        await tester.pump();
+        await tester.timedDrag(
+          row,
+          const Offset(70, 0),
+          const Duration(milliseconds: 500),
+        );
+        await pumpDashboardHome(tester);
+        expect(tester.getCenter(row).dx, greaterThan(originalCenter.dx));
+        expect(find.text(l.actionConfirmations), findsOneWidget);
+        expect(find.byType(HomeScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
   for (final variant in AvaThemeVariant.values) {
     for (final mobile in [false, true]) {
       testWidgets(

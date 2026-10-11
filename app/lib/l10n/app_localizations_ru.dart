@@ -2874,7 +2874,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationInvalidSubscription =>
-      'Введите действительный HTTPS-адрес подписки.';
+      'Введите действительный HTTP- или HTTPS-адрес подписки.';
 
   @override
   String get steamAccelerationNetworkError =>

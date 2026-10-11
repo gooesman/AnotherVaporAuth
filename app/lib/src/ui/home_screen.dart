@@ -1167,7 +1167,10 @@ class _SidebarRow extends ConsumerWidget {
             children: [
               Icon(icon, size: 18, color: color ?? t.muted),
               const SizedBox(width: 10),
-              Text(label, style: color != null ? TextStyle(color: color) : null),
+              Flexible(
+                child: Text(label,
+                    style: color != null ? TextStyle(color: color) : null),
+              ),
             ],
           ),
         );
@@ -1276,6 +1279,15 @@ class _SidebarRow extends ConsumerWidget {
       child: Slidable(
         key: ValueKey((account.steamId, account.fromPortable)),
         controller: controller,
+        // Desktop rows select accounts or expose actions through right-click.
+        // Keep phone gestures even in a wide/foldable layout, and disable them
+        // on desktop even when the window is narrow or the screen has touch.
+        enabled: switch (Theme.of(context).platform) {
+          TargetPlatform.windows ||
+          TargetPlatform.macOS ||
+          TargetPlatform.linux => false,
+          _ => true,
+        },
         // Swipe RIGHT → enter the pending center (full swipe enters directly).
         startActionPane: ActionPane(
           motion: const BehindMotion(),

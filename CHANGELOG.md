@@ -5,6 +5,16 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
 trigger automated releases.
 
+## [Unreleased] — Fork preview
+
+### Fixed
+- Desktop account cards no longer slide sideways; their right-click actions remain available. Phone gestures are unchanged.
+- Steam acceleration accepts HTTP and HTTPS subscriptions with URL-encoded Basic authentication and custom ports. A Clash-compatible client identifier requests the provider’s Clash format.
+
+### 修复
+- 电脑账户卡片取消左右滑动，保留右键菜单；手机手势保持不变。
+- Steam 加速支持 HTTP／HTTPS、地址内编码的用户名密码和自定义端口，并使用 Clash 客户端标识取得兼容的订阅格式。
+
 ## [v1.5.1] — 2026-10-09
 
 ### Fixed

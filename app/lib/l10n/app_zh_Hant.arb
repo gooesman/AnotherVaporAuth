@@ -871,7 +871,7 @@
   "steamAccelerationDetectionUnavailable": "無法確認外部代理；自動啟動已暫停，可手動開啟。",
   "steamAccelerationEnvironmentHelp": "內建加速會避讓偵測到的外部代理。偵測結果可能受系統權限影響。",
   "steamAccelerationSkipped": "已略過 {count} 個不支援的節點。",
-  "steamAccelerationInvalidSubscription": "請輸入有效的 HTTPS 訂閱網址。",
+  "steamAccelerationInvalidSubscription": "請輸入有效的 HTTP 或 HTTPS 訂閱網址。",
   "steamAccelerationNetworkError": "無法取得訂閱，請檢查網路後重試。",
   "steamAccelerationUnsupportedSubscription": "訂閱中沒有支援的節點，請使用相容的 Clash 訂閱。",
   "steamAccelerationStorageError": "系統安全儲存空間無法使用，無法儲存設定。",

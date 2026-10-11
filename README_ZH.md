@@ -71,7 +71,7 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
   手机首页在竖屏和横屏下都以令牌和账号列表为主：点按切换当前令牌，长按直接进入该账号概览；
   市场、好友和其他账号功能从概览进入，不再经过长按菜单。
 
-- **可选 Steam 加速（本分支试用功能）** —— 导入 HTTPS Clash 订阅并选择节点，
+- **可选 Steam 加速（本分支试用功能）** —— 导入 HTTP／HTTPS Clash 订阅（支持用户名和密码）并选择节点，
   仅用于 AVA 内的 Steam 请求。默认手动开启，可选自动启动；检测到外部代理或 VPN 时
   暂停内置组件，不修改系统代理或接管其他软件。首页小入口区分组件运行和登录接口/社区连接结果，
   不依赖系统 VPN 图标。见[范围与限制](docs/windows-steam-switch.md#optional-steam-connectivity)。
@@ -89,7 +89,7 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
 - **maFile 兼容** —— 读写旧版 `.maFile` 格式（PBKDF2/SHA1 + AES-256-CBC），老账户零成本迁移，随时可导出。还能导入整个 Steam Desktop Authenticator 的 `maFiles/` 文件夹——**包括加密的**（把 `manifest.json` 和 `.maFile` 一起选中；salt 与 IV 存在 manifest 里，孤立的加密 maFile 谁也解不开）——以及其他工具的变体（Steam++ / Watt Toolkit），包括没有 SteamID 的导出（作为「仅验证码」账户导入，验证码离线可用）。
 - **Steam Guard 验证码** —— 每账户列表 + 实时倒计时环、点按复制；点名称在 用户名 / 昵称 / ID 间切换。
 - **应用内批准登录** —— 在 AVA 内弹窗批准/拒绝 Steam 登录（显示设备 + 位置），与官方 App 一致，基于轮询、无需推送。
-- **待办中心** —— 一个带页签的界面（账户右滑进入），集中处理所有等你决定的事：
+- **待办中心** —— 一个带页签的界面（手机账户右滑、电脑账户右键进入），集中处理所有等你决定的事：
   **确认**（交易 / 市场，批量接受/拒绝，原生 JSON、无内嵌 WebView）、**报价**
   （收到 / 发出 / 历史，可展开卡片显示双方物品，赠送 / 只给不收 / 暂挂警示条，
   接受后自动衔接对应的 mobileconf 确认）。
@@ -137,7 +137,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1182 项测试
+flutter test                       # 1208 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。

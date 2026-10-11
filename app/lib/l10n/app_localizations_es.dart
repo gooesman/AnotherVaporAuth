@@ -2821,7 +2821,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamAccelerationInvalidSubscription =>
-      'Introduce una URL de suscripción HTTPS válida.';
+      'Introduce una URL de suscripción HTTP o HTTPS válida.';
 
   @override
   String get steamAccelerationNetworkError =>

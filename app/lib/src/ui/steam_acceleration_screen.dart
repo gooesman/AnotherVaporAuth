@@ -589,16 +589,9 @@ class _SubscriptionDialogState extends State<_SubscriptionDialog> {
 
   void _submit() {
     final text = _url.text.trim();
-    final uri = Uri.tryParse(text);
-    if (text.length > 4096 ||
-        uri == null ||
-        uri.scheme != 'https' ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty ||
-        uri.hasFragment ||
-        uri.port < 1 ||
-        uri.port > 65535 ||
-        text.contains(RegExp(r'[\x00-\x20]'))) {
+    try {
+      validateSteamSubscriptionUrl(text);
+    } on SteamAccelerationException {
       setState(() => _invalid = true);
       return;
     }

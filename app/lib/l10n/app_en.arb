@@ -1362,7 +1362,7 @@
       }
     }
   },
-  "steamAccelerationInvalidSubscription": "Enter a valid HTTPS subscription URL.",
+  "steamAccelerationInvalidSubscription": "Enter a valid HTTP or HTTPS subscription URL.",
   "steamAccelerationNetworkError": "Could not fetch the subscription. Check your connection and try again.",
   "steamAccelerationUnsupportedSubscription": "The subscription has no supported nodes. Use a compatible Clash subscription.",
   "steamAccelerationStorageError": "Secure storage is unavailable. The setting could not be saved.",
