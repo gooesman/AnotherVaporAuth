@@ -1,6 +1,6 @@
-# Fork 安装包与应用内更新
+# gooes SteamKit 安装包与应用内更新
 
-本 Fork 的更新只读取 `gooesman/AnotherVaporAuth` 的公开、非预发布 GitHub Release。不会使用上游更新服务，也不会把工作流的临时 artifact 当成正式更新。
+gooes SteamKit 是基于原版 AVA 的独立 Fork。更新只读取 `gooesman/AnotherVaporAuth` 的公开、非预发布 GitHub Release。不会使用上游更新服务，也不会把工作流的临时 artifact 当成正式更新。Windows 与 Android 共用[大鹅图标](../app/assets/icon/gooes_steamkit.png)。
 
 ## 版本与文件名
 
@@ -16,9 +16,11 @@
 - `release-provenance.json`
 - `mihomo-v1.19.32-source.tar.gz`、`mihomo-LICENSE.txt`、`mihomo-NOTICE.txt`
 
-Windows 安装器显示为 AVA-pc。内部仍使用 `ava.exe`、`%LOCALAPPDATA%\Programs\AVA` 和原有应用数据目录。NSIS 的 `APPVER` 参数只使用三段版本号；完整版本和构建编号写入应用和预览元数据。
+安装包文件名保留 `AVA-pc-`、`AVA-Fork-` 前缀，供旧版应用内更新器识别；文件名不随应用显示名称更改。
 
-Android 目前使用独立包名 `pro.dotslash.ava.fork`、显示名称 AVA Fork、固定私有签名，ARM64 / CN release 优化构建（AOT、不可调试）。原 AVA dev 的数据保留在原应用内；首次迁移使用导出／导入，此后的同包名、同签名新版可以覆盖更新。私钥只能由仓库 Secrets 提供，不得提交到 Git。
+Windows 安装器显示为 gooes SteamKit（此前为 AVA-pc）。内部仍使用 `ava.exe`、`%LOCALAPPDATA%\Programs\AVA` 和原有应用数据目录。NSIS 的 `APPVER` 参数只使用三段版本号；完整版本和构建编号写入应用和预览元数据。
+
+Android 显示名称改为 gooes SteamKit，保持现有 AVA Fork 的包名 `pro.dotslash.ava.fork` 和固定私有签名，仍是 ARM64 / CN release 优化构建（AOT、不可调试）。递增版本号后，现有 AVA Fork 可直接覆盖更新，保留账号和设置，无需重新导入。原版 AVA 和旧 AVA dev 仍分开安装，只有从这些应用首次迁移才需要导出／导入，旧数据保留在原应用内。私钥只能由仓库 Secrets 提供，不得提交到 Git。
 
 从旧 AVA Fork 调试预览升级到 release 优化包不改变包名或证书，递增构建号后可直接覆盖。
 构建会检查 APK 内的 AOT 代码、不可调试标志及 R8 原始类名映射；广告／计费门禁不会仅凭混淆后的 dex 类名判断。
@@ -30,7 +32,7 @@ Android 目前使用独立包名 `pro.dotslash.ava.fork`、显示名称 AVA Fork
 
 1. 运行 **Windows and Android preview**，等待整个 run 成功。该流程会检查、构建两端，并生成 Windows 单文件安装器。现有 Windows 目录 artifact 和 Android APK artifact 保留；额外生成 `AVA-windows-installer-preview-<SHA>` 安装器 artifact。
 2. 在 artifact 保留期（14 天）内检查安装包。两个安装包 artifact 分别包含 `windows-preview.json` / `android-preview.json`，记录仓库、源工作流、run ID、run number、attempt、提交、版本、构建号、文件名、大小和 SHA-256。Android 还记录已验证的包名与证书摘要。
-3. 手动运行 **Promote AVA Fork preview**，填写成功预览的 run ID 和这次版本的更新说明。此操作会发布稳定版本并设为 Latest；只在确实准备发布时执行。
+3. 手动运行 **Promote gooes SteamKit preview**，填写成功预览的 run ID 和这次版本的更新说明。此操作会发布稳定版本并设为 Latest；只在确实准备发布时执行。
 
 发布流程不会重新构建或执行下载的安装包。它核对 run 属于本仓库的指定预览工作流、整个 run 已成功、源提交的 pubspec 版本、元数据和构建号，并核对 GitHub artifact ZIP 摘要、安装包大小与 SHA-256。APK 在发布时仅改名，字节和签名保持原样。
 

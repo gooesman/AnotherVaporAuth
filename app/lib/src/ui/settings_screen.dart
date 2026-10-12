@@ -45,11 +45,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final t = Theme.of(context).extension<AvaTokens>()!;
-    final appName = switch (Theme.of(context).platform) {
-      TargetPlatform.windows => 'AVA-pc',
-      TargetPlatform.android => 'AVA Fork',
-      _ => 'AVA',
-    };
+    final appName = l.appTitle;
     final data = ref.watch(appControllerProvider).value;
     final manifest = data?.store.manifest;
     final skin = ref.watch(skinProvider);

@@ -1,8 +1,6 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -86,11 +84,7 @@ class _AvaAppState extends ConsumerState<AvaApp> with WidgetsBindingObserver {
     );
 
     return MaterialApp(
-      onGenerateTitle: (context) => switch (defaultTargetPlatform) {
-        TargetPlatform.windows => 'AVA-pc',
-        TargetPlatform.android => 'AVA Fork',
-        _ => AppLocalizations.of(context).appTitle,
-      },
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

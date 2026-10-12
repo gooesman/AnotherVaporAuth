@@ -80,7 +80,7 @@ jobs:
         working-directory: .
         run: |
           $identity = (Get-Item app/build/windows/x64/runner/Release/ava.exe).VersionInfo
-          if ($identity.CompanyName -ne 'dotslash.pro' -or $identity.ProductName -ne 'AVA' -or $identity.FileDescription -ne 'AVA-pc') { throw 'App resource identity must preserve the existing account data directory' }
+          if ($identity.CompanyName -ne 'dotslash.pro' -or $identity.ProductName -ne 'AVA' -or $identity.FileDescription -ne 'gooes SteamKit') { throw 'App resource identity must preserve the existing account data directory' }
           $actual = $identity.ProductVersion
           if ($actual -ne "$env:AVA_VERSION+$env:AVA_BUILD_NUMBER") { throw "Unexpected app version: $actual" }
           Compress-Archive -Path app/build/windows/x64/runner/Release/* -DestinationPath installer/assets/payload.zip -Force
@@ -143,7 +143,7 @@ jobs:
           retention-days: 14
 
   android-preview:
-    name: Build Android preview (separate AVA Fork app)
+    name: Build Android preview (gooes SteamKit)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -214,7 +214,7 @@ jobs:
           print('Verified: system predictive back preview is disabled')
           PY
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'AVA Fork'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'gooes SteamKit'"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/ava-preview-signature.txt"
           python3 - "$RUNNER_TEMP/ava-preview-signature.txt" <<'PY'
           import re

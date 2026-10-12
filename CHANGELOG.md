@@ -1,14 +1,20 @@
 # Changelog · 更新日志
 
-All notable changes to **AVA (AnotherVaporAuth)**. Each version has an English
+All notable changes to **gooes SteamKit**, based on AVA (AnotherVaporAuth). Each version has an English
 block followed by a 中文 block. The format follows
-[Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
-trigger automated releases.
+[Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
+preview builds through its [manual release process](docs/fork-releases.md).
 
 ## [v1.5.5] — 2026-10-12 · Fork
 
+### Changed
+- Windows and Android are now named **gooes SteamKit**, with a shared goose icon across the app, installer and shortcuts. Existing AVA-pc and AVA Fork installations retain their accounts and update compatibility; the original author's MIT notice remains included.
+
 ### Fixed
 - Home remembers the username, nickname or Steam ID display choice after restarting on desktop and phone. The saved choice applies to the selected account and account list; a quick tap during startup takes precedence over the previous setting.
+
+### 调整
+- 电脑和手机统一更名为 **gooes SteamKit**，应用、安装器与快捷方式使用新的大鹅图标；现有 AVA-pc／AVA Fork 可保留账户直接更新，并保留原作者 MIT 许可与署名。
 
 ### 修复
 - 电脑和手机重启后记住首页的用户名／昵称／Steam ID 显示方式，当前账户与账户列表统一显示；启动时立即切换也不会被旧设置覆盖。

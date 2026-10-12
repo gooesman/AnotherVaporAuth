@@ -116,7 +116,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamSwitchHelp.
   ///
   /// In en, this message translates to:
-  /// **'Switch between Steam accounts that have already signed in on this PC with their sign-in details remembered. Importing an authenticator into AVA does not sign that account in to the Steam client.'**
+  /// **'Switch between Steam accounts that have already signed in on this PC with their sign-in details remembered. Importing an authenticator into gooes SteamKit does not sign that account in to the Steam client.'**
   String get steamSwitchHelp;
 
   /// No description provided for @steamSwitchPath.
@@ -146,7 +146,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamSwitchNoMatch.
   ///
   /// In en, this message translates to:
-  /// **'The selected AVA account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.'**
+  /// **'The selected gooes SteamKit account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.'**
   String get steamSwitchNoMatch;
 
   /// No description provided for @steamSwitchNeedsLogin.
@@ -248,7 +248,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'AVA'**
+  /// **'gooes SteamKit'**
   String get appTitle;
 
   /// No description provided for @navAccounts.
@@ -332,7 +332,7 @@ abstract class AppLocalizations {
   /// No description provided for @storeErrorBody.
   ///
   /// In en, this message translates to:
-  /// **'AVA\'s local account database (manifest.json) is missing or corrupt. This can happen after an interrupted write or a partial restore. Retry first; if it keeps failing, reset and re-import your maFile backups.'**
+  /// **'gooes SteamKit\'s local account database (manifest.json) is missing or corrupt. This can happen after an interrupted write or a partial restore. Retry first; if it keeps failing, reset and re-import your maFile backups.'**
   String get storeErrorBody;
 
   /// No description provided for @storeRepair.
@@ -356,7 +356,7 @@ abstract class AppLocalizations {
   /// No description provided for @pinSetupPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Protect AVA with a 6-digit PIN. You\'ll enter it (or your fingerprint) to unlock.'**
+  /// **'Protect gooes SteamKit with a 6-digit PIN. You\'ll enter it (or your fingerprint) to unlock.'**
   String get pinSetupPrompt;
 
   /// No description provided for @pinLabel.
@@ -416,7 +416,7 @@ abstract class AppLocalizations {
   /// No description provided for @unlockBiometricReason.
   ///
   /// In en, this message translates to:
-  /// **'Unlock AVA'**
+  /// **'Unlock gooes SteamKit'**
   String get unlockBiometricReason;
 
   /// No description provided for @settingsBiometric.
@@ -428,7 +428,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBiometricDesc.
   ///
   /// In en, this message translates to:
-  /// **'Use fingerprint, Windows Hello or your device credential instead of the AVA PIN when startup verification is on. Turning startup verification off disables this option; enable it separately after turning verification back on.'**
+  /// **'Use fingerprint, Windows Hello or your device credential instead of the gooes SteamKit PIN when startup verification is on. Turning startup verification off disables this option; enable it separately after turning verification back on.'**
   String get settingsBiometricDesc;
 
   /// No description provided for @settingsBiometricNeedPasskey.
@@ -500,7 +500,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsBlockScreenshotsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Hides AVA from screenshots, screen recording and the recent-apps preview. Also blanks the window during screen sharing, and stops you attaching screenshots to feedback.'**
+  /// **'Hides gooes SteamKit from screenshots, screen recording and the recent-apps preview. Also blanks the window during screen sharing, and stops you attaching screenshots to feedback.'**
   String get settingsBlockScreenshotsDesc;
 
   /// No description provided for @passkeyLabel.
@@ -626,7 +626,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to AVA'**
+  /// **'Welcome to gooes SteamKit'**
   String get welcomeTitle;
 
   /// No description provided for @welcomeSubtitle.
@@ -1580,7 +1580,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupReminderBody.
   ///
   /// In en, this message translates to:
-  /// **'AVA keeps your authenticator data on this device only. Back up your maFiles somewhere safe. Your revocation code (R-code) is shown only once, when you first add an authenticator — write it down and keep it then; it is your last resort for removing the authenticator if this device is ever lost.'**
+  /// **'gooes SteamKit keeps your authenticator data on this device only. Back up your maFiles somewhere safe. Your revocation code (R-code) is shown only once, when you first add an authenticator — write it down and keep it then; it is your last resort for removing the authenticator if this device is ever lost.'**
   String get backupReminderBody;
 
   /// No description provided for @backupReminderOk.
@@ -2240,7 +2240,7 @@ abstract class AppLocalizations {
   /// No description provided for @addMoveInSaveFailed.
   ///
   /// In en, this message translates to:
-  /// **'The authenticator moved to this account, but AVA could NOT save it to this device. Your old authenticator is already dead, so these are the only copies — write them down NOW before closing this screen.\n\nRevocation code: {code}\n\nSecret: {secret}'**
+  /// **'The authenticator moved to this account, but gooes SteamKit could NOT save it to this device. Your old authenticator is already dead, so these are the only copies — write them down NOW before closing this screen.\n\nRevocation code: {code}\n\nSecret: {secret}'**
   String addMoveInSaveFailed(String code, String secret);
 
   /// No description provided for @addMoveInCopySecrets.
@@ -2270,7 +2270,7 @@ abstract class AppLocalizations {
   /// No description provided for @moveInRescueDismissBody.
   ///
   /// In en, this message translates to:
-  /// **'AVA holds no other copy. If you haven\'t written down the revocation code and secret, you will permanently lose access to this authenticator.'**
+  /// **'gooes SteamKit holds no other copy. If you haven\'t written down the revocation code and secret, you will permanently lose access to this authenticator.'**
   String get moveInRescueDismissBody;
 
   /// No description provided for @moveInRescueDismissConfirm.
@@ -2516,7 +2516,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyUpdateBody.
   ///
   /// In en, this message translates to:
-  /// **'The privacy notice has changed since you accepted it. New: AVA can now sync your account library between your devices, through a server you choose — off by default, everything encrypted on this device before upload, and the developer runs no sync server. Please read the current notice below.'**
+  /// **'The privacy notice has changed since you accepted it. New: gooes SteamKit can now sync your account library between your devices, through a server you choose — off by default, everything encrypted on this device before upload, and the developer runs no sync server. Please read the current notice below.'**
   String get privacyUpdateBody;
 
   /// No description provided for @privacyConsentScrollHint.
@@ -3722,7 +3722,7 @@ abstract class AppLocalizations {
   /// Shown when Steam's TLS certificate failed verification.
   ///
   /// In en, this message translates to:
-  /// **'Steam\'s certificate wasn\'t trusted, so AVA closed the connection. Something on this network may be inspecting traffic.'**
+  /// **'Steam\'s certificate wasn\'t trusted, so gooes SteamKit closed the connection. Something on this network may be inspecting traffic.'**
   String get netErrCert;
 
   /// Shown for a non-2xx HTTP status from Steam.
@@ -4100,7 +4100,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsStartupVerificationDesc.
   ///
   /// In en, this message translates to:
-  /// **'When enabled, opening AVA requires your PIN or system authentication. When disabled, anyone using this device can open AVA; local account files remain encrypted.'**
+  /// **'When enabled, opening gooes SteamKit requires your PIN or system authentication. When disabled, anyone using this device can open gooes SteamKit; local account files remain encrypted.'**
   String get settingsStartupVerificationDesc;
 
   /// No description provided for @settingsStartupVerificationError.
@@ -4220,7 +4220,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupCodesExplanation.
   ///
   /// In en, this message translates to:
-  /// **'These are one-use login codes, separate from the authenticator removal code. Steam issues and manages them. AVA opens the official flow and does not generate or store these codes.'**
+  /// **'These are one-use login codes, separate from the authenticator removal code. Steam issues and manages them. gooes SteamKit opens the official flow and does not generate or store these codes.'**
   String get backupCodesExplanation;
 
   /// No description provided for @backupCodesOpenSteam.
@@ -4274,31 +4274,31 @@ abstract class AppLocalizations {
   /// No description provided for @steamSwitchQrTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with an AVA account'**
+  /// **'Sign in with a gooes SteamKit account'**
   String get steamSwitchQrTitle;
 
   /// No description provided for @steamSwitchQrHelp.
   ///
   /// In en, this message translates to:
-  /// **'Choose an AVA account, show Steam’s sign-in QR code, then scan it and review the login request.'**
+  /// **'Choose a gooes SteamKit account, show Steam’s sign-in QR code, then scan it and review the login request.'**
   String get steamSwitchQrHelp;
 
   /// No description provided for @steamSwitchQrAccount.
   ///
   /// In en, this message translates to:
-  /// **'AVA account'**
+  /// **'gooes SteamKit account'**
   String get steamSwitchQrAccount;
 
   /// No description provided for @steamSwitchQrNeedsSession.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to this account again in AVA first. An offline Steam Guard code alone cannot approve a QR login.'**
+  /// **'Sign in to this account again in gooes SteamKit first. An offline Steam Guard code alone cannot approve a QR login.'**
   String get steamSwitchQrNeedsSession;
 
   /// No description provided for @steamSwitchQrNoAccounts.
   ///
   /// In en, this message translates to:
-  /// **'Add an account to AVA to use QR sign-in.'**
+  /// **'Add an account to gooes SteamKit to use QR sign-in.'**
   String get steamSwitchQrNoAccounts;
 
   /// No description provided for @approveScreenSelect.
@@ -4310,7 +4310,7 @@ abstract class AppLocalizations {
   /// No description provided for @approveScreenHelp.
   ///
   /// In en, this message translates to:
-  /// **'AVA will briefly hide. Drag around the Steam sign-in QR code, then review the account and device before approving.'**
+  /// **'gooes SteamKit will briefly hide. Drag around the Steam sign-in QR code, then review the account and device before approving.'**
   String get approveScreenHelp;
 
   /// No description provided for @approveScreenInstruction.
@@ -4538,13 +4538,13 @@ abstract class AppLocalizations {
   /// No description provided for @forkUpdateInstallAndroid.
   ///
   /// In en, this message translates to:
-  /// **'The system installer will open. If prompted, allow AVA Fork to install apps, then follow the system instructions.'**
+  /// **'The system installer will open. If prompted, allow gooes SteamKit to install apps, then follow the system instructions.'**
   String get forkUpdateInstallAndroid;
 
   /// No description provided for @forkUpdateInstallWindows.
   ///
   /// In en, this message translates to:
-  /// **'The installer will open and AVA-pc will close. Finish your current work first, then follow the installer instructions.'**
+  /// **'The installer will open and gooes SteamKit will close. Finish your current work first, then follow the installer instructions.'**
   String get forkUpdateInstallWindows;
 
   /// No description provided for @forkUpdateInstallConfirm.
@@ -4616,7 +4616,7 @@ abstract class AppLocalizations {
   /// No description provided for @forkUpdatePermissionRequired.
   ///
   /// In en, this message translates to:
-  /// **'Allow AVA Fork to install apps, then return here to install'**
+  /// **'Allow gooes SteamKit to install apps, then return here to install'**
   String get forkUpdatePermissionRequired;
 
   /// No description provided for @forkUpdateOpenPermissionSettings.
@@ -4676,7 +4676,7 @@ abstract class AppLocalizations {
   /// No description provided for @backupCodesKeepSafe.
   ///
   /// In en, this message translates to:
-  /// **'Each code can be used once. Keep a printed copy somewhere safe. AVA does not save these codes; leaving this page or switching apps clears them. Steam emails you when codes are generated or used.'**
+  /// **'Each code can be used once. Keep a printed copy somewhere safe. gooes SteamKit does not save these codes; leaving this page or switching apps clears them. Steam emails you when codes are generated or used.'**
   String get backupCodesKeepSafe;
 
   /// No description provided for @backupCodesClear.
@@ -4730,7 +4730,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationDesc.
   ///
   /// In en, this message translates to:
-  /// **'Accelerate only Steam requests made by AVA, without affecting other apps.'**
+  /// **'Accelerate only Steam requests made by gooes SteamKit, without affecting other apps.'**
   String get steamAccelerationDesc;
 
   /// No description provided for @steamAccelerationOff.
@@ -4868,7 +4868,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationAutoDesc.
   ///
   /// In en, this message translates to:
-  /// **'Start when AVA opens; pause built-in acceleration when an external proxy is detected.'**
+  /// **'Start when gooes SteamKit opens; pause built-in acceleration when an external proxy is detected.'**
   String get steamAccelerationAutoDesc;
 
   /// No description provided for @steamAccelerationEnvironment.
@@ -5060,7 +5060,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamConnectionInternal.
   ///
   /// In en, this message translates to:
-  /// **'AVA internal route'**
+  /// **'gooes SteamKit internal route'**
   String get steamConnectionInternal;
 
   /// No description provided for @steamConnectionExternal.
@@ -5090,13 +5090,13 @@ abstract class AppLocalizations {
   /// No description provided for @steamConnectionNoVpnIcon.
   ///
   /// In en, this message translates to:
-  /// **'This only routes Steam requests inside AVA, so Android does not show a system VPN icon. It does not accelerate the Steam app or other apps.'**
+  /// **'This only routes Steam requests inside gooes SteamKit, so Android does not show a system VPN icon. It does not accelerate the Steam app or other apps.'**
   String get steamConnectionNoVpnIcon;
 
   /// No description provided for @steamConnectionScope.
   ///
   /// In en, this message translates to:
-  /// **'Checks Steam API and Community over AVA’s current route without account credentials. Results describe this check, not continuous availability.'**
+  /// **'Checks Steam API and Community over gooes SteamKit’s current route without account credentials. Results describe this check, not continuous availability.'**
   String get steamConnectionScope;
 
   /// No description provided for @tradeSendNotSent.
@@ -5138,7 +5138,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamConnectionPacHelp.
   ///
   /// In en, this message translates to:
-  /// **'PAC is detected but not evaluated by AVA. This check uses the current system route.'**
+  /// **'PAC is detected but not evaluated by gooes SteamKit. This check uses the current system route.'**
   String get steamConnectionPacHelp;
 
   /// No description provided for @forkUpdateTransferSize.

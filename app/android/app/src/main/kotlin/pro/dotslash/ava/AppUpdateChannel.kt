@@ -47,7 +47,7 @@ object AppUpdateChannel {
                         if (!canInstall(activity)) {
                             throw UpdateFailure(
                                 "install_permission_required",
-                                "Allow app installs from AVA in Android settings first.",
+                                "Allow app installs from gooes SteamKit in Android settings first.",
                             )
                         }
                         openInstaller(activity, apk, result)
@@ -121,7 +121,7 @@ object AppUpdateChannel {
                 }
             }
         } catch (_: Exception) {
-            throw UpdateFailure("invalid_update_path", "The APK must be in AVA's update cache.")
+            throw UpdateFailure("invalid_update_path", "The APK must be in the app's update cache.")
         }
 
         val manager = activity.packageManager
@@ -151,7 +151,7 @@ object AppUpdateChannel {
         val installedSigners = signers(current)
         val updateSigners = signers(archive)
         if (installedSigners.isEmpty() || installedSigners != updateSigners) {
-            throw UpdateFailure("signature_mismatch", "The update signing certificate does not match AVA.")
+            throw UpdateFailure("signature_mismatch", "The update signing certificate does not match the installed app.")
         }
         return apk
     }
@@ -186,7 +186,7 @@ object AppUpdateChannel {
                 )
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, "application/vnd.android.package-archive")
-                    clipData = ClipData.newRawUri("AVA update", uri)
+                    clipData = ClipData.newRawUri("gooes SteamKit update", uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 activity.startActivity(intent)

@@ -13,7 +13,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamSwitchHelp =>
-      '可切换已在本机 Steam 登录过并记住登录信息的账号。将令牌导入 AVA 不代表该账号已在 Steam 客户端登录。';
+      '可切换已在本机 Steam 登录过并记住登录信息的账号。将令牌导入 gooes SteamKit 不代表该账号已在 Steam 客户端登录。';
 
   @override
   String get steamSwitchPath => 'Steam 安装目录';
@@ -30,7 +30,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'AVA 所选账号不在本机 Steam 登录记录中。请先在 Steam 登录该账号并记住登录信息，再刷新列表。';
+      'gooes SteamKit 所选账号不在本机 Steam 登录记录中。请先在 Steam 登录该账号并记住登录信息，再刷新列表。';
 
   @override
   String get steamSwitchNeedsLogin => '请先在 Steam 登录此账号并记住登录信息，再刷新列表。';
@@ -84,7 +84,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamSwitchRecoveryNeeded => '切换失败，部分设置未能恢复。请保留下方备份，恢复设置后再重试。';
 
   @override
-  String get appTitle => 'AVA';
+  String get appTitle => 'gooes SteamKit';
 
   @override
   String get navAccounts => '账户';
@@ -128,7 +128,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storeErrorBody =>
-      'AVA 的本地账户数据库（manifest.json）缺失或损坏。写入被中断或恢复不完整都可能导致此问题。请先重试；若持续失败，可重置后重新导入你的 maFile 备份。';
+      'gooes SteamKit 的本地账户数据库（manifest.json）缺失或损坏。写入被中断或恢复不完整都可能导致此问题。请先重试；若持续失败，可重置后重新导入你的 maFile 备份。';
 
   @override
   String get storeRepair => '尝试修复';
@@ -142,7 +142,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pinSetupTitle => '设置解锁 PIN';
 
   @override
-  String get pinSetupPrompt => '用 6 位 PIN 保护 AVA。解锁时输入它（或用指纹）。';
+  String get pinSetupPrompt => '用 6 位 PIN 保护 gooes SteamKit。解锁时输入它（或用指纹）。';
 
   @override
   String get pinLabel => '6 位 PIN';
@@ -172,14 +172,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pinMismatch => '两次 PIN 不一致。';
 
   @override
-  String get unlockBiometricReason => '解锁 AVA';
+  String get unlockBiometricReason => '解锁 gooes SteamKit';
 
   @override
   String get settingsBiometric => '使用系统解锁';
 
   @override
   String get settingsBiometricDesc =>
-      '启动验证开启时，可用指纹、Windows Hello 或设备密码代替 AVA PIN。关闭启动验证会同时停用此项；重新开启后需单独启用。';
+      '启动验证开启时，可用指纹、Windows Hello 或设备密码代替 gooes SteamKit PIN。关闭启动验证会同时停用此项；重新开启后需单独启用。';
 
   @override
   String get settingsBiometricNeedPasskey => '请先设置加密口令。';
@@ -217,7 +217,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      '让 AVA 不出现在截屏、录屏和最近任务预览里。代价是投屏时窗口会变黑，也没法再截图附到反馈里。';
+      '让 gooes SteamKit 不出现在截屏、录屏和最近任务预览里。代价是投屏时窗口会变黑，也没法再截图附到反馈里。';
 
   @override
   String get passkeyLabel => '口令';
@@ -280,7 +280,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsTutorialReplay => '重新播放';
 
   @override
-  String get welcomeTitle => '欢迎使用 AVA';
+  String get welcomeTitle => '欢迎使用 gooes SteamKit';
 
   @override
   String get welcomeSubtitle => '本机加密保存你的验证器。开始前请选择一种方式。';
@@ -821,7 +821,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupReminderBody =>
-      'AVA 的令牌数据只保存在本机。请将 maFile 备份到安全的地方。撤销码（R 码）仅在你首次添加令牌时显示一次——请当场抄下并妥善保管；设备丢失时，它是移除令牌的最后手段。';
+      'gooes SteamKit 的令牌数据只保存在本机。请将 maFile 备份到安全的地方。撤销码（R 码）仅在你首次添加令牌时显示一次——请当场抄下并妥善保管；设备丢失时，它是移除令牌的最后手段。';
 
   @override
   String get backupReminderOk => '知道了';
@@ -1192,7 +1192,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return '验证器已迁移成功，但 AVA 未能把它保存到本设备。旧验证器已失效，以下是仅有的副本——关闭本页前请立即抄写。\n\n撤销代码：$code\n\n密钥：$secret';
+    return '验证器已迁移成功，但 gooes SteamKit 未能把它保存到本设备。旧验证器已失效，以下是仅有的副本——关闭本页前请立即抄写。\n\n撤销代码：$code\n\n密钥：$secret';
   }
 
   @override
@@ -1208,7 +1208,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get moveInRescueDismissTitle => '丢弃这些密钥？';
 
   @override
-  String get moveInRescueDismissBody => 'AVA 没有其他副本。若尚未抄下撤销代码与密钥，你将永久失去这个验证器。';
+  String get moveInRescueDismissBody =>
+      'gooes SteamKit 没有其他副本。若尚未抄下撤销代码与密钥，你将永久失去这个验证器。';
 
   @override
   String get moveInRescueDismissConfirm => '我已保存';
@@ -1335,7 +1336,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get privacyUpdateBody =>
-      '隐私说明在你同意之后有了变更。新增:AVA 现在可以通过你自己指定的服务器,在多台设备间同步账户库——默认关闭,所有数据先在本机加密再上传,开发者不运营任何同步服务器。请阅读下方最新的说明。';
+      '隐私说明在你同意之后有了变更。新增:gooes SteamKit 现在可以通过你自己指定的服务器,在多台设备间同步账户库——默认关闭,所有数据先在本机加密再上传,开发者不运营任何同步服务器。请阅读下方最新的说明。';
 
   @override
   String get privacyConsentScrollHint => '请滑到底部后继续';
@@ -2002,7 +2003,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get netErrTimeout => 'Steam 没有在规定时间内响应。网络可能很慢，或者被拦截了。';
 
   @override
-  String get netErrCert => 'Steam 的证书未通过验证，AVA 已中断这次连接。当前网络里可能有东西在监听流量。';
+  String get netErrCert =>
+      'Steam 的证书未通过验证，gooes SteamKit 已中断这次连接。当前网络里可能有东西在监听流量。';
 
   @override
   String netErrServer(int code) {
@@ -2200,7 +2202,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsStartupVerificationDesc =>
-      '开启时需输入 AVA PIN 或使用系统验证。关闭后，任何能使用此设备的人都可打开 AVA；账户文件仍加密保存在本机。';
+      '开启时需输入 gooes SteamKit PIN 或使用系统验证。关闭后，任何能使用此设备的人都可打开 gooes SteamKit；账户文件仍加密保存在本机。';
 
   @override
   String get settingsStartupVerificationError => '无法保存启动验证设置，请检查系统安全存储后重试。';
@@ -2263,7 +2265,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupCodesExplanation =>
-      '这是一次性备用登录码，与移除令牌的恢复码不同。备用码由 Steam 签发和管理；AVA 提供官方流程入口，不在本地生成或保存这些码。';
+      '这是一次性备用登录码，与移除令牌的恢复码不同。备用码由 Steam 签发和管理；gooes SteamKit 提供官方流程入口，不在本地生成或保存这些码。';
 
   @override
   String get backupCodesOpenSteam => '前往 Steam 获取备用码';
@@ -2290,26 +2292,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get friendsProfileOpenFailed => '无法打开浏览器，可复制下方 Steam 官方链接。';
 
   @override
-  String get steamSwitchQrTitle => '用 AVA 账号扫码登录';
+  String get steamSwitchQrTitle => '用 gooes SteamKit 账号扫码登录';
 
   @override
-  String get steamSwitchQrHelp => '选择 AVA 账号，在 Steam 显示登录二维码，再扫码并确认登录请求。';
+  String get steamSwitchQrHelp =>
+      '选择 gooes SteamKit 账号，在 Steam 显示登录二维码，再扫码并确认登录请求。';
 
   @override
-  String get steamSwitchQrAccount => 'AVA 账号';
+  String get steamSwitchQrAccount => 'gooes SteamKit 账号';
 
   @override
-  String get steamSwitchQrNeedsSession => '请先在 AVA 中重新登录此账号。仅有离线令牌码无法批准二维码登录。';
+  String get steamSwitchQrNeedsSession =>
+      '请先在 gooes SteamKit 中重新登录此账号。仅有离线令牌码无法批准二维码登录。';
 
   @override
-  String get steamSwitchQrNoAccounts => '请先向 AVA 添加账号，再使用扫码登录。';
+  String get steamSwitchQrNoAccounts => '请先向 gooes SteamKit 添加账号，再使用扫码登录。';
 
   @override
   String get approveScreenSelect => '拖框扫描屏幕二维码';
 
   @override
   String get approveScreenHelp =>
-      '点击后 AVA 会暂时隐藏。拖动框选 Steam 登录二维码，再核对账号与登录设备并确认。';
+      '点击后 gooes SteamKit 会暂时隐藏。拖动框选 Steam 登录二维码，再核对账号与登录设备并确认。';
 
   @override
   String get approveScreenInstruction => '拖动框选一个 Steam 登录二维码 · Esc / 右键取消';
@@ -2436,11 +2440,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get forkUpdateInstallAndroid =>
-      '将打开系统安装页面。若提示，请允许 AVA Fork 安装应用，然后按系统提示完成更新。';
+      '将打开系统安装页面。若提示，请允许 gooes SteamKit 安装应用，然后按系统提示完成更新。';
 
   @override
   String get forkUpdateInstallWindows =>
-      '确认后将启动安装程序并关闭 AVA-pc。请先完成当前操作，再按安装程序提示更新。';
+      '确认后将启动安装程序并关闭 gooes SteamKit。请先完成当前操作，再按安装程序提示更新。';
 
   @override
   String get forkUpdateInstallConfirm => '继续安装';
@@ -2476,7 +2480,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get forkUpdateCancelled => '下载已取消';
 
   @override
-  String get forkUpdatePermissionRequired => '请先允许 AVA Fork 安装应用，再返回此页面安装';
+  String get forkUpdatePermissionRequired =>
+      '请先允许 gooes SteamKit 安装应用，再返回此页面安装';
 
   @override
   String get forkUpdateOpenPermissionSettings => '允许安装应用';
@@ -2508,7 +2513,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupCodesKeepSafe =>
-      '每个备用码只能使用一次。请打印并妥善保存。AVA 不会保存这些码；离开此页或切换应用后会清除显示。生成或使用备用码时，Steam 会发送邮件通知。';
+      '每个备用码只能使用一次。请打印并妥善保存。gooes SteamKit 不会保存这些码；离开此页或切换应用后会清除显示。生成或使用备用码时，Steam 会发送邮件通知。';
 
   @override
   String get backupCodesClear => '清除备用码';
@@ -2536,7 +2541,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationTitle => 'Steam 加速';
 
   @override
-  String get steamAccelerationDesc => '仅加速 AVA 访问 Steam，不影响其他应用。';
+  String get steamAccelerationDesc => '仅加速 gooes SteamKit 访问 Steam，不影响其他应用。';
 
   @override
   String get steamAccelerationOff => '未启用';
@@ -2606,7 +2611,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationAuto => '自动启用';
 
   @override
-  String get steamAccelerationAutoDesc => '打开 AVA 时自动启用；检测到外部代理时暂停内置加速。';
+  String get steamAccelerationAutoDesc =>
+      '打开 gooes SteamKit 时自动启用；检测到外部代理时暂停内置加速。';
 
   @override
   String get steamAccelerationEnvironment => '外部代理检测';
@@ -2707,7 +2713,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamConnectionFailed => '连接失败';
 
   @override
-  String get steamConnectionInternal => 'AVA 内置线路';
+  String get steamConnectionInternal => 'gooes SteamKit 内置线路';
 
   @override
   String get steamConnectionExternal => '外部 HTTP 代理';
@@ -2725,11 +2731,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamConnectionNoVpnIcon =>
-      '仅代理 AVA 内部的 Steam 请求，因此 Android 不显示系统 VPN 图标；Steam 客户端和其他应用不会被加速。';
+      '仅代理 gooes SteamKit 内部的 Steam 请求，因此 Android 不显示系统 VPN 图标；Steam 客户端和其他应用不会被加速。';
 
   @override
   String get steamConnectionScope =>
-      '通过 AVA 当前线路检查 Steam 接口和社区，不发送账户凭据。结果仅代表本次检查，不会持续检测。';
+      '通过 gooes SteamKit 当前线路检查 Steam 接口和社区，不发送账户凭据。结果仅代表本次检查，不会持续检测。';
 
   @override
   String tradeSendNotSent(String reason) {
@@ -2755,7 +2761,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tradeSendUnreadableResponse => 'Steam 未返回完整的发送回执。';
 
   @override
-  String get steamConnectionPacHelp => 'AVA 仅检测 PAC，不解析其规则；本次检查使用当前系统线路。';
+  String get steamConnectionPacHelp =>
+      'gooes SteamKit 仅检测 PAC，不解析其规则；本次检查使用当前系统线路。';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -2811,7 +2818,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamSwitchHelp =>
-      '可切換已在這台電腦的 Steam 登入過並記住登入資訊的帳號。將驗證器匯入 AVA 不代表該帳號已登入 Steam 用戶端。';
+      '可切換已在這台電腦的 Steam 登入過並記住登入資訊的帳號。將驗證器匯入 gooes SteamKit 不代表該帳號已登入 Steam 用戶端。';
 
   @override
   String get steamSwitchPath => 'Steam 安裝資料夾';
@@ -2828,7 +2835,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamSwitchNoMatch =>
-      'AVA 所選帳號不在這台電腦的 Steam 登入紀錄中。請先在 Steam 登入該帳號並記住登入資訊，再重新整理清單。';
+      'gooes SteamKit 所選帳號不在這台電腦的 Steam 登入紀錄中。請先在 Steam 登入該帳號並記住登入資訊，再重新整理清單。';
 
   @override
   String get steamSwitchNeedsLogin => '請先在 Steam 登入此帳號並記住登入資訊，再重新整理清單。';
@@ -2882,7 +2889,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamSwitchRecoveryNeeded => '切換失敗，部分設定無法還原。請保留下方備份，還原設定後再試。';
 
   @override
-  String get appTitle => 'AVA';
+  String get appTitle => 'gooes SteamKit';
 
   @override
   String get navAccounts => '帳號';
@@ -2926,7 +2933,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get storeErrorBody =>
-      'AVA 的本機帳號資料庫（manifest.json）遺失或損毀。寫入被中斷或還原不完整都可能造成這個情況。請先重試；若一直失敗，就重設後重新匯入你的 maFile 備份。';
+      'gooes SteamKit 的本機帳號資料庫（manifest.json）遺失或損毀。寫入被中斷或還原不完整都可能造成這個情況。請先重試；若一直失敗，就重設後重新匯入你的 maFile 備份。';
 
   @override
   String get storeRepair => '嘗試修復';
@@ -2940,7 +2947,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pinSetupTitle => '設定解鎖 PIN';
 
   @override
-  String get pinSetupPrompt => '用 6 位數 PIN 保護 AVA。解鎖時要輸入它（或用指紋）。';
+  String get pinSetupPrompt => '用 6 位數 PIN 保護 gooes SteamKit。解鎖時要輸入它（或用指紋）。';
 
   @override
   String get pinLabel => '6 位數 PIN';
@@ -2970,14 +2977,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pinMismatch => '兩次輸入的 PIN 不一致。';
 
   @override
-  String get unlockBiometricReason => '解鎖 AVA';
+  String get unlockBiometricReason => '解鎖 gooes SteamKit';
 
   @override
   String get settingsBiometric => '使用系統解鎖';
 
   @override
   String get settingsBiometricDesc =>
-      '啟動驗證開啟時，可用指紋、Windows Hello 或裝置密碼代替 AVA PIN。關閉啟動驗證會同時停用此項；重新開啟後需另行啟用。';
+      '啟動驗證開啟時，可用指紋、Windows Hello 或裝置密碼代替 gooes SteamKit PIN。關閉啟動驗證會同時停用此項；重新開啟後需另行啟用。';
 
   @override
   String get settingsBiometricNeedPasskey => '請先設定加密通行碼。';
@@ -3015,7 +3022,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      '讓 AVA 不出現在截圖、螢幕錄影和最近使用畫面的預覽裡。代價是螢幕分享時視窗會變黑，也沒辦法再把截圖附到意見回饋裡。';
+      '讓 gooes SteamKit 不出現在截圖、螢幕錄影和最近使用畫面的預覽裡。代價是螢幕分享時視窗會變黑，也沒辦法再把截圖附到意見回饋裡。';
 
   @override
   String get passkeyLabel => '通行碼';
@@ -3078,7 +3085,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get settingsTutorialReplay => '重播';
 
   @override
-  String get welcomeTitle => '歡迎使用 AVA';
+  String get welcomeTitle => '歡迎使用 gooes SteamKit';
 
   @override
   String get welcomeSubtitle => '你的驗證器會加密儲存在這台裝置上。請選擇開始的方式。';
@@ -3620,7 +3627,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get backupReminderBody =>
-      'AVA 只把你的驗證器資料留在這台裝置上。請把 maFile 備份到安全的地方。撤銷碼（R 碼）只在你第一次新增驗證器時顯示一次——請當場抄下並保管好；萬一這台裝置遺失，它是你移除驗證器的最後手段。';
+      'gooes SteamKit 只把你的驗證器資料留在這台裝置上。請把 maFile 備份到安全的地方。撤銷碼（R 碼）只在你第一次新增驗證器時顯示一次——請當場抄下並保管好；萬一這台裝置遺失，它是你移除驗證器的最後手段。';
 
   @override
   String get backupReminderOk => '知道了';
@@ -3992,7 +3999,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return '驗證器已經移到這個帳號，但 AVA 沒能把它存到這台裝置。你的舊驗證器已經失效，所以以下是僅有的副本——關閉這個畫面之前請立刻抄下來。\n\n撤銷碼：$code\n\n金鑰：$secret';
+    return '驗證器已經移到這個帳號，但 gooes SteamKit 沒能把它存到這台裝置。你的舊驗證器已經失效，所以以下是僅有的副本——關閉這個畫面之前請立刻抄下來。\n\n撤銷碼：$code\n\n金鑰：$secret';
   }
 
   @override
@@ -4009,7 +4016,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get moveInRescueDismissBody =>
-      'AVA 沒有留下任何其他副本。如果你還沒抄下撤銷碼與金鑰，你將永久失去這個驗證器。';
+      'gooes SteamKit 沒有留下任何其他副本。如果你還沒抄下撤銷碼與金鑰，你將永久失去這個驗證器。';
 
   @override
   String get moveInRescueDismissConfirm => '我存好了';
@@ -4136,7 +4143,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get privacyUpdateBody =>
-      '隱私權說明在你同意之後有了變更。新增:AVA 現在可以透過你自己指定的伺服器,在多台裝置間同步帳號庫——預設關閉,所有資料先在本機加密再上傳,開發者不營運任何同步伺服器。請閱讀下方最新的說明。';
+      '隱私權說明在你同意之後有了變更。新增:gooes SteamKit 現在可以透過你自己指定的伺服器,在多台裝置間同步帳號庫——預設關閉,所有資料先在本機加密再上傳,開發者不營運任何同步伺服器。請閱讀下方最新的說明。';
 
   @override
   String get privacyConsentScrollHint => '請捲動到底才能繼續';
@@ -4805,7 +4812,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get netErrTimeout => 'Steam 沒有在規定時間內回應。網路可能很慢，或者被攔截了。';
 
   @override
-  String get netErrCert => 'Steam 的憑證未通過驗證，AVA 已中斷這次連線。目前網路裡可能有東西在監聽流量。';
+  String get netErrCert =>
+      'Steam 的憑證未通過驗證，gooes SteamKit 已中斷這次連線。目前網路裡可能有東西在監聽流量。';
 
   @override
   String netErrServer(int code) {
@@ -5004,7 +5012,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsStartupVerificationDesc =>
-      '開啟時需輸入 AVA PIN 或使用系統驗證。關閉後，任何能使用此裝置的人都可開啟 AVA；帳戶檔案仍加密儲存在本機。';
+      '開啟時需輸入 gooes SteamKit PIN 或使用系統驗證。關閉後，任何能使用此裝置的人都可開啟 gooes SteamKit；帳戶檔案仍加密儲存在本機。';
 
   @override
   String get settingsStartupVerificationError => '無法儲存啟動驗證設定，請檢查系統安全儲存空間後重試。';
@@ -5067,7 +5075,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get backupCodesExplanation =>
-      '這些是一次性登入碼，與移除驗證器用的救援碼不同，由 Steam 發放及管理。AVA 會開啟官方流程，不會產生或儲存這些備用碼。';
+      '這些是一次性登入碼，與移除驗證器用的救援碼不同，由 Steam 發放及管理。gooes SteamKit 會開啟官方流程，不會產生或儲存這些備用碼。';
 
   @override
   String get backupCodesOpenSteam => '開啟 Steam 取得備用碼';
@@ -5094,27 +5102,28 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get friendsProfileOpenFailed => '無法開啟瀏覽器，可複製下方 Steam 官方連結。';
 
   @override
-  String get steamSwitchQrTitle => '用 AVA 帳號掃碼登入';
+  String get steamSwitchQrTitle => '用 gooes SteamKit 帳號掃碼登入';
 
   @override
-  String get steamSwitchQrHelp => '選擇 AVA 帳號，在 Steam 顯示登入 QR 碼，再掃碼並確認登入請求。';
+  String get steamSwitchQrHelp =>
+      '選擇 gooes SteamKit 帳號，在 Steam 顯示登入 QR 碼，再掃碼並確認登入請求。';
 
   @override
-  String get steamSwitchQrAccount => 'AVA 帳號';
+  String get steamSwitchQrAccount => 'gooes SteamKit 帳號';
 
   @override
   String get steamSwitchQrNeedsSession =>
-      '請先在 AVA 中重新登入此帳號。僅有離線驗證碼無法核准 QR 碼登入。';
+      '請先在 gooes SteamKit 中重新登入此帳號。僅有離線驗證碼無法核准 QR 碼登入。';
 
   @override
-  String get steamSwitchQrNoAccounts => '請先向 AVA 新增帳號，再使用掃碼登入。';
+  String get steamSwitchQrNoAccounts => '請先向 gooes SteamKit 新增帳號，再使用掃碼登入。';
 
   @override
   String get approveScreenSelect => '框選螢幕上的 QR 碼';
 
   @override
   String get approveScreenHelp =>
-      '點擊後 AVA 會暫時隱藏。拖曳框選 Steam 登入 QR 碼，再核對帳號與登入裝置並確認。';
+      '點擊後 gooes SteamKit 會暫時隱藏。拖曳框選 Steam 登入 QR 碼，再核對帳號與登入裝置並確認。';
 
   @override
   String get approveScreenInstruction => '拖曳框選一個 Steam 登入 QR 碼 · Esc / 右鍵取消';
@@ -5242,11 +5251,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get forkUpdateInstallAndroid =>
-      '將開啟系統安裝畫面。若出現提示，請允許 AVA Fork 安裝應用程式，再依系統指示完成更新。';
+      '將開啟系統安裝畫面。若出現提示，請允許 gooes SteamKit 安裝應用程式，再依系統指示完成更新。';
 
   @override
   String get forkUpdateInstallWindows =>
-      '確認後將啟動安裝程式並關閉 AVA-pc。請先完成目前操作，再依安裝程式指示更新。';
+      '確認後將啟動安裝程式並關閉 gooes SteamKit。請先完成目前操作，再依安裝程式指示更新。';
 
   @override
   String get forkUpdateInstallConfirm => '繼續安裝';
@@ -5282,7 +5291,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get forkUpdateCancelled => '已取消下載';
 
   @override
-  String get forkUpdatePermissionRequired => '請先允許 AVA Fork 安裝應用程式，再返回此頁安裝';
+  String get forkUpdatePermissionRequired =>
+      '請先允許 gooes SteamKit 安裝應用程式，再返回此頁安裝';
 
   @override
   String get forkUpdateOpenPermissionSettings => '允許安裝應用程式';
@@ -5314,7 +5324,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get backupCodesKeepSafe =>
-      '每個備用碼只能使用一次。請列印並妥善保存。AVA 不會儲存這些碼；離開此頁或切換應用程式後會清除顯示。產生或使用備用碼時，Steam 會寄送電子郵件通知。';
+      '每個備用碼只能使用一次。請列印並妥善保存。gooes SteamKit 不會儲存這些碼；離開此頁或切換應用程式後會清除顯示。產生或使用備用碼時，Steam 會寄送電子郵件通知。';
 
   @override
   String get backupCodesClear => '清除備用碼';
@@ -5342,7 +5352,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationTitle => 'Steam 加速';
 
   @override
-  String get steamAccelerationDesc => '僅加速 AVA 存取 Steam，不影響其他應用程式。';
+  String get steamAccelerationDesc => '僅加速 gooes SteamKit 存取 Steam，不影響其他應用程式。';
 
   @override
   String get steamAccelerationOff => '未啟用';
@@ -5412,7 +5422,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationAuto => '自動啟用';
 
   @override
-  String get steamAccelerationAutoDesc => '開啟 AVA 時自動啟用；偵測到外部代理時暫停內建加速。';
+  String get steamAccelerationAutoDesc =>
+      '開啟 gooes SteamKit 時自動啟用；偵測到外部代理時暫停內建加速。';
 
   @override
   String get steamAccelerationEnvironment => '外部代理偵測';
@@ -5513,7 +5524,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamConnectionFailed => '連線失敗';
 
   @override
-  String get steamConnectionInternal => 'AVA 內建線路';
+  String get steamConnectionInternal => 'gooes SteamKit 內建線路';
 
   @override
   String get steamConnectionExternal => '外部 HTTP 代理';
@@ -5531,11 +5542,11 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamConnectionNoVpnIcon =>
-      '僅代理 AVA 內部的 Steam 請求，因此 Android 不顯示系統 VPN 圖示；Steam 用戶端和其他應用程式不會被加速。';
+      '僅代理 gooes SteamKit 內部的 Steam 請求，因此 Android 不顯示系統 VPN 圖示；Steam 用戶端和其他應用程式不會被加速。';
 
   @override
   String get steamConnectionScope =>
-      '透過 AVA 目前線路檢查 Steam 介面和社群，不傳送帳戶憑證。結果僅代表本次檢查，不會持續偵測。';
+      '透過 gooes SteamKit 目前線路檢查 Steam 介面和社群，不傳送帳戶憑證。結果僅代表本次檢查，不會持續偵測。';
 
   @override
   String tradeSendNotSent(String reason) {
@@ -5561,7 +5572,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get tradeSendUnreadableResponse => 'Steam 未傳回完整的傳送回執。';
 
   @override
-  String get steamConnectionPacHelp => 'AVA 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。';
+  String get steamConnectionPacHelp =>
+      'gooes SteamKit 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。';
 
   @override
   String forkUpdateTransferSize(String received, String total) {

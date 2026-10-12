@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 
-/// The AVA app logo. Switches between the Neon and Pixel artwork to match the
-/// active theme (the OS launcher icon can't change at runtime, but the in-app
-/// logo does).
+/// Shared gooes SteamKit artwork, with the active skin's clipping and sampling.
 class AppLogo extends StatelessWidget {
   final double size;
   const AppLogo({super.key, this.size = 84});
@@ -13,14 +11,11 @@ class AppLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final variant = Theme.of(context).extension<AvaTokens>()?.variant ??
         AvaThemeVariant.neon;
-    final asset = variant == AvaThemeVariant.pixel
-        ? 'assets/icon/icon_pixel.png'
-        : 'assets/icon/icon_neon.png';
     final radius = variant == AvaThemeVariant.pixel ? size * 0.12 : size * 0.22;
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: Image.asset(
-        asset,
+        'assets/icon/gooes_steamkit.png',
         width: size,
         height: size,
         filterQuality:

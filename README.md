@@ -1,17 +1,17 @@
 <h1 align="center">
-  <img src="icon.png" height="64" width="64" />
+  <img src="app/assets/icon/gooes_steamkit.png" height="64" width="64" />
   <br/>
-  AVA
+  gooes SteamKit
 </h1>
 
 <p align="center">
-  <b>A</b>nother<b>V</b>apor<b>A</b>uth — a modern, lightweight, cross-platform
-  authenticator for Steam, built with <b>Flutter</b>.<br/>
+  A lightweight Steam authenticator and account toolkit, built with <b>Flutter</b>
+  and based on freefrank's <b>AVA (AnotherVaporAuth)</b>.<br/>
   <sup>Community project — not affiliated with Steam or Valve in any way.</sup>
 </p>
 
 <p align="center">
-  <b>Windows · macOS · Linux · Android</b> from a single codebase (iOS planned).
+  This fork publishes installers for <b>Windows · Android</b>.
 </p>
 
 <p align="center">
@@ -19,23 +19,23 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/freefrank/AnotherVaporAuth/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/freefrank/AnotherVaporAuth?style=flat-square&color=34F1FF" /></a>
-  <a href="https://play.google.com/store/apps/details?id=pro.dotslash.ava"><img alt="Google Play" src="https://img.shields.io/badge/Google%20Play-install-34F1FF?style=flat-square&logo=googleplay&logoColor=white" /></a>
+  <a href="https://github.com/gooesman/AnotherVaporAuth/releases/latest"><img alt="Latest fork release" src="https://img.shields.io/github/v/release/gooesman/AnotherVaporAuth?style=flat-square&color=34F1FF" /></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/freefrank/AnotherVaporAuth?style=flat-square&color=FF4D9D" /></a>
-  <img alt="Platforms" src="https://img.shields.io/badge/platforms-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux%20%C2%B7%20Android-8A93B8?style=flat-square" />
+  <img alt="Fork installers" src="https://img.shields.io/badge/platforms-Windows%20%C2%B7%20Android-8A93B8?style=flat-square" />
 </p>
 
 ---
 
 ## This fork
 
-This is gooesman's independently maintained fork of freefrank's AVA. Local
+**gooes SteamKit** is gooesman's independently maintained fork of freefrank's AVA. Local
 features and all skins are available without Pro verification or payment.
 The original author's MIT notice and credits remain intact. Stable installers
 are available in this fork's [releases](https://github.com/gooesman/AnotherVaporAuth/releases/latest). Preview builds
 come from this fork's [builds](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml);
-the download links below belong to the original project. Windows is named
-**AVA-pc**. Settings → Software updates checks this fork's published releases and
+the download links below belong to the original project. Windows and Android now
+share the **gooes SteamKit** name and goose icon (previously **AVA-pc** and
+**AVA Fork**). Settings → Software updates checks this fork's published releases and
 lets you download and open the installer. Android uses the same update page;
 installation still requires the system confirmation. Automatic downloads use
 GH-Proxy's direct acceleration routes, with GitHub as fallback; GitHub-only
@@ -43,11 +43,13 @@ downloads remain selectable. Official requests can reuse an active proxy.
 Both routes support parallel downloads, speed/remaining-time display and full
 SHA-256 verification against the official GitHub metadata.
 
-The Android preview is **AVA Fork** (`pro.dotslash.ava.fork`), an ARM64 optimized release-mode
-build with a stable fork signing key. It installs alongside the original AVA
-and the earlier **AVA dev** preview, leaving their data intact. Import each
-account's exported `.maFile` once; later AVA Fork builds with the same signature
-and a higher version code update in place. See the
+Android keeps the **AVA Fork** package (`pro.dotslash.ava.fork`) and stable signing
+key in its ARM64 optimized release-mode build. Existing AVA Fork users can update
+directly to gooes SteamKit, retaining accounts and settings without importing again.
+The original AVA and earlier **AVA dev** remain separate apps: install alongside
+them and import each account's exported `.maFile` once. Windows keeps its existing
+executable and data paths. Release filenames retain the `AVA-pc-` and `AVA-Fork-`
+prefixes so earlier in-app updaters can find new versions. See the
 [migration steps](docs/windows-steam-switch.md#android-installation-and-migration).
 
 ## Original project downloads
@@ -70,6 +72,9 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   <img src="posts/zh/recruit/home-pixel.png" width="30%" alt="Pixel skin" />
 </p>
 
+These screenshots show the original AVA interface; this fork uses the goose icon
+shown above while retaining the existing skin styles.
+
 ---
 
 > **Security note:** a desktop/PC authenticator defeats much of the purpose of
@@ -83,7 +88,7 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   remembered Steam account from the overview, Settings or the right-click menu.
   Requests a normal Steam restart, backs up settings before editing, and reports
   when a normal login is still needed. The same page can sign in a new account:
-  choose its AVA session, drag-select Steam's on-screen QR code and review the
+  choose its session in gooes SteamKit, drag-select Steam's on-screen QR code and review the
   login request. Screen images are decoded locally in memory. See the
   [preview guide](docs/windows-steam-switch.md).
 
@@ -91,13 +96,14 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   wallet/pending-funds and market-listing cards, friends and two-sided trade-offer
   editing, and in-app backup login codes with Steam SMS verification. Startup
   verification can be disabled in Settings while keeping account files encrypted at rest.
-  The Android preview is a separate **AVA Fork** app with its own data.
+  Android updates existing **AVA Fork** installations in place; it remains separate
+  from the original AVA and earlier AVA dev.
   Its home screen stays focused on codes and accounts in portrait and landscape;
   tap an account to select its code, or long-press it to open its overview directly.
   Market, friends and other account tools are available in that overview.
 
 - **Optional Steam acceleration (branch preview)** — choose a node from an HTTP
-  or HTTPS Clash subscription, including Basic-auth URLs, for AVA's Steam requests. Manual start is the default;
+  or HTTPS Clash subscription, including Basic-auth URLs, for this app's Steam requests. Manual start is the default;
   automatic start pauses when an external proxy or VPN is detected. System
   proxy settings and other apps are untouched. A compact status entry separates
   core operation from checked API/community reachability; no system VPN icon is
@@ -125,7 +131,7 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   to the home account list and selected panel, is saved on this device and
   survives app restarts on both desktop and phone.
 - **In-app sign-in approval** — approve or deny Steam logins from a dialog inside
-  AVA (device + location shown), just like the official app — by polling, no push.
+  gooes SteamKit (device + location shown), just like the official app — by polling, no push.
 - **Pending center** — one tabbed screen (swipe right on a phone account, or use the desktop context menu) for everything
   awaiting a decision: **Confirmations** (trade / market, batch accept/reject, native
   JSON, no WebView), **Trade offers** (received / sent / history, expandable cards
@@ -212,11 +218,12 @@ flutter run -d linux               # or windows / macos
 flutter build apk --release --split-per-abi --flavor cn --dart-define=AVA_CHANNEL=cn
 ```
 
-Desktop releases are built by GitHub Actions on every `v*` tag or manual
-dispatch, see `.github/workflows/desktop-release.yml`:
+This fork's current Windows and Android release process is described in
+[fork releases](docs/fork-releases.md). The inherited desktop release tooling
+is retained in `.github/workflows/desktop-release.yml`:
 
 - **Windows installer** — a scene-style single-file `AVA-…-setup.exe` built
-  from our own Flutter installer app (`installer/`): frameless neon/pixel UI,
+  from the original project's Flutter installer app (`installer/`): frameless neon/pixel UI,
   installs per-user (no UAC), Start-menu / desktop shortcuts and a proper
   uninstall entry. Uninstalling never touches account data.
 - **Linux AppImage** — single-file `AVA-…-linux-x86_64.AppImage`.
@@ -237,7 +244,7 @@ unlock PIN first, then unlock `maFiles` with its separate password.
 
 ## macOS (Apple Silicon)
 
-DMG builds ship on [Releases](https://github.com/freefrank/AnotherVaporAuth/releases)
+The original AVA project's DMG builds ship on its [Releases](https://github.com/freefrank/AnotherVaporAuth/releases)
 with every tagged version since v1.2.0 — **arm64 only** (M1 and later; no Intel
 build). Open the DMG and drag **AVA** into **Applications**.
 
@@ -256,7 +263,7 @@ launch. To run it anyway:
    ```
 
 Both are one-time; later launches open normally. Only ever do this for software
-whose origin you trust — for AVA that means this repo's Releases page, where
+whose origin you trust — for the original AVA that means the upstream Releases page linked above, where
 every DMG is built in public by GitHub Actions from the tagged commit.
 
 ## Fonts

@@ -1,8 +1,10 @@
-# Privacy notice for this AVA fork
+# gooes SteamKit privacy notice
 
-Updated: 2026-10-11. This notice describes gooesman's independent fork of
-freefrank's AVA, including its **AVA-pc** Windows and **AVA Fork** Android preview
-builds.
+Updated: 2026-10-12. This notice describes **gooes SteamKit**, gooesman's independent
+fork of freefrank's AVA for Windows and Android. Earlier builds were named
+**AVA-pc** and **AVA Fork**. The new name and icon retain the existing data paths
+and Android package/signing identity; existing AVA Fork users do not need to
+reimport accounts.
 
 Steam accounts and authenticator secrets are stored on your device. Steam
 authentication, inventory, market and trading requests use Valve's services.
@@ -29,7 +31,7 @@ the TLS validation used by Steam connections or component downloads.
 Windows first-use core downloads contact the pinned upstream GitHub release.
 The Android package includes the same core. The core uses a private local
 listener and receives its configuration in memory, with no retained diagnostics.
-AVA detects system proxy/VPN information locally to pause its own core; it does
+gooes SteamKit detects system proxy/VPN information locally to pause its own core; it does
 not upload that information or modify system proxy, DNS or certificates.
 Connectivity checks contact Steam's public API and community over the same
 current route, without account cookies or tokens. They run after relevant route

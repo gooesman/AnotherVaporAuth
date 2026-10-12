@@ -26,7 +26,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   Win32Window::Size size(1280, 720);
-  if (!window.CreateCentered(L"AVA-pc", size)) {
+  if (!window.CreateCentered(L"gooes SteamKit", size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

@@ -1,16 +1,21 @@
-# AVA — Steam authenticator (Flutter)
+# gooes SteamKit — Steam authenticator and account toolkit (Flutter)
 
-AVA (AnotherVaporAuth) — a modern, lightweight, cross-platform Steam
-authenticator built with Flutter. Targets **Windows / macOS / Linux desktop +
-Android** from a single codebase (iOS is planned). **maFiles are fully
+gooes SteamKit is a lightweight Steam authenticator and account toolkit based on
+freefrank's AVA (AnotherVaporAuth), built with Flutter. This fork publishes
+**Windows / Android** installers; the shared codebase retains the original
+project's macOS and Linux support. **maFiles are fully
 compatible** with the legacy Steam Desktop Authenticator format for zero-cost
 migration.
 
 See the design spec: `../docs/specs/2026-06-29-flutter-rewrite-design.md`
 
-This fork displays **AVA-pc** on Windows and **AVA Fork** on Android. Windows
-keeps the existing executable and data paths; the Android preview has a separate
-package and requires the one-time account import described below.
+Windows and Android both display **gooes SteamKit**, using
+[`assets/icon/gooes_steamkit.png`](assets/icon/gooes_steamkit.png). Windows keeps
+the existing executable and data paths. Android keeps the AVA Fork package and
+signing identity, so existing **AVA Fork** installations update in place without
+reimporting accounts. The original AVA and earlier AVA dev use separate packages
+and require the one-time migration described below. Release filenames keep the
+`AVA-pc-` and `AVA-Fork-` prefixes for older in-app updaters.
 
 ## Architecture
 
@@ -98,7 +103,7 @@ Implemented and statically verified end-to-end:
 - **Software updates** — Settings opens this fork's public GitHub release check.
   Download is explicit and cancellable; file size and SHA-256 are verified before
   a separate install confirmation. Android uses its system permission and installer,
-  while Windows starts the installer and then closes AVA-pc. No release, network
+  while Windows starts the installer and then closes gooes SteamKit. No release, network
   failure and an unverifiable package are distinct states, never silent installation.
 - **Block screenshots** — opt-in `FLAG_SECURE` toggle (Android only; off by
   default, since it also blanks screen sharing and feedback screenshots)
@@ -136,7 +141,7 @@ protocol-speculative until validated on a real account (see
 availability to ordinary user tokens. The QR-approve (direction B) signature
 scheme should likewise be checked against a live capture before production use.
 
-Both **Linux desktop and Android release builds are verified**:
+The original project's recorded **Linux desktop and Android release checks**:
 
 - Linux desktop: release bundle ~27 MB (AOT).
 - Android release: cn universal APK 91 MiB, play AAB 85 MiB (v1.2.3). Debug
@@ -145,12 +150,13 @@ Both **Linux desktop and Android release builds are verified**:
   Android builds use the NDK version selected by Flutter.
 
 This fork's Android workflow produces an **ARM64 CN optimized release-mode preview** named
-**AVA Fork** (`pro.dotslash.ava.fork`), signed with a stable private fork key.
-It installs alongside the original AVA and the earlier AVA dev preview, with a
-new empty vault. Import accounts once using their exported `.maFile` files;
-local settings and the app PIN are separate. Later APKs with the same signature
-and a higher Android version code update AVA Fork in place. Do not uninstall the
-old app to bypass a signature mismatch. See the
+**gooes SteamKit** (`pro.dotslash.ava.fork`), signed with the same stable private
+fork key as earlier **AVA Fork** builds. A higher Android version code updates
+an existing AVA Fork installation directly, retaining its accounts and settings.
+It installs alongside the original AVA and earlier AVA dev preview. Only that
+first migration starts with an empty vault and requires importing exported
+`.maFile` files; local settings and the app PIN are separate from those old apps.
+Do not uninstall the old app to bypass a signature mismatch. See the
 [installation and migration guide](../docs/windows-steam-switch.md#android-installation-and-migration).
 
 ```sh
@@ -182,11 +188,12 @@ Notes:
 - `android/build.gradle.kts` forces every plugin's `compileSdk` to 36 in
   `afterEvaluate` (file_picker 8.x pins 34, which breaks the release build).
 - The fork preview workflow sets `ORG_GRADLE_PROJECT_avaForkPreview=true`
-  (equivalent to Gradle `-PavaForkPreview=true`). This selects the AVA Fork
-  package/name and uses `android/key.properties` (git-ignored) to sign the debug
-  APK. Missing signing fields or the keystore fail the build; no temporary debug
+  (equivalent to Gradle `-PavaForkPreview=true`). This selects the existing AVA Fork
+  package with the gooes SteamKit display name and uses `android/key.properties`
+  (git-ignored) to sign the optimized release APK. Missing signing fields or the
+  keystore fail the build; no temporary debug
   key is substituted. Without that property, ordinary debug builds remain
-  **AVA dev** and do not update AVA Fork.
+  **AVA dev** and do not update the AVA Fork / gooes SteamKit package.
 - Release signing also comes from `android/key.properties`. Release artifacts
   fail closed without it; `-PallowDebugSigning=true` explicitly permits the
   public debug-key fallback for local experiments only.

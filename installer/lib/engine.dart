@@ -5,9 +5,11 @@ import 'package:archive/archive.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 
+import 'windows_shortcuts.dart';
+
 /// Stamped by CI: --dart-define=AVA_VERSION=x.y.z
 const appVersion = String.fromEnvironment('AVA_VERSION', defaultValue: 'dev');
-const appDisplayName = 'AVA-pc';
+const appDisplayName = 'gooes SteamKit';
 
 const _regKey = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA';
 
@@ -200,10 +202,12 @@ class InstallEngine {
     await File(p.join(dir, manifestName)).writeAsString(written.join('\n'));
     progress(0.90);
     log('creating shortcuts');
-    await _shortcut('Programs', p.join(dir, 'ava.exe'), dir);
-    if (desktopShortcut) {
-      await _shortcut('Desktop', p.join(dir, 'ava.exe'), dir);
-    }
+    await WindowsShortcuts.update(
+      displayName: appDisplayName,
+      target: p.join(dir, 'ava.exe'),
+      workDir: dir,
+      desktopShortcut: desktopShortcut,
+    );
     progress(0.95);
     log('registering uninstall entry');
     await _registerUninstall(dir, uninstaller, total ~/ 1024);
@@ -336,19 +340,13 @@ class InstallEngine {
         'taskkill', ['/im', 'ava.exe', '/f', '/fi', 'STATUS eq RUNNING']);
     progress(0.3);
     log('removing shortcuts');
-    await _ps('''
-\$ws = New-Object -ComObject WScript.Shell
-foreach (\$sf in @('Programs','Desktop')) {
-  foreach (\$name in @('$appDisplayName.lnk','AVA.lnk')) {
-    \$path = Join-Path \$ws.SpecialFolders(\$sf) \$name
-    if (Test-Path -LiteralPath \$path -PathType Leaf) {
-      \$link = \$ws.CreateShortcut(\$path)
-      if ([string]::Equals(\$link.TargetPath, '${_q(p.join(dir, 'ava.exe'))}', [StringComparison]::OrdinalIgnoreCase)) {
-        Remove-Item -LiteralPath \$path -Force
-      }
-    }
-  }
-}''');
+    await WindowsShortcuts.update(
+      displayName: appDisplayName,
+      target: p.join(dir, 'ava.exe'),
+      workDir: dir,
+      desktopShortcut: false,
+      uninstall: true,
+    );
     progress(0.6);
     log('removing registry entry');
     await Process.run('reg', ['delete', _regKey, '/f']);
@@ -406,31 +404,6 @@ foreach (\$sf in @('Programs','Desktop')) {
     log('uninstalled — this window can be closed');
   }
 
-  static Future<void> _shortcut(
-      String specialFolder, String target, String workDir) async {
-    await _ps('''
-\$ws = New-Object -ComObject WScript.Shell
-\$folder = \$ws.SpecialFolders('$specialFolder')
-\$path = Join-Path \$folder '$appDisplayName.lnk'
-\$exists = Test-Path -LiteralPath \$path
-\$lnk = \$ws.CreateShortcut(\$path)
-# Never replace a same-named shortcut that launches a different program.
-if (-not \$exists -or [string]::Equals(\$lnk.TargetPath, '${_q(target)}', [StringComparison]::OrdinalIgnoreCase)) {
-  \$lnk.TargetPath = '${_q(target)}'
-  \$lnk.WorkingDirectory = '${_q(workDir)}'
-  \$lnk.IconLocation = '${_q(target)},0'
-  \$lnk.Save()
-  # Migrate only the legacy link for this exact installation.
-  \$oldPath = Join-Path \$folder 'AVA.lnk'
-  if (Test-Path -LiteralPath \$oldPath -PathType Leaf) {
-    \$oldLink = \$ws.CreateShortcut(\$oldPath)
-    if ([string]::Equals(\$oldLink.TargetPath, '${_q(target)}', [StringComparison]::OrdinalIgnoreCase)) {
-      Remove-Item -LiteralPath \$oldPath -Force
-    }
-  }
-}''');
-  }
-
   static Future<void> _registerUninstall(
       String dir, String uninstaller, int sizeKb) async {
     Future<void> add(String name, String value,
@@ -452,20 +425,10 @@ if (-not \$exists -or [string]::Equals(\$lnk.TargetPath, '${_q(target)}', [Strin
     await add('DisplayIcon', p.join(dir, 'ava.exe'));
     await add('UninstallString', '"$uninstaller" --uninstall');
     await add('QuietUninstallString', '"$uninstaller" --uninstall --auto');
-    await add('URLInfoAbout', 'https://github.com/freefrank/AnotherVaporAuth');
+    await add('URLInfoAbout', 'https://github.com/gooesman/AnotherVaporAuth');
     await add('NoModify', '1', dword: true);
     await add('NoRepair', '1', dword: true);
     await add('EstimatedSize', '$sizeKb', dword: true);
   }
 
-  static Future<void> _ps(String script) async {
-    final r = await Process.run('powershell',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script]);
-    if (r.exitCode != 0) {
-      throw StateError('powershell failed: ${r.stderr}');
-    }
-  }
-
-  /// Escapes a path for embedding in a single-quoted PowerShell string.
-  static String _q(String s) => s.replaceAll("'", "''");
 }

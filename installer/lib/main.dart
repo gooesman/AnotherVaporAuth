@@ -244,10 +244,21 @@ class _InstallerScreenState extends State<InstallerScreen>
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        GlitchTitle(appDisplayName, t: _fx.value),
-        const SizedBox(width: 6),
-        BlinkCursor(t: _fx.value),
-        const Spacer(),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GlitchTitle(appDisplayName, t: _fx.value),
+                const SizedBox(width: 6),
+                BlinkCursor(t: _fx.value),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(

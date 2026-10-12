@@ -13,7 +13,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamSwitchHelp =>
-      'Переключайтесь между аккаунтами, в которые уже входили в Steam на этом ПК и для которых сохранены данные входа. Импорт аутентификатора в AVA не выполняет вход в этот аккаунт в клиенте Steam.';
+      'Переключайтесь между аккаунтами, в которые уже входили в Steam на этом ПК и для которых сохранены данные входа. Импорт аутентификатора в gooes SteamKit не выполняет вход в этот аккаунт в клиенте Steam.';
 
   @override
   String get steamSwitchPath => 'Папка установки Steam';
@@ -31,7 +31,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'Выбранного в AVA аккаунта нет в записях Steam на этом ПК. Войдите в этот аккаунт в Steam, включите сохранение данных входа, затем обновите список.';
+      'Выбранного в gooes SteamKit аккаунта нет в записях Steam на этом ПК. Войдите в этот аккаунт в Steam, включите сохранение данных входа, затем обновите список.';
 
   @override
   String get steamSwitchNeedsLogin =>
@@ -92,7 +92,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Смена аккаунта не удалась, и часть настроек не удалось восстановить. Сохраните резервную копию, указанную ниже, и восстановите настройки перед новой попыткой.';
 
   @override
-  String get appTitle => 'AVA';
+  String get appTitle => 'gooes SteamKit';
 
   @override
   String get navAccounts => 'Аккаунты';
@@ -137,7 +137,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get storeErrorBody =>
-      'Локальная база аккаунтов AVA (manifest.json) отсутствует или повреждена. Так бывает после прерванной записи или неполного восстановления. Сначала попробуйте ещё раз; если ошибка повторяется, сбросьте данные и заново импортируйте резервные копии maFile.';
+      'Локальная база аккаунтов gooes SteamKit (manifest.json) отсутствует или повреждена. Так бывает после прерванной записи или неполного восстановления. Сначала попробуйте ещё раз; если ошибка повторяется, сбросьте данные и заново импортируйте резервные копии maFile.';
 
   @override
   String get storeRepair => 'Попробовать восстановить';
@@ -152,7 +152,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pinSetupPrompt =>
-      'Защитите AVA 6-значным PIN-кодом. Его (или отпечаток пальца) нужно будет вводить при разблокировке.';
+      'Защитите gooes SteamKit 6-значным PIN-кодом. Его (или отпечаток пальца) нужно будет вводить при разблокировке.';
 
   @override
   String get pinLabel => '6-значный PIN-код';
@@ -182,14 +182,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get pinMismatch => 'PIN-коды не совпадают.';
 
   @override
-  String get unlockBiometricReason => 'Разблокировать AVA';
+  String get unlockBiometricReason => 'Разблокировать gooes SteamKit';
 
   @override
   String get settingsBiometric => 'Разблокировка устройства';
 
   @override
   String get settingsBiometricDesc =>
-      'При включённой проверке при запуске можно использовать отпечаток пальца, Windows Hello или код устройства вместо PIN AVA. Отключение проверки отключает и эту опцию; затем её нужно включить отдельно.';
+      'При включённой проверке при запуске можно использовать отпечаток пальца, Windows Hello или код устройства вместо PIN gooes SteamKit. Отключение проверки отключает и эту опцию; затем её нужно включить отдельно.';
 
   @override
   String get settingsBiometricNeedPasskey =>
@@ -232,7 +232,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      'Скрывает AVA от скриншотов, записи экрана и превью в списке недавних приложений. Также гасит окно при демонстрации экрана и не даёт прикладывать скриншоты к отзывам.';
+      'Скрывает gooes SteamKit от скриншотов, записи экрана и превью в списке недавних приложений. Также гасит окно при демонстрации экрана и не даёт прикладывать скриншоты к отзывам.';
 
   @override
   String get passkeyLabel => 'Пароль';
@@ -302,7 +302,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsTutorialReplay => 'Показать';
 
   @override
-  String get welcomeTitle => 'Добро пожаловать в AVA';
+  String get welcomeTitle => 'Добро пожаловать в gooes SteamKit';
 
   @override
   String get welcomeSubtitle =>
@@ -895,7 +895,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get backupReminderBody =>
-      'AVA хранит данные аутентификатора только на этом устройстве. Сохраните резервные копии maFile в надёжном месте. Код отзыва (R-код) показывается лишь один раз — при первом добавлении аутентификатора; запишите его тогда же и сохраните: это ваш последний способ удалить аутентификатор, если устройство когда-нибудь потеряется.';
+      'gooes SteamKit хранит данные аутентификатора только на этом устройстве. Сохраните резервные копии maFile в надёжном месте. Код отзыва (R-код) показывается лишь один раз — при первом добавлении аутентификатора; запишите его тогда же и сохраните: это ваш последний способ удалить аутентификатор, если устройство когда-нибудь потеряется.';
 
   @override
   String get backupReminderOk => 'Понятно';
@@ -1292,7 +1292,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return 'Аутентификатор перенесён на этот аккаунт, но AVA НЕ смогла сохранить его на этом устройстве. Старый аутентификатор уже не работает, поэтому это единственные копии — запишите их СЕЙЧАС, до того как закроете экран.\n\nКод отзыва: $code\n\nСекрет: $secret';
+    return 'Аутентификатор перенесён на этот аккаунт, но gooes SteamKit НЕ смогла сохранить его на этом устройстве. Старый аутентификатор уже не работает, поэтому это единственные копии — запишите их СЕЙЧАС, до того как закроете экран.\n\nКод отзыва: $code\n\nСекрет: $secret';
   }
 
   @override
@@ -1309,7 +1309,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get moveInRescueDismissBody =>
-      'Другой копии у AVA нет. Если вы не записали код отзыва и секрет, доступ к этому аутентификатору будет потерян навсегда.';
+      'Другой копии у gooes SteamKit нет. Если вы не записали код отзыва и секрет, доступ к этому аутентификатору будет потерян навсегда.';
 
   @override
   String get moveInRescueDismissConfirm => 'Данные записаны';
@@ -1440,7 +1440,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get privacyUpdateBody =>
-      'Уведомление о конфиденциальности изменилось с тех пор, как вы его приняли. Новое: AVA теперь может синхронизировать библиотеку аккаунтов между вашими устройствами через выбранный вами сервер — по умолчанию выключено, всё шифруется на этом устройстве до отправки, разработчик не держит сервера синхронизации. Прочтите актуальное уведомление ниже.';
+      'Уведомление о конфиденциальности изменилось с тех пор, как вы его приняли. Новое: gooes SteamKit теперь может синхронизировать библиотеку аккаунтов между вашими устройствами через выбранный вами сервер — по умолчанию выключено, всё шифруется на этом устройстве до отправки, разработчик не держит сервера синхронизации. Прочтите актуальное уведомление ниже.';
 
   @override
   String get privacyConsentScrollHint =>
@@ -2182,7 +2182,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get netErrCert =>
-      'Сертификат Steam не прошёл проверку, поэтому AVA разорвала соединение. Возможно, что-то в этой сети просматривает трафик.';
+      'Сертификат Steam не прошёл проверку, поэтому gooes SteamKit разорвала соединение. Возможно, что-то в этой сети просматривает трафик.';
 
   @override
   String netErrServer(int code) {
@@ -2396,7 +2396,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsStartupVerificationDesc =>
-      'Если включено, для открытия AVA потребуется PIN-код или системная аутентификация. Если выключено, любой пользователь этого устройства сможет открыть AVA; локальные файлы аккаунтов останутся зашифрованными.';
+      'Если включено, для открытия gooes SteamKit потребуется PIN-код или системная аутентификация. Если выключено, любой пользователь этого устройства сможет открыть gooes SteamKit; локальные файлы аккаунтов останутся зашифрованными.';
 
   @override
   String get settingsStartupVerificationError =>
@@ -2464,7 +2464,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get backupCodesExplanation =>
-      'Это одноразовые коды входа, отдельные от кода удаления аутентификатора. Их выдаёт и обслуживает Steam. AVA открывает официальную страницу, но не создаёт и не хранит эти коды.';
+      'Это одноразовые коды входа, отдельные от кода удаления аутентификатора. Их выдаёт и обслуживает Steam. gooes SteamKit открывает официальную страницу, но не создаёт и не хранит эти коды.';
 
   @override
   String get backupCodesOpenSteam => 'Открыть Steam для получения кодов';
@@ -2495,29 +2495,29 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось открыть браузер. Скопируйте официальную ссылку Steam ниже.';
 
   @override
-  String get steamSwitchQrTitle => 'Войти с аккаунтом AVA';
+  String get steamSwitchQrTitle => 'Войти с аккаунтом gooes SteamKit';
 
   @override
   String get steamSwitchQrHelp =>
-      'Выберите аккаунт AVA, откройте QR-код входа в Steam, отсканируйте его и проверьте запрос.';
+      'Выберите аккаунт gooes SteamKit, откройте QR-код входа в Steam, отсканируйте его и проверьте запрос.';
 
   @override
-  String get steamSwitchQrAccount => 'Аккаунт AVA';
+  String get steamSwitchQrAccount => 'Аккаунт gooes SteamKit';
 
   @override
   String get steamSwitchQrNeedsSession =>
-      'Сначала повторно войдите в этот аккаунт в AVA. Одного офлайн-кода Steam Guard недостаточно для подтверждения входа по QR.';
+      'Сначала повторно войдите в этот аккаунт в gooes SteamKit. Одного офлайн-кода Steam Guard недостаточно для подтверждения входа по QR.';
 
   @override
   String get steamSwitchQrNoAccounts =>
-      'Добавьте аккаунт в AVA для входа по QR-коду.';
+      'Добавьте аккаунт в gooes SteamKit для входа по QR-коду.';
 
   @override
   String get approveScreenSelect => 'Выделить QR-код на экране';
 
   @override
   String get approveScreenHelp =>
-      'AVA ненадолго скроется. Обведите QR-код входа в Steam и проверьте аккаунт и устройство перед подтверждением.';
+      'gooes SteamKit ненадолго скроется. Обведите QR-код входа в Steam и проверьте аккаунт и устройство перед подтверждением.';
 
   @override
   String get approveScreenInstruction =>
@@ -2652,11 +2652,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get forkUpdateInstallAndroid =>
-      'Откроется системный установщик. При необходимости разрешите AVA Fork устанавливать приложения и следуйте инструкциям.';
+      'Откроется системный установщик. При необходимости разрешите gooes SteamKit устанавливать приложения и следуйте инструкциям.';
 
   @override
   String get forkUpdateInstallWindows =>
-      'Откроется установщик, а AVA-pc закроется. Сначала завершите текущую работу, затем следуйте инструкциям установщика.';
+      'Откроется установщик, а gooes SteamKit закроется. Сначала завершите текущую работу, затем следуйте инструкциям установщика.';
 
   @override
   String get forkUpdateInstallConfirm => 'Продолжить установку';
@@ -2700,7 +2700,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get forkUpdatePermissionRequired =>
-      'Разрешите AVA Fork устанавливать приложения и вернитесь сюда';
+      'Разрешите gooes SteamKit устанавливать приложения и вернитесь сюда';
 
   @override
   String get forkUpdateOpenPermissionSettings =>
@@ -2735,7 +2735,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get backupCodesKeepSafe =>
-      'Каждый код можно использовать один раз. Храните распечатку в безопасном месте. AVA не сохраняет коды; при уходе со страницы или переключении приложения они исчезнут. Steam отправляет письмо при создании и использовании кодов.';
+      'Каждый код можно использовать один раз. Храните распечатку в безопасном месте. gooes SteamKit не сохраняет коды; при уходе со страницы или переключении приложения они исчезнут. Steam отправляет письмо при создании и использовании кодов.';
 
   @override
   String get backupCodesClear => 'Очистить коды';
@@ -2769,7 +2769,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationDesc =>
-      'Ускоряет только запросы AVA к Steam, не затрагивая другие приложения.';
+      'Ускоряет только запросы gooes SteamKit к Steam, не затрагивая другие приложения.';
 
   @override
   String get steamAccelerationOff => 'Выключено';
@@ -2844,7 +2844,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationAutoDesc =>
-      'Запускать при открытии AVA; при обнаружении внешнего прокси приостанавливать встроенное ускорение.';
+      'Запускать при открытии gooes SteamKit; при обнаружении внешнего прокси приостанавливать встроенное ускорение.';
 
   @override
   String get steamAccelerationEnvironment => 'Проверка внешнего прокси';
@@ -2953,7 +2953,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steamConnectionFailed => 'Ошибка соединения';
 
   @override
-  String get steamConnectionInternal => 'Встроенный маршрут AVA';
+  String get steamConnectionInternal => 'Встроенный маршрут gooes SteamKit';
 
   @override
   String get steamConnectionExternal => 'Внешний HTTP-прокси';
@@ -2972,11 +2972,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamConnectionNoVpnIcon =>
-      'Перенаправляются только запросы Steam внутри AVA, поэтому Android не показывает значок VPN. Приложение Steam и другие приложения не ускоряются.';
+      'Перенаправляются только запросы Steam внутри gooes SteamKit, поэтому Android не показывает значок VPN. Приложение Steam и другие приложения не ускоряются.';
 
   @override
   String get steamConnectionScope =>
-      'Проверяет API и Сообщество Steam через текущий маршрут AVA без учётных данных. Результат относится только к этой проверке, а не к постоянному мониторингу.';
+      'Проверяет API и Сообщество Steam через текущий маршрут gooes SteamKit без учётных данных. Результат относится только к этой проверке, а не к постоянному мониторингу.';
 
   @override
   String tradeSendNotSent(String reason) {
@@ -3005,7 +3005,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'AVA обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут.';
+      'gooes SteamKit обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут.';
 
   @override
   String forkUpdateTransferSize(String received, String total) {

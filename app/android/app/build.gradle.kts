@@ -73,7 +73,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        resValue("string", "ava_app_label", if (avaForkPreview) "AVA Fork" else "AVA")
+        resValue("string", "ava_app_label", if (avaForkPreview) "gooes SteamKit" else "AVA")
         if (avaForkPreview) {
             // --target-platform limits Flutter's own binaries, while plugins
             // may still contribute other ABIs. Match the bundled ARM64 core
@@ -118,7 +118,7 @@ android {
             // own (empty) data. Release builds keep the real id untouched.
             applicationIdSuffix = if (avaForkPreview) null else ".dev"
             versionNameSuffix = if (avaForkPreview) "-fork" else "-dev"
-            resValue("string", "ava_app_label", if (avaForkPreview) "AVA Fork" else "AVA dev")
+            resValue("string", "ava_app_label", if (avaForkPreview) "gooes SteamKit" else "AVA dev")
             if (avaForkPreview) {
                 signingConfig = signingConfigs.getByName("release")
             }

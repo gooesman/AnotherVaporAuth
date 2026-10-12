@@ -1,16 +1,16 @@
 <h1 align="center">
-  <img src="icon.png" height="64" width="64" />
+  <img src="app/assets/icon/gooes_steamkit.png" height="64" width="64" />
   <br/>
-  AVA
+  gooes SteamKit
 </h1>
 
 <p align="center">
-  <b>A</b>nother<b>V</b>apor<b>A</b>uth —— 用 <b>Flutter</b> 打造的现代化、轻量、跨平台 Steam 验证器。<br/>
+  基于 freefrank 的 <b>AVA (AnotherVaporAuth)</b>，用 <b>Flutter</b> 打造的轻量 Steam 验证器与账户工具。<br/>
   <sup>社区项目 —— 与 Steam / Valve 无任何关联。</sup>
 </p>
 
 <p align="center">
-  单一代码库覆盖 <b>Windows · macOS · Linux · Android</b>（iOS 已规划）。
+  本分支提供 <b>Windows · Android</b> 安装包。
 </p>
 
 <p align="center">
@@ -18,30 +18,31 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/freefrank/AnotherVaporAuth/releases/latest"><img alt="最新版本" src="https://img.shields.io/github/v/release/freefrank/AnotherVaporAuth?style=flat-square&color=34F1FF" /></a>
-  <a href="https://play.google.com/store/apps/details?id=pro.dotslash.ava"><img alt="Google Play" src="https://img.shields.io/badge/Google%20Play-安装-34F1FF?style=flat-square&logo=googleplay&logoColor=white" /></a>
+  <a href="https://github.com/gooesman/AnotherVaporAuth/releases/latest"><img alt="本分支最新版本" src="https://img.shields.io/github/v/release/gooesman/AnotherVaporAuth?style=flat-square&color=34F1FF" /></a>
   <a href="LICENSE"><img alt="许可证" src="https://img.shields.io/github/license/freefrank/AnotherVaporAuth?style=flat-square&color=FF4D9D" /></a>
-  <img alt="平台" src="https://img.shields.io/badge/平台-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux%20%C2%B7%20Android-8A93B8?style=flat-square" />
+  <img alt="本分支安装包平台" src="https://img.shields.io/badge/平台-Windows%20%C2%B7%20Android-8A93B8?style=flat-square" />
 </p>
 
 ---
 
 ## 关于本分支
 
-这是 gooesman 基于 freefrank 的 AVA 维护的独立 Fork。本地功能和所有皮肤直接开放，
+**gooes SteamKit** 是 gooesman 基于 freefrank 的 AVA 维护的独立 Fork。本地功能和所有皮肤直接开放，
 无需 Pro 验证或付费；保留原作者的 MIT 许可及署名。正式安装包见
 [本分支发布页](https://github.com/gooesman/AnotherVaporAuth/releases/latest)，试用包来自
 [本分支构建](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml)，
-下方下载链接仍属于原项目。电脑端名为 **AVA-pc**，可在设置里的“软件更新”中查询
+下方下载链接仍属于原项目。电脑端与手机端现统一名为 **gooes SteamKit**，使用同款大鹅图标
+（此前分别为 **AVA-pc** 和 **AVA Fork**）。可在设置里的“软件更新”中查询
 本分支正式发布的版本、下载并打开安装程序；手机端也有同样入口，由系统确认安装。
 更新默认通过 GH-Proxy 加速源直连下载，失败时回退 GitHub，也可手动选择官方源。
 官方请求可复用已开启的代理；两种来源均支持并行下载、速度和剩余时间显示，
 并按 GitHub 官方元数据进行整包 SHA-256 校验。
 
-Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固定 Fork
-签名的 ARM64 release 优化构建，可与原版 AVA、此前的 **AVA dev** 同时安装并保留旧应用数据。
-首次需导出各账号的 `.maFile` 后导入新应用；后续相同签名且版本号递增的 AVA Fork
-可直接覆盖更新。详见[安装与迁移步骤](docs/windows-steam-switch.md#android-installation-and-migration)。
+Android 保持 **AVA Fork** 的包名（`pro.dotslash.ava.fork`）和固定签名，仍是 ARM64
+release 优化构建。现有 AVA Fork 可直接覆盖更新为 gooes SteamKit，保留账号和设置，
+无需重新导入。原版 AVA 和此前的 **AVA dev** 则仍独立保留，首次迁移需另装后导入各账号的
+`.maFile`。Windows 保留原有程序及数据路径；安装包文件名保留 `AVA-pc-`、`AVA-Fork-`
+前缀，以便旧版应用内更新器识别新版。详见[安装与迁移步骤](docs/windows-steam-switch.md#android-installation-and-migration)。
 
 ## 原项目下载
 
@@ -60,6 +61,8 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
   <img src="posts/zh/recruit/home-pixel.png" width="30%" alt="像素皮肤" />
 </p>
 
+以上为原版 AVA 界面截图；本分支使用页首的大鹅图标，并保留原有皮肤风格。
+
 ---
 
 > **安全提示：** 在电脑上做二次验证会削弱 2FA 的意义 —— 设备一旦被入侵，令牌也随之暴露。
@@ -71,12 +74,12 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
 - **账户概览（本分支试用功能）** —— 电脑和 Android 共用钱包余额、待到账金额、
   在售/暂挂/待确认物品概览，可选择显示的卡片；新增好友列表、双向交易报价编辑
   和应用内短信验证获取备用登录码。设置中可关闭启动身份验证，账户文件仍保持加密。
-  Android 试用包为独立的 **AVA Fork**，首次安装不覆盖旧应用；详见[试用说明](docs/windows-steam-switch.md)。
+  Android 可覆盖现有 **AVA Fork**，与原版 AVA、旧 AVA dev 分开安装；详见[试用说明](docs/windows-steam-switch.md)。
   手机首页在竖屏和横屏下都以令牌和账号列表为主：点按切换当前令牌，长按直接进入该账号概览；
   市场、好友和其他账号功能从概览进入，不再经过长按菜单。
 
 - **可选 Steam 加速（本分支试用功能）** —— 导入 HTTP／HTTPS Clash 订阅（支持用户名和密码）并选择节点，
-  用于 AVA 内的 Steam 请求，软件更新也可复用已经开启的线路。默认手动开启，可选自动启动；检测到外部代理或 VPN 时
+  用于本应用内的 Steam 请求，软件更新也可复用已经开启的线路。默认手动开启，可选自动启动；检测到外部代理或 VPN 时
   暂停内置组件，不修改系统代理或接管其他软件。首页小入口区分组件运行和登录接口/社区连接结果，
   不依赖系统 VPN 图标。见[范围与限制](docs/windows-steam-switch.md#optional-steam-connectivity)。
 
@@ -87,12 +90,12 @@ Android 试用包名为 **AVA Fork**（`pro.dotslash.ava.fork`），是使用固
 
 - **Windows Steam 账号切换（本分支试用功能）** —— 从账户概览、设置页或账号右键菜单选择
   本机已记住登录信息的 Steam 账号，正常退出并重启 Steam；修改前备份设置，
-  同页也可选择 AVA 账号，拖框识别电脑屏幕上的 Steam 登录二维码，核对后批准登录；
-  截图只在本机内存解码。无 AVA 会话时可先重新登录。见[试用说明](docs/windows-steam-switch.md)。
+  同页也可选择本应用内的账号，拖框识别电脑屏幕上的 Steam 登录二维码，核对后批准登录；
+  截图只在本机内存解码。无可用会话时可先重新登录。见[试用说明](docs/windows-steam-switch.md)。
 
 - **maFile 兼容** —— 读写旧版 `.maFile` 格式（PBKDF2/SHA1 + AES-256-CBC），老账户零成本迁移，随时可导出。还能导入整个 Steam Desktop Authenticator 的 `maFiles/` 文件夹——**包括加密的**（把 `manifest.json` 和 `.maFile` 一起选中；salt 与 IV 存在 manifest 里，孤立的加密 maFile 谁也解不开）——以及其他工具的变体（Steam++ / Watt Toolkit），包括没有 SteamID 的导出（作为「仅验证码」账户导入，验证码离线可用）。
 - **Steam Guard 验证码** —— 每账户列表 + 实时倒计时环、点按复制；点名称在 用户名 / 昵称 / ID 间切换。显示方式同时应用于首页账户列表和当前账户面板，在本机保存，电脑和手机重启应用后都会恢复上次选择。
-- **应用内批准登录** —— 在 AVA 内弹窗批准/拒绝 Steam 登录（显示设备 + 位置），与官方 App 一致，基于轮询、无需推送。
+- **应用内批准登录** —— 在 gooes SteamKit 内弹窗批准/拒绝 Steam 登录（显示设备 + 位置），与官方 App 一致，基于轮询、无需推送。
 - **待办中心** —— 一个带页签的界面（手机账户右滑、电脑账户右键进入），集中处理所有等你决定的事：
   **确认**（交易 / 市场，批量接受/拒绝，原生 JSON、无内嵌 WebView）、**报价**
   （收到 / 发出 / 历史，可展开卡片显示双方物品，赠送 / 只给不收 / 暂挂警示条，
@@ -148,10 +151,10 @@ flutter run -d linux               # 或 windows / macos
 flutter build apk --release --split-per-abi --flavor cn --dart-define=AVA_CHANNEL=cn
 ```
 
-每推送一个 `v*` 标签（或手动触发），GitHub Actions 会自动构建桌面版发布，
-见 `.github/workflows/desktop-release.yml`：
+本分支当前 Windows 和 Android 发布流程见[安装包与应用内更新](docs/fork-releases.md)。
+原项目的桌面发布工具仍保留在 `.github/workflows/desktop-release.yml`：
 
-- **Windows 安装包** —— scene 风格的单文件 `AVA-…-setup.exe`，由我们自研的
+- **Windows 安装包** —— scene 风格的单文件 `AVA-…-setup.exe`，由原项目的
   Flutter 安装器（`installer/`）打包：无边框霓虹像素界面，装到用户目录免 UAC，
   自带开始菜单/桌面快捷方式与标准卸载项；卸载不会动账户数据。
 - **Linux AppImage** —— 单文件 `AVA-…-linux-x86_64.AppImage`。
@@ -168,7 +171,7 @@ flutter build apk --release --split-per-abi --flavor cn --dart-define=AVA_CHANNE
 
 ## macOS（Apple Silicon）
 
-自 v1.2.0 起，每个 tag 版本的 [Releases](https://github.com/freefrank/AnotherVaporAuth/releases)
+原版 AVA 自 v1.2.0 起，每个 tag 版本的[上游 Releases](https://github.com/freefrank/AnotherVaporAuth/releases)
 都提供 DMG——**仅 arm64**（M1 及之后的机型；不出 Intel 版）。打开 DMG，把
 **AVA** 拖进 **Applications** 即可。
 
@@ -185,8 +188,8 @@ flutter build apk --release --split-per-abi --flavor cn --dart-define=AVA_CHANNE
    xattr -dr com.apple.quarantine /Applications/AVA.app
    ```
 
-两种都只需一次，之后正常启动。只对来源可信的软件做这件事——对 AVA 来说，
-可信来源就是本仓库的 Releases 页：每个 DMG 都由 GitHub Actions 从打了 tag
+两种都只需一次，之后正常启动。只对来源可信的软件做这件事——对原版 AVA 来说，
+可信来源就是上面链接的上游 Releases 页：每个 DMG 都由 GitHub Actions 从打了 tag
 的提交公开构建。
 
 ## 字体
