@@ -221,7 +221,9 @@ jobs:
           PY
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
           "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'gooes SteamKit'"
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "^launchable-activity: .*label='gooesteamkit'"
+          # aapt badging does not reliably enumerate launcher activity aliases.
+          # Resolve both labels and adaptive icon resources from the actual APK.
+          python3 ../tool/verify_android_launcher.py "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/ava-preview-signature.txt"
           python3 - "$RUNNER_TEMP/ava-preview-signature.txt" <<'PY'
           import re

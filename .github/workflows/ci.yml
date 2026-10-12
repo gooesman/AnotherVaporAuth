@@ -52,6 +52,10 @@ jobs:
         working-directory: .
         run: python3 -m unittest discover -s tool -p test_verify_android_release.py
 
+      - name: Android launcher guards
+        working-directory: .
+        run: python3 -m unittest discover -s tool -p test_verify_android_launcher.py
+
       - name: Fork release guards
         working-directory: .
         run: python3 -m unittest discover -s tool -p test_fork_release.py
