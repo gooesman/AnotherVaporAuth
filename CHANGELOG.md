@@ -5,6 +5,22 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.6] — 2026-10-12 · Fork
+
+### Changed
+- Refresh the app, Windows installer and Android launcher artwork with the goose-and-shield design.
+- Shorten the Android home-screen label to **gooesteamkit**, retaining the full app name **gooes SteamKit**, package identity and update compatibility.
+
+### Fixed
+- Android 8+ launcher icons use a native vector foreground and solid dark background instead of a pre-rounded raster tile. Both launcher aliases use the same adaptive artwork; older Android versions retain a PNG of the new shield design.
+
+### 调整
+- 应用、Windows 安装器与 Android 桌面图标更新为盾牌大鹅设计。
+- 手机桌面短名称改为 **gooesteamkit**，应用全名仍为 **gooes SteamKit**，保持包名与覆盖更新兼容性。
+
+### 修复
+- Android 8 及以上改用原生矢量前景与纯色深背景组成的自适应图标，替代自带圆角的整张图片。两个启动别名使用同款图案；较旧 Android 系统使用新版盾牌图案 PNG。
+
 ## [v1.5.5] — 2026-10-12 · Fork
 
 ### Added

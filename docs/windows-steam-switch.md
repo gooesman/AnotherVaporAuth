@@ -1,7 +1,10 @@
 # Windows Steam sign-in and account switching (preview)
 
-Windows and Android both display **gooes SteamKit**, with the same
-[goose icon](../app/assets/icon/gooes_steamkit.png). Earlier builds were named
+Windows and Android retain the full app name **gooes SteamKit**, with the same
+[goose-and-shield design](../app/assets/icon/gooes_steamkit.png). Android's
+home-screen label is **gooesteamkit**. Android 8+ uses a native vector foreground
+and solid background for its adaptive icon; older Android versions use the new
+shield artwork as a PNG. Earlier builds were named
 **AVA-pc** and **AVA Fork**. Windows keeps `ava.exe` and the existing AVA data
 paths. Android keeps `pro.dotslash.ava.fork` and the existing fork signing key,
 so existing AVA Fork installations update directly without reimporting accounts.
@@ -135,7 +138,8 @@ Steam's normal TLS certificate checks remain enabled. See the
 [privacy notice](fork-privacy.md) and [component notices](../third_party/mihomo/NOTICE).
 
 The Android artifact is an **ARM64 release-mode preview**, package
-`pro.dotslash.ava.fork`, labelled **gooes SteamKit**. It uses the same stable private
+`pro.dotslash.ava.fork`, with the app name **gooes SteamKit** and home-screen label
+**gooesteamkit**. It uses the same stable private
 fork signing key as earlier **AVA Fork** builds and updates them in place without
 reimporting accounts. It installs alongside the original AVA and earlier
 **AVA dev** preview; only that first migration starts with a separate empty vault.

@@ -34,8 +34,11 @@ The original author's MIT notice and credits remain intact. Stable installers
 are available in this fork's [releases](https://github.com/gooesman/AnotherVaporAuth/releases/latest). Preview builds
 come from this fork's [builds](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml);
 the download links below belong to the original project. Windows and Android now
-share the **gooes SteamKit** name and goose icon (previously **AVA-pc** and
-**AVA Fork**). Settings → Software updates checks this fork's published releases and
+share the **gooes SteamKit** name and goose-and-shield design (previously **AVA-pc**
+and **AVA Fork**). The Android home-screen label is shortened to **gooesteamkit**;
+the full app name stays unchanged. Android 8+ uses an adaptive vector icon with a
+solid background; older Android versions use the new shield artwork as a PNG.
+Settings → Software updates checks this fork's published releases and
 lets you download and open the installer. Android uses the same update page;
 installation still requires the system confirmation. Automatic downloads use
 GH-Proxy's direct acceleration routes, with GitHub as fallback; GitHub-only

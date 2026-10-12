@@ -208,13 +208,20 @@ jobs:
           import sys
           import xml.etree.ElementTree as ET
           ns = '{http://schemas.android.com/apk/res/android}'
-          activities = ET.parse(sys.argv[1]).findall('application/activity')
+          manifest = ET.parse(sys.argv[1])
+          activities = manifest.findall('application/activity')
           main = [a for a in activities if a.get(ns + 'name', '').endswith('.MainActivity')]
           assert len(main) == 1 and main[0].get(ns + 'enableOnBackInvokedCallback') == 'false', 'Predictive back preview must be disabled'
+          aliases = {a.get(ns + 'name', '').rsplit('.', 1)[-1]: a for a in manifest.findall('application/activity-alias')}
+          assert set(aliases) == {'LauncherNeon', 'LauncherPixel'}, 'Existing launcher aliases must remain available for upgrades'
+          assert aliases['LauncherNeon'].get(ns + 'enabled') == 'true'
+          assert aliases['LauncherPixel'].get(ns + 'enabled') == 'false'
+          assert all(a.get(ns + 'label') for a in aliases.values()), 'Both aliases need the compact launcher label'
           print('Verified: system predictive back preview is disabled')
           PY
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
           "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'gooes SteamKit'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -E "^launchable-activity: .*label='gooesteamkit'"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/ava-preview-signature.txt"
           python3 - "$RUNNER_TEMP/ava-preview-signature.txt" <<'PY'
           import re

@@ -1,7 +1,7 @@
 name: ava
 description: "gooes SteamKit — a Steam authenticator and account assistant based on AVA"
 publish_to: 'none'
-version: 1.5.5+71
+version: 1.5.6+72
 
 environment:
   sdk: ^3.12.2
@@ -77,6 +77,8 @@ dev_dependencies:
   share_plus_platform_interface: ^5.0.2
 
 # Shared gooes SteamKit artwork for this fork's Android and Windows builds.
+# Android 8+ uses the separately maintained native adaptive vector resources;
+# this generator supplies the legacy PNG fallback and Windows ICO only.
 # Other platforms keep their existing native launcher assets.
 flutter_launcher_icons:
   image_path: "assets/icon/gooes_steamkit.png"

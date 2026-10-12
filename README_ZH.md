@@ -31,8 +31,10 @@
 无需 Pro 验证或付费；保留原作者的 MIT 许可及署名。正式安装包见
 [本分支发布页](https://github.com/gooesman/AnotherVaporAuth/releases/latest)，试用包来自
 [本分支构建](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml)，
-下方下载链接仍属于原项目。电脑端与手机端现统一名为 **gooes SteamKit**，使用同款大鹅图标
-（此前分别为 **AVA-pc** 和 **AVA Fork**）。可在设置里的“软件更新”中查询
+下方下载链接仍属于原项目。电脑端与手机端现统一名为 **gooes SteamKit**，使用同款盾牌大鹅设计
+（此前分别为 **AVA-pc** 和 **AVA Fork**）。手机桌面短名称为 **gooesteamkit**，应用全名保持不变。
+Android 8 及以上使用矢量前景与纯色背景组成的自适应图标；较旧系统使用新版盾牌图案 PNG。
+可在设置里的“软件更新”中查询
 本分支正式发布的版本、下载并打开安装程序；手机端也有同样入口，由系统确认安装。
 更新默认通过 GH-Proxy 加速源直连下载，失败时回退 GitHub，也可手动选择官方源。
 官方请求可复用已开启的代理；两种来源均支持并行下载、速度和剩余时间显示，
