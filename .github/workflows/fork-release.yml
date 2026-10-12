@@ -1,4 +1,4 @@
-name: Promote AVA Fork preview
+name: Promote gooes SteamKit preview
 
 # Manual promotion only: never rebuild binaries or publish on push/tag.
 on:
@@ -246,7 +246,7 @@ jobs:
           # verifies its existing files; it never replaces or uploads an asset.
           if draft_id is None:
               subprocess.run(['gh', 'release', 'create', tag, *map(str, assets), '--repo', repo,
-                              '--target', commit, '--title', f'AVA Fork {tag}', '--notes-file', str(notes_file), '--draft'], check=True)
+                              '--target', commit, '--title', f'gooes SteamKit {tag}', '--notes-file', str(notes_file), '--draft'], check=True)
               # Drafts may not have a Git tag yet, so the by-tag REST endpoint
               # can return 404. Discover the draft and use its stable numeric ID.
               created = [item for page in api('releases?per_page=100', paginate=True) for item in page
