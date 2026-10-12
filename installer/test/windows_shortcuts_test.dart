@@ -34,6 +34,9 @@ void main() {
 
     setUp(() async {
       tmp = await Directory.systemTemp.createTemp('steamkit_shortcuts_test_');
+      // Hosted Windows runners expose TEMP via RUNNER~1; expectations use the
+      // actual long name, while the dedicated regression below passes 8.3.
+      tmp = Directory(await tmp.resolveSymbolicLinks());
       // PowerShell-sensitive characters are valid in user-selected paths.
       final root = p.join(tmp.path, "owner's \$apps ` directory");
       programs = p.join(root, 'Start menu');
@@ -197,5 +200,72 @@ void main() {
       expect(File(target).existsSync(), isTrue);
       expect(File(otherTarget).existsSync(), isTrue);
     });
+
+    test(
+      '8.3 install path migrates and removes the same long-path target',
+      () async {
+        final shortDir = await _powershell(
+          "(New-Object -ComObject Scripting.FileSystemObject).GetFolder('${_quote(p.dirname(target))}').ShortPath",
+        );
+        if (shortDir.toLowerCase() == p.dirname(target).toLowerCase()) {
+          markTestSkipped('8.3 names are unavailable on this test volume');
+          return;
+        }
+        final owned = p.join(programs, 'AVA-pc.lnk');
+        final unrelated = p.join(programs, 'AVA.lnk');
+        await createLinks({owned: target, unrelated: otherTarget});
+        Future<void> updateViaShortPath({bool uninstall = false}) =>
+            WindowsShortcuts.update(
+              displayName: appDisplayName,
+              target: p.join(shortDir, 'ava.exe'),
+              workDir: shortDir,
+              desktopShortcut: false,
+              uninstall: uninstall,
+              programsDirectory: programs,
+              desktopDirectory: desktop,
+            );
+        await updateViaShortPath();
+        expect(File(owned).existsSync(), isFalse);
+        expect(
+          (await readLink(current(programs)))['Target'],
+          equalsIgnoringCase(target),
+        );
+        expect(File(unrelated).existsSync(), isTrue);
+        await updateViaShortPath(uninstall: true);
+        expect(File(current(programs)).existsSync(), isFalse);
+        expect(
+          (await readLink(unrelated))['Target'],
+          equalsIgnoringCase(otherTarget),
+        );
+      },
+    );
+
+    test(
+      'missing install target fails before changing any shortcuts',
+      () async {
+        final owned = p.join(programs, 'AVA-pc.lnk');
+        await createLinks({owned: target});
+        await File(target).delete();
+        await expectLater(update(), throwsStateError);
+        expect(File(owned).existsSync(), isTrue);
+        expect(File(current(programs)).existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'missing uninstall target does not claim unrelated or broken links',
+      () async {
+        final owned = p.join(programs, 'AVA-pc.lnk');
+        final unrelated = current(programs);
+        await createLinks({owned: target, unrelated: otherTarget});
+        await File(target).delete();
+        await update(uninstall: true);
+        expect(File(owned).existsSync(), isTrue);
+        expect(
+          (await readLink(unrelated))['Target'],
+          equalsIgnoringCase(otherTarget),
+        );
+      },
+    );
   });
 }

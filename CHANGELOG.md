@@ -12,12 +12,14 @@ preview builds through its [manual release process](docs/fork-releases.md).
 
 ### Fixed
 - Home remembers the username, nickname or Steam ID display choice after restarting on desktop and phone. The saved choice applies to the selected account and account list; a quick tap during startup takes precedence over the previous setting.
+- Windows shortcut migration recognizes equivalent short and long paths while preserving shortcuts for other installations.
 
 ### 调整
 - 电脑和手机统一更名为 **gooes SteamKit**，应用、安装器与快捷方式使用新的大鹅图标；现有 AVA-pc／AVA Fork 可保留账户直接更新，并保留原作者 MIT 许可与署名。
 
 ### 修复
 - 电脑和手机重启后记住首页的用户名／昵称／Steam ID 显示方式，当前账户与账户列表统一显示；启动时立即切换也不会被旧设置覆盖。
+- 电脑快捷方式迁移可识别同一安装位置的短路径与完整路径写法，保留指向其他安装的快捷方式。
 
 ## [v1.5.4] — 2026-10-12 · Fork
 
