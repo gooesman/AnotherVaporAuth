@@ -145,6 +145,7 @@ Widget dashboardHomePreviewApp({
   InventoryClient? inventory,
   MarketClient? market,
   SteamApiClient? api,
+  SettingsStore? settings,
   List<SteamGuardAccount>? accounts,
   Stream<int>? ticks,
   bool disableAnimations = true,
@@ -157,7 +158,9 @@ Widget dashboardHomePreviewApp({
     key: UniqueKey(),
     overrides: [
       storageProvider.overrideWithValue(storage),
-      settingsStoreProvider.overrideWithValue(_PreviewSettings(storage)),
+      settingsStoreProvider.overrideWithValue(
+        settings ?? _PreviewSettings(storage),
+      ),
       appControllerProvider.overrideWith(
         () => (controllerFactory ?? _PreviewController.new)(
           storage,

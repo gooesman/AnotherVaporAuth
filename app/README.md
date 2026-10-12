@@ -32,12 +32,14 @@ lib/src/
 l10n/                   # ARB localizations (en, zh, zh_Hant, de, fr, es, ru)
 ```
 
-## Status (1.5.1)
+## Status (1.5.5)
 
 Implemented and statically verified end-to-end:
 
 - maFile compatibility (PBKDF2 50k/SHA1 + AES-256-CBC, byte-compatible)
 - TOTP codes + countdown, copy, account list/reorder
+- Username / nickname / Steam ID display choice for the home panel and account
+  list, remembered on this device across desktop and phone app restarts
 - Phone account tap selects the home token; long-press opens that account's
   overview directly, with no intermediate menu. Desktop selection and right-click
   actions remain available.
@@ -117,7 +119,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1369 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1376 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -153,7 +155,7 @@ old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1369 tests
+flutter test                       # 1376 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

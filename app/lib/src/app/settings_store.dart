@@ -134,6 +134,15 @@ class SettingsStore {
 
   Future<String?> loadLocale() async => (await _read())['locale'] as String?;
 
+  /// Home account labels; a device-local display preference, not account data.
+  Future<String?> loadAccountNameMode() async {
+    final value = (await _read())['account_name_mode'];
+    return value is String ? value : null;
+  }
+
+  Future<void> saveAccountNameMode(String mode) =>
+      _update((data) => data['account_name_mode'] = mode);
+
   /// Optional account-overview cards. Device-local appearance preference.
   Future<List<String>?> loadDashboardSections() async {
     final value = (await _read())['dashboard_sections'];

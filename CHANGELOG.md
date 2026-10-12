@@ -5,6 +5,14 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
 trigger automated releases.
 
+## [v1.5.5] — 2026-10-12 · Fork
+
+### Fixed
+- Home remembers the username, nickname or Steam ID display choice after restarting on desktop and phone. The saved choice applies to the selected account and account list; a quick tap during startup takes precedence over the previous setting.
+
+### 修复
+- 电脑和手机重启后记住首页的用户名／昵称／Steam ID 显示方式，当前账户与账户列表统一显示；启动时立即切换也不会被旧设置覆盖。
+
 ## [v1.5.4] — 2026-10-12 · Fork
 
 ### Fixed

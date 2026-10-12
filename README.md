@@ -121,7 +121,9 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   (imported as a code-only account whose codes work offline). Export an account's
   maFile at any time.
 - **Steam Guard codes** — a per-account list with live countdown rings and
-  tap-to-copy; tap a name to cycle username / persona / id.
+  tap-to-copy; tap a name to cycle username / persona / id. The choice applies
+  to the home account list and selected panel, is saved on this device and
+  survives app restarts on both desktop and phone.
 - **In-app sign-in approval** — approve or deny Steam logins from a dialog inside
   AVA (device + location shown), just like the official app — by polling, no push.
 - **Pending center** — one tabbed screen (swipe right on a phone account, or use the desktop context menu) for everything
@@ -203,7 +205,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1369 tests
+flutter test                       # 1376 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

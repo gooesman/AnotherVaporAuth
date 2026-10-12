@@ -44,6 +44,9 @@ large selected-account avatar also opens the overview on phones (desktop keeps
 its avatar click). Wallet and market data are not fetched just to show
 the phone home. Swipe actions are phone-only; desktop account cards do not
 slide and retain their right-click context menu, including in narrow windows.
+Tapping the selected account's name cycles username, persona and Steam ID for
+both the panel and account list. This display preference is saved locally on
+each device and restored after restarting either desktop or phone AVA.
 Wallet, market listings and account-tool cards can be hidden using the tune menu.
 Unavailable balances are never presented as zero. Market records include active,
 held and awaiting-confirmation listings, with separate inventory-context labels.

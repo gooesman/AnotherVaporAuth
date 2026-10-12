@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../app/account_name_mode.dart';
 import '../app/providers.dart';
 import '../app/responsive.dart';
 import '../app/theme.dart';
@@ -122,17 +123,14 @@ class _LiveCountdown extends ConsumerWidget {
   }
 }
 
-/// How an account's primary label is shown — tapping the panel name cycles it.
-enum _NameMode { username, persona, id }
-
-String _displayName(SteamGuardAccount a, _NameMode mode) {
+String _displayName(SteamGuardAccount a, AccountNameMode mode) {
   switch (mode) {
-    case _NameMode.username:
+    case AccountNameMode.username:
       return a.accountName ?? '${a.steamId}';
-    case _NameMode.persona:
+    case AccountNameMode.persona:
       final p = a.personaName;
       return (p != null && p.isNotEmpty) ? p : (a.accountName ?? '${a.steamId}');
-    case _NameMode.id:
+    case AccountNameMode.id:
       return '${a.steamId}';
   }
 }
@@ -153,7 +151,7 @@ Widget _nameTransition(Widget child, Animation<double> anim) {
 /// An account label that animates whenever its text changes.
 class _AnimatedName extends StatelessWidget {
   final SteamGuardAccount account;
-  final _NameMode mode;
+  final AccountNameMode mode;
   final TextStyle style;
   const _AnimatedName(
       {required this.account, required this.mode, required this.style});
@@ -205,7 +203,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _checkedLogins = false;
   bool _checkedTutorial = false;
   int _lastTutorialReplay = 0;
-  _NameMode _nameMode = _NameMode.username;
 
   // First-run gesture tutorial hooks: spotlight targets + a controller that
   // lets the tutorial physically open the first row's swipe panes. The targets
@@ -280,10 +277,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  void _cycleNameMode() => setState(() {
-        _nameMode =
-            _NameMode.values[(_nameMode.index + 1) % _NameMode.values.length];
-      });
+  void _cycleNameMode() =>
+      unawaited(ref.read(accountNameModeProvider.notifier).cycle());
 
   /// Accumulates the finger's real vertical travel while the list is
   /// overscrolled at the top (dy > 0 pulls further; dy < 0 — dragging back
@@ -355,6 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final nameMode = ref.watch(accountNameModeProvider);
     // Row glow / border styling still keys off the resolved variant.
     final neon = Theme.of(context).extension<AvaTokens>()?.variant ==
         AvaThemeVariant.neon;
@@ -442,7 +438,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           silent: true);
                     },
                     onAdd: () => _addMenu(context),
-                    nameMode: _nameMode,
+                    nameMode: nameMode,
                     neon: neon,
                     haptics: haptics,
                     // Per-account swipe actions (the old overflow menu).
@@ -494,7 +490,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     account: accounts[_selected],
                     onCopy: _copy,
                     wide: c.maxWidth >= 640,
-                    nameMode: _nameMode,
+                    nameMode: nameMode,
                     onTapName: _cycleNameMode,
                     onRelogin: () =>
                         _onAction(context, accounts[_selected], 'login'),
@@ -798,7 +794,7 @@ class _Sidebar extends StatelessWidget {
   final VoidCallback onPullEnd;
   final Widget pullIndicator;
   final void Function(SteamGuardAccount account, String action) onAction;
-  final _NameMode nameMode;
+  final AccountNameMode nameMode;
   final bool neon;
   final bool haptics;
   final VoidCallback? onRefresh;
@@ -1134,7 +1130,7 @@ class _Sidebar extends StatelessWidget {
 class _SidebarRow extends ConsumerWidget {
   final SteamGuardAccount account;
   final bool selected;
-  final _NameMode nameMode;
+  final AccountNameMode nameMode;
   final bool neon;
   final bool haptics;
   final VoidCallback onTap;
@@ -1472,7 +1468,7 @@ class _MainPanel extends ConsumerWidget {
   final SteamGuardAccount account;
   final void Function(String code) onCopy;
   final bool wide; // two-pane (tablet/desktop) layout
-  final _NameMode nameMode;
+  final AccountNameMode nameMode;
   final VoidCallback onTapName;
   final VoidCallback onRelogin; // invalid-session status line → re-login
   final ValueChanged<String> onAction;
