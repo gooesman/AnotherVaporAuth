@@ -9,6 +9,7 @@ import '../app/responsive.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/models/steam_item.dart';
 import '../core/steam_currency.dart';
+import '../services/account_dashboard_loader.dart';
 import 'market/market_screen.dart' show marketListingStateLabel;
 import 'pending/session_retry.dart';
 import 'widgets/ava_panel.dart';
@@ -16,26 +17,57 @@ import 'widgets/ava_panel.dart';
 final dashboardSectionsProvider =
     NotifierProvider<DashboardSections, Set<String>>(DashboardSections.new);
 
+final accountDashboardLoaderProvider = Provider<AccountDashboardLoader>((ref) {
+  final controller = ref.read(appControllerProvider.notifier);
+  final loader = AccountDashboardLoader(
+    inventory: ref.read(inventoryClientProvider),
+    market: ref.read(marketClientProvider),
+    api: ref.read(apiClientProvider),
+    persistSession: (account) async {
+      await controller.persistSession(account);
+    },
+  );
+  ref.listen(appControllerProvider, (previous, next) {
+    final data = next.value;
+    if (data == null || data.locked) {
+      loader.clear();
+    } else if (previous?.value != null) {
+      loader.retainAccounts(data.visibleAccounts);
+    }
+  });
+  ref.onDispose(loader.clear);
+  return loader;
+});
+
 class DashboardSections extends Notifier<Set<String>> {
   static const defaults = {'wallet', 'listings', 'tools'};
   int _revision = 0;
+  bool ready = false;
   @override
   Set<String> build() {
+    ready = false;
     final generation = _revision;
     ref
         .read(settingsStoreProvider)
         .loadDashboardSections()
         .then((saved) {
-          if (ref.mounted && generation == _revision && saved != null) {
-            state = saved.where(defaults.contains).toSet();
+          if (ref.mounted && generation == _revision) {
+            ready = true;
+            state = saved?.where(defaults.contains).toSet() ?? {...defaults};
           }
         })
-        .catchError((Object _) {});
+        .catchError((Object _) {
+          if (ref.mounted && generation == _revision) {
+            ready = true;
+            state = {...state};
+          }
+        });
     return {...defaults};
   }
 
   Future<void> toggle(String section) async {
     if (!defaults.contains(section)) return;
+    ready = true;
     _revision++;
     final next = {...state};
     if (!next.remove(section)) next.add(section);
@@ -44,8 +76,8 @@ class DashboardSections extends Notifier<Set<String>> {
   }
 }
 
-/// Account-bound data is held in this state, never in the one-second TOTP
-/// builder. Changing the selected account invalidates every in-flight result.
+/// Local actions render immediately. Each visible card owns an independent,
+/// bounded read, shared with other overview instances for this same session.
 class AccountDashboard extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
   final ValueChanged<String> onAction;
@@ -65,87 +97,103 @@ class AccountDashboard extends ConsumerStatefulWidget {
 
 class _AccountDashboardState extends ConsumerState<AccountDashboard>
     with SessionRetryState {
-  WalletInfo? _wallet;
-  List<MarketListing>? _listings;
-  bool _walletFailed = false;
-  bool _listingsFailed = false;
-  bool _needsLogin = false;
-  bool _busy = false;
-  int _generation = 0;
+  late final AccountDashboardLoader _loader;
+  DashboardLease? _lease;
+  DashboardData get _data => _lease!.data;
+  WalletInfo? get _wallet => _data.wallet.value;
+  List<MarketListing>? get _listings => _data.listings.value;
+  bool get _walletFailed => _data.wallet.failed;
+  bool get _listingsFailed => _data.listings.failed;
+  bool get _needsLogin =>
+      (_lease!.wallet && _data.wallet.needsLogin) ||
+      (_lease!.listings && _data.listings.needsLogin);
+  bool get _busy =>
+      (_lease!.wallet && _data.wallet.loading) ||
+      (_lease!.listings && _data.listings.loading);
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loader = ref.read(accountDashboardLoaderProvider);
+    _bind(ref.read(dashboardSectionsProvider));
   }
 
   @override
   void didUpdateWidget(covariant AccountDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.account != widget.account ||
-        oldWidget.compact != widget.compact) {
-      _wallet = null;
-      _listings = null;
-      _load();
-    }
+    _bind(ref.read(dashboardSectionsProvider));
   }
 
-  Future<void> _load() async {
-    final generation = ++_generation;
-    final account = widget.account;
-    final inventory = ref.read(inventoryClientProvider);
-    final market = ref.read(marketClientProvider);
-    setState(() {
-      _busy = true;
-      _needsLogin = false;
-      _walletFailed = false;
-      _listingsFailed = false;
-    });
-    try {
-      final wallet = await fetchWithAutoRefresh(
-        account,
-        () => inventory.wallet(account),
-        retryOnAnyError: false,
-      );
-      if (!mounted || generation != _generation) return;
-      setState(() => _wallet = wallet);
-    } catch (e) {
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        _wallet = null;
-        _walletFailed = true;
-        _needsLogin = isAuthError(e);
-      });
-    }
-    if (!mounted || generation != _generation) return;
-    if (!widget.compact && !_needsLogin) {
-      try {
-        final listings = await fetchWithAutoRefresh(
-          account,
-          () => market.myListings(account),
-          retryOnAnyError: false,
-        );
-        if (!mounted || generation != _generation) return;
-        setState(() => _listings = listings);
-      } catch (e) {
-        if (!mounted || generation != _generation) return;
-        setState(() {
-          _listings = null;
-          _listingsFailed = true;
-          _needsLogin = isAuthError(e);
-        });
-      }
-    }
-    if (mounted && generation == _generation) setState(() => _busy = false);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _bind(ref.read(dashboardSectionsProvider));
   }
+
+  void _bind(Set<String> sections) {
+    final app = ref.read(appControllerProvider).value;
+    final available =
+        app != null &&
+        !app.locked &&
+        app.visibleAccounts.any(
+          (account) =>
+              account.steamId == widget.account.steamId &&
+              account.fromPortable == widget.account.fromPortable &&
+              account.accountName == widget.account.accountName,
+        );
+    final ready =
+        ref.read(dashboardSectionsProvider.notifier).ready && available;
+    final wallet = ready && sections.contains('wallet');
+    final listings = ready && !widget.compact && sections.contains('listings');
+    final previous = _lease;
+    if (previous != null &&
+        _loader.matches(previous, widget.account) &&
+        previous.wallet == wallet &&
+        previous.listings == listings) {
+      return;
+    }
+    previous?.data.removeListener(_changed);
+    // Retain the next view before releasing the old one, so a layout change
+    // never cancels a read that is still useful to the same account.
+    _lease = _loader.acquire(
+      widget.account,
+      wallet: wallet,
+      listings: listings,
+    );
+    previous?.release();
+    _data.addListener(_changed);
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  void _load() => _lease?.refresh();
+
+  @override
+  void dispose() {
+    _lease?.data.removeListener(_changed);
+    _lease?.release();
+    super.dispose();
+  }
+
+  Widget _progress(String section) => Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: LinearProgressIndicator(key: ValueKey('dashboard-$section-loading')),
+  );
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final sections = ref.watch(dashboardSectionsProvider);
+    ref.watch(appControllerProvider.select((state) => state.value?.locked));
+    _bind(sections);
+    ref.listen(dashboardSectionsProvider, (_, next) {
+      _bind(next);
+    });
     final balance = _wallet?.balance;
     final balanceText = balance == null
-        ? (_busy ? '…' : l.dashboardUnavailable)
+        ? (_data.wallet.loading ? '…' : l.dashboardUnavailable)
         : formatSteamMoney(balance, _wallet!.currency);
     if (widget.compact) {
       return Column(
@@ -250,11 +298,6 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
             _action(l.backupCodesTitle, Icons.key_outlined, 'backup-codes'),
           ],
         ),
-        if (_busy)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: LinearProgressIndicator(),
-          ),
         if (_needsLogin)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -283,6 +326,7 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                   ],
                 ),
                 const SizedBox(height: 16),
+                if (_data.wallet.loading) _progress('wallet'),
                 Text(
                   balanceText,
                   key: const ValueKey('wallet-balance'),
@@ -320,6 +364,7 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                     ),
                   ],
                 ),
+                if (_data.listings.loading) _progress('listings'),
                 if (_listings != null) ...[
                   Wrap(
                     spacing: 8,
@@ -355,6 +400,8 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                               : Image.network(
                                   listing.iconUrl,
                                   fit: BoxFit.contain,
+                                  cacheWidth: context.rCache(44),
+                                  cacheHeight: context.rCache(44),
                                   errorBuilder: (_, _, _) =>
                                       const Icon(Icons.inventory_2_outlined),
                                 ),
@@ -379,7 +426,7 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                         onTap: () => widget.onAction('listings'),
                       ),
                     ),
-                ] else if (!_busy)
+                ] else if (!_data.listings.loading)
                   Text(
                     _listingsFailed
                         ? l.dashboardFetchFailed

@@ -173,9 +173,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
     }
     expect(
-      find.byWidgetPredicate(
-        (widget) => widget.runtimeType.toString() == '_NeonPull',
-      ),
+      find.byKey(const ValueKey('home-pull-refresh-indicator')),
       findsOneWidget,
       reason: 'The gesture must actually drive the refresh overlay.',
     );

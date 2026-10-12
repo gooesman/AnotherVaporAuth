@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,7 +20,6 @@ import 'widgets/flip_code.dart';
 import 'widgets/hold_button.dart';
 import 'widgets/motion.dart';
 import '../skins/skin_engine.dart';
-import '../skins/skin_spec.dart';
 import 'widgets/scanline_overlay.dart';
 import 'widgets/update_banner.dart';
 import 'widgets/steam_image_provider.dart';
@@ -218,13 +216,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final _firstRowLink = LayerLink();
   late final SlidableController _demoSlidable;
 
-  // Custom neon pull-to-refresh state.
-  // Pointer movement only rebuilds the refresh overlay, not the entire home.
+  // Pointer movement only rebuilds the small refresh indicator, not the home.
   final _pull = ValueNotifier<double>(0);
   bool _refreshing = false;
   // Account-list manual sort mode (toggled by the sidebar's sort button).
   bool _sortMode = false;
-  // Whether the running refresh should drive the full-screen pull overlay
+  // Whether the running refresh should show the pull indicator
   // (true for the pull gesture, false for the desktop refresh button).
   bool _pullVisual = false;
   // Measured in finger travel (logical px), not scroll pixels: the list uses
@@ -321,15 +318,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   /// Refreshes avatars/frames and polls the selected account's sign-ins. Shared
-  /// by the neon pull overlay and the pixel-theme RefreshIndicator.
+  /// by the pull gesture and the desktop refresh button.
   Future<void> _runRefresh() async {
     final accounts =
         ref.read(appControllerProvider).value?.visibleAccounts ?? const [];
-    await ref.read(appControllerProvider.notifier).refreshAvatars();
-    if (mounted && accounts.isNotEmpty) {
-      await checkPendingLogins(context, ref, accounts[_selected],
-          silent: false);
-    }
+    // Freeze the account before either request starts: the user can change
+    // selection while avatars load. Independent reads need not queue up.
+    final selectedAccount =
+        _selected < accounts.length ? accounts[_selected] : null;
+    await Future.wait<void>([
+      ref.read(appControllerProvider.notifier).refreshAvatars(),
+      if (selectedAccount != null)
+        checkPendingLogins(context, ref, selectedAccount, silent: false),
+    ]);
   }
 
   Future<void> _startRefresh({bool visual = true}) async {
@@ -354,9 +355,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    // Ambience / HUD / scanlines / pull wash all come from the active skin's
-    // effect spec; the engine widgets render nothing for the plain themes.
-    final pullSpec = ref.watch(skinSpecProvider)?.pull;
     // Row glow / border styling still keys off the resolved variant.
     final neon = Theme.of(context).extension<AvaTokens>()?.variant ==
         AvaThemeVariant.neon;
@@ -449,13 +447,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     haptics: haptics,
                     // Per-account swipe actions (the old overflow menu).
                     onAction: (acc, action) => _onAction(context, acc, action),
-                    // Custom pull drives the full-screen overlay below (neon fill
-                    // or pixel blocks).
+                    // Pull feedback stays in the account-list header, clear of
+                    // the selected account's name, token and QR button.
+                    pullIndicator: ValueListenableBuilder<double>(
+                      valueListenable: _pull,
+                      builder: (_, pull, _) {
+                        final busy = _refreshing && _pullVisual;
+                        if (!busy && pull <= 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return IgnorePointer(
+                          child: _HomeRefreshIndicator(
+                            progress: (pull / _pullThreshold).clamp(0.0, 1.0),
+                            refreshing: busy,
+                          ),
+                        );
+                      },
+                    ),
                     onPullDelta: _onPullDelta,
                     onPullReset: _onPullReset,
                     onPullEnd: _onPullEnd,
                     // Desktop has no touch pull-to-refresh — the sidebar shows
-                    // a refresh button there instead (no full-screen overlay).
+                    // a refresh button there instead (no floating indicator).
                     onRefresh: () => _startRefresh(visual: false),
                     refreshing: _refreshing,
                     firstRowLink: _firstRowLink,
@@ -513,8 +526,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   );
                   return Stack(
                     children: [
-                      // Skin ambience behind, HUD above, pull wash on top —
-                      // all driven by the active skin's effect spec.
+                      // Skin ambience behind the content and HUD above it.
                       const Positioned.fill(child: SkinAmbient()),
                       content,
                       const Positioned.fill(child: SkinOverlay()),
@@ -534,25 +546,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               label: l.loginViaQr,
                               onTap: () => quickApproveLogin(
                                   context, ref, accounts[_selected]),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: ValueListenableBuilder<double>(
-                            valueListenable: _pull,
-                            builder: (_, pull, _) => TweenAnimationBuilder<double>(
-                              tween: Tween(end: _refreshing && _pullVisual
-                                  ? 1.0
-                                  : (pull / _pullThreshold).clamp(0.0, 1.0)),
-                              duration: const Duration(milliseconds: 150),
-                              curve: Curves.easeOut,
-                              builder: (_, v, _) => v <= 0.001
-                                  ? const SizedBox.shrink()
-                                  : pullSpec?.style == 'pixel'
-                                      ? _PixelPull(progress: v, spec: pullSpec)
-                                      : _NeonPull(progress: v, spec: pullSpec),
                             ),
                           ),
                         ),
@@ -803,6 +796,7 @@ class _Sidebar extends StatelessWidget {
   final void Function(double dy) onPullDelta;
   final VoidCallback onPullReset;
   final VoidCallback onPullEnd;
+  final Widget pullIndicator;
   final void Function(SteamGuardAccount account, String action) onAction;
   final _NameMode nameMode;
   final bool neon;
@@ -830,6 +824,7 @@ class _Sidebar extends StatelessWidget {
     required this.onPullDelta,
     required this.onPullReset,
     required this.onPullEnd,
+    required this.pullIndicator,
     this.onRefresh,
     this.refreshing = false,
     this.firstRowLink,
@@ -950,6 +945,7 @@ class _Sidebar extends StatelessWidget {
             // Fixed 48dp-tall header so the add button gets a full-size touch
             // target; the 24px visual is unchanged.
             child: SizedBox(
+              key: const ValueKey('home-account-list-header'),
               height: context.r(48),
               child: Row(
                 children: [
@@ -962,6 +958,7 @@ class _Sidebar extends StatelessWidget {
                           letterSpacing: context.r(1)),
                     ),
                   ),
+                  pullIndicator,
                   IconButton(
                     tooltip: l.accountSearchHint,
                     onPressed: onToggleSearch,
@@ -981,6 +978,7 @@ class _Sidebar extends StatelessWidget {
                         _ => false,
                       })
                     InkWell(
+                      key: const ValueKey('home-refresh-button'),
                       onTap: refreshing ? null : onRefresh,
                       borderRadius: BorderRadius.circular(t.radiusSm),
                       child: SizedBox(
@@ -1000,8 +998,14 @@ class _Sidebar extends StatelessWidget {
                                 ? SizedBox(
                                     width: context.r(13),
                                     height: context.r(13),
-                                    child: const CircularProgressIndicator(
-                                        strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: t.accent,
+                                      semanticsLabel: l.commonRefresh,
+                                      value: MediaQuery.disableAnimationsOf(context)
+                                          ? 0.75
+                                          : null,
+                                    ),
                                   )
                                 : Icon(Icons.refresh,
                                     size: context.r(15), color: t.accent),
@@ -1091,6 +1095,7 @@ class _Sidebar extends StatelessWidget {
           Expanded(
             child: Listener(
               onPointerUp: (_) => onPullEnd(),
+              onPointerCancel: (_) => onPullReset(),
               // Trackpads (macOS) scroll via pan-zoom events, not pointer up.
               onPointerPanZoomEnd: (_) => onPullEnd(),
               child: NotificationListener<ScrollNotification>(
@@ -1812,298 +1817,47 @@ class _TapScaleState extends State<_TapScale> {
   }
 }
 
-/// Full-screen animated red/blue neon fill that grows from the top as the user
-/// pulls down — moving scanlines, a cyber grid and a pulsing glowing edge, with
-/// a white-hot "charged" state once the trigger threshold is reached.
-class _NeonPull extends StatefulWidget {
-  final double progress; // 0..1
-  final PullSpec? spec; // colors; null (plain themes) falls back to tokens
-  const _NeonPull({required this.progress, this.spec});
-
-  @override
-  State<_NeonPull> createState() => _NeonPullState();
-}
-
-class _NeonPullState extends State<_NeonPull>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ac = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _ac.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Respect "reduce motion": keep the neon fill but freeze the sweeps.
-    final reduce = MediaQuery.disableAnimationsOf(context);
-    if (reduce) {
-      if (_ac.isAnimating) _ac.stop();
-    } else if (!_ac.isAnimating) {
-      _ac.repeat();
-    }
-    return Align(
-      alignment: Alignment.topCenter,
-      child: FractionallySizedBox(
-        widthFactor: 1,
-        heightFactor: widget.progress.clamp(0.0, 1.0),
-        child: AnimatedBuilder(
-          animation: _ac,
-          builder: (_, _) {
-            final tokens = Theme.of(context).extension<AvaTokens>()!;
-            final spec = widget.spec;
-            return CustomPaint(
-              size: Size.infinite,
-              painter: _NeonPainter(
-                progress: widget.progress,
-                t: reduce ? 0 : _ac.value,
-                charged: widget.progress >= 0.97,
-                colorA: spec?.colorA.resolve(tokens) ?? tokens.accent,
-                colorB: spec?.colorB.resolve(tokens) ?? tokens.accent2,
-                lineA: spec?.lineA.resolve(tokens) ?? tokens.accent,
-                lineB: spec?.lineB.resolve(tokens) ?? tokens.accent2,
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _NeonPainter extends CustomPainter {
+/// Bounded refresh feedback shared by every skin. Only the ring animates while
+/// work is pending; pulling never paints a wash over the account list.
+class _HomeRefreshIndicator extends StatelessWidget {
   final double progress;
-  final double t; // 0..1 animation phase
-  final bool charged;
-  final Color colorA; // wash start (was neon blue)
-  final Color colorB; // wash end (was neon red)
-  final Color lineA; // sweep line pair (was cyan / magenta)
-  final Color lineB;
-  _NeonPainter({
+  final bool refreshing;
+
+  const _HomeRefreshIndicator({
     required this.progress,
-    required this.t,
-    required this.charged,
-    required this.colorA,
-    required this.colorB,
-    required this.lineA,
-    required this.lineB,
+    required this.refreshing,
   });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final rect = Offset.zero & size;
-    final pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi);
-
-    // Base red↔blue wash, intensifying with the pull.
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorA.withValues(alpha: 0.05 + 0.32 * progress),
-            colorB.withValues(alpha: 0.06 + 0.40 * progress),
-          ],
-        ).createShader(rect),
-    );
-
-    // Faint vertical cyber grid.
-    final grid = Paint()
-      ..color = lineA.withValues(alpha: 0.07 * progress)
-      ..strokeWidth = 1;
-    for (var x = 0.0; x < w; x += 26) {
-      canvas.drawLine(Offset(x, 0), Offset(x, h), grid);
-    }
-
-    // Moving neon scanlines sweeping downward.
-    const n = 5;
-    for (var i = 0; i < n; i++) {
-      final y = ((t + i / n) % 1.0) * h;
-      final c = i.isEven ? lineA : lineB;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(w, y),
-        Paint()
-          ..color = c.withValues(alpha: 0.45 * progress)
-          ..strokeWidth = 3
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-      );
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(w, y),
-        Paint()
-          ..color = c.withValues(alpha: 0.85 * progress)
-          ..strokeWidth = 1.4,
-      );
-    }
-
-    // Pulsing glowing leading edge at the bottom of the fill.
-    final edgeY = h - 2;
-    final edgeRect = Rect.fromLTWH(0, edgeY - 3, w, 6);
-    final edgeShader =
-        LinearGradient(colors: [colorB, lineB, colorA]).createShader(edgeRect);
-    canvas.drawLine(
-      Offset(0, edgeY),
-      Offset(w, edgeY),
-      Paint()
-        ..shader = edgeShader
-        ..strokeWidth = charged ? 7 : 5
-        ..maskFilter = MaskFilter.blur(
-            BlurStyle.normal, (charged ? 22 : 14) * (0.6 + 0.4 * pulse)),
-    );
-    canvas.drawLine(
-      Offset(0, edgeY),
-      Offset(w, edgeY),
-      Paint()
-        ..shader = edgeShader
-        ..strokeWidth = charged ? 4 : 2.5,
-    );
-
-    // Charged: white-hot flash pulse across the whole fill.
-    if (charged) {
-      canvas.drawRect(
-        rect,
-        Paint()..color = Colors.white.withValues(alpha: 0.05 + 0.10 * pulse),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_NeonPainter old) =>
-      old.t != t ||
-      old.progress != progress ||
-      old.charged != charged ||
-      old.colorA != colorA ||
-      old.colorB != colorB;
-}
-
-/// Pixel-theme pull-to-refresh: a blocky retro fill that grows from the top with
-/// a chunky pixel leading bar and a blinking "LOADING" once charged.
-class _PixelPull extends StatefulWidget {
-  final double progress; // 0..1
-  final PullSpec? spec; // fill/bar color; null falls back to tokens.accent
-  const _PixelPull({required this.progress, this.spec});
-
-  @override
-  State<_PixelPull> createState() => _PixelPullState();
-}
-
-class _PixelPullState extends State<_PixelPull>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 640),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final reduce = MediaQuery.disableAnimationsOf(context);
-    if (reduce) {
-      if (_c.isAnimating) _c.stop();
-    } else if (!_c.isAnimating) {
-      _c.repeat();
-    }
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, _) {
-        final blinkOn = reduce ? true : _c.value < 0.5;
-        final charged = widget.progress >= 0.97;
-        return Align(
-          alignment: Alignment.topCenter,
-          child: FractionallySizedBox(
-            widthFactor: 1,
-            heightFactor: widget.progress.clamp(0.0, 1.0),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CustomPaint(
-                  painter: _PixelPullPainter(
-                    color: widget.spec?.colorA.resolve(t) ?? t.accent,
-                    progress: widget.progress,
-                    blinkOn: blinkOn,
-                  ),
-                ),
-                if (charged)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Opacity(
-                        opacity: blinkOn ? 1 : 0.2,
-                        child: Text(
-                          '▼ LOADING ▼',
-                          style: TextStyle(
-                            color: t.accent,
-                            fontSize: 13,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+    return RepaintBoundary(
+      child: Container(
+        key: const ValueKey('home-pull-refresh-indicator'),
+        width: context.r(44),
+        height: context.r(44),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: t.panel2,
+          border: Border.all(color: t.line),
+          borderRadius: BorderRadius.circular(t.isPixel ? 8 : 22),
+        ),
+        child: SizedBox(
+          width: context.r(22),
+          height: context.r(22),
+          child: CircularProgressIndicator(
+            value: refreshing ? (reduce ? 0.75 : null) : progress,
+            strokeWidth: 2.5,
+            color: t.accent,
+            backgroundColor: t.line,
+            semanticsLabel: AppLocalizations.of(context).commonRefresh,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
-
-class _PixelPullPainter extends CustomPainter {
-  final Color color;
-  final double progress;
-  final bool blinkOn;
-  _PixelPullPainter(
-      {required this.color, required this.progress, required this.blinkOn});
-
-  static const double _cell = 12;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    // Flat blocky wash.
-    canvas.drawRect(Offset.zero & size,
-        Paint()..color = color.withValues(alpha: 0.08 + 0.12 * progress));
-    // Checkerboard pixel texture.
-    final tex = Paint()..color = color.withValues(alpha: 0.07);
-    for (var y = 0.0, ry = 0; y < h; y += _cell, ry++) {
-      for (var x = 0.0, rx = 0; x < w; x += _cell, rx++) {
-        if ((rx + ry).isEven) {
-          canvas.drawRect(Rect.fromLTWH(x, y, _cell, _cell), tex);
-        }
-      }
-    }
-    // Chunky leading bar: two rows of hard pixel blocks at the bottom.
-    for (var x = 0.0, rx = 0; x < w; x += _cell, rx++) {
-      final lit = blinkOn ? true : rx.isEven; // marching blocks
-      canvas.drawRect(
-          Rect.fromLTWH(x + 1, h - _cell + 1, _cell - 2, _cell - 2),
-          Paint()..color = color.withValues(alpha: lit ? 0.9 : 0.5));
-      canvas.drawRect(
-          Rect.fromLTWH(x + 1, h - _cell * 2 + 1, _cell - 2, _cell - 2),
-          Paint()..color = color.withValues(alpha: 0.35));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PixelPullPainter old) =>
-      old.progress != progress || old.blinkOn != blinkOn;
-}
-
 class _Avatar extends StatelessWidget {
   final SteamGuardAccount account;
   final double size;

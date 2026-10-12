@@ -32,9 +32,15 @@ class _Controller extends AppController {
   @override
   Future<AppData> build() async => AppData(
     store: AccountStore(MemoryStorageProvider()),
-    accounts: [],
+    accounts: [_account(1), _account(2)],
     locked: false,
   );
+
+  void lockForTest() =>
+      state = AsyncData(state.requireValue.copyWith(locked: true));
+
+  void removeForTest() =>
+      state = AsyncData(state.requireValue.copyWith(accounts: []));
 }
 
 class _Inventory extends InventoryClient {
@@ -50,6 +56,7 @@ class _Inventory extends InventoryClient {
 
 class _Market extends MarketClient {
   int calls = 0;
+  Future<List<MarketListing>>? pending;
   _Market() : super(SteamApiClient());
   @override
   Future<List<MarketListing>> myListings(
@@ -57,6 +64,7 @@ class _Market extends MarketClient {
     int count = 100,
   }) async {
     calls++;
+    if (pending != null) return pending!;
     return [
       MarketListing.fromJson({
         'listingid': '17',
@@ -74,7 +82,7 @@ WalletInfo _wallet(int? amount) =>
     WalletInfo.fromJson({'wallet_currency': 23, 'wallet_balance': ?amount});
 SteamGuardAccount _account(int id) => SteamGuardAccount(
   accountName: 'demo_$id',
-  session: SessionData(steamId: id),
+  session: SessionData(steamId: id, accessToken: 'synthetic'),
 );
 
 Widget _app(
@@ -94,11 +102,149 @@ Widget _app(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('en'),
-    home: Scaffold(body: SingleChildScrollView(child: child)),
+    home: child is AccountDashboardScreen
+        ? child
+        : Scaffold(body: SingleChildScrollView(child: child)),
   ),
 );
 
 void main() {
+  testWidgets(
+    'local account and completed listings render while wallet waits',
+    (tester) async {
+      final wallet = Completer<WalletInfo>();
+      final actions = <String>[];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboardScreen(account: _account(1), onAction: actions.add),
+          _Inventory({1: wallet.future}),
+          _Market(),
+          _Settings(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('demo_1'), findsOneWidget);
+      expect(find.text('SteamID 1'), findsOneWidget);
+      expect(find.text('Synthetic held item'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dashboard-wallet-loading')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('dashboard-listings-loading')),
+        findsNothing,
+      );
+      await tester.ensureVisible(find.text('Synthetic held item'));
+      await tester.pump();
+      await tester.tap(find.text('Synthetic held item'));
+      expect(actions, ['listings']);
+      await tester.pump(const Duration(seconds: 12));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('dashboard-wallet-loading')),
+        findsNothing,
+      );
+      expect(find.text('Synthetic held item'), findsOneWidget);
+      expect(find.textContaining('0.00'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wallet renders before slow listings and leaving cancels its wait',
+    (tester) async {
+      final market = _Market()
+        ..pending = Completer<List<MarketListing>>().future;
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          _Inventory({1: Future.value(_wallet(12345))}),
+          market,
+          _Settings(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('CNY 123.45'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dashboard-wallet-loading')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('dashboard-listings-loading')),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'saved hidden cards do not fetch and toggling starts only that card',
+    (tester) async {
+      final inventory = _Inventory({1: Future.value(_wallet(12345))});
+      final market = _Market();
+      final settings = _Settings()..sections = ['tools'];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          inventory,
+          market,
+          settings,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 0);
+      expect(market.calls, 0);
+      await tester.tap(find.byTooltip('Choose overview cards'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(CheckedPopupMenuItem<String>).first);
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 1);
+      expect(market.calls, 0);
+      expect(find.text('CNY 123.45'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'equivalent account rebuild reuses reads and lock clears balances',
+    (tester) async {
+      final inventory = _Inventory({1: Future.value(_wallet(12345))});
+      final market = _Market();
+      final selected = ValueNotifier(_account(1));
+      addTearDown(selected.dispose);
+      await tester.pumpWidget(
+        _app(
+          ValueListenableBuilder<SteamGuardAccount>(
+            valueListenable: selected,
+            builder: (_, account, _) =>
+                AccountDashboard(account: account, onAction: (_) {}),
+          ),
+          inventory,
+          market,
+          _Settings(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      selected.value = _account(1);
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 1);
+      expect(market.calls, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AccountDashboard)),
+      );
+      (container.read(appControllerProvider.notifier) as _Controller)
+          .lockForTest();
+      await tester.pumpAndSettle();
+      expect(find.text('CNY 123.45'), findsNothing);
+      expect(inventory.calls, 1);
+      expect(market.calls, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'shows wallet and held listings with explicit currency and opens listings',
     (tester) async {
@@ -153,7 +299,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('CNY 89.00'), findsOneWidget);
     expect(find.text('CNY 1.00'), findsNothing);
-    expect(market.calls, 1);
+    expect(
+      market.calls,
+      2,
+      reason: 'Both accounts start their cards in parallel',
+    );
   });
 
   testWidgets(

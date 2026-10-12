@@ -52,6 +52,8 @@ class _PreviewSettings extends SettingsStore {
   _PreviewSettings(super.storage);
   @override
   Future<bool> loadTutorialSeen() async => true;
+  @override
+  Future<List<String>?> loadDashboardSections() async => null;
 }
 
 class _PreviewController extends AppController {
@@ -142,8 +144,12 @@ Widget dashboardHomePreviewApp({
   SkinSpec? skinSpec,
   InventoryClient? inventory,
   MarketClient? market,
+  SteamApiClient? api,
   List<SteamGuardAccount>? accounts,
   Stream<int>? ticks,
+  bool disableAnimations = true,
+  AppController Function(StorageProvider, List<SteamGuardAccount>)?
+  controllerFactory,
 }) {
   final storage = MemoryStorageProvider();
   final tokens = AvaTokens.of(variant);
@@ -153,9 +159,12 @@ Widget dashboardHomePreviewApp({
       storageProvider.overrideWithValue(storage),
       settingsStoreProvider.overrideWithValue(_PreviewSettings(storage)),
       appControllerProvider.overrideWith(
-        () => _PreviewController(storage, accounts ?? homePreviewAccounts),
+        () => (controllerFactory ?? _PreviewController.new)(
+          storage,
+          accounts ?? homePreviewAccounts,
+        ),
       ),
-      apiClientProvider.overrideWithValue(_PreviewApi()),
+      apiClientProvider.overrideWithValue(api ?? _PreviewApi()),
       inventoryClientProvider.overrideWithValue(
         inventory ?? _PreviewInventory(),
       ),
@@ -181,7 +190,9 @@ Widget dashboardHomePreviewApp({
           gradient: tokens.bgGradient,
         ),
         child: MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(disableAnimations: disableAnimations),
           child: child!,
         ),
       ),

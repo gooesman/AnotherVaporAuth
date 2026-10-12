@@ -163,7 +163,8 @@ guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
   frame's offset / blend / dispose, so offset-based frames don't flicker).
 - **Appearance & skins** — a plain **Light / Dark / follow-system** appearance,
   and separately a **skin** layer (None / Neon cyberpunk / Pixel retro), each
-  skin a data-driven effect pack with its own ambience and pull-to-refresh.
+  skin a data-driven effect pack with its own ambience. Pull-to-refresh uses
+  a small circular indicator with theme-matched colors and borders.
 - **Device management** — see every device and browser session signed into an
   account (platform, rough location, last activity) and sign any of them out
   remotely. The current device is marked and can't sign itself out.
@@ -202,7 +203,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1269 tests
+flutter test                       # 1364 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

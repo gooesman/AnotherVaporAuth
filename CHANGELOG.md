@@ -5,6 +5,22 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
 trigger automated releases.
 
+## [v1.5.4] — 2026-10-12 · Fork
+
+### Fixed
+- Account overview cards load independently, reuse recent results and cancel unneeded reads. A total request deadline prevents redirects and pagination from extending offline loading indefinitely; hidden cards no longer fetch.
+- Temporary network failures no longer trigger password login attempts or misleading expired-session messages during pending-login and overview refreshes.
+- Home refresh uses a compact circular indicator with skin-matched colors and borders, removing the full-screen purple grid and checkerboard effects. Pull cancellation and reduced-motion settings are respected.
+- Avatar and pending-login checks start together. Profile requests have bounded lifetimes, run together per account and limit account concurrency to reduce startup connection pressure.
+- Late avatar responses cannot restore a deleted account or overwrite newly imported credentials; lock and disposal also prevent follow-up session renewal.
+
+### 修复
+- 账户概览各面板独立加载，复用近期结果并取消不再需要的请求；总时限覆盖重定向和分页，避免断网时一直等待，隐藏的面板不再加载。
+- 临时网络故障不再触发密码重登，概览和待确认登录刷新也不再将其误报为会话失效。
+- 首页刷新改为随皮肤配色及边框适配的小圆环，移除整屏紫色网格与棋盘纹理；支持取消下拉及系统减少动画设置。
+- 头像与待确认登录同时检查；头像请求设定总时限，同账户请求并发，多账户限制并发数，减少启动时的连接压力。
+- 拦截已删除、重新导入账户的迟到头像结果，避免恢复已删除账户或覆盖新凭据；锁定后不再由头像请求追加会话续期。
+
 ## [v1.5.3] — 2026-10-11 · Fork
 
 ### Added

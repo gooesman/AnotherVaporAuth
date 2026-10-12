@@ -169,6 +169,19 @@ images use a bounded decoded-frame cache; visible widgets retain independent
 image handles when cached entries are evicted. Avatar playback pauses when
 hidden, backgrounded or system animation reduction is enabled.
 
+Account overview cards load independently with a 12-second total deadline,
+including redirects, pagination and an authentication retry. Closing the last
+view cancels its reads. Successful results can be reused from a bounded,
+30-second memory cache for the same account source, session and language;
+failed reads are not cached and manual refresh bypasses cached results.
+Network failures do not trigger password login attempts.
+
+Home refresh uses a small circular indicator with theme colors and borders,
+instead of full-screen grids, scanlines or checkerboard effects. Avatar and
+pending-login reads start together; profile cosmetics have individual total
+request deadlines and at most four accounts refresh concurrently. These are
+request-lifetime and widget regression checks, not real-device FPS measurements.
+
 Plain light/dark surfaces use consistent rounded corners and flat cards;
 shadows are reserved for raised overlays. Ambient motion is disabled for quiet
 plain widgets, and page/token transitions finish quickly without page scaling.

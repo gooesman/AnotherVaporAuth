@@ -10,6 +10,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/crypto/vault_crypto.dart';
 import '../core/models/manifest.dart';
+import '../core/models/session_data.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/protocol/confirmations_client.dart';
 import '../core/protocol/family_groups_client.dart';
@@ -1181,13 +1182,24 @@ class AppController extends AsyncNotifier<AppData> {
           if (acc.steamId != 0 && (only == null || only.contains(acc.steamId)))
             acc,
       ];
-      // Accounts refresh in parallel — each is 2–3 HTTP round-trips, and the
-      // old sequential loop serialized ~3N of them behind the refresh
-      // overlay. saveAccount stays safe: the store's write lock serializes
-      // the actual disk mutations.
-      final results = await Future.wait([
-        for (final acc in targets) _refreshOneAvatar(acc, svc, data),
+      // Keep optional cosmetics from flooding startup connections on large
+      // libraries. Four accounts make progress independently; each account's
+      // public profile and equipped-items request can run together.
+      var next = 0;
+      final results = <bool>[];
+      Future<void> worker() async {
+        while (next < targets.length) {
+          if (!ref.mounted || state.value?.locked != false) return;
+          final account = targets[next++];
+          if (!state.value!.visibleAccounts.contains(account)) continue;
+          results.add(await _refreshOneAvatar(account, svc));
+        }
+      }
+
+      await Future.wait([
+        for (var i = 0; i < 4 && i < targets.length; i++) worker(),
       ]);
+      if (!ref.mounted) return;
       if (results.any((changed) => changed) &&
           state.value != null &&
           !state.value!.locked) {
@@ -1213,58 +1225,90 @@ class AppController extends AsyncNotifier<AppData> {
   Future<bool> _refreshOneAvatar(
     SteamGuardAccount acc,
     AvatarService svc,
-    AppData data,
   ) async {
+    final identity = _avatarAccountIdentity(acc);
+    final requestSession = SessionData.fromJson(acc.session.toJson());
+    // Reloads may replace instances without changing the account. Merge only
+    // cosmetics onto that equivalent live instance; never save an old account
+    // object over an import, a changed session, or a removed source entry.
+    SteamGuardAccount? liveAccount() {
+      if (!ref.mounted) return null;
+      final current = state.value;
+      if (current == null || current.locked) return null;
+      final present = acc.fromPortable
+          ? current.portable?.ids.contains(acc.steamId) ?? false
+          : current.store.entries.any((entry) => entry.steamId == acc.steamId);
+      if (!present) return null;
+      for (final account in current.visibleAccounts) {
+        if (_avatarAccountIdentity(account) == identity) return account;
+      }
+      return null;
+    }
+
     try {
       var accChanged = false;
-      final profile = await svc.fetchProfile(acc.steamId);
-      if (profile.avatarUrl != null && profile.avatarUrl != acc.avatarUrl) {
-        acc.avatarUrl = profile.avatarUrl;
-        accChanged = true;
-      }
-      if (profile.personaName != null &&
-          profile.personaName != acc.personaName) {
-        acc.personaName = profile.personaName;
-        accChanged = true;
-      }
-      // The frame/animated avatar need a valid access token; on 401 refresh
-      // once and retry.
-      EquippedItems items;
-      try {
-        items = await svc.fetchEquippedItems(
-          acc.steamId,
-          acc.session.accessToken,
-        );
-      } on FrameUnauthorized {
-        items = const EquippedItems();
-        final refreshed = await SessionManager(
-          ref.read(apiClientProvider),
-        ).refresh(acc.session);
-        if (refreshed) {
-          accChanged = true; // persist the new token
+      var sessionRefreshed = false;
+      var profile = const SteamProfile();
+      var items = const EquippedItems();
+      await Future.wait<void>([
+        svc.fetchProfile(acc.steamId).then((value) {
+          profile = value;
+        }),
+        () async {
           try {
             items = await svc.fetchEquippedItems(
               acc.steamId,
-              acc.session.accessToken,
+              requestSession.accessToken,
             );
-          } catch (_) {
-            /* leave items unchanged */
+          } on FrameUnauthorized {
+            if (liveAccount() == null) return;
+            final refreshed = await SessionManager(
+              ref.read(apiClientProvider),
+            ).refresh(requestSession);
+            if (refreshed && liveAccount() != null) {
+              sessionRefreshed = true;
+              try {
+                items = await svc.fetchEquippedItems(
+                  acc.steamId,
+                  requestSession.accessToken,
+                );
+              } catch (_) {
+                // Keep cached cosmetics on a transient failure.
+              }
+            }
           }
-        }
+        }(),
+      ]);
+      final target = liveAccount();
+      if (target == null) return false;
+      if (sessionRefreshed) {
+        target.session
+          ..accessToken = requestSession.accessToken
+          ..refreshToken = requestSession.refreshToken;
+        accChanged = true;
+      }
+      if (profile.avatarUrl != null && profile.avatarUrl != target.avatarUrl) {
+        target.avatarUrl = profile.avatarUrl;
+        accChanged = true;
+      }
+      if (profile.personaName != null &&
+          profile.personaName != target.personaName) {
+        target.personaName = profile.personaName;
+        accChanged = true;
       }
       // A null value means "not equipped / unresolved" — keep the cached one
       // rather than dropping a good value on a transient failure.
-      if (items.frameUrl != null && items.frameUrl != acc.avatarFrameUrl) {
-        acc.avatarFrameUrl = items.frameUrl;
+      if (items.frameUrl != null && items.frameUrl != target.avatarFrameUrl) {
+        target.avatarFrameUrl = items.frameUrl;
         accChanged = true;
       }
       if (items.animatedAvatarUrl != null &&
-          items.animatedAvatarUrl != acc.animatedAvatarUrl) {
-        acc.animatedAvatarUrl = items.animatedAvatarUrl;
+          items.animatedAvatarUrl != target.animatedAvatarUrl) {
+        target.animatedAvatarUrl = items.animatedAvatarUrl;
         accChanged = true;
       }
       if (accChanged) {
-        await _saveToSource(acc);
+        await _saveToSource(target);
       }
       return accChanged;
     } catch (e) {
@@ -1272,6 +1316,22 @@ class AppController extends AsyncNotifier<AppData> {
       return false;
     }
   }
+
+  Record _avatarAccountIdentity(SteamGuardAccount account) => (
+    account.steamId,
+    account.fromPortable,
+    account.accountName,
+    account.sharedSecret,
+    account.identitySecret,
+    account.secret1,
+    account.revocationCode,
+    account.deviceId,
+    account.serialNumber,
+    account.tokenGid,
+    account.password,
+    account.session.accessToken,
+    account.session.refreshToken,
+  );
 
   Future<List<SteamGuardAccount>?> _accountsWithPin(
     AccountStore store,

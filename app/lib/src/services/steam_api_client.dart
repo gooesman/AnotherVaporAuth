@@ -9,6 +9,7 @@ import '../core/protocol/eresult.dart';
 import '../core/proto/protobuf_wire.dart';
 import 'debug_log.dart';
 import 'steam_network.dart';
+import 'steam_request_scope.dart';
 
 /// Thin HTTP client for Steam's web APIs.
 ///
@@ -99,6 +100,7 @@ class SteamApiClient {
           url,
           queryParameters: {...query, 'input_protobuf_encoded': encoded},
           options: Options(responseType: ResponseType.bytes),
+          cancelToken: SteamRequestScope.currentCancelToken,
         );
       } else {
         resp = await _dio.post<List<int>>(
@@ -106,6 +108,7 @@ class SteamApiClient {
           queryParameters: query,
           data: FormData.fromMap({'input_protobuf_encoded': encoded}),
           options: Options(responseType: ResponseType.bytes),
+          cancelToken: SteamRequestScope.currentCancelToken,
         );
       }
 
@@ -181,6 +184,7 @@ class SteamApiClient {
       final resp = await _dio.get<String>(
         '$communityBase$path',
         queryParameters: query,
+        cancelToken: SteamRequestScope.currentCancelToken,
         options: Options(
           responseType: ResponseType.plain,
           headers: {
@@ -315,7 +319,8 @@ class SteamApiClient {
       throw ArgumentError.value(path, 'path', 'not a Steam origin');
     }
     dlog('→ GET(text) $path');
-    var resp = await _dio.get<String>(url, queryParameters: query, options: opts());
+    var resp = await _dio.get<String>(url, queryParameters: query, options: opts(),
+        cancelToken: SteamRequestScope.currentCancelToken);
     absorb(resp);
     var hops = 0;
     while ((resp.statusCode ?? 0) >= 300 &&
@@ -338,7 +343,8 @@ class SteamApiClient {
         break;
       }
       dlog('  ↪ redirect $url');
-      resp = await _dio.get<String>(url, options: opts());
+      resp = await _dio.get<String>(url, options: opts(),
+          cancelToken: SteamRequestScope.currentCancelToken);
       absorb(resp);
     }
     // A bare 401/403 (initial or post-redirect) is a stale session too —
