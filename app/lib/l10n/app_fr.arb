@@ -870,5 +870,35 @@
   "forkUpdateSourceLabel": "Source du téléchargement",
   "forkUpdateSourceAutomatic": "Accélération automatique",
   "forkUpdateSourceOfficial": "GitHub officiel",
-  "forkUpdateSourceAccelerated": "Accélération directe · {provider}"
+  "forkUpdateSourceAccelerated": "Accélération directe · {provider}",
+  "marketTabSearch": "Marché",
+  "marketSearchHint": "Rechercher un objet, par ex. AK-47",
+  "marketSearchEmpty": "Choisissez un jeu et une devise, puis recherchez un objet. Les données ne sont chargées que lors de la recherche.",
+  "marketSearchButton": "Rechercher sur le marché",
+  "marketSearchAllGames": "Tous les jeux",
+  "marketSearchGame": "Jeu",
+  "marketSearchCurrency": "Devise",
+  "marketSearchNoResults": "Aucun objet trouvé. Essayez une autre recherche.",
+  "marketSearchMore": "Charger plus",
+  "marketSearchListings": "Annonces : {count}",
+  "marketSearchPriceUnavailable": "Prix indisponible",
+  "marketSearchPriceNote": "Les prix indicatifs peuvent changer. La devise affichée est celle renvoyée par Steam.",
+  "marketSearchRefreshPrice": "Actualiser le prix",
+  "marketSearchRateLimited": "Trop de requêtes vers Steam. Réessayez plus tard.",
+  "marketSearchUnavailable": "Les objets du marché sont indisponibles pour le moment. Réessayez plus tard.",
+  "@marketSearchListings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "marketSearchRequestedCurrency": "Devise demandée : {currency}",
+  "@marketSearchRequestedCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  }
 }

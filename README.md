@@ -149,6 +149,12 @@ shown above while retaining the existing skin styles.
   live Steam fees, a high/low price trend, linked "you receive ⇄ buyer pays"
   pricing, batch listing, and optional auto-confirm; a "My listings" tab cancels
   active listings. Open it from the account overview or desktop context menu.
+  A separate read-only **Market** tab searches by item name, game and currency.
+  Opening the tab or typing does not fetch data: submit a search to load one page
+  with its returned prices, then explicitly load more. Recent pages are cached
+  for five minutes; only refreshing an item's price makes an extra price request.
+  Inventory and personal listings load when their respective tabs are opened.
+  Prices retain Steam's returned currency; the selected currency is a request preference.
 - **Automatic session refresh** — refreshes the access token from the refresh
   token, and (optionally) does a full headless re-login with a stored password
   plus the account's own TOTP when the refresh token expires.
@@ -211,7 +217,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1376 tests
+flutter test                       # 1420 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

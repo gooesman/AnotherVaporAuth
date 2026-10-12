@@ -5206,6 +5206,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Direct acceleration · {provider}'**
   String forkUpdateSourceAccelerated(String provider);
+
+  /// No description provided for @marketTabSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Market'**
+  String get marketTabSearch;
+
+  /// No description provided for @marketSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search items, e.g. AK-47'**
+  String get marketSearchHint;
+
+  /// No description provided for @marketSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a game and currency, then search for an item. Data loads only when you search.'**
+  String get marketSearchEmpty;
+
+  /// No description provided for @marketSearchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Search market'**
+  String get marketSearchButton;
+
+  /// No description provided for @marketSearchAllGames.
+  ///
+  /// In en, this message translates to:
+  /// **'All games'**
+  String get marketSearchAllGames;
+
+  /// No description provided for @marketSearchGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Game'**
+  String get marketSearchGame;
+
+  /// No description provided for @marketSearchCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get marketSearchCurrency;
+
+  /// No description provided for @marketSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching items. Try another search.'**
+  String get marketSearchNoResults;
+
+  /// No description provided for @marketSearchMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get marketSearchMore;
+
+  /// No description provided for @marketSearchListings.
+  ///
+  /// In en, this message translates to:
+  /// **'Listings: {count}'**
+  String marketSearchListings(int count);
+
+  /// No description provided for @marketSearchPriceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Price unavailable'**
+  String get marketSearchPriceUnavailable;
+
+  /// No description provided for @marketSearchPriceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference prices may change. Currency is shown as returned by Steam.'**
+  String get marketSearchPriceNote;
+
+  /// No description provided for @marketSearchRefreshPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh price'**
+  String get marketSearchRefreshPrice;
+
+  /// No description provided for @marketSearchRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is receiving too many requests. Please try again later.'**
+  String get marketSearchRateLimited;
+
+  /// No description provided for @marketSearchUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Market items are unavailable right now. Please try again later.'**
+  String get marketSearchUnavailable;
+
+  /// No description provided for @marketSearchRequestedCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested currency: {currency}'**
+  String marketSearchRequestedCurrency(String currency);
 }
 
 class _AppLocalizationsDelegate

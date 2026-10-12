@@ -3000,4 +3000,61 @@ class AppLocalizationsEs extends AppLocalizations {
   String forkUpdateSourceAccelerated(String provider) {
     return 'Aceleración directa · $provider';
   }
+
+  @override
+  String get marketTabSearch => 'Mercado';
+
+  @override
+  String get marketSearchHint => 'Buscar artículos, p. ej. AK-47';
+
+  @override
+  String get marketSearchEmpty =>
+      'Elige un juego y una moneda y busca un artículo. Los datos solo se cargan al buscar.';
+
+  @override
+  String get marketSearchButton => 'Buscar en el mercado';
+
+  @override
+  String get marketSearchAllGames => 'Todos los juegos';
+
+  @override
+  String get marketSearchGame => 'Juego';
+
+  @override
+  String get marketSearchCurrency => 'Moneda';
+
+  @override
+  String get marketSearchNoResults =>
+      'No hay artículos coincidentes. Prueba otra búsqueda.';
+
+  @override
+  String get marketSearchMore => 'Cargar más';
+
+  @override
+  String marketSearchListings(int count) {
+    return 'Anuncios: $count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => 'Precio no disponible';
+
+  @override
+  String get marketSearchPriceNote =>
+      'Los precios de referencia pueden cambiar. La moneda se muestra tal como la devuelve Steam.';
+
+  @override
+  String get marketSearchRefreshPrice => 'Actualizar precio';
+
+  @override
+  String get marketSearchRateLimited =>
+      'Demasiadas solicitudes a Steam. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get marketSearchUnavailable =>
+      'Los artículos del mercado no están disponibles ahora. Inténtalo de nuevo más tarde.';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return 'Moneda solicitada: $currency';
+  }
 }

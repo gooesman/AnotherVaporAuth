@@ -18,15 +18,16 @@ import '../pending/session_retry.dart';
 import '../widgets/inventory_item_icon.dart';
 import '../widgets/inventory_filter_bar.dart';
 import 'item_market_actions.dart';
+import 'market_search_tab.dart';
 import 'sell_sheet.dart';
 import '../error_text.dart';
 
-/// Inventory browser + market listings for one account.
+/// Inventory, personal listings, and public market search for one account.
 class MarketScreen extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
   final int initialTab;
   const MarketScreen({super.key, required this.account, this.initialTab = 0})
-    : assert(initialTab >= 0 && initialTab < 2);
+    : assert(initialTab >= 0 && initialTab < 3);
 
   @override
   ConsumerState<MarketScreen> createState() => _MarketScreenState();
@@ -35,10 +36,13 @@ class MarketScreen extends ConsumerStatefulWidget {
 class _MarketScreenState extends ConsumerState<MarketScreen>
     with SingleTickerProviderStateMixin, SessionRetryState {
   late final TabController _tabs = TabController(
-    length: 2,
+    length: 3,
     vsync: this,
     initialIndex: widget.initialTab,
   );
+  late int _activeTab = widget.initialTab;
+  bool _inventoryStarted = false;
+  bool _loadingOverview = false;
 
   InventoryOverview? _overview;
   String? _error;
@@ -46,8 +50,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   String? _itemsError;
   InventoryGame? _game;
 
-  // Bumped after a successful listing so the listings tab reloads itself.
+  // Dirty generation: a hidden listings tab waits until it becomes active.
   int _listingsReload = 0;
+  int _marketSearchReload = 0;
 
   // Identical items are stacked (grouped by classid_instanceid) for display and
   // batch selling.
@@ -95,18 +100,53 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
-    _loadOverview();
+    _tabs.addListener(_onTabChanged);
+    if (_activeTab == 0) _loadOverview();
   }
 
   @override
   void dispose() {
+    _tabs.removeListener(_onTabChanged);
     _tabs.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
+  void _onTabChanged() {
+    if (_activeTab == _tabs.index) return;
+    setState(() => _activeTab = _tabs.index);
+    if (_activeTab == 0) {
+      if (!_inventoryStarted) {
+        _loadOverview();
+      } else if (_game == null && (_overview?.games.isNotEmpty ?? false)) {
+        // An overview that finished while hidden is cached; defer its first
+        // inventory page until the user actually returns to this tab.
+        _selectGame(_overview!.games.first);
+      }
+    }
+  }
+
+  void _refreshCurrentTab() {
+    switch (_activeTab) {
+      case 0:
+        final game = _game;
+        if (game == null || _needsLogin) {
+          _loadOverview();
+        } else {
+          _selectGame(game, refresh: true);
+        }
+      case 1:
+        setState(() => _listingsReload++);
+      case 2:
+        setState(() => _marketSearchReload++);
+    }
+  }
+
   Future<void> _loadOverview() async {
+    if (_activeTab != 0 || _loadingOverview) return;
     setState(() {
+      _inventoryStarted = true;
+      _loadingOverview = true;
       _error = null;
       _needsLogin = false;
     });
@@ -119,6 +159,11 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       final outcome = await ref
           .read(autoLoginProvider)
           .ensureSession(widget.account);
+      if (!mounted) return;
+      if (_activeTab != 0) {
+        _inventoryStarted = false;
+        return;
+      }
       if (outcome != AutoLoginOutcome.ok) {
         // The session can't be refreshed silently (expired, no stored password,
         // or a code-only import that was never signed in) — offer sign-in, not
@@ -136,7 +181,9 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           .overview(widget.account);
       if (!mounted) return;
       setState(() => _overview = ov);
-      if (ov.games.isNotEmpty) _selectGame(ov.games.first, refresh: true);
+      if (_activeTab == 0 && ov.games.isNotEmpty) {
+        _selectGame(ov.games.first, refresh: true);
+      }
     } on CommunityAuthException {
       // The session died between the ensureSession pre-check and the fetch —
       // same routing as the pre-check failure: sign-in, not a raw exception.
@@ -151,6 +198,8 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
         final l = AppLocalizations.of(context);
         setState(() => _error = describeError(l, e));
       }
+    } finally {
+      if (mounted) setState(() => _loadingOverview = false);
     }
   }
 
@@ -177,7 +226,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   }
 
   Future<void> _loadItems() async {
-    if (_loadingItems || _game == null) return;
+    if (_activeTab != 0 || _loadingItems || _game == null) return;
     final gen = _loadGen;
     setState(() {
       _loadingItems = true;
@@ -235,7 +284,8 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
   }
 
   void _onScroll() {
-    if (_moreItems &&
+    if (_activeTab == 0 &&
+        _moreItems &&
         _itemsError == null &&
         !_loadingItems &&
         _scroll.position.pixels > _scroll.position.maxScrollExtent - 600) {
@@ -258,7 +308,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       ),
     );
     if (listed == true && mounted) {
-      // A listing was created — tell the listings tab to reload itself.
+      // Keep hidden tabs idle; the next listings activation consumes this.
       setState(() => _listingsReload++);
     }
   }
@@ -275,17 +325,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           IconButton(
             tooltip: l.commonRefresh,
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              // Reload the current game's items (keeps the selection) or the
-              // whole overview when nothing is loaded yet.
-              final g = _game;
-              if (g == null) {
-                _loadOverview();
-              } else {
-                _selectGame(g, refresh: true);
-              }
-              setState(() => _listingsReload++);
-            },
+            onPressed: _refreshCurrentTab,
           ),
         ],
         bottom: TabBar(
@@ -293,14 +333,31 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           tabs: [
             Tab(text: l.marketTabInventory),
             Tab(text: l.marketTabListings),
+            Tab(text: l.marketTabSearch),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabs,
         children: [
-          _inventoryTab(l),
-          _MyListingsTab(account: widget.account, reload: _listingsReload),
+          TickerMode(enabled: _activeTab == 0, child: _inventoryTab(l)),
+          TickerMode(
+            enabled: _activeTab == 1,
+            child: _MyListingsTab(
+              account: widget.account,
+              active: _activeTab == 1,
+              reload: _listingsReload,
+            ),
+          ),
+          TickerMode(
+            enabled: _activeTab == 2,
+            child: MarketSearchTab(
+              account: widget.account,
+              active: _activeTab == 2,
+              reload: _marketSearchReload,
+              initialCurrency: _overview?.wallet.currency,
+            ),
+          ),
         ],
       ),
     );
@@ -747,31 +804,43 @@ class _ItemTile extends StatelessWidget {
 
 class _MyListingsTab extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
+  final bool active;
 
   /// Bumped by the parent (new listing created / appbar refresh) to reload.
   final int reload;
-  const _MyListingsTab({required this.account, this.reload = 0});
+  const _MyListingsTab({
+    required this.account,
+    required this.active,
+    this.reload = 0,
+  });
 
   @override
   ConsumerState<_MyListingsTab> createState() => _MyListingsTabState();
 }
 
 class _MyListingsTabState extends ConsumerState<_MyListingsTab>
-    with SessionRetryState {
-  late Future<List<MarketListing>> _future;
+    with AutomaticKeepAliveClientMixin, SessionRetryState {
+  Future<List<MarketListing>>? _future;
+  int? _loadedReload;
+  bool _loading = false;
   MarketListingState? _filter;
   final _cancelling = <String>{};
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
-    _future = _load();
+    if (widget.active) _refresh();
   }
 
   @override
   void didUpdateWidget(_MyListingsTab old) {
     super.didUpdateWidget(old);
-    if (old.reload != widget.reload) _refresh();
+    if (widget.active && (_future == null || _loadedReload != widget.reload)) {
+      _refresh();
+    }
   }
 
   Future<List<MarketListing>> _load() async {
@@ -779,6 +848,12 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
     final outcome = await ref
         .read(autoLoginProvider)
         .ensureSession(widget.account);
+    if (!mounted || !widget.active) {
+      // A slow sign-in check must not start a private fetch after switching to
+      // public search. A later activation retries instead of caching emptiness.
+      _loadedReload = null;
+      return const [];
+    }
     if (outcome != AutoLoginOutcome.ok) {
       throw CommunityAuthException(401, '/market/mylistings/');
     }
@@ -786,13 +861,24 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
   }
 
   Future<void> _refresh() async {
+    if (!mounted || !widget.active || _loading) return;
+    _loading = true;
+    _loadedReload = widget.reload;
     final future = _load();
-    setState(() => _future = future);
+    setState(() {
+      _future = future;
+    });
     // FutureBuilder displays the failure; don't create an additional unhandled
     // error from a refresh gesture or the app bar's fire-and-forget callback.
     try {
       await future;
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      _loading = false;
+      if (mounted && widget.active && _loadedReload != widget.reload) {
+        _refresh();
+      }
+    }
   }
 
   /// Wraps empty/error states in a scrollable RefreshIndicator so they can
@@ -838,11 +924,15 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(ok ? loc.marketCancelled : loc.commonError)),
     );
-    if (ok) _refresh();
+    if (ok) {
+      _loadedReload = null;
+      _refresh();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final l = AppLocalizations.of(context);
     final t = Theme.of(context).extension<AvaTokens>()!;
     return FutureBuilder<List<MarketListing>>(

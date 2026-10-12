@@ -3050,4 +3050,61 @@ class AppLocalizationsRu extends AppLocalizations {
   String forkUpdateSourceAccelerated(String provider) {
     return 'Прямое ускорение · $provider';
   }
+
+  @override
+  String get marketTabSearch => 'Торговая площадка';
+
+  @override
+  String get marketSearchHint => 'Поиск предметов, например AK-47';
+
+  @override
+  String get marketSearchEmpty =>
+      'Выберите игру и валюту, затем найдите предмет. Данные загружаются только при поиске.';
+
+  @override
+  String get marketSearchButton => 'Поиск на площадке';
+
+  @override
+  String get marketSearchAllGames => 'Все игры';
+
+  @override
+  String get marketSearchGame => 'Игра';
+
+  @override
+  String get marketSearchCurrency => 'Валюта';
+
+  @override
+  String get marketSearchNoResults =>
+      'Предметы не найдены. Попробуйте другой запрос.';
+
+  @override
+  String get marketSearchMore => 'Загрузить ещё';
+
+  @override
+  String marketSearchListings(int count) {
+    return 'Предложений: $count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => 'Цена недоступна';
+
+  @override
+  String get marketSearchPriceNote =>
+      'Ориентировочные цены могут меняться. Валюта указана так, как её возвращает Steam.';
+
+  @override
+  String get marketSearchRefreshPrice => 'Обновить цену';
+
+  @override
+  String get marketSearchRateLimited =>
+      'Слишком много запросов к Steam. Повторите попытку позже.';
+
+  @override
+  String get marketSearchUnavailable =>
+      'Предметы на площадке сейчас недоступны. Повторите попытку позже.';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return 'Запрошенная валюта: $currency';
+  }
 }

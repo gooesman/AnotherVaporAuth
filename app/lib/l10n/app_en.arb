@@ -1472,5 +1472,35 @@
         "type": "String"
       }
     }
+  },
+  "marketTabSearch": "Market",
+  "marketSearchHint": "Search items, e.g. AK-47",
+  "marketSearchEmpty": "Choose a game and currency, then search for an item. Data loads only when you search.",
+  "marketSearchButton": "Search market",
+  "marketSearchAllGames": "All games",
+  "marketSearchGame": "Game",
+  "marketSearchCurrency": "Currency",
+  "marketSearchNoResults": "No matching items. Try another search.",
+  "marketSearchMore": "Load more",
+  "marketSearchListings": "Listings: {count}",
+  "marketSearchPriceUnavailable": "Price unavailable",
+  "marketSearchPriceNote": "Reference prices may change. Currency is shown as returned by Steam.",
+  "marketSearchRefreshPrice": "Refresh price",
+  "marketSearchRateLimited": "Steam is receiving too many requests. Please try again later.",
+  "marketSearchUnavailable": "Market items are unavailable right now. Please try again later.",
+  "@marketSearchListings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "marketSearchRequestedCurrency": "Requested currency: {currency}",
+  "@marketSearchRequestedCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
   }
 }

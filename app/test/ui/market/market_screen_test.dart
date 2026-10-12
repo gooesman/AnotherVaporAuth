@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
 import 'package:ava/src/app/screen_corners.dart';
@@ -8,8 +10,11 @@ import 'package:ava/src/core/models/steam_item.dart';
 import 'package:ava/src/core/protocol/inventory_client.dart';
 import 'package:ava/src/core/protocol/market_client.dart';
 import 'package:ava/src/services/auto_login.dart';
+import 'package:ava/src/services/account_store.dart';
 import 'package:ava/src/services/steam_api_client.dart';
+import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/market/market_screen.dart';
+import 'package:ava/src/ui/market/market_search_tab.dart';
 import 'package:ava/src/ui/market/sell_sheet.dart';
 import 'package:ava/src/ui/widgets/inventory_item_icon.dart';
 import 'package:flutter/gestures.dart';
@@ -18,10 +23,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _AutoLogin extends AutoLogin {
-  _AutoLogin() : super(SteamApiClient());
+  _AutoLogin({this.pending}) : super(SteamApiClient());
+  final Future<AutoLoginOutcome>? pending;
+  int calls = 0;
   @override
-  Future<AutoLoginOutcome> ensureSession(SteamGuardAccount account) async =>
-      AutoLoginOutcome.ok;
+  Future<AutoLoginOutcome> ensureSession(SteamGuardAccount account) async {
+    calls++;
+    if (pending != null) return pending!;
+    return AutoLoginOutcome.ok;
+  }
+}
+
+class _Controller extends AppController {
+  @override
+  Future<AppData> build() async => AppData(
+    store: AccountStore(MemoryStorageProvider()),
+    accounts: const [],
+    locked: false,
+  );
 }
 
 const _defaultGames = [
@@ -51,11 +70,14 @@ class _Inventory extends InventoryClient {
     this.walletInfo = WalletInfo.fallback,
     this.nextPage = const [],
     this.games = _defaultGames,
+    this.pendingOverview,
   }) : super(SteamApiClient());
   final List<InventoryItem> inventoryItems;
   final WalletInfo walletInfo;
   final List<InventoryItem> nextPage;
   final List<InventoryGame> games;
+  final Future<InventoryOverview>? pendingOverview;
+  int overviewCalls = 0;
   final selectedContexts = <String>[];
   final selectedInventories = <(int, String)>[];
 
@@ -63,7 +85,11 @@ class _Inventory extends InventoryClient {
   Future<InventoryOverview> overview(
     SteamGuardAccount account, {
     String? ownerSteamId,
-  }) async => InventoryOverview(games, walletInfo);
+  }) async {
+    overviewCalls++;
+    if (pendingOverview != null) return pendingOverview!;
+    return InventoryOverview(games, walletInfo);
+  }
 
   @override
   Future<InventoryPage> items(
@@ -89,6 +115,7 @@ class _Inventory extends InventoryClient {
 class _Market extends MarketClient {
   _Market() : super(SteamApiClient());
   int cancellations = 0;
+  int listingsCalls = 0;
   final priceQueries = <(int, String, int)>[];
 
   @override
@@ -105,11 +132,22 @@ class _Market extends MarketClient {
   Future<List<MarketListing>> myListings(
     SteamGuardAccount account, {
     int count = 100,
-  }) async => [
-    _listing('1', 'Active item', MarketListingState.active),
-    _listing('2', 'Held item', MarketListingState.onHold),
-    _listing('3', 'Pending item', MarketListingState.pendingConfirmation),
-  ];
+  }) async {
+    listingsCalls++;
+    return [
+      _listing('1', 'Active item', MarketListingState.active),
+      _listing('2', 'Held item', MarketListingState.onHold),
+      _listing('3', 'Pending item', MarketListingState.pendingConfirmation),
+    ];
+  }
+
+  @override
+  Future<List<double>> priceHistory(
+    SteamGuardAccount account,
+    int appid,
+    String marketHashName, {
+    int points = 60,
+  }) async => const [];
 
   @override
   Future<bool> cancel(SteamGuardAccount account, String listingId) async {
@@ -173,6 +211,9 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
   double cornerRadius = 0,
   EdgeInsets? systemPadding,
   List<InventoryGame> games = _defaultGames,
+  _AutoLogin? autoLogin,
+  Future<InventoryOverview>? pendingOverview,
+  bool settle = true,
 }) async {
   final market = _Market();
   final inventory = _Inventory(
@@ -180,11 +221,13 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
     walletInfo: wallet,
     nextPage: nextPage,
     games: games,
+    pendingOverview: pendingOverview,
   );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        autoLoginProvider.overrideWithValue(_AutoLogin()),
+        appControllerProvider.overrideWith(_Controller.new),
+        autoLoginProvider.overrideWithValue(autoLogin ?? _AutoLogin()),
         inventoryClientProvider.overrideWithValue(inventory),
         marketClientProvider.overrideWithValue(market),
       ],
@@ -210,7 +253,7 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
   return (
     market,
     inventory,
@@ -247,6 +290,197 @@ Future<void> _filter(WidgetTester tester, String control, String label) async {
 }
 
 void main() {
+  testWidgets('opening public market reads no private account data', (
+    tester,
+  ) async {
+    final login = _AutoLogin();
+    final (market, inventory, l) = await _show(
+      tester,
+      initialTab: 2,
+      autoLogin: login,
+    );
+    expect(tester.widget<TabBar>(find.byType(TabBar)).controller!.index, 2);
+    expect(find.widgetWithText(Tab, l.marketTabSearch), findsOneWidget);
+    expect(login.calls, 0);
+    expect(inventory.overviewCalls, 0);
+    expect(inventory.selectedInventories, isEmpty);
+    expect(market.listingsCalls, 0);
+    expect(market.priceQueries, isEmpty);
+    expect(
+      tester.widget<MarketSearchTab>(find.byType(MarketSearchTab)).active,
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('legacy initialTab one loads personal listings only', (
+    tester,
+  ) async {
+    final login = _AutoLogin();
+    final (market, inventory, _) = await _show(
+      tester,
+      initialTab: 1,
+      autoLogin: login,
+    );
+    expect(find.text('Active item'), findsOneWidget);
+    expect(login.calls, 1);
+    expect(market.listingsCalls, 1);
+    expect(inventory.overviewCalls, 0);
+    expect(inventory.selectedInventories, isEmpty);
+  });
+
+  testWidgets(
+    'refresh targets only the active tab and cached filters survive switching',
+    (tester) async {
+      final (market, inventory, l) = await _show(tester, initialTab: 0);
+      expect(inventory.overviewCalls, 1);
+      expect(inventory.selectedInventories, hasLength(1));
+      expect(market.listingsCalls, 0);
+      await tester.tap(find.byTooltip(l.commonRefresh));
+      await tester.pumpAndSettle();
+      expect(inventory.selectedInventories, hasLength(2));
+      expect(market.listingsCalls, 0);
+      await tester.enterText(
+        find.byKey(const ValueKey('inventory-search')),
+        'kept inventory query',
+      );
+      await tester.tap(find.widgetWithText(Tab, l.marketTabListings));
+      await tester.pumpAndSettle();
+      expect(market.listingsCalls, 1);
+      await tester.tap(find.byTooltip(l.commonRefresh));
+      await tester.pumpAndSettle();
+      expect(market.listingsCalls, 2);
+      expect(inventory.selectedInventories, hasLength(2));
+      await tester.tap(
+        find.widgetWithText(ChoiceChip, '${l.marketListingOnHold} (1)'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(Tab, l.marketTabSearch));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<MarketSearchTab>(find.byType(MarketSearchTab)).reload,
+        0,
+      );
+      await tester.tap(find.byTooltip(l.commonRefresh));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<MarketSearchTab>(find.byType(MarketSearchTab)).reload,
+        1,
+      );
+      expect(market.listingsCalls, 2);
+      expect(inventory.overviewCalls, 1);
+      expect(inventory.selectedInventories, hasLength(2));
+      await tester.tap(find.widgetWithText(Tab, l.marketTabListings));
+      await tester.pumpAndSettle();
+      expect(find.text('Held item'), findsOneWidget);
+      expect(find.text('Active item'), findsNothing);
+      expect(market.listingsCalls, 2);
+      expect(
+        tester
+            .widget<MarketSearchTab>(
+              find.byType(MarketSearchTab, skipOffstage: false),
+            )
+            .active,
+        isFalse,
+      );
+      await tester.tap(find.widgetWithText(Tab, l.marketTabInventory));
+      await tester.pumpAndSettle();
+      expect(inventory.selectedInventories, hasLength(2));
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const ValueKey('inventory-search')))
+            .controller!
+            .text,
+        'kept inventory query',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final initialTab in [0, 1]) {
+    testWidgets(
+      'switching away from tab $initialTab during sign-in defers its private fetch',
+      (tester) async {
+        final pending = Completer<AutoLoginOutcome>();
+        final login = _AutoLogin(pending: pending.future);
+        final (market, inventory, l) = await _show(
+          tester,
+          initialTab: initialTab,
+          autoLogin: login,
+          settle: false,
+        );
+        await tester.tap(find.widgetWithText(Tab, l.marketTabSearch));
+        await tester.pumpAndSettle();
+        pending.complete(AutoLoginOutcome.ok);
+        await tester.pumpAndSettle();
+        expect(inventory.overviewCalls, 0);
+        expect(inventory.selectedInventories, isEmpty);
+        expect(market.listingsCalls, 0);
+        await tester.tap(
+          find.widgetWithText(
+            Tab,
+            initialTab == 0 ? l.marketTabInventory : l.marketTabListings,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(login.calls, 2);
+        expect(inventory.overviewCalls, initialTab == 0 ? 1 : 0);
+        expect(market.listingsCalls, initialTab == 1 ? 1 : 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'overview finishing while hidden waits to fetch inventory items',
+    (tester) async {
+      final pending = Completer<InventoryOverview>();
+      final (market, inventory, l) = await _show(
+        tester,
+        initialTab: 0,
+        pendingOverview: pending.future,
+        settle: false,
+      );
+      await tester.pump();
+      expect(inventory.overviewCalls, 1);
+      await tester.tap(find.widgetWithText(Tab, l.marketTabSearch));
+      await tester.pumpAndSettle();
+      pending.complete(InventoryOverview(_defaultGames, WalletInfo.fallback));
+      await tester.pumpAndSettle();
+      expect(inventory.selectedInventories, isEmpty);
+      expect(market.listingsCalls, 0);
+      await tester.tap(find.widgetWithText(Tab, l.marketTabInventory));
+      await tester.pumpAndSettle();
+      expect(inventory.overviewCalls, 1);
+      expect(inventory.selectedInventories, hasLength(1));
+    },
+  );
+
+  testWidgets(
+    'successful sell marks hidden listings dirty until next activation',
+    (tester) async {
+      final (market, _, l) = await _show(
+        tester,
+        initialTab: 1,
+        items: [_categoryItem('1', 'Sellable item', 'Rifle', 'Rifle')],
+      );
+      expect(market.listingsCalls, 1);
+      await tester.tap(find.widgetWithText(Tab, l.marketTabInventory));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('inventory-730-2-1')));
+      await tester.pumpAndSettle();
+      expect(find.byType(SellSheet), findsOneWidget);
+      // Exercise the documented SellSheet result without issuing any trade.
+      tester.state<NavigatorState>(find.byType(Navigator)).pop(true);
+      await tester.pumpAndSettle();
+      expect(market.listingsCalls, 1);
+      await tester.tap(find.widgetWithText(Tab, l.marketTabListings));
+      await tester.pumpAndSettle();
+      expect(market.listingsCalls, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   const games = [
     InventoryGame(
       appid: 570,

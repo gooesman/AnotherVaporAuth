@@ -1,6 +1,7 @@
 import '../../services/debug_log.dart';
 import '../../services/steam_api_client.dart';
 import '../json_coerce.dart';
+import '../models/market_search.dart';
 import '../models/steam_guard_account.dart';
 import '../models/steam_item.dart';
 import 'community_session.dart';
@@ -26,6 +27,65 @@ class MarketClient {
 
   String _inventoryReferer(SteamGuardAccount a) =>
       '${SteamApiClient.communityBase}/profiles/${a.steamId}/inventory';
+
+  /// Reads one public search page, including its quoted prices. No account
+  /// cookies, login, retries, or per-item requests are needed. A caller's
+  /// SteamRequestScope supplies cancellation and its whole-operation deadline
+  /// through SteamApiClient (the search screen uses twelve seconds).
+  Future<MarketSearchPage> search({
+    required String query,
+    int? appid,
+    required int currency,
+    int start = 0,
+    int count = 20,
+  }) async {
+    if (appid != null && (appid <= 0 || appid > 0x7fffffff)) {
+      throw ArgumentError.value(appid, 'appid');
+    }
+    if (currency <= 0 || currency > 1000) {
+      throw ArgumentError.value(currency, 'currency');
+    }
+    if (start < 0 || start > 0x7fffffff - 20) {
+      throw ArgumentError.value(start, 'start');
+    }
+    if (count <= 0) throw ArgumentError.value(count, 'count');
+    if (query.length > 512 || RegExp(r'[\x00-\x1f\x7f]').hasMatch(query)) {
+      throw ArgumentError.value(query, 'query');
+    }
+    final pageSize = count.clamp(1, 20);
+    final json = await api.communityGetJson('/market/search/render/', {
+      'query': query.trim(),
+      'start': '$start',
+      'count': '$pageSize',
+      'search_descriptions': '0',
+      'sort_column': 'popular',
+      'sort_dir': 'desc',
+      if (appid != null) 'appid': '$appid',
+      'norender': '1',
+      'currency': '$currency',
+      'l': api.steamLanguage,
+    });
+    if (json['success'] != true &&
+        !(json['success'] is int && json['success'] == 1)) {
+      // A 429 can carry JSON diagnostics; the shared community transport
+      // preserves that body rather than the status. Keep Steam's explicit
+      // RateLimitExceeded code, without guessing from arbitrary message text.
+      final result = json['eresult'];
+      final rateLimited = (result is int && result == 84) || result == '84';
+      throw SteamApiException(
+        rateLimited ? 84 : 2,
+        rateLimited
+            ? 'Steam market search rate limited'
+            : 'Steam market search failed',
+        '/market/search/render/',
+      );
+    }
+    return MarketSearchPage.fromJson(
+      json,
+      expectedStart: start,
+      maximumPageSize: pageSize,
+    );
+  }
 
   /// Historical sale prices for the item (for a trend sparkline). Returns the
   /// most recent [points] price values, or empty on failure. Requires login.

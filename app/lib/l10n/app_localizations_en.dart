@@ -2964,4 +2964,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String forkUpdateSourceAccelerated(String provider) {
     return 'Direct acceleration · $provider';
   }
+
+  @override
+  String get marketTabSearch => 'Market';
+
+  @override
+  String get marketSearchHint => 'Search items, e.g. AK-47';
+
+  @override
+  String get marketSearchEmpty =>
+      'Choose a game and currency, then search for an item. Data loads only when you search.';
+
+  @override
+  String get marketSearchButton => 'Search market';
+
+  @override
+  String get marketSearchAllGames => 'All games';
+
+  @override
+  String get marketSearchGame => 'Game';
+
+  @override
+  String get marketSearchCurrency => 'Currency';
+
+  @override
+  String get marketSearchNoResults => 'No matching items. Try another search.';
+
+  @override
+  String get marketSearchMore => 'Load more';
+
+  @override
+  String marketSearchListings(int count) {
+    return 'Listings: $count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => 'Price unavailable';
+
+  @override
+  String get marketSearchPriceNote =>
+      'Reference prices may change. Currency is shown as returned by Steam.';
+
+  @override
+  String get marketSearchRefreshPrice => 'Refresh price';
+
+  @override
+  String get marketSearchRateLimited =>
+      'Steam is receiving too many requests. Please try again later.';
+
+  @override
+  String get marketSearchUnavailable =>
+      'Market items are unavailable right now. Please try again later.';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return 'Requested currency: $currency';
+  }
 }

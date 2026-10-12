@@ -940,5 +940,35 @@
   "forkUpdateSourceLabel": "下載來源",
   "forkUpdateSourceAutomatic": "自動加速（建議）",
   "forkUpdateSourceOfficial": "GitHub 官方",
-  "forkUpdateSourceAccelerated": "加速來源直連 · {provider}"
+  "forkUpdateSourceAccelerated": "加速來源直連 · {provider}",
+  "marketTabSearch": "市場",
+  "marketSearchHint": "搜尋商品名稱，例如 AK-47",
+  "marketSearchEmpty": "選擇遊戲和幣別，輸入商品名稱後搜尋。僅在搜尋時載入。",
+  "marketSearchButton": "搜尋市場",
+  "marketSearchAllGames": "全部遊戲",
+  "marketSearchGame": "遊戲",
+  "marketSearchCurrency": "幣別",
+  "marketSearchNoResults": "找不到相關商品，請嘗試其他關鍵字。",
+  "marketSearchMore": "載入更多",
+  "marketSearchListings": "上架數量：{count}",
+  "marketSearchPriceUnavailable": "暫無價格",
+  "marketSearchPriceNote": "參考價格可能變動，幣別以 Steam 回傳的報價為準。",
+  "marketSearchRefreshPrice": "更新價格",
+  "marketSearchRateLimited": "Steam 請求過多，請稍後再試。",
+  "marketSearchUnavailable": "暫時無法取得市場商品，請稍後再試。",
+  "@marketSearchListings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "marketSearchRequestedCurrency": "要求幣別：{currency}",
+  "@marketSearchRequestedCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -2986,4 +2986,61 @@ class AppLocalizationsDe extends AppLocalizations {
   String forkUpdateSourceAccelerated(String provider) {
     return 'Direkte Beschleunigung · $provider';
   }
+
+  @override
+  String get marketTabSearch => 'Markt';
+
+  @override
+  String get marketSearchHint => 'Artikel suchen, z. B. AK-47';
+
+  @override
+  String get marketSearchEmpty =>
+      'Spiel und Währung wählen, dann nach einem Artikel suchen. Daten werden erst bei der Suche geladen.';
+
+  @override
+  String get marketSearchButton => 'Markt durchsuchen';
+
+  @override
+  String get marketSearchAllGames => 'Alle Spiele';
+
+  @override
+  String get marketSearchGame => 'Spiel';
+
+  @override
+  String get marketSearchCurrency => 'Währung';
+
+  @override
+  String get marketSearchNoResults =>
+      'Keine passenden Artikel. Versuche einen anderen Suchbegriff.';
+
+  @override
+  String get marketSearchMore => 'Mehr laden';
+
+  @override
+  String marketSearchListings(int count) {
+    return 'Angebote: $count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => 'Preis nicht verfügbar';
+
+  @override
+  String get marketSearchPriceNote =>
+      'Richtpreise können sich ändern. Die Währung wird wie von Steam übermittelt angezeigt.';
+
+  @override
+  String get marketSearchRefreshPrice => 'Preis aktualisieren';
+
+  @override
+  String get marketSearchRateLimited =>
+      'Zu viele Anfragen an Steam. Bitte später erneut versuchen.';
+
+  @override
+  String get marketSearchUnavailable =>
+      'Marktartikel sind derzeit nicht verfügbar. Bitte später erneut versuchen.';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return 'Angefragte Währung: $currency';
+  }
 }

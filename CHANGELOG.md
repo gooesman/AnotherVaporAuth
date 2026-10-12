@@ -7,12 +7,18 @@ preview builds through its [manual release process](docs/fork-releases.md).
 
 ## [v1.5.5] — 2026-10-12 · Fork
 
+### Added
+- A read-only Market tab searches Steam items by name, game and currency, with reference prices and item details. Searches start only on explicit submission, load one page at a time and reuse recent results; inventory and listings also load only when their tabs are opened.
+
 ### Changed
 - Windows and Android are now named **gooes SteamKit**, with a shared goose icon across the app, installer and shortcuts. Existing AVA-pc and AVA Fork installations retain their accounts and update compatibility; the original author's MIT notice remains included.
 
 ### Fixed
 - Home remembers the username, nickname or Steam ID display choice after restarting on desktop and phone. The saved choice applies to the selected account and account list; a quick tap during startup takes precedence over the previous setting.
 - Windows shortcut migration recognizes equivalent short and long paths while preserving shortcuts for other installations.
+
+### 新增
+- “库存与市场”新增只读市场页，可按名称、游戏与币种搜索商品、查看参考价格和详情。仅手动搜索时请求，分批加载并复用近期结果；库存和出售也改为打开相应页签时才加载。
 
 ### 调整
 - 电脑和手机统一更名为 **gooes SteamKit**，应用、安装器与快捷方式使用新的大鹅图标；现有 AVA-pc／AVA Fork 可保留账户直接更新，并保留原作者 MIT 许可与署名。

@@ -2807,6 +2807,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String forkUpdateSourceAccelerated(String provider) {
     return '加速源直连 · $provider';
   }
+
+  @override
+  String get marketTabSearch => '市场';
+
+  @override
+  String get marketSearchHint => '搜索商品名称，例如 AK-47';
+
+  @override
+  String get marketSearchEmpty => '选择游戏和币种，输入商品名后搜索。仅在搜索时加载。';
+
+  @override
+  String get marketSearchButton => '搜索市场';
+
+  @override
+  String get marketSearchAllGames => '全部游戏';
+
+  @override
+  String get marketSearchGame => '游戏';
+
+  @override
+  String get marketSearchCurrency => '币种';
+
+  @override
+  String get marketSearchNoResults => '没有找到相关商品，试试其他关键词。';
+
+  @override
+  String get marketSearchMore => '加载更多';
+
+  @override
+  String marketSearchListings(int count) {
+    return '在售数量：$count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => '暂无价格';
+
+  @override
+  String get marketSearchPriceNote => '参考价格可能变化，币种以 Steam 返回的报价为准。';
+
+  @override
+  String get marketSearchRefreshPrice => '刷新价格';
+
+  @override
+  String get marketSearchRateLimited => 'Steam 请求过多，请稍后重试。';
+
+  @override
+  String get marketSearchUnavailable => '暂时无法获取市场商品，请稍后重试。';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return '请求币种：$currency';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5617,5 +5669,57 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String forkUpdateSourceAccelerated(String provider) {
     return '加速來源直連 · $provider';
+  }
+
+  @override
+  String get marketTabSearch => '市場';
+
+  @override
+  String get marketSearchHint => '搜尋商品名稱，例如 AK-47';
+
+  @override
+  String get marketSearchEmpty => '選擇遊戲和幣別，輸入商品名稱後搜尋。僅在搜尋時載入。';
+
+  @override
+  String get marketSearchButton => '搜尋市場';
+
+  @override
+  String get marketSearchAllGames => '全部遊戲';
+
+  @override
+  String get marketSearchGame => '遊戲';
+
+  @override
+  String get marketSearchCurrency => '幣別';
+
+  @override
+  String get marketSearchNoResults => '找不到相關商品，請嘗試其他關鍵字。';
+
+  @override
+  String get marketSearchMore => '載入更多';
+
+  @override
+  String marketSearchListings(int count) {
+    return '上架數量：$count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => '暫無價格';
+
+  @override
+  String get marketSearchPriceNote => '參考價格可能變動，幣別以 Steam 回傳的報價為準。';
+
+  @override
+  String get marketSearchRefreshPrice => '更新價格';
+
+  @override
+  String get marketSearchRateLimited => 'Steam 請求過多，請稍後再試。';
+
+  @override
+  String get marketSearchUnavailable => '暫時無法取得市場商品，請稍後再試。';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return '要求幣別：$currency';
   }
 }

@@ -77,6 +77,10 @@ Implemented and statically verified end-to-end:
   (`IFamilyGroupsService`)
 - Desktop window geometry persisted and refitted to the displays present
 - Inventory browse + Community Market list/cancel with live fees
+- A read-only Market search tab with explicit searches, currency/game filters,
+  paged prices and item details. No startup requests or per-row price polling;
+  five-minute bounded page caching and cancellation when hidden. Inventory and
+  personal listings load only on their active tabs.
 - Login (username/password + **QR login**), Steam Guard code, session refresh
 - Add authenticator (phone → SMS → revocation confirm)
 - **Move an existing authenticator to this device** (`RemoveAuthenticatorViaChallenge*`;
@@ -124,7 +128,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1376 tests pass** (crypto RFC vectors,
+Verification: `flutter analyze` clean, **1420 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -161,7 +165,7 @@ Do not uninstall the old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1376 tests
+flutter test                       # 1420 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 
