@@ -1180,7 +1180,7 @@ class AppController extends AsyncNotifier<AppData> {
       final targets = [
         for (final acc in target)
           if (acc.steamId != 0 && (only == null || only.contains(acc.steamId)))
-            acc,
+            _avatarAccountIdentity(acc),
       ];
       // Keep optional cosmetics from flooding startup connections on large
       // libraries. Four accounts make progress independently; each account's
@@ -1190,8 +1190,8 @@ class AppController extends AsyncNotifier<AppData> {
       Future<void> worker() async {
         while (next < targets.length) {
           if (!ref.mounted || state.value?.locked != false) return;
-          final account = targets[next++];
-          if (!state.value!.visibleAccounts.contains(account)) continue;
+          final account = _liveAvatarAccount(targets[next++]);
+          if (account == null) continue;
           results.add(await _refreshOneAvatar(account, svc));
         }
       }
@@ -1228,22 +1228,19 @@ class AppController extends AsyncNotifier<AppData> {
   ) async {
     final identity = _avatarAccountIdentity(acc);
     final requestSession = SessionData.fromJson(acc.session.toJson());
+    final originalTokens = (
+      requestSession.accessToken,
+      requestSession.refreshToken,
+    );
     // Reloads may replace instances without changing the account. Merge only
     // cosmetics onto that equivalent live instance; never save an old account
-    // object over an import, a changed session, or a removed source entry.
-    SteamGuardAccount? liveAccount() {
-      if (!ref.mounted) return null;
-      final current = state.value;
-      if (current == null || current.locked) return null;
-      final present = acc.fromPortable
-          ? current.portable?.ids.contains(acc.steamId) ?? false
-          : current.store.entries.any((entry) => entry.steamId == acc.steamId);
-      if (!present) return null;
-      for (final account in current.visibleAccounts) {
-        if (_avatarAccountIdentity(account) == identity) return account;
-      }
-      return null;
-    }
+    // object over an import or a removed source entry. A normal concurrent
+    // token rotation does not invalidate the account's public cosmetics.
+    SteamGuardAccount? liveAccount() => _liveAvatarAccount(identity);
+    bool unchangedSession(SteamGuardAccount? account) =>
+        account != null &&
+        (account.session.accessToken, account.session.refreshToken) ==
+            originalTokens;
 
     try {
       var accChanged = false;
@@ -1261,11 +1258,11 @@ class AppController extends AsyncNotifier<AppData> {
               requestSession.accessToken,
             );
           } on FrameUnauthorized {
-            if (liveAccount() == null) return;
+            if (!unchangedSession(liveAccount())) return;
             final refreshed = await SessionManager(
               ref.read(apiClientProvider),
             ).refresh(requestSession);
-            if (refreshed && liveAccount() != null) {
+            if (refreshed && unchangedSession(liveAccount())) {
               sessionRefreshed = true;
               try {
                 items = await svc.fetchEquippedItems(
@@ -1281,7 +1278,7 @@ class AppController extends AsyncNotifier<AppData> {
       ]);
       final target = liveAccount();
       if (target == null) return false;
-      if (sessionRefreshed) {
+      if (sessionRefreshed && unchangedSession(target)) {
         target.session
           ..accessToken = requestSession.accessToken
           ..refreshToken = requestSession.refreshToken;
@@ -1317,6 +1314,22 @@ class AppController extends AsyncNotifier<AppData> {
     }
   }
 
+  SteamGuardAccount? _liveAvatarAccount(Record identity) {
+    if (!ref.mounted) return null;
+    final current = state.value;
+    if (current == null || current.locked) return null;
+    for (final account in current.visibleAccounts) {
+      if (_avatarAccountIdentity(account) != identity) continue;
+      final present = account.fromPortable
+          ? current.portable?.ids.contains(account.steamId) ?? false
+          : current.store.entries.any(
+              (entry) => entry.steamId == account.steamId,
+            );
+      return present ? account : null;
+    }
+    return null;
+  }
+
   Record _avatarAccountIdentity(SteamGuardAccount account) => (
     account.steamId,
     account.fromPortable,
@@ -1329,8 +1342,6 @@ class AppController extends AsyncNotifier<AppData> {
     account.serialNumber,
     account.tokenGid,
     account.password,
-    account.session.accessToken,
-    account.session.refreshToken,
   );
 
   Future<List<SteamGuardAccount>?> _accountsWithPin(

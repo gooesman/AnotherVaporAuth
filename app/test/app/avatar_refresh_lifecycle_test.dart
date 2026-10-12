@@ -47,6 +47,27 @@ class _Avatars implements AvatarService {
   }
 }
 
+class _BatchAvatars extends _Avatars {
+  final profiles = <int, Completer<SteamProfile>>{};
+  final firstBatchStarted = Completer<void>();
+  final secondBatchStarted = Completer<void>();
+
+  @override
+  Future<SteamProfile> fetchProfile(int steamId) {
+    final response = Completer<SteamProfile>();
+    profiles[steamId] = response;
+    if (profiles.length == 4) firstBatchStarted.complete();
+    if (profiles.length == 6) secondBatchStarted.complete();
+    return response.future;
+  }
+
+  @override
+  Future<EquippedItems> fetchEquippedItems(
+    int steamId,
+    String? accessToken,
+  ) async => const EquippedItems();
+}
+
 class _Api extends SteamApiClient {
   final started = Completer<void>();
   final response = Completer<ProtoReader>();
@@ -102,42 +123,177 @@ class _Harness {
   }
 }
 
-Future<_Harness> _setup() async {
+Future<_Harness> _setup({int count = 1, _Avatars? avatars}) async {
   final storage = MemoryStorageProvider();
-  await AccountStore(storage).saveAccount(
-    SteamGuardAccount(
-      accountName: 'synthetic-avatar-user',
-      sharedSecret: 'synthetic-shared',
-      identitySecret: 'synthetic-identity',
-      password: 'old-password',
-      session: SessionData(
-        steamId: _id,
-        accessToken: 'old-access',
-        refreshToken: 'old-refresh',
+  final store = AccountStore(storage);
+  for (var i = 0; i < count; i++) {
+    await store.saveAccount(
+      SteamGuardAccount(
+        accountName: 'synthetic-avatar-user',
+        sharedSecret: 'synthetic-shared',
+        identitySecret: 'synthetic-identity',
+        password: 'old-password',
+        session: SessionData(
+          steamId: _id + i,
+          accessToken: 'old-access',
+          refreshToken: 'old-refresh',
+        ),
       ),
-    ),
-    false,
-  );
-  final avatars = _Avatars();
+      false,
+    );
+  }
+  final chosenAvatars = avatars ?? _Avatars();
   final api = _Api();
   final controller = _Controller();
   final container = ProviderContainer(
     overrides: [
       appControllerProvider.overrideWith(() => controller),
       storageProvider.overrideWithValue(storage),
-      avatarServiceProvider.overrideWithValue(avatars),
+      avatarServiceProvider.overrideWithValue(chosenAvatars),
       credentialStoreProvider.overrideWithValue(_Credentials()),
       apiClientProvider.overrideWithValue(api),
       timeAlignerProvider.overrideWithValue(() async {}),
     ],
   );
-  final harness = _Harness(storage, container, controller, avatars, api);
+  final harness = _Harness(storage, container, controller, chosenAvatars, api);
   addTearDown(harness.dispose);
   await container.read(appControllerProvider.future);
   return harness;
 }
 
 void main() {
+  test(
+    'normal concurrent token rotation preserves successful cosmetics',
+    () async {
+      final h = await _setup();
+      final refresh = h.controller.refreshAvatars();
+      h.account.session
+        ..accessToken = 'background-access'
+        ..refreshToken = 'background-refresh';
+      h.avatars.profile.complete(
+        const SteamProfile(personaName: 'fresh-persona'),
+      );
+      h.avatars.equipped.complete(const EquippedItems(frameUrl: 'fresh-frame'));
+      await refresh;
+      expect(h.account.personaName, 'fresh-persona');
+      expect(h.account.avatarFrameUrl, 'fresh-frame');
+      expect(h.account.session.accessToken, 'background-access');
+      expect(h.saved['Session']['RefreshToken'], 'background-refresh');
+      expect(h.api.exchanges, 0);
+    },
+  );
+
+  test(
+    'late 401 does not renew a session another caller already rotated',
+    () async {
+      final h = await _setup();
+      final refresh = h.controller.refreshAvatars();
+      h.account.session
+        ..accessToken = 'background-access'
+        ..refreshToken = 'background-refresh';
+      h.avatars.equipped.completeError(FrameUnauthorized());
+      h.avatars.profile.complete(
+        const SteamProfile(personaName: 'fresh-persona'),
+      );
+      await refresh;
+      expect(h.api.exchanges, 0);
+      expect(h.avatars.tokens, ['old-access']);
+      expect(h.account.personaName, 'fresh-persona');
+      expect(h.saved['Session']['AccessToken'], 'background-access');
+    },
+  );
+
+  test(
+    'rotation during avatar renewal prevents stale retry and token writeback',
+    () async {
+      final h = await _setup();
+      final refresh = h.controller.refreshAvatars();
+      h.avatars.equipped.completeError(FrameUnauthorized());
+      await h.api.started.future;
+      h.account.session
+        ..accessToken = 'background-access'
+        ..refreshToken = 'background-refresh';
+      h.api.complete();
+      h.avatars.profile.complete(
+        const SteamProfile(personaName: 'fresh-persona'),
+      );
+      await refresh;
+      expect(h.api.exchanges, 1);
+      expect(h.avatars.tokens, ['old-access']);
+      expect(h.account.personaName, 'fresh-persona');
+      expect(h.saved['Session']['AccessToken'], 'background-access');
+      expect(h.saved['Session']['RefreshToken'], 'background-refresh');
+    },
+  );
+
+  test(
+    'a reload between batches preserves all queued account refreshes',
+    () async {
+      final avatars = _BatchAvatars();
+      final h = await _setup(count: 6, avatars: avatars);
+      final refresh = h.controller.refreshAvatars();
+      await avatars.firstBatchStarted.future;
+      expect(avatars.profiles.keys, [_id, _id + 1, _id + 2, _id + 3]);
+      await h.controller.reload();
+      for (var i = 0; i < 4; i++) {
+        avatars.profiles[_id + i]!.complete(
+          SteamProfile(personaName: 'profile-$i'),
+        );
+      }
+      await avatars.secondBatchStarted.future.timeout(
+        const Duration(seconds: 2),
+      );
+      for (var i = 4; i < 6; i++) {
+        avatars.profiles[_id + i]!.complete(
+          SteamProfile(personaName: 'profile-$i'),
+        );
+      }
+      await refresh;
+      final accounts = h.container.read(appControllerProvider).value!.accounts;
+      expect(accounts, hasLength(6));
+      for (var i = 0; i < 6; i++) {
+        expect(
+          accounts
+              .singleWhere((account) => account.steamId == _id + i)
+              .personaName,
+          'profile-$i',
+        );
+        expect(h.storage.files['${_id + i}.maFile'], contains('profile-$i'));
+      }
+    },
+  );
+
+  test(
+    'queued identities are frozen and skip edited or removed accounts',
+    () async {
+      final avatars = _BatchAvatars();
+      final h = await _setup(count: 6, avatars: avatars);
+      final accounts = h.container.read(appControllerProvider).value!.accounts;
+      final refresh = h.controller.refreshAvatars();
+      await avatars.firstBatchStarted.future;
+      // Mutate the queued object itself: a live reference is not a snapshot.
+      accounts[4].password = 'replacement-password';
+      await h.container
+          .read(appControllerProvider)
+          .value!
+          .store
+          .saveAccount(accounts[4], false);
+      await h.controller.removeAccount(accounts[5]);
+      for (var i = 0; i < 4; i++) {
+        avatars.profiles[_id + i]!.complete(
+          SteamProfile(personaName: 'profile-$i'),
+        );
+      }
+      await refresh;
+      expect(avatars.profiles.keys, [_id, _id + 1, _id + 2, _id + 3]);
+      expect(
+        h.storage.files['${_id + 4}.maFile'],
+        contains('replacement-password'),
+      );
+      expect(h.storage.files.containsKey('${_id + 5}.maFile'), isFalse);
+    },
+  );
+
   test('late avatar results never restore a deleted local account', () async {
     final h = await _setup();
     final account = h.account;
