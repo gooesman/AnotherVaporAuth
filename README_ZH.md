@@ -1,7 +1,7 @@
 <h1 align="center">
   <img src="app/assets/icon/gooes_steamkit.png" height="64" width="64" />
   <br/>
-  gooes SteamKit
+  GooeSteamKit
 </h1>
 
 <p align="center">
@@ -27,12 +27,13 @@
 
 ## 关于本分支
 
-**gooes SteamKit** 是 gooesman 基于 freefrank 的 AVA 维护的独立 Fork。本地功能和所有皮肤直接开放，
+**GooeSteamKit** 是 gooesman 基于 freefrank 的 AVA 维护的独立 Fork。本地功能和所有皮肤直接开放，
 无需 Pro 验证或付费；保留原作者的 MIT 许可及署名。正式安装包见
 [本分支发布页](https://github.com/gooesman/AnotherVaporAuth/releases/latest)，试用包来自
 [本分支构建](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml)，
-下方下载链接仍属于原项目。电脑端与手机端现统一名为 **gooes SteamKit**，使用同款盾牌大鹅设计
-（此前分别为 **AVA-pc** 和 **AVA Fork**）。手机桌面短名称为 **gooesteamkit**，应用全名保持不变。
+下方下载链接仍属于原项目。本文描述当前源码，安装更新以正式发布页为准。
+电脑端与手机端的应用名称、桌面标签统一为 **GooeSteamKit**，使用同款盾牌大鹅设计
+（此前分别为 **AVA-pc** 和 **AVA Fork**）。
 Android 8 及以上使用矢量前景与纯色背景组成的自适应图标；较旧系统使用新版盾牌图案 PNG。
 可在设置里的“软件更新”中查询
 本分支正式发布的版本、下载并打开安装程序；手机端也有同样入口，由系统确认安装。
@@ -41,10 +42,12 @@ Android 8 及以上使用矢量前景与纯色背景组成的自适应图标；�
 并按 GitHub 官方元数据进行整包 SHA-256 校验。
 
 Android 保持 **AVA Fork** 的包名（`pro.dotslash.ava.fork`）和固定签名，仍是 ARM64
-release 优化构建。现有 AVA Fork 可直接覆盖更新为 gooes SteamKit，保留账号和设置，
+release 优化构建。现有 AVA Fork 可直接覆盖更新为 GooeSteamKit，保留账号和设置，
 无需重新导入。原版 AVA 和此前的 **AVA dev** 则仍独立保留，首次迁移需另装后导入各账号的
 `.maFile`。Windows 保留原有程序及数据路径；安装包文件名保留 `AVA-pc-`、`AVA-Fork-`
-前缀，以便旧版应用内更新器识别新版。详见[安装与迁移步骤](docs/windows-steam-switch.md#android-installation-and-migration)。
+前缀，以便旧版应用内更新器识别新版。Windows 安装包附带按内容哈希命名的独立图标文件；
+更新时对指向当前安装的既有桌面、开始菜单快捷方式改名并刷新图标，图案变化会使用新的图标路径，
+保留指向其他安装的快捷方式。详见[安装与迁移步骤](docs/windows-steam-switch.md#android-installation-and-migration)。
 
 ## 原项目下载
 
@@ -97,7 +100,7 @@ release 优化构建。现有 AVA Fork 可直接覆盖更新为 gooes SteamKit�
 
 - **maFile 兼容** —— 读写旧版 `.maFile` 格式（PBKDF2/SHA1 + AES-256-CBC），老账户零成本迁移，随时可导出。还能导入整个 Steam Desktop Authenticator 的 `maFiles/` 文件夹——**包括加密的**（把 `manifest.json` 和 `.maFile` 一起选中；salt 与 IV 存在 manifest 里，孤立的加密 maFile 谁也解不开）——以及其他工具的变体（Steam++ / Watt Toolkit），包括没有 SteamID 的导出（作为「仅验证码」账户导入，验证码离线可用）。
 - **Steam Guard 验证码** —— 每账户列表 + 实时倒计时环、点按复制；点名称在 用户名 / 昵称 / ID 间切换。显示方式同时应用于首页账户列表和当前账户面板，在本机保存，电脑和手机重启应用后都会恢复上次选择。
-- **应用内批准登录** —— 在 gooes SteamKit 内弹窗批准/拒绝 Steam 登录（显示设备 + 位置），与官方 App 一致，基于轮询、无需推送。
+- **应用内批准登录** —— 在 GooeSteamKit 内弹窗批准/拒绝 Steam 登录（显示设备 + 位置），与官方 App 一致，基于轮询、无需推送。
 - **待办中心** —— 一个带页签的界面（手机账户右滑、电脑账户右键进入），集中处理所有等你决定的事：
   **确认**（交易 / 市场，批量接受/拒绝，原生 JSON、无内嵌 WebView）、**报价**
   （收到 / 发出 / 历史，可展开卡片显示双方物品，赠送 / 只给不收 / 暂挂警示条，

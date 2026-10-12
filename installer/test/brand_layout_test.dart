@@ -20,7 +20,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         final title = find.byType(GlitchTitle);
-        expect(tester.widget<GlitchTitle>(title).text, 'gooes SteamKit');
+        expect(tester.widget<GlitchTitle>(title).text, 'GooeSteamKit');
         expect(
           find.text('$appDisplayName ${uninstall ? 'UNINSTALL' : 'SETUP'}'),
           findsOneWidget,

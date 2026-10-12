@@ -1,6 +1,6 @@
-# gooes SteamKit 隐私说明
+# GooeSteamKit 隐私说明
 
-更新日期：2026-10-12。本文适用于 **gooes SteamKit**，即 gooesman 基于 freefrank
+更新日期：2026-10-12。本文适用于 **GooeSteamKit**，即 gooesman 基于 freefrank
 的 AVA 维护的独立 Fork，提供 Windows 和 Android 版本。此前两端分别名为
 **AVA-pc** 和 **AVA Fork**。名称和图标变更保留原有数据路径及 Android 包名、签名，
 现有 AVA Fork 用户无需重新导入账号。
@@ -20,7 +20,7 @@ Steam 加速是可选项，默认手动启动。订阅地址和筛选后的节�
 只向该来源发送为 HTTP Basic 认证。HTTP 订阅的地址、凭据和响应以明文传输；
 这不会改变 Steam 连接和组件下载的 TLS 校验。Windows 首次使用从固定的上游 GitHub Release
 下载组件；Android 安装包内含同一组件。组件使用受保护的本地监听端口，通过内存
-接收配置，不保留运行日志。gooes SteamKit 在本机检测系统代理及 VPN 信息以暂停内置组件，
+接收配置，不保留运行日志。GooeSteamKit 在本机检测系统代理及 VPN 信息以暂停内置组件，
 不会上传这些信息，也不修改系统代理、DNS 或证书。
 连接检查通过当前实际线路访问 Steam 公开接口和社区，不携带账户 Cookie 或令牌。
 检查在相关线路变化、返回前台且旧结果过期后或你手动点击时进行，不持续轮询 Steam；检查结果只说明

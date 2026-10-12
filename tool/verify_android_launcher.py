@@ -210,7 +210,7 @@ def verify(apk, source_root):
         aliases = [node for node in nodes if node["name"] == "activity-alias"]
         manifest = next(node for node in nodes if node["name"] == "manifest")
         assert manifest["attrs"]["package"] == "pro.dotslash.ava.fork"
-        assert label(application["attrs"]["label"]) == ["gooes SteamKit"]
+        assert label(application["attrs"]["label"]) == ["GooeSteamKit"]
         assert len(aliases) == 2
         assert {
             alias["attrs"]["name"].rsplit(".", 1)[-1] for alias in aliases
@@ -222,8 +222,8 @@ def verify(apk, source_root):
             alias_label = label(
                 attributes.get("label", application["attrs"]["label"])
             )
-            assert alias_label == ["gooesteamkit"], (
-                f"{name}: expected launcher label gooesteamkit, got {alias_label}"
+            assert alias_label == ["GooeSteamKit"], (
+                f"{name}: expected launcher label GooeSteamKit, got {alias_label}"
             )
             assert attributes["enabled"] == (name == "LauncherNeon")
             options = choices(attributes["icon"])

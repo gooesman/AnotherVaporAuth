@@ -31,11 +31,11 @@ def utf8_pool(strings):
 class AndroidBinaryResourceTests(unittest.TestCase):
     def test_compact_entries_use_key_and_type_from_the_entry_itself(self):
         keys = ["ava_launcher_label", "ic_launcher"]
-        strings = ["gooesteamkit"]
+        strings = ["GooeSteamKit"]
         compact_string = struct.pack("<HHI", 0, (3 << 8) | 8, 0)
         self.assertEqual(
             verifier.table_entry(compact_string, 0, keys, strings),
-            ("ava_launcher_label", "gooesteamkit"),
+            ("ava_launcher_label", "GooeSteamKit"),
         )
         compact_reference = struct.pack("<HHI", 1, (1 << 8) | 8, 0x7F08002A)
         self.assertEqual(
@@ -46,14 +46,14 @@ class AndroidBinaryResourceTests(unittest.TestCase):
     def test_full_entry_reads_value_after_declared_header(self):
         full_string = struct.pack("<HHIHBBI", 8, 0, 0, 8, 0, 3, 0)
         self.assertEqual(
-            verifier.table_entry(full_string, 0, ["label"], ["gooesteamkit"]),
-            ("label", "gooesteamkit"),
+            verifier.table_entry(full_string, 0, ["label"], ["GooeSteamKit"]),
+            ("label", "GooeSteamKit"),
         )
         with self.assertRaises(AssertionError):
             verifier.table_entry(struct.pack("<HHI", 0, 9, 0), 0, [], [])
 
     def test_utf8_pool_uses_byte_and_utf16_lengths_independently(self):
-        strings = ["gooesteamkit", "鹅🪿" * 70, ""]
+        strings = ["GooeSteamKit", "鹅🪿" * 70, ""]
         self.assertEqual(verifier.pool(utf8_pool(strings), 0), strings)
 
     def test_utf16_pool_decodes_non_ascii_resource_names(self):

@@ -1,6 +1,6 @@
-# gooes SteamKit — Steam authenticator and account toolkit (Flutter)
+# GooeSteamKit — Steam authenticator and account toolkit (Flutter)
 
-gooes SteamKit is a lightweight Steam authenticator and account toolkit based on
+GooeSteamKit is a lightweight Steam authenticator and account toolkit based on
 freefrank's AVA (AnotherVaporAuth), built with Flutter. This fork publishes
 **Windows / Android** installers; the shared codebase retains the original
 project's macOS and Linux support. **maFiles are fully
@@ -9,9 +9,9 @@ migration.
 
 See the design spec: `../docs/specs/2026-06-29-flutter-rewrite-design.md`
 
-Windows and Android retain the full app name **gooes SteamKit** and share the
-[goose-and-shield design](assets/icon/gooes_steamkit.png). Android uses the shorter
-home-screen label **gooesteamkit**. Windows and older Android versions use raster
+Windows and Android use **GooeSteamKit** for both the app name and home-screen
+labels, sharing the [goose-and-shield design](assets/icon/gooes_steamkit.png).
+Windows and older Android versions use raster
 artwork; Android 8+ uses a native `VectorDrawable` foreground over a solid dark
 background, with the launcher supplying its own mask. Both Android launcher
 aliases reference the same adaptive design. The vector resource in
@@ -21,7 +21,10 @@ the existing executable and data paths. Android keeps the AVA Fork package and
 signing identity, so existing **AVA Fork** installations update in place without
 reimporting accounts. The original AVA and earlier AVA dev use separate packages
 and require the one-time migration described below. Release filenames keep the
-`AVA-pc-` and `AVA-Fork-` prefixes for older in-app updaters.
+`AVA-pc-` and `AVA-Fork-` prefixes for older in-app updaters. Windows packages a
+separate ICO named by its content hash and refreshes existing desktop and
+Start-menu shortcuts belonging to this installation with the current name and
+icon path. Shortcuts targeting other installations remain untouched.
 
 ## Architecture
 
@@ -43,7 +46,7 @@ lib/src/
 l10n/                   # ARB localizations (en, zh, zh_Hant, de, fr, es, ru)
 ```
 
-## Status (1.5.6)
+## Status (1.5.7)
 
 Implemented and statically verified end-to-end:
 
@@ -113,7 +116,7 @@ Implemented and statically verified end-to-end:
 - **Software updates** — Settings opens this fork's public GitHub release check.
   Download is explicit and cancellable; file size and SHA-256 are verified before
   a separate install confirmation. Android uses its system permission and installer,
-  while Windows starts the installer and then closes gooes SteamKit. No release, network
+  while Windows starts the installer and then closes GooeSteamKit. No release, network
   failure and an unverifiable package are distinct states, never silent installation.
 - **Block screenshots** — opt-in `FLAG_SECURE` toggle (Android only; off by
   default, since it also blanks screen sharing and feedback screenshots)
@@ -134,7 +137,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Verification: `flutter analyze` clean, **1420 tests pass** (crypto RFC vectors,
+Last recorded verification: `flutter analyze` clean, **1420 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -160,8 +163,8 @@ The original project's recorded **Linux desktop and Android release checks**:
   Android builds use the NDK version selected by Flutter.
 
 This fork's Android workflow produces an **ARM64 CN optimized release-mode preview** named
-**gooes SteamKit** (`pro.dotslash.ava.fork`), with the **gooesteamkit** home-screen
-label, signed with the same stable private fork key as earlier **AVA Fork** builds.
+**GooeSteamKit** (`pro.dotslash.ava.fork`), with the same home-screen label,
+signed with the same stable private fork key as earlier **AVA Fork** builds.
 A higher Android version code updates
 an existing AVA Fork installation directly, retaining its accounts and settings.
 It installs alongside the original AVA and earlier AVA dev preview. Only that
@@ -200,12 +203,12 @@ Notes:
   `afterEvaluate` (file_picker 8.x pins 34, which breaks the release build).
 - The fork preview workflow sets `ORG_GRADLE_PROJECT_avaForkPreview=true`
   (equivalent to Gradle `-PavaForkPreview=true`). This selects the existing AVA Fork
-  package with the gooes SteamKit app name and gooesteamkit home-screen label,
+  package with the GooeSteamKit app name and GooeSteamKit home-screen label,
   and uses `android/key.properties`
   (git-ignored) to sign the optimized release APK. Missing signing fields or the
   keystore fail the build; no temporary debug
   key is substituted. Without that property, ordinary debug builds remain
-  **AVA dev** and do not update the AVA Fork / gooes SteamKit package.
+  **AVA dev** and do not update the AVA Fork / GooeSteamKit package.
 - Release signing also comes from `android/key.properties`. Release artifacts
   fail closed without it; `-PallowDebugSigning=true` explicitly permits the
   public debug-key fallback for local experiments only.

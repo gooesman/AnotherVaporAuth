@@ -13,7 +13,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamSwitchHelp =>
-      'Cambia entre cuentas que ya hayan iniciado sesión en Steam en este PC y cuyos datos de acceso estén guardados. Importar un autenticador a gooes SteamKit no inicia sesión con esa cuenta en el cliente de Steam.';
+      'Cambia entre cuentas que ya hayan iniciado sesión en Steam en este PC y cuyos datos de acceso estén guardados. Importar un autenticador a GooeSteamKit no inicia sesión con esa cuenta en el cliente de Steam.';
 
   @override
   String get steamSwitchPath => 'Carpeta de instalación de Steam';
@@ -31,7 +31,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'La cuenta seleccionada en gooes SteamKit no aparece en los registros de Steam de este PC. Inicia sesión con esa cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.';
+      'La cuenta seleccionada en GooeSteamKit no aparece en los registros de Steam de este PC. Inicia sesión con esa cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.';
 
   @override
   String get steamSwitchNeedsLogin =>
@@ -94,7 +94,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'El cambio de cuenta falló y no se pudieron restaurar algunos ajustes. Conserva la copia de seguridad indicada abajo y restaura los ajustes antes de volver a intentarlo.';
 
   @override
-  String get appTitle => 'gooes SteamKit';
+  String get appTitle => 'GooeSteamKit';
 
   @override
   String get navAccounts => 'Cuentas';
@@ -139,7 +139,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get storeErrorBody =>
-      'La base de datos local de cuentas de gooes SteamKit (manifest.json) falta o está dañada. Puede ocurrir tras una escritura interrumpida o una restauración incompleta. Reintenta primero; si sigue fallando, restablece y vuelve a importar tus copias de los maFiles.';
+      'La base de datos local de cuentas de GooeSteamKit (manifest.json) falta o está dañada. Puede ocurrir tras una escritura interrumpida o una restauración incompleta. Reintenta primero; si sigue fallando, restablece y vuelve a importar tus copias de los maFiles.';
 
   @override
   String get storeRepair => 'Intentar reparar';
@@ -154,7 +154,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pinSetupPrompt =>
-      'Protege gooes SteamKit con un PIN de 6 dígitos. Lo usarás (o tu huella) para desbloquear.';
+      'Protege GooeSteamKit con un PIN de 6 dígitos. Lo usarás (o tu huella) para desbloquear.';
 
   @override
   String get pinLabel => 'PIN de 6 dígitos';
@@ -184,14 +184,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pinMismatch => 'Los PIN no coinciden.';
 
   @override
-  String get unlockBiometricReason => 'Desbloquear gooes SteamKit';
+  String get unlockBiometricReason => 'Desbloquear GooeSteamKit';
 
   @override
   String get settingsBiometric => 'Usar desbloqueo del dispositivo';
 
   @override
   String get settingsBiometricDesc =>
-      'Con la verificación al iniciar activada, usa la huella, Windows Hello o la clave del dispositivo en lugar del PIN de gooes SteamKit. Al desactivar la verificación, esta opción también se desactiva; vuelve a habilitarla por separado.';
+      'Con la verificación al iniciar activada, usa la huella, Windows Hello o la clave del dispositivo en lugar del PIN de GooeSteamKit. Al desactivar la verificación, esta opción también se desactiva; vuelve a habilitarla por separado.';
 
   @override
   String get settingsBiometricNeedPasskey =>
@@ -234,7 +234,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      'Oculta gooes SteamKit en las capturas, la grabación de pantalla y la vista de apps recientes. También deja la ventana en negro al compartir pantalla y te impide adjuntar capturas a los comentarios.';
+      'Oculta GooeSteamKit en las capturas, la grabación de pantalla y la vista de apps recientes. También deja la ventana en negro al compartir pantalla y te impide adjuntar capturas a los comentarios.';
 
   @override
   String get passkeyLabel => 'Clave de cifrado';
@@ -304,7 +304,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsTutorialReplay => 'Repetir';
 
   @override
-  String get welcomeTitle => 'Te damos la bienvenida a gooes SteamKit';
+  String get welcomeTitle => 'Te damos la bienvenida a GooeSteamKit';
 
   @override
   String get welcomeSubtitle =>
@@ -874,7 +874,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backupReminderBody =>
-      'gooes SteamKit guarda los datos de tu autenticador solo en este dispositivo. Copia tus maFiles en un lugar seguro. El código de revocación (código R) se muestra una sola vez, al añadir el autenticador por primera vez: apúntalo y guárdalo en ese momento; es tu último recurso para eliminar el autenticador si algún día pierdes este dispositivo.';
+      'GooeSteamKit guarda los datos de tu autenticador solo en este dispositivo. Copia tus maFiles en un lugar seguro. El código de revocación (código R) se muestra una sola vez, al añadir el autenticador por primera vez: apúntalo y guárdalo en ese momento; es tu último recurso para eliminar el autenticador si algún día pierdes este dispositivo.';
 
   @override
   String get backupReminderOk => 'Entendido';
@@ -1272,7 +1272,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return 'El autenticador se movió a esta cuenta, pero gooes SteamKit NO pudo guardarlo en este dispositivo. Tu autenticador anterior ya no funciona, así que estas son las únicas copias: apúntalas AHORA, antes de cerrar esta pantalla.\n\nCódigo de revocación: $code\n\nSecreto: $secret';
+    return 'El autenticador se movió a esta cuenta, pero GooeSteamKit NO pudo guardarlo en este dispositivo. Tu autenticador anterior ya no funciona, así que estas son las únicas copias: apúntalas AHORA, antes de cerrar esta pantalla.\n\nCódigo de revocación: $code\n\nSecreto: $secret';
   }
 
   @override
@@ -1289,7 +1289,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get moveInRescueDismissBody =>
-      'gooes SteamKit no conserva ninguna otra copia. Si no has apuntado el código de revocación y el secreto, perderás para siempre el acceso a este autenticador.';
+      'GooeSteamKit no conserva ninguna otra copia. Si no has apuntado el código de revocación y el secreto, perderás para siempre el acceso a este autenticador.';
 
   @override
   String get moveInRescueDismissConfirm => 'Ya los he guardado';
@@ -1420,7 +1420,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get privacyUpdateBody =>
-      'El aviso de privacidad ha cambiado desde que lo aceptaste. Novedad: gooes SteamKit ahora puede sincronizar tu biblioteca de cuentas entre tus dispositivos, a través de un servidor que tú elijas — desactivado por defecto, todo se cifra en este dispositivo antes de subirse y el desarrollador no opera ningún servidor de sincronización. Lee el aviso actual más abajo.';
+      'El aviso de privacidad ha cambiado desde que lo aceptaste. Novedad: GooeSteamKit ahora puede sincronizar tu biblioteca de cuentas entre tus dispositivos, a través de un servidor que tú elijas — desactivado por defecto, todo se cifra en este dispositivo antes de subirse y el desarrollador no opera ningún servidor de sincronización. Lee el aviso actual más abajo.';
 
   @override
   String get privacyConsentScrollHint =>
@@ -2127,7 +2127,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get netErrCert =>
-      'El certificado de Steam no era de confianza, así que gooes SteamKit cerró la conexión. Puede que algo en esta red esté inspeccionando el tráfico.';
+      'El certificado de Steam no era de confianza, así que GooeSteamKit cerró la conexión. Puede que algo en esta red esté inspeccionando el tráfico.';
 
   @override
   String netErrServer(int code) {
@@ -2341,7 +2341,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsStartupVerificationDesc =>
-      'Si se activa, abrir gooes SteamKit requiere tu PIN o la autenticación del sistema. Si se desactiva, cualquiera que use este dispositivo podrá abrir gooes SteamKit; los archivos locales de las cuentas seguirán cifrados.';
+      'Si se activa, abrir GooeSteamKit requiere tu PIN o la autenticación del sistema. Si se desactiva, cualquiera que use este dispositivo podrá abrir GooeSteamKit; los archivos locales de las cuentas seguirán cifrados.';
 
   @override
   String get settingsStartupVerificationError =>
@@ -2409,7 +2409,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backupCodesExplanation =>
-      'Estos códigos de inicio de sesión son de un solo uso y son distintos del código para eliminar el autenticador. Steam los emite y administra. gooes SteamKit abre el proceso oficial y no genera ni almacena estos códigos.';
+      'Estos códigos de inicio de sesión son de un solo uso y son distintos del código para eliminar el autenticador. Steam los emite y administra. GooeSteamKit abre el proceso oficial y no genera ni almacena estos códigos.';
 
   @override
   String get backupCodesOpenSteam => 'Abrir Steam para obtener códigos';
@@ -2441,29 +2441,29 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamSwitchQrTitle =>
-      'Iniciar sesión con una cuenta de gooes SteamKit';
+      'Iniciar sesión con una cuenta de GooeSteamKit';
 
   @override
   String get steamSwitchQrHelp =>
-      'Elige una cuenta de gooes SteamKit, muestra el QR de inicio de sesión de Steam, escanéalo y revisa la solicitud.';
+      'Elige una cuenta de GooeSteamKit, muestra el QR de inicio de sesión de Steam, escanéalo y revisa la solicitud.';
 
   @override
-  String get steamSwitchQrAccount => 'Cuenta de gooes SteamKit';
+  String get steamSwitchQrAccount => 'Cuenta de GooeSteamKit';
 
   @override
   String get steamSwitchQrNeedsSession =>
-      'Primero vuelve a iniciar sesión en esta cuenta en gooes SteamKit. Un código de Steam Guard sin conexión no basta para aprobar un inicio mediante QR.';
+      'Primero vuelve a iniciar sesión en esta cuenta en GooeSteamKit. Un código de Steam Guard sin conexión no basta para aprobar un inicio mediante QR.';
 
   @override
   String get steamSwitchQrNoAccounts =>
-      'Añade una cuenta a gooes SteamKit para iniciar sesión mediante QR.';
+      'Añade una cuenta a GooeSteamKit para iniciar sesión mediante QR.';
 
   @override
   String get approveScreenSelect => 'Seleccionar un QR en la pantalla';
 
   @override
   String get approveScreenHelp =>
-      'gooes SteamKit se ocultará brevemente. Arrastra un marco alrededor del QR de Steam y comprueba la cuenta y el dispositivo antes de aprobar.';
+      'GooeSteamKit se ocultará brevemente. Arrastra un marco alrededor del QR de Steam y comprueba la cuenta y el dispositivo antes de aprobar.';
 
   @override
   String get approveScreenInstruction =>
@@ -2598,11 +2598,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get forkUpdateInstallAndroid =>
-      'Se abrirá el instalador del sistema. Si se solicita, permite que gooes SteamKit instale aplicaciones y sigue las instrucciones.';
+      'Se abrirá el instalador del sistema. Si se solicita, permite que GooeSteamKit instale aplicaciones y sigue las instrucciones.';
 
   @override
   String get forkUpdateInstallWindows =>
-      'Se abrirá el instalador y se cerrará gooes SteamKit. Termina primero tu trabajo actual y sigue las instrucciones del instalador.';
+      'Se abrirá el instalador y se cerrará GooeSteamKit. Termina primero tu trabajo actual y sigue las instrucciones del instalador.';
 
   @override
   String get forkUpdateInstallConfirm => 'Continuar instalación';
@@ -2647,7 +2647,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get forkUpdatePermissionRequired =>
-      'Permite que gooes SteamKit instale aplicaciones y vuelve aquí para instalar';
+      'Permite que GooeSteamKit instale aplicaciones y vuelve aquí para instalar';
 
   @override
   String get forkUpdateOpenPermissionSettings =>
@@ -2683,7 +2683,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backupCodesKeepSafe =>
-      'Cada código se puede usar una vez. Guarda una copia impresa en un lugar seguro. gooes SteamKit no guarda los códigos; al salir de la página o cambiar de aplicación se borran de la pantalla. Steam envía un correo al generarlos o usarlos.';
+      'Cada código se puede usar una vez. Guarda una copia impresa en un lugar seguro. GooeSteamKit no guarda los códigos; al salir de la página o cambiar de aplicación se borran de la pantalla. Steam envía un correo al generarlos o usarlos.';
 
   @override
   String get backupCodesClear => 'Borrar códigos';
@@ -2716,7 +2716,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamAccelerationDesc =>
-      'Acelera solo las solicitudes de gooes SteamKit a Steam, sin afectar a otras aplicaciones.';
+      'Acelera solo las solicitudes de GooeSteamKit a Steam, sin afectar a otras aplicaciones.';
 
   @override
   String get steamAccelerationOff => 'Desactivada';
@@ -2791,7 +2791,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamAccelerationAutoDesc =>
-      'Iniciar al abrir gooes SteamKit; pausar la aceleración integrada cuando se detecte un proxy externo.';
+      'Iniciar al abrir GooeSteamKit; pausar la aceleración integrada cuando se detecte un proxy externo.';
 
   @override
   String get steamAccelerationEnvironment => 'Detección de proxy externo';
@@ -2903,7 +2903,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get steamConnectionFailed => 'Error de conexión';
 
   @override
-  String get steamConnectionInternal => 'Ruta interna de gooes SteamKit';
+  String get steamConnectionInternal => 'Ruta interna de GooeSteamKit';
 
   @override
   String get steamConnectionExternal => 'Proxy HTTP externo';
@@ -2922,11 +2922,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamConnectionNoVpnIcon =>
-      'Solo se enrutan las solicitudes de Steam dentro de gooes SteamKit, por lo que Android no muestra un icono de VPN. No acelera la aplicación Steam ni otras aplicaciones.';
+      'Solo se enrutan las solicitudes de Steam dentro de GooeSteamKit, por lo que Android no muestra un icono de VPN. No acelera la aplicación Steam ni otras aplicaciones.';
 
   @override
   String get steamConnectionScope =>
-      'Comprueba la API y la Comunidad de Steam por la ruta actual de gooes SteamKit sin credenciales. El resultado corresponde a esta comprobación, no a una supervisión continua.';
+      'Comprueba la API y la Comunidad de Steam por la ruta actual de GooeSteamKit sin credenciales. El resultado corresponde a esta comprobación, no a una supervisión continua.';
 
   @override
   String tradeSendNotSent(String reason) {
@@ -2955,7 +2955,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'gooes SteamKit detecta PAC, pero no interpreta sus reglas. Esta comprobación usa la ruta actual del sistema.';
+      'GooeSteamKit detecta PAC, pero no interpreta sus reglas. Esta comprobación usa la ruta actual del sistema.';
 
   @override
   String forkUpdateTransferSize(String received, String total) {

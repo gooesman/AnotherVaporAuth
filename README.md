@@ -1,7 +1,7 @@
 <h1 align="center">
   <img src="app/assets/icon/gooes_steamkit.png" height="64" width="64" />
   <br/>
-  gooes SteamKit
+  GooeSteamKit
 </h1>
 
 <p align="center">
@@ -28,15 +28,16 @@
 
 ## This fork
 
-**gooes SteamKit** is gooesman's independently maintained fork of freefrank's AVA. Local
+**GooeSteamKit** is gooesman's independently maintained fork of freefrank's AVA. Local
 features and all skins are available without Pro verification or payment.
 The original author's MIT notice and credits remain intact. Stable installers
 are available in this fork's [releases](https://github.com/gooesman/AnotherVaporAuth/releases/latest). Preview builds
 come from this fork's [builds](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml);
-the download links below belong to the original project. Windows and Android now
-share the **gooes SteamKit** name and goose-and-shield design (previously **AVA-pc**
-and **AVA Fork**). The Android home-screen label is shortened to **gooesteamkit**;
-the full app name stays unchanged. Android 8+ uses an adaptive vector icon with a
+the download links below belong to the original project. This README describes
+the current source; installable updates require a published release.
+Windows and Android use **GooeSteamKit** for the app and home-screen labels, with
+the same goose-and-shield design (earlier builds used **AVA-pc** and **AVA Fork**).
+Android 8+ uses an adaptive vector icon with a
 solid background; older Android versions use the new shield artwork as a PNG.
 Settings → Software updates checks this fork's published releases and
 lets you download and open the installer. Android uses the same update page;
@@ -48,11 +49,15 @@ SHA-256 verification against the official GitHub metadata.
 
 Android keeps the **AVA Fork** package (`pro.dotslash.ava.fork`) and stable signing
 key in its ARM64 optimized release-mode build. Existing AVA Fork users can update
-directly to gooes SteamKit, retaining accounts and settings without importing again.
+directly to GooeSteamKit, retaining accounts and settings without importing again.
 The original AVA and earlier **AVA dev** remain separate apps: install alongside
 them and import each account's exported `.maFile` once. Windows keeps its existing
 executable and data paths. Release filenames retain the `AVA-pc-` and `AVA-Fork-`
-prefixes so earlier in-app updaters can find new versions. See the
+prefixes so earlier in-app updaters can find new versions. Windows packages a
+separate icon with a filename derived from its content hash; updates rename and
+refresh existing desktop and Start-menu shortcuts that point to this installation.
+This gives Windows a new icon path when the artwork changes while preserving
+shortcuts for other installations. See the
 [migration steps](docs/windows-steam-switch.md#android-installation-and-migration).
 
 ## Original project downloads
@@ -91,7 +96,7 @@ shown above while retaining the existing skin styles.
   remembered Steam account from the overview, Settings or the right-click menu.
   Requests a normal Steam restart, backs up settings before editing, and reports
   when a normal login is still needed. The same page can sign in a new account:
-  choose its session in gooes SteamKit, drag-select Steam's on-screen QR code and review the
+  choose its session in GooeSteamKit, drag-select Steam's on-screen QR code and review the
   login request. Screen images are decoded locally in memory. See the
   [preview guide](docs/windows-steam-switch.md).
 
@@ -134,7 +139,7 @@ shown above while retaining the existing skin styles.
   to the home account list and selected panel, is saved on this device and
   survives app restarts on both desktop and phone.
 - **In-app sign-in approval** — approve or deny Steam logins from a dialog inside
-  gooes SteamKit (device + location shown), just like the official app — by polling, no push.
+  GooeSteamKit (device + location shown), just like the official app — by polling, no push.
 - **Pending center** — one tabbed screen (swipe right on a phone account, or use the desktop context menu) for everything
   awaiting a decision: **Confirmations** (trade / market, batch accept/reject, native
   JSON, no WebView), **Trade offers** (received / sent / history, expandable cards

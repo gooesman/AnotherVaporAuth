@@ -165,7 +165,7 @@ Future<void> _show(
         forkUpdateTargetProvider.overrideWithValue(target),
         forkUpdatePackageInfoProvider.overrideWith(
           (ref) async => PackageInfo(
-            appName: 'AVA Fork',
+            appName: 'GooeSteamKit',
             packageName: 'pro.dotslash.ava.fork',
             version: '1.5.0',
             buildNumber: '150',

@@ -92,14 +92,14 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "dotslash.pro" "\0"
-            VALUE "FileDescription", "gooes SteamKit" "\0"
+            VALUE "FileDescription", "GooeSteamKit" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "AVA" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 dotSlash. All rights reserved." "\0"
             VALUE "OriginalFilename", "ava.exe" "\0"
             // path_provider derives the account/settings directory from this
             // value. Keep its storage identity while the window/shortcut and
-            // FileDescription display gooes SteamKit.
+            // FileDescription display GooeSteamKit.
             VALUE "ProductName", "AVA" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

@@ -31,6 +31,7 @@ void main() {
     late String desktop;
     late String target;
     late String otherTarget;
+    late String icon;
 
     setUp(() async {
       tmp = await Directory.systemTemp.createTemp('steamkit_shortcuts_test_');
@@ -43,6 +44,7 @@ void main() {
       desktop = p.join(root, 'Desktop');
       target = p.join(root, 'AVA', 'ava.exe');
       otherTarget = p.join(root, 'Other install', 'ava.exe');
+      icon = p.join(p.dirname(target), 'gooesteamkit-icon-fixture.ico');
       for (final path in [
         programs,
         desktop,
@@ -52,6 +54,7 @@ void main() {
         await Directory(path).create(recursive: true);
       }
       await File(target).writeAsString('test fixture, not executable');
+      await File(icon).writeAsString('inert icon fixture');
       await File(
         otherTarget,
       ).writeAsString('unrelated fixture, not executable');
@@ -90,6 +93,7 @@ void main() {
           displayName: appDisplayName,
           target: target,
           workDir: p.dirname(target),
+          iconPath: icon,
           desktopShortcut: withDesktop,
           uninstall: uninstall,
           programsDirectory: programs,
@@ -99,11 +103,11 @@ void main() {
     String current(String folder) => p.join(folder, '$appDisplayName.lnk');
 
     test(
-      'migrates both legacy names and retains usable target and icon',
+      'migrates legacy names and retains usable target and distinct icon',
       () async {
         final legacy = {
           for (final folder in [programs, desktop])
-            for (final name in ['AVA', 'AVA-pc'])
+            for (final name in ['AVA', 'AVA-pc', 'gooes SteamKit'])
               p.join(folder, '$name.lnk'): target,
         };
         await createLinks(legacy);
@@ -115,7 +119,7 @@ void main() {
           final link = await readLink(current(folder));
           expect(link['Target'], equalsIgnoringCase(target));
           expect(link['WorkDir'], equalsIgnoringCase(p.dirname(target)));
-          expect(link['Icon'], equalsIgnoringCase('$target,0'));
+          expect(link['Icon'], equalsIgnoringCase('$icon,0'));
         }
         for (final path in legacy.keys) {
           expect(File(path).existsSync(), isFalse);
@@ -157,14 +161,18 @@ void main() {
       expect(File(current(desktop)).existsSync(), isTrue);
     });
 
-    test('respects desktop opt-out without removing unrelated links', () async {
+    test('desktop opt-out still migrates an existing owned link', () async {
       final owned = p.join(desktop, 'AVA-pc.lnk');
       final unrelated = p.join(desktop, 'AVA.lnk');
       await createLinks({owned: target, unrelated: otherTarget});
       await update(withDesktop: false);
 
       expect(File(current(programs)).existsSync(), isTrue);
-      expect(File(current(desktop)).existsSync(), isFalse);
+      expect(File(current(desktop)).existsSync(), isTrue);
+      expect(
+        (await readLink(current(desktop)))['Icon'],
+        equalsIgnoringCase('$icon,0'),
+      );
       expect(File(owned).existsSync(), isFalse);
       expect(File(unrelated).existsSync(), isTrue);
       expect(
@@ -173,10 +181,64 @@ void main() {
       );
     });
 
+    test('desktop opt-out creates no link when there was none', () async {
+      await update(withDesktop: false);
+      expect(File(current(programs)).existsSync(), isTrue);
+      expect(File(current(desktop)).existsSync(), isFalse);
+    });
+
+    test(
+      'desktop opt-out refreshes the current owned link on icon change',
+      () async {
+        await update();
+        icon = p.join(p.dirname(target), 'gooesteamkit-icon-changed.ico');
+        await File(icon).writeAsString('updated inert icon fixture');
+        await update(withDesktop: false);
+        for (final folder in [programs, desktop]) {
+          expect(
+            (await readLink(current(folder)))['Icon'],
+            equalsIgnoringCase('$icon,0'),
+          );
+        }
+      },
+    );
+
+    test(
+      'desktop opt-out preserves a name conflict and owned legacy link',
+      () async {
+        final oldOwned = p.join(desktop, 'gooes SteamKit.lnk');
+        await createLinks({current(desktop): otherTarget, oldOwned: target});
+        await update(withDesktop: false);
+        expect(
+          (await readLink(current(desktop)))['Target'],
+          equalsIgnoringCase(otherTarget),
+        );
+        expect(File(oldOwned).existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'missing or out-of-install icon leaves existing links untouched',
+      () async {
+        final oldOwned = p.join(programs, 'gooes SteamKit.lnk');
+        await createLinks({oldOwned: target});
+        await File(icon).delete();
+        await expectLater(update(), throwsStateError);
+        expect(File(oldOwned).existsSync(), isTrue);
+        expect(File(current(programs)).existsSync(), isFalse);
+        icon = p.join(p.dirname(otherTarget), 'foreign.ico');
+        await File(icon).writeAsString('foreign icon fixture');
+        await expectLater(update(), throwsStateError);
+        expect(File(oldOwned).existsSync(), isTrue);
+        expect(File(current(programs)).existsSync(), isFalse);
+      },
+    );
+
     test('uninstall cleans owned current and legacy links only', () async {
       final owned = {
         current(programs): target,
         p.join(programs, 'AVA.lnk'): target,
+        p.join(programs, 'gooes SteamKit.lnk'): target,
         p.join(desktop, 'AVA-pc.lnk'): target,
       };
       final unrelated = {
@@ -219,6 +281,7 @@ void main() {
               displayName: appDisplayName,
               target: p.join(shortDir, 'ava.exe'),
               workDir: shortDir,
+              iconPath: icon,
               desktopShortcut: false,
               uninstall: uninstall,
               programsDirectory: programs,

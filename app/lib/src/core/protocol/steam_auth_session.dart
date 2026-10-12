@@ -88,7 +88,7 @@ class SteamAuthSession {
 
     // 2. Begin the session.
     final req = ProtoWriter()
-      ..writeString(1, 'gooes SteamKit')
+      ..writeString(1, 'GooeSteamKit')
       ..writeString(2, username)
       ..writeString(3, encryptedPassword)
       ..writeUint64(4, timestamp)
@@ -110,7 +110,7 @@ class SteamAuthSession {
   /// Begins a QR (direction A) auth session; returns the challenge URL to render.
   Future<String> beginWithQr() async {
     final req = ProtoWriter()
-      ..writeString(1, 'gooes SteamKit')
+      ..writeString(1, 'GooeSteamKit')
       ..writeVarint(2, _platformMobileApp)
       ..writeMessage(3, _deviceDetails())
       ..writeString(4, 'Mobile');
@@ -243,7 +243,7 @@ class SteamAuthSession {
   // device_details: matches the Steam mobile app (os_type AndroidUnknown,
   // gaming_device_type 528) so logins look like the official app.
   ProtoWriter _deviceDetails() => ProtoWriter()
-    ..writeString(1, 'gooes SteamKit') // device_friendly_name
+    ..writeString(1, 'GooeSteamKit') // device_friendly_name
     ..writeVarint(2, _platformMobileApp) // platform_type
     ..writeVarint(3, -500) // os_type = EOSType.AndroidUnknown
     ..writeVarint(4, 528); // gaming_device_type

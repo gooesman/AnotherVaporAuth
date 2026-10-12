@@ -6,10 +6,11 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 
 import 'windows_shortcuts.dart';
+import 'windows_icon.dart';
 
 /// Stamped by CI: --dart-define=AVA_VERSION=x.y.z
 const appVersion = String.fromEnvironment('AVA_VERSION', defaultValue: 'dev');
-const appDisplayName = 'gooes SteamKit';
+const appDisplayName = 'GooeSteamKit';
 
 const _regKey = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA';
 
@@ -167,12 +168,20 @@ class InstallEngine {
       throw StateError('payload is a build-time placeholder — '
           'this binary was packaged without the real app');
     }
+    final iconName = WindowsIcon.payloadPath(files);
+    final previousManifest = File(p.join(dir, manifestName));
+    final retainedIcons = await WindowsIcon.retainedPaths(
+      dir,
+      await previousManifest.exists()
+          ? await previousManifest.readAsLines()
+          : const <String>[],
+    );
     final total = files.fold<int>(0, (s, f) => s + f.size);
     var done = 0;
     await Directory(dir).create(recursive: true);
     // Everything we create, relative to `dir` — the uninstaller deletes this
     // list and nothing else.
-    final written = <String>[];
+    final written = <String>{...retainedIcons};
     for (final f in files) {
       final target = resolveEntry(dir, f.name);
       if (target == null) {
@@ -206,11 +215,13 @@ class InstallEngine {
       displayName: appDisplayName,
       target: p.join(dir, 'ava.exe'),
       workDir: dir,
+      iconPath: p.join(dir, iconName),
       desktopShortcut: desktopShortcut,
     );
     progress(0.95);
     log('registering uninstall entry');
-    await _registerUninstall(dir, uninstaller, total ~/ 1024);
+    await _registerUninstall(
+        dir, uninstaller, total ~/ 1024, p.join(dir, iconName));
     progress(1.0);
     log('install complete');
   }
@@ -405,7 +416,7 @@ class InstallEngine {
   }
 
   static Future<void> _registerUninstall(
-      String dir, String uninstaller, int sizeKb) async {
+      String dir, String uninstaller, int sizeKb, String iconPath) async {
     Future<void> add(String name, String value,
         {bool dword = false}) async {
       final r = await Process.run('reg', [
@@ -422,7 +433,7 @@ class InstallEngine {
     await add('DisplayVersion', appVersion);
     await add('Publisher', 'dotSlash');
     await add('InstallLocation', dir);
-    await add('DisplayIcon', p.join(dir, 'ava.exe'));
+    await add('DisplayIcon', '"$iconPath",0');
     await add('UninstallString', '"$uninstaller" --uninstall');
     await add('QuietUninstallString', '"$uninstaller" --uninstall --auto');
     await add('URLInfoAbout', 'https://github.com/gooesman/AnotherVaporAuth');

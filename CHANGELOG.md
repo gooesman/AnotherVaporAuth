@@ -1,9 +1,23 @@
 # Changelog · 更新日志
 
-All notable changes to **gooes SteamKit**, based on AVA (AnotherVaporAuth). Each version has an English
+All notable changes to **GooeSteamKit**, based on AVA (AnotherVaporAuth). Each version has an English
 block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
+
+## [v1.5.7] — 2026-10-12 · Fork
+
+### Changed
+- Use **GooeSteamKit** consistently for the app, installer and launcher labels on Windows and Android. Existing Android package/signing identity, AVA data paths and update asset filename prefixes remain unchanged.
+
+### Fixed
+- Windows shortcuts use a separately packaged ICO named by its content hash, so updated artwork gets a new icon path instead of reusing the executable's cached icon. Updates rename and refresh existing desktop and Start-menu shortcuts belonging to this installation, preserving links to other installations.
+
+### 调整
+- 电脑与手机的应用、安装器和桌面标签统一为 **GooeSteamKit**，保留现有 Android 包名、签名、AVA 数据路径及更新安装包文件名前缀。
+
+### 修复
+- Windows 快捷方式改用随安装包提供、按内容哈希命名的独立 ICO，图案变化时使用新路径，避免沿用同一路径 EXE 的旧图标缓存。更新时对属于当前安装的既有桌面、开始菜单快捷方式改名并刷新图标，保留指向其他安装的快捷方式。
 
 ## [v1.5.6] — 2026-10-12 · Fork
 

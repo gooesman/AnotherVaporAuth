@@ -1,26 +1,30 @@
 # Windows Steam sign-in and account switching (preview)
 
-Windows and Android retain the full app name **gooes SteamKit**, with the same
-[goose-and-shield design](../app/assets/icon/gooes_steamkit.png). Android's
-home-screen label is **gooesteamkit**. Android 8+ uses a native vector foreground
+Windows and Android use **GooeSteamKit** for the app and home-screen labels, with
+the same [goose-and-shield design](../app/assets/icon/gooes_steamkit.png).
+Android 8+ uses a native vector foreground
 and solid background for its adaptive icon; older Android versions use the new
 shield artwork as a PNG. Earlier builds were named
 **AVA-pc** and **AVA Fork**. Windows keeps `ava.exe` and the existing AVA data
 paths. Android keeps `pro.dotslash.ava.fork` and the existing fork signing key,
 so existing AVA Fork installations update directly without reimporting accounts.
 Release filenames retain `AVA-pc-` and `AVA-Fork-` so older in-app updaters can
-recognize new versions.
+recognize new versions. Windows packages a separate ICO named by its content hash
+and refreshes existing desktop and Start-menu shortcuts that belong to this
+installation. The current name and icon path replace the old shortcut details;
+links to other installations remain unchanged. Actual available updates are those
+published through the [fork release process](fork-releases.md).
 
 ## Sign in by selecting Steam's QR code on screen
 
 Open an account's overview and choose **Switch Steam account**, or use the
 existing account menu / Settings entry. The QR sign-in card lets you choose an
-account and open **Sign in with a gooes SteamKit account**, even if Steam has never
+account and open **Sign in with a GooeSteamKit account**, even if Steam has never
 remembered that account on this PC.
 
 1. Show the Steam client's sign-in QR code. If Steam is already logged in,
    use Steam's own account menu to reach sign-in when ready.
-2. In gooes SteamKit choose the intended account, then **Select a QR code on screen**.
+2. In GooeSteamKit choose the intended account, then **Select a QR code on screen**.
 3. The app briefly hides. Drag around the complete QR code and release; Esc or
    right-click cancels. The selector supports multiple monitors and follows
    the current skin's accent color.
@@ -30,7 +34,7 @@ remembered that account on this PC.
 Screen images stay in memory and are not uploaded or saved. Invalid codes,
 expired/unverifiable requests, cancellation, a locked vault or a changed
 account cannot submit an approval. An offline TOTP secret alone is not enough:
-the account also needs a usable Steam login session in gooes SteamKit. The same screen
+the account also needs a usable Steam login session in GooeSteamKit. The same screen
 offers re-login when that session is missing. Existing remembered-account
 switching remains available below this card.
 
@@ -119,7 +123,7 @@ core alone is not considered a successful connection; a successful connection
 does not establish that the account is signed in or allowed to trade.
 
 Detected external HTTP proxy settings take priority. A detected VPN/TUN already
-routes operating-system sockets, so gooes SteamKit pauses its own core. PAC is detected but
+routes operating-system sockets, so GooeSteamKit pauses its own core. PAC is detected but
 not evaluated; the UI reports its presence and pauses internal acceleration.
 Environment checks run on entry, foreground return and
 periodically while configured. Detection cannot identify every VPN product or
@@ -138,8 +142,8 @@ Steam's normal TLS certificate checks remain enabled. See the
 [privacy notice](fork-privacy.md) and [component notices](../third_party/mihomo/NOTICE).
 
 The Android artifact is an **ARM64 release-mode preview**, package
-`pro.dotslash.ava.fork`, with the app name **gooes SteamKit** and home-screen label
-**gooesteamkit**. It uses the same stable private
+`pro.dotslash.ava.fork`, with **GooeSteamKit** as both the app name and home-screen
+label. It uses the same stable private
 fork signing key as earlier **AVA Fork** builds and updates them in place without
 reimporting accounts. It installs alongside the original AVA and earlier
 **AVA dev** preview; only that first migration starts with a separate empty vault.
@@ -153,12 +157,12 @@ including any launcher-specific final animation, remains a manual step.
 
 Windows preview ZIPs keep DLLs and the `data` directory beside `ava.exe`.
 They use the current Windows user's existing AVA data directory. Close other
-gooes SteamKit or older AVA instances before running a preview; this is not an
+GooeSteamKit or older AVA instances before running a preview; this is not an
 isolated vault.
 
 This branch adds **Switch Steam account** to the Windows account-row context
 menu and to Settings. It opens a list of accounts remembered by the local Steam installation,
-preselecting the matching gooes SteamKit account by SteamID. The local account list
+preselecting the matching GooeSteamKit account by SteamID. The local account list
 can include accounts that have no authenticator in this app.
 
 ## Performance and presentation
@@ -203,14 +207,14 @@ back-gesture policy described above remains unchanged.
 
 ## Android installation and migration
 
-**Existing AVA Fork users:** install the newer **gooes SteamKit** APK directly over
+**Existing AVA Fork users:** install the newer **GooeSteamKit** APK directly over
 AVA Fork. The package and signing key are unchanged; the higher version code
 updates the app while retaining accounts, PIN and settings. No export or reimport
 is needed for the name and icon change.
 
 **Original AVA or earlier AVA dev users:** the following first-time migration
 steps apply. These apps have separate package identities; the earlier AVA dev
-also used a temporary CI debug key which is no longer available. gooes SteamKit
+also used a temporary CI debug key which is no longer available. GooeSteamKit
 installs alongside them, keeping their data intact. Do not uninstall the old app
 or clear its data as part of migration.
 
@@ -219,7 +223,7 @@ or clear its data as part of migration.
    share sheet to save a copy through a trusted file app. Repeat for each account;
    there is no single all-account backup button. A saved Steam password is
    excluded unless explicitly selected.
-2. Install **gooes SteamKit**, accept its privacy notice and set its own local PIN.
+2. Install **GooeSteamKit**, accept its privacy notice and set its own local PIN.
    On the welcome screen choose **Import .maFile** and select the first exported
    file. Once the account list appears, **+ → Import** imports another file,
    or **+ → Import SDA folder** opens a file multi-selector for the remaining
@@ -237,7 +241,7 @@ or clear its data as part of migration.
    securely and remove temporary migration copies after verification. Export
    alone is not a backup unless the share destination actually saved the file.
 
-Later **gooes SteamKit** APKs signed with the same fork key and a higher Android
+Later **GooeSteamKit** APKs signed with the same fork key and a higher Android
 version code can update it directly, retaining its app data. APKs with another
 signature cannot. Keep the signing key secure and backed up when maintaining
 this fork; generating a new key does not preserve update compatibility.
@@ -251,21 +255,21 @@ presented as the current login just because it was used previously. If the
 active account cannot be identified, the UI says so; this does not establish
 whether Steam's servers consider the client online. Refresh updates the status,
 as do returning to the page after QR login, completing an account switch, and
-bringing gooes SteamKit back to the foreground while this page is open.
+bringing GooeSteamKit back to the foreground while this page is open.
 
 1. Extract the complete Windows preview ZIP to its own directory. Keep the
    `data` folder and DLLs beside `ava.exe`.
-2. Unlock gooes SteamKit, right-click an account, and choose **Switch Steam account**. The
+2. Unlock GooeSteamKit, right-click an account, and choose **Switch Steam account**. The
    same page is available from Settings without importing an authenticator.
 3. Check the Steam installation path. **Choose steam.exe** can select another
    installation; this path is stored only on this computer and is not synced.
 4. Select a local account, choose **Switch account**, and confirm. Finish any game
    and let cloud saves complete before restarting Steam.
-5. Check the resulting account in Steam. gooes SteamKit reports that Steam was started;
+5. Check the resulting account in Steam. GooeSteamKit reports that Steam was started;
    it does not claim that the Steam servers accepted the login.
 
 An account must first have been logged into the Steam client on this computer
-with **Remember me** enabled. Importing a maFile into gooes SteamKit does not establish that
+with **Remember me** enabled. Importing a maFile into GooeSteamKit does not establish that
 desktop login. If Steam has forgotten or revoked the credentials, log in through
 Steam normally, then refresh this page. The app's existing login approval feature can
 assist with that normal login.
@@ -288,7 +292,7 @@ On Android, an **Allow app installs** button opens the system permission page
 when needed. After returning, choose **Install update** again; installation does
 not start just because permission was enabled. Android also checks the app's
 package identity, version and current signing certificate, then asks you to
-confirm installation. On Windows, finish current work before confirming: gooes SteamKit
+confirm installation. On Windows, finish current work before confirming: GooeSteamKit
 opens the installer and then closes to release its files. Follow the installer
 prompts to complete the update. The app does not silently install updates or
 send Steam credentials to GitHub.

@@ -47,7 +47,7 @@ object AppUpdateChannel {
                         if (!canInstall(activity)) {
                             throw UpdateFailure(
                                 "install_permission_required",
-                                "Allow app installs from gooes SteamKit in Android settings first.",
+                                "Allow app installs from GooeSteamKit in Android settings first.",
                             )
                         }
                         openInstaller(activity, apk, result)
@@ -186,7 +186,7 @@ object AppUpdateChannel {
                 )
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, "application/vnd.android.package-archive")
-                    clipData = ClipData.newRawUri("gooes SteamKit update", uri)
+                    clipData = ClipData.newRawUri("GooeSteamKit update", uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 activity.startActivity(intent)

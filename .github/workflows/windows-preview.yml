@@ -61,6 +61,13 @@ jobs:
       - name: Build Windows release
         run: flutter build windows --release --build-name=$env:AVA_VERSION --build-number=$env:AVA_BUILD_NUMBER --no-pub
 
+      - name: Verify packaged shortcut icon
+        run: |
+          $iconHash = (Get-FileHash windows/runner/resources/app_icon.ico -Algorithm SHA256).Hash.ToLowerInvariant()
+          $icons = @(Get-ChildItem build/windows/x64/runner/Release -File -Filter 'gooesteamkit-icon-*.ico')
+          if ($icons.Count -ne 1 -or $icons[0].Name -cne "gooesteamkit-icon-$iconHash.ico") { throw 'Missing or stale independent shortcut icon' }
+          if ((Get-FileHash $icons[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant() -cne $iconHash) { throw 'Packaged shortcut icon differs from the application artwork' }
+
       - name: Include optional component notices
         run: |
           New-Item -ItemType Directory -Force build/windows/x64/runner/Release/third_party/mihomo | Out-Null
@@ -80,7 +87,7 @@ jobs:
         working-directory: .
         run: |
           $identity = (Get-Item app/build/windows/x64/runner/Release/ava.exe).VersionInfo
-          if ($identity.CompanyName -ne 'dotslash.pro' -or $identity.ProductName -ne 'AVA' -or $identity.FileDescription -ne 'gooes SteamKit') { throw 'App resource identity must preserve the existing account data directory' }
+          if ($identity.CompanyName -ne 'dotslash.pro' -or $identity.ProductName -ne 'AVA' -or $identity.FileDescription -ne 'GooeSteamKit') { throw 'App resource identity must preserve the existing account data directory' }
           $actual = $identity.ProductVersion
           if ($actual -ne "$env:AVA_VERSION+$env:AVA_BUILD_NUMBER") { throw "Unexpected app version: $actual" }
           Compress-Archive -Path app/build/windows/x64/runner/Release/* -DestinationPath installer/assets/payload.zip -Force
@@ -143,7 +150,7 @@ jobs:
           retention-days: 14
 
   android-preview:
-    name: Build Android preview (gooes SteamKit)
+    name: Build Android preview (GooeSteamKit)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -220,7 +227,7 @@ jobs:
           print('Verified: system predictive back preview is disabled')
           PY
           BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
-          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'gooes SteamKit'"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'GooeSteamKit'"
           # aapt badging does not reliably enumerate launcher activity aliases.
           # Resolve both labels and adaptive icon resources from the actual APK.
           python3 ../tool/verify_android_launcher.py "$APK"

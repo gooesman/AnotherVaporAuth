@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 
-/// Shared gooes SteamKit artwork, with the active skin's clipping and sampling.
+/// Shared GooeSteamKit artwork, with the active skin's clipping and sampling.
 class AppLogo extends StatelessWidget {
   final double size;
   const AppLogo({super.key, this.size = 84});

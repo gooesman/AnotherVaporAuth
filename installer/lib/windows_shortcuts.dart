@@ -28,6 +28,15 @@ public static class AvaShortcutPath {
     } catch { return null; }
   }
 }
+public static class AvaShortcutNotify {
+  [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+  private static extern void SHChangeNotify(uint change, uint flags, string item, IntPtr unused);
+  public static void Changed(string path, uint change) {
+    // SHCNF_PATHW | SHCNF_FLUSHNOWAIT: notify only this item, without waiting
+    // for Explorer or disrupting other apps with a global cache reset.
+    SHChangeNotify(change, 0x2005, path, IntPtr.Zero);
+  }
+}
 '@
 ''';
 
@@ -36,6 +45,7 @@ public static class AvaShortcutPath {
     required String target,
     required String workDir,
     required bool desktopShortcut,
+    String? iconPath,
     bool uninstall = false,
     String? programsDirectory,
     String? desktopDirectory,
@@ -44,10 +54,10 @@ public static class AvaShortcutPath {
         ? "\$ws.SpecialFolders('$name')"
         : "'${_quote(override)}'";
     final current = '${_quote(displayName)}.lnk';
-    final removals = [
-      if (uninstall) current,
+    final legacy = [
       'AVA.lnk',
       'AVA-pc.lnk',
+      'gooes SteamKit.lnk',
     ].map((name) => "'$name'").join(',');
     final script =
         '''
@@ -64,31 +74,68 @@ function Test-OwnedShortcut(\$link) {
   \$actual = [AvaShortcutPath]::ExistingFile(\$link.TargetPath)
   return \$null -ne \$actual -and [string]::Equals(\$actual, \$canonicalTarget, [StringComparison]::OrdinalIgnoreCase)
 }
+function Get-OwnedShortcut([string]\$path) {
+  if (-not (Test-Path -LiteralPath \$path -PathType Leaf)) { return \$null }
+  if ((Get-Item -LiteralPath \$path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { return \$null }
+  \$link = \$ws.CreateShortcut(\$path)
+  if (Test-OwnedShortcut \$link) { return \$link }
+  return \$null
+}
+\$icon = '${_quote(iconPath ?? '')}'
+if (-not \$$uninstall) {
+  \$canonicalIcon = [AvaShortcutPath]::ExistingFile(\$icon)
+  if (\$null -eq \$canonicalIcon -or -not [string]::Equals(
+      [IO.Path]::GetDirectoryName(\$canonicalIcon),
+      [IO.Path]::GetDirectoryName(\$canonicalTarget), [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'The installed shortcut icon is missing or outside this installation'
+  }
+}
 \$folders = @(
   [pscustomobject]@{ Path = ${folder('Programs', programsDirectory)}; Create = \$${!uninstall} }
   [pscustomobject]@{ Path = ${folder('Desktop', desktopDirectory)}; Create = \$${!uninstall && desktopShortcut} }
 )
 foreach (\$entry in \$folders) {
   if ([string]::IsNullOrWhiteSpace(\$entry.Path)) { continue }
-  if (\$entry.Create) {
-    [IO.Directory]::CreateDirectory(\$entry.Path) | Out-Null
-    \$path = Join-Path \$entry.Path '$current'
-    \$exists = Test-Path -LiteralPath \$path
-    \$link = \$ws.CreateShortcut(\$path)
-    # Keep an unrelated same-name link, and the old entry it would replace.
-    if (\$exists -and -not (Test-OwnedShortcut \$link)) { continue }
+  \$path = Join-Path \$entry.Path '$current'
+  \$ownedLegacy = @()
+  foreach (\$name in @($legacy)) {
+    \$old = Join-Path \$entry.Path \$name
+    if (\$null -ne (Get-OwnedShortcut \$old)) { \$ownedLegacy += \$old }
+  }
+  \$existingOwned = Get-OwnedShortcut \$path
+  if (\$$uninstall) {
+    foreach (\$owned in @(\$ownedLegacy) + @(\$path)) {
+      if (\$null -ne (Get-OwnedShortcut \$owned)) {
+        Remove-Item -LiteralPath \$owned -Force
+        [AvaShortcutNotify]::Changed(\$owned, 0x4) # SHCNE_DELETE
+      }
+    }
+    continue
+  }
+  # An unchecked desktop option avoids NEW shortcuts, while preserving and
+  # refreshing the existing shortcut the user still has after an upgrade.
+  if (-not \$entry.Create -and \$null -eq \$existingOwned -and \$ownedLegacy.Count -eq 0) { continue }
+  \$exists = Test-Path -LiteralPath \$path
+  # Keep an unrelated same-name link, and the old entry it would replace.
+  if (\$exists -and \$null -eq \$existingOwned) { continue }
+  [IO.Directory]::CreateDirectory(\$entry.Path) | Out-Null
+  \$link = \$ws.CreateShortcut(\$path)
     \$link.TargetPath = \$target
     \$link.WorkingDirectory = '${_quote(workDir)}'
-    \$link.IconLocation = '${_quote(target)},0'
+    \$link.IconLocation = "\$icon,0"
     \$link.Save()
+  \$saved = Get-OwnedShortcut \$path
+  if (\$null -eq \$saved -or -not \$saved.IconLocation.EndsWith(',0') -or
+      -not [string]::Equals([AvaShortcutPath]::ExistingFile(\$saved.IconLocation.Substring(0, \$saved.IconLocation.Length - 2)),
+          \$canonicalIcon, [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'New shortcut failed verification; old links were retained'
   }
-  foreach (\$name in @($removals)) {
-    \$path = Join-Path \$entry.Path \$name
-    if (Test-Path -LiteralPath \$path -PathType Leaf) {
-      \$link = \$ws.CreateShortcut(\$path)
-      if (Test-OwnedShortcut \$link) {
-        Remove-Item -LiteralPath \$path -Force
-      }
+  if (\$exists) { [AvaShortcutNotify]::Changed(\$path, 0x2000) } # SHCNE_UPDATEITEM
+  else { [AvaShortcutNotify]::Changed(\$path, 0x2) } # SHCNE_CREATE
+  foreach (\$old in \$ownedLegacy) {
+    if (\$null -ne (Get-OwnedShortcut \$old)) {
+      Remove-Item -LiteralPath \$old -Force
+      [AvaShortcutNotify]::Changed(\$old, 0x4)
     }
   }
 }
