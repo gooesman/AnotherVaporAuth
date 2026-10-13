@@ -73,6 +73,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native regression tests failed' }
 
       - name: Upload isolated Windows regression harnesses
+        if: ${{ always() && hashFiles('app/build/native-tests/Release/*.exe') != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: AVA-windows-native-tests-${{ github.sha }}

@@ -51,6 +51,30 @@ Reply Call(const char* method, Map arguments) {
   return reply;
 }
 Map Path(const fs::path& path) { return {{Value("path"), Value(Utf8(path))}}; }
+bool SameFile(const fs::path& left, const fs::path& right) {
+  // Compare volume/file identity, not spelling: GetFinalPathNameByHandleW
+  // expands runner TEMP's 8.3 components (e.g. RUNNER~1).
+  std::error_code error;
+  return fs::equivalent(left, right, error) && !error;
+}
+fs::path CanonicalDirectory(const fs::path& directory) {
+  Handle handle(CreateFileW(directory.c_str(), FILE_READ_ATTRIBUTES,
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+      OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr));
+  Check(handle.get() != INVALID_HANDLE_VALUE, "open-private-test-directory");
+  wchar_t buffer[32768]{};
+  const DWORD length = GetFinalPathNameByHandleW(handle.get(), buffer, 32768,
+                                                FILE_NAME_NORMALIZED);
+  Check(length > 0 && length < 32768, "resolve-private-test-directory");
+  std::wstring resolved(buffer, length);
+  if (resolved.rfind(L"\\\\?\\UNC\\", 0) == 0) {
+    resolved = L"\\\\" + resolved.substr(8);
+  } else if (resolved.rfind(L"\\\\?\\", 0) == 0) {
+    resolved = resolved.substr(4);
+  }
+  Check(SameFile(directory, fs::path(resolved)), "private-directory-identity");
+  return fs::path(resolved);
+}
 void Write(const fs::path& path, const std::string& bytes) {
   std::ofstream file(path, std::ios::binary);
   file << bytes;
@@ -80,7 +104,7 @@ void WaitFixture(const fs::path& directory, bool shutdown) {
   }
   std::wstring cwd((bytes.size() - sizeof(DWORD)) / sizeof(wchar_t), L'\0');
   memcpy(cwd.data(), bytes.data() + sizeof(DWORD), bytes.size() - sizeof(DWORD));
-  Check(EqualPath(cwd, directory.wstring()), "child-working-directory");
+  Check(SameFile(fs::path(cwd), directory), "child-working-directory");
 }
 void CheckPrivateAcl(const fs::path& directory) {
   PACL acl = nullptr;
@@ -103,7 +127,7 @@ void Run(const fs::path& root, const fs::path& fixture) {
   std::wstring canonical;
   Error error;
   Check(PathArgument(Path(steam), &canonical, &error), "directory-argument-resolves-exe");
-  Check(EqualPath(canonical, (steam / L"steam.exe").wstring()), "resolved-exe-exact");
+  Check(SameFile(fs::path(canonical), steam / L"steam.exe"), "resolved-exe-exact");
   Check(!PathArgument(Path(steam / L"steam.exe"), &canonical, &error), "exe-is-not-directory");
   Check(!PathArgument(Path(root / L"missing"), &canonical, &error), "missing-directory-rejected");
   auto begin = Call("beginLoginCapture", Path(steam));
@@ -164,7 +188,10 @@ int wmain() {
   DeleteFileW(reserved);
   fs::create_directory(root);
   try {
-    Run(root, fs::path(image).parent_path() / L"steam_client_launch_fixture.exe");
+    // Production deliberately refuses alias/reparse paths for configuration
+    // writes. Use the canonical spelling of our new, isolated test root for
+    // those tests; no production safety check is weakened for the harness.
+    Run(CanonicalDirectory(root), fs::path(image).parent_path() / L"steam_client_launch_fixture.exe");
     fs::remove_all(root);
     std::cout << "{\"success\":true,\"checks\":" << checks << "}\n";
     return 0;
