@@ -48,7 +48,9 @@ l10n/                   # ARB localizations (en, zh, zh_Hant, de, fr, es, ru)
 
 ## Status (1.5.10)
 
-Implemented and statically verified end-to-end:
+Implemented features, covered by automated checks where applicable. Live Steam
+account flows and device-specific behavior have separate validation limits noted
+below and in the [fork guide](../docs/windows-steam-switch.md#validation):
 
 - maFile compatibility (PBKDF2 50k/SHA1 + AES-256-CBC, byte-compatible)
 - TOTP codes + countdown, copy, account list/reorder

@@ -1,17 +1,12 @@
-<h1 align="center">
-  <img src="app/assets/icon/gooes_steamkit.png" height="64" width="64" />
-  <br/>
-  GooeSteamKit
-</h1>
-
 <p align="center">
-  A lightweight Steam authenticator and account toolkit, built with <b>Flutter</b>
-  and based on freefrank's <b>AVA (AnotherVaporAuth)</b>.<br/>
-  <sup>Community project — not affiliated with Steam or Valve in any way.</sup>
+  <img src="app/assets/icon/gooes_steamkit.png" width="128" height="128" alt="GooeSteamKit goose and shield icon" />
 </p>
 
+<h1 align="center">GooeSteamKit</h1>
+
 <p align="center">
-  This fork publishes installers for <b>Windows · Android</b>.
+  <b>Steam Guard, accounts, inventory and market — in one app.</b><br/>
+  A Flutter-based Steam toolkit for Windows and Android.
 </p>
 
 <p align="center">
@@ -19,325 +14,156 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/gooesman/AnotherVaporAuth/releases/latest"><img alt="Latest fork release" src="https://img.shields.io/github/v/release/gooesman/AnotherVaporAuth?style=flat-square&color=34F1FF" /></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/freefrank/AnotherVaporAuth?style=flat-square&color=FF4D9D" /></a>
-  <img alt="Fork installers" src="https://img.shields.io/badge/platforms-Windows%20%C2%B7%20Android-8A93B8?style=flat-square" />
+  <a href="https://github.com/gooesman/AnotherVaporAuth/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/gooesman/AnotherVaporAuth?style=flat-square&color=4C7FFF" /></a>
+  <img alt="Windows x64 and Android ARM64" src="https://img.shields.io/badge/platforms-Windows%20x64%20%7C%20Android%20ARM64-58677D?style=flat-square" />
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-58677D?style=flat-square" /></a>
 </p>
-
----
-
-## This fork
-
-**GooeSteamKit** is gooesman's independently maintained fork of freefrank's AVA. Local
-features and all skins are available without Pro verification or payment.
-The original author's MIT notice and credits remain intact. Stable installers
-are available in this fork's [releases](https://github.com/gooesman/AnotherVaporAuth/releases/latest). Preview builds
-come from this fork's [builds](https://github.com/gooesman/AnotherVaporAuth/actions/workflows/windows-preview.yml);
-the download links below belong to the original project. This README describes
-the current source; installable updates require a published release.
-Windows and Android use **GooeSteamKit** for the app and home-screen labels, with
-the same goose-and-shield design (earlier builds used **AVA-pc** and **AVA Fork**).
-Android 8+ uses an adaptive vector icon with a
-solid background; older Android versions use the new shield artwork as a PNG.
-Settings → Software updates checks this fork's published releases and
-lets you download and open the installer. Android uses the same update page;
-installation still requires the system confirmation. Automatic downloads use
-GH-Proxy's direct acceleration routes, with GitHub as fallback; GitHub-only
-downloads remain selectable. The source selector stays visible on both platforms,
-even without a new release or if the version check fails. Official requests can reuse an active proxy.
-Both routes support parallel downloads, speed/remaining-time display and full
-SHA-256 verification against the official GitHub metadata.
-
-Android keeps the **AVA Fork** package (`pro.dotslash.ava.fork`) and stable signing
-key in its ARM64 optimized release-mode build. Existing AVA Fork users can update
-directly to GooeSteamKit, retaining accounts and settings without importing again.
-The original AVA and earlier **AVA dev** remain separate apps: install alongside
-them and import each account's exported `.maFile` once. Windows keeps its existing
-executable and data paths. Release filenames retain the `AVA-pc-` and `AVA-Fork-`
-prefixes so earlier in-app updaters can find new versions. Windows packages a
-separate icon with a filename derived from its content hash; updates rename and
-refresh existing desktop and Start-menu shortcuts that point to this installation.
-This gives Windows a new icon path when the artwork changes while preserving
-shortcuts for other installations. See the
-[migration steps](docs/windows-steam-switch.md#android-installation-and-migration).
-
-## Original project downloads
-
-| | |
-|---|---|
-| **Android** | [Google Play](https://play.google.com/store/apps/details?id=pro.dotslash.ava) · [direct APK](https://ava.dotslash.pro/#download) (no Play Services needed) |
-| **Windows** | [Installer](https://github.com/freefrank/AnotherVaporAuth/releases/latest) · portable single-file build in the same release |
-| **macOS** | [DMG](https://github.com/freefrank/AnotherVaporAuth/releases/latest) — Apple Silicon only; see [first launch](#macos-apple-silicon) |
-| **Linux** | [AppImage](https://github.com/freefrank/AnotherVaporAuth/releases/latest) |
-
-Coming from **Steam Desktop Authenticator**? Import your whole `maFiles/`
-folder, encrypted ones included — nothing to re-link, no 7-day trade
-cooldown. There is a [step-by-step
-guide](https://ava.dotslash.pro/guide/move-steam-authenticator/).
 
 <p align="center">
-  <img src="posts/zh/recruit/home-neon.png" width="30%" alt="Steam Guard codes" />
-  <img src="posts/zh/recruit/confirmations.png" width="30%" alt="Trade confirmations" />
-  <img src="posts/zh/recruit/home-pixel.png" width="30%" alt="Pixel skin" />
+  <a href="https://github.com/gooesman/AnotherVaporAuth/releases/latest">Download</a> ·
+  <a href="https://github.com/gooesman/AnotherVaporAuth/releases">Release notes</a> ·
+  <a href="https://github.com/gooesman/AnotherVaporAuth/issues">Report an issue</a>
 </p>
 
-These screenshots show the original AVA interface; this fork uses the goose icon
-shown above while retaining the existing skin styles.
+GooeSteamKit is **gooesman's independently maintained fork** of
+[AVA / AnotherVaporAuth](https://github.com/freefrank/AnotherVaporAuth), created by
+freefrank. It adds account tools, inventory and market improvements, optional
+connectivity and in-app updates while retaining AVA's themes and maFile support.
+Local features and skins require no Pro verification; payments and ads are disabled
+in this fork. This is a community project, unaffiliated with Valve or Steam.
 
----
+## Download and update
 
-> **Security note:** a desktop/PC authenticator defeats much of the purpose of
-> two-factor authentication — if your device is compromised, so is your token.
-> Prefer Steam's official mobile app where you can. Always back up your `maFiles`
-> and your revocation code. Use at your own risk.
+| Platform | Download from this fork | File to choose |
+|---|---|---|
+| **Windows x64** | [Windows installer](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-pc-…-windows-x64-setup.exe` |
+| **Android ARM64** | [Android APK](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-Fork-…-android-arm64.apk` |
 
-## Highlights
+Both apps are named **GooeSteamKit**. Download filenames retain their earlier
+prefixes so existing in-app updaters can recognize them. This fork currently
+publishes Windows and Android packages.
 
-- **Windows Steam account switching (branch preview)** — choose an account and
-  **Open Steam and sign in** from the overview, Settings or the right-click menu.
-  The app requests a normal Steam restart, backs up settings before editing,
-  and can approve the QR code from the verified local Steam sign-in window for
-  this attempt. Steam opens before checking the session/network needed for QR
-  approval; **Open Steam** also works without an imported account. The result is verified
-  against the Steam client's current local account. Manual QR selection and
-  remembered-account switching remain available. Images are decoded locally
-  in memory. See the
-  [preview guide](docs/windows-steam-switch.md).
+Already installed? Open **Settings → Software updates**. Both platforms offer
+automatic download acceleration through third-party GH-Proxy routes, with GitHub
+as fallback, or a GitHub-only option. Downloads show progress and speed and are
+checked against GitHub's file size and SHA-256 before you confirm installation.
+Android completes installation through its system installer.
 
-- **Account overview (branch preview)** — Windows and Android share configurable
-  wallet/pending-funds and market-listing cards, friends and two-sided trade-offer
-  editing, and in-app backup login codes with Steam SMS verification. Startup
-  verification can be disabled in Settings while keeping account files encrypted at rest.
-  Android updates existing **AVA Fork** installations in place; it remains separate
-  from the original AVA and earlier AVA dev.
-  Its home screen stays focused on codes and accounts in portrait and landscape;
-  tap an account to select its code, or long-press it to open its overview directly.
-  Market, friends and other account tools are available in that overview.
+Update checks still need GitHub's official metadata; mirror availability and speed
+depend on your network. See the [update and release guide][releases-guide].
 
-- **Optional Steam acceleration (branch preview)** — choose a node from an HTTP
-  or HTTPS Clash subscription, including Basic-auth URLs, for this app's Steam requests.
-  Detected external HTTP proxies and VPN/TUN routes take priority even without a
-  subscription. Enabling automatic switching arms the built-in fallback for this
-  session; optional startup activation arms it next time too. Local environment
-  checks run every five seconds while visible, without continuous Steam probes.
-  System proxy settings and other apps are untouched. A compact status entry
-  shows the route separately from checked API/community reachability; no system VPN icon is
-  expected. Windows downloads its optional core through a primary mirror, backup
-  mirror and official fallback, verifying both archive and executable SHA-256;
-  Android includes the core. With encrypted settings sync enabled, subscription
-  links, sanitized cached nodes and node selection follow you between devices;
-  startup choices stay local. See the [scope and limitations](docs/windows-steam-switch.md#optional-steam-connectivity).
+## What you can do
 
-- **Inventory rarity and prices (branch preview)** — restrained rarity-colored
-  icon borders in the inventory and trade picker. Right-click, long-press or
-  use the item menu for a read-only Steam price reference and market-page link.
-  Prices load on demand, include their currency, and do not change item selection.
-  Market and trade inventories support name search and Steam-tag type/rarity
-  filters, retaining selected items and quantities when filters change.
-  The Windows account switcher also shows Steam's running state and an account
-  verified against the active local Steam process, when it can be identified.
+| Feature | What it provides |
+|---|---|
+| **Accounts and Steam Guard** | Multiple accounts, offline codes, countdowns, copy, maFile import/export and a remembered username/nickname/Steam ID display choice. |
+| **Account overview** | Wallet balance, pending funds and market activity. Desktop has room for overview cards; the phone home screen stays focused on codes and accounts. |
+| **Windows Steam sign-in** | Open Steam, switch accounts and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
+| **Friends and trades** | Friends list, received/sent offers, both sides' inventories, offer review and trade confirmations. |
+| **Inventory and listings** | Game/context selection, name search, type/rarity filters, subtle rarity borders, batch listing, and active/held/pending listings. |
+| **Market prices** | Search by item, game and currency; view reference prices and item details, or open the Steam market page. |
+| **Backup login codes** | Request and verify Steam's SMS code inside the app, then display the one-time backup login codes. |
+| **Optional connectivity** | Follow detected external proxy routes first, with a built-in fallback using your Clash subscription and a visible current-route status. |
+| **App lock and sync** | Optional startup PIN verification and system unlock; encrypted account and settings sync to your own WebDAV server, including optional subscription sync. |
+| **Appearance and other tools** | Light/dark/system appearance, skins, compact refresh indicators, device sessions, Steam key redemption and seven languages. |
 
-- **maFile compatible** — reads/writes the legacy `.maFile` format
-  (PBKDF2/SHA1 + AES-256-CBC), so existing accounts migrate with no changes.
-  Also imports a whole Steam Desktop Authenticator `maFiles/` folder — **including
-  the encrypted ones** (select `manifest.json` along with the `.maFile`s; the salt
-  and IV live in the manifest, so an encrypted maFile alone is undecryptable) — and
-  other tools' variants (Steam++ / Watt Toolkit), including exports with no SteamID
-  (imported as a code-only account whose codes work offline). Export an account's
-  maFile at any time.
-- **Steam Guard codes** — a per-account list with live countdown rings and
-  tap-to-copy; tap a name to cycle username / persona / id. The choice applies
-  to the home account list and selected panel, is saved on this device and
-  survives app restarts on both desktop and phone.
-- **In-app sign-in approval** — approve or deny Steam logins from a dialog inside
-  GooeSteamKit (device + location shown), just like the official app — by polling, no push.
-- **Pending center** — one tabbed screen (swipe right on a phone account, or use the desktop context menu) for everything
-  awaiting a decision: **Confirmations** (trade / market, batch accept/reject, native
-  JSON, no WebView), **Trade offers** (received / sent / history, expandable cards
-  with both sides' items, gift / one-sided / escrow banners, accept then hand off to
-  the matching mobileconf).
-- **Steam Family groups** — a read-only group page (members, roles, slots, cooldown)
-  from the account overview (or desktop context menu), where incoming invites also live: pre-join checks first,
-  then hold-to-join. *(experimental)*
-- **Hold-to-confirm** — decisions on existing trade offers and confirmations,
-  joining a family and deleting an account use press-and-hold with accelerating
-  haptics; each gate and the haptics have their own Settings toggles. New trade
-  offers use a review dialog followed by an explicit Send action.
-- **Inventory & Market** — browse an account's Steam inventory (Steam-style game
-  picker, identical items stacked) and list items on the Community Market with
-  live Steam fees, a high/low price trend, linked "you receive ⇄ buyer pays"
-  pricing, batch listing, and optional auto-confirm; a "My listings" tab cancels
-  active listings. Open it from the account overview or desktop context menu.
-  A separate read-only **Market** tab searches by item name, game and currency.
-  Opening the tab or typing does not fetch data: submit a search to load one page
-  of items, then explicitly load more. Only visible items request reference
-  prices in the selected currency, one at a time with a one-second gap. Recent
-  pages and successful quotes are cached for five minutes; failed quotes pause
-  requests and offer an explicit retry. Hidden pages cancel outstanding reads.
-  Inventory and personal listings load when their respective tabs are opened.
-  Search-result prices with an unspecified currency are never reused as selected-currency
-  quotes. No local exchange-rate conversion or periodic price polling is performed.
-- **Automatic session refresh** — refreshes the access token from the refresh
-  token, and (optionally) does a full headless re-login with a stored password
-  plus the account's own TOTP when the refresh token expires.
-- **Login flows** — password + **QR**, session refresh, add authenticator, and
-  approving another device's login by scanning its QR.
-- **App lock** — a 6-digit PIN gates a random 256-bit key held in the
-  platform's secure storage, which encrypts the local store (AES-256-GCM).
-  System unlock (fingerprint, Windows Hello or device credentials) is an optional
-  method under startup verification. Turning verification off also disables this
-  method; turning verification back on requires enabling system unlock again.
-  Verification is enabled by default. Opting out stores a device-local convenience
-  credential only in platform secure storage; changing the PIN enables verification again.
-- **Encrypted sync (optional)** — put your accounts on a WebDAV server you
-  control (Nextcloud, Synology, any of them). Everything is encrypted on your
-  device before it leaves — the server stores ciphertext and never sees a
-  passphrase. Conflicts resolve per account rather than per file, so two devices
-  editing different accounts both keep their work. Off until you configure it.
-  **Sync app settings** also includes acceleration subscriptions and explicit
-  subscription removals. Receiving a subscription does not start acceleration;
-  its automatic-start preference and runtime state remain per-device. Both devices
-  need this feature for full subscription sync; older documents leave the newer
-  app's local subscription intact. Settings use whole-document last-writer merging.
-- **Animated avatars** — pulls each account's Steam avatar and avatar frame and
-  plays them (GIF natively; APNG parsed and composited by hand, honoring each
-  frame's offset / blend / dispose, so offset-based frames don't flicker).
-- **Appearance & skins** — a plain **Light / Dark / follow-system** appearance,
-  and separately a **skin** layer (None / Neon cyberpunk / Pixel retro), each
-  skin a data-driven effect pack with its own ambience. Pull-to-refresh uses
-  a small circular indicator with theme-matched colors and borders.
-- **Device management** — see every device and browser session signed into an
-  account (platform, rough location, last activity) and sign any of them out
-  remotely. The current device is marked and can't sign itself out.
-- **Redeem Steam keys** — activate a product key from the account overview or desktop context menu,
-  with Steam's own rejection reasons spelled out (mistyped, already owned,
-  already used, wrong country, needs the base game, rate-limited). Activation is
-  permanent, so it always confirms first and never retries a key by itself.
-- **Desktop windows stay where you put them** — position, size and maximized
-  state are remembered between launches, and a window saved on a monitor you
-  have since unplugged is brought back onto a screen you still have rather
-  than restored somewhere invisible.
-- **First-run gesture tutorial** on touch devices (desktop gets right-click row
-  menus instead).
-- **i18n** — English, 简体中文, 繁體中文, Deutsch, Français, Español, Русский.
-- **In-app Debug log** (Settings → Debug log) — a copyable network trace of the
-  Steam flows for diagnostics.
+### Everyday controls
 
-## Project layout
+- **Phone:** tap an account to select its home-screen code; long-press to open its overview for inventory, market, friends and backup codes.
+- **Desktop:** select an account from the list; use its overview or right-click menu for actions. Account rows do not use left/right swipe actions.
+- **App lock:** system unlock is an option under startup verification. Turning startup verification off also turns system unlock off; local account files remain encrypted.
 
-```
-app/        Flutter application (see app/README.md)
-docs/       design specs (docs/specs/) and implementation plans (docs/plans/)
-infra/      Cloudflare workers (entitlement/version, feedback)
-installer/  Windows installer packaging
-tool/       release tooling (Play upload, R2 publish, docs lint)
-```
+### Market prices in your selected currency
 
-The **`legacy`** branch preserves the original .NET WinForms Steam Desktop
-Authenticator that inspired this project — kept for reference only; AVA shares no
-code with it.
+Choose a game and currency, enter an item name, then select **Search market**.
+Visible results automatically request the **lowest asking price in that currency**;
+you do not need to refresh each item. Changing currency updates visible quotes.
+Item details show recent median sale prices separately from asking prices.
 
-## Build
+Searches are explicit, results are paged, and recent quotes are cached. The app
+does not continuously poll prices or convert an unverified USD search result into
+a CNY label. If Steam limits requests or a quote is unavailable, it shows the
+unavailable state and lets you retry. Prices are references, not a promise of a
+trade at that price.
 
-Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
+### Optional Steam connectivity
 
-```sh
-cd app
-flutter pub get --enforce-lockfile
-flutter test                       # 1554 tests
-flutter run -d linux               # or windows / macos
+Add your **HTTP or HTTPS Clash subscription**, select a supported node, and enable
+automatic switching for this session or at startup. Detected external HTTP
+proxies or VPN/TUN routes take priority. When an external route disappears, the
+enabled built-in fallback takes over if the network environment can be identified.
+The app shows the current route separately from Steam connection-check results.
 
-# Android ships in two flavors (play / cn); a build without --flavor fails.
-flutter build apk --release --split-per-abi --flavor cn --dart-define=AVA_CHANNEL=cn
-```
+This applies to **Steam requests inside GooeSteamKit**. It does not accelerate the
+Steam desktop client or games, or change system proxy/DNS settings. App-local
+acceleration does not create a system VPN icon. PAC/unknown environments and some
+subscription node types have limitations; see [connectivity details][connectivity].
 
-This fork's current Windows and Android release process is described in
-[fork releases](docs/fork-releases.md). The inherited desktop release tooling
-is retained in `.github/workflows/desktop-release.yml`:
+## Install and migrate
 
-- **Windows installer** — a scene-style single-file `AVA-…-setup.exe` built
-  from the original project's Flutter installer app (`installer/`): frameless neon/pixel UI,
-  installs per-user (no UAC), Start-menu / desktop shortcuts and a proper
-  uninstall entry. Uninstalling never touches account data.
-- **Linux AppImage** — single-file `AVA-…-linux-x86_64.AppImage`.
+| Your current app | How to move to GooeSteamKit |
+|---|---|
+| **GooeSteamKit / AVA-pc on Windows** | Install the newer package over the existing installation; the existing data location is retained. |
+| **GooeSteamKit / AVA Fork on Android** | Install the newer official fork APK with the same package and signature; accounts and settings are retained. |
+| **Original AVA / older AVA dev on Android** | Keep the old app, install GooeSteamKit alongside it, then export/import your accounts' `.maFile` files. PIN and local settings are separate. |
+| **Steam Desktop Authenticator** | Import the `maFiles` folder. For encrypted accounts, include `manifest.json` and supply the original password. |
 
-**Portable build (Windows):** a separate workflow
-(`.github/workflows/windows-portable.yml`) packs the whole app into one
-single-file `AVA-…-portable.exe` (NSIS, `tool/portable.nsi`). It runs from anywhere
-with nothing to install. Desktop Settings includes a **Portable mode** switch:
-new accounts go to `maFiles` beside the app when enabled, or to AppData when
-disabled. Both libraries remain readable. Each switch offers to copy existing
-accounts; source copies are retained and matching Steam IDs are skipped.
-Portable accounts use a separate password (at least 12 characters), so the
-whole `maFiles` folder can travel to another computer. Keep its `manifest.json`
-with the encrypted account files. Settings are not carried in `maFiles`;
-existing WebDAV settings sync is unchanged, and portable accounts are excluded
-from account sync. On a new computer, accept the privacy notice and set a local
-unlock PIN first, then unlock `maFiles` with its separate password.
-
-## macOS (Apple Silicon)
-
-The original AVA project's DMG builds ship on its [Releases](https://github.com/freefrank/AnotherVaporAuth/releases)
-with every tagged version since v1.2.0 — **arm64 only** (M1 and later; no Intel
-build). Open the DMG and drag **AVA** into **Applications**.
-
-The app is ad-hoc signed but **not notarized** (a $99/year Apple Developer
-membership; this is a free community project), so Gatekeeper will warn on first
-launch. To run it anyway:
-
-1. **Right-click** (or Control-click) `AVA.app` → **Open** → **Open**. On newer
-   macOS the button may only appear the second time, or under
-   **System Settings → Privacy & Security → "Open Anyway"**.
-2. If macOS instead claims the app "is damaged and can't be opened" — that is
-   the quarantine flag on an un-notarized download, not actual damage. Clear it:
-
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/AVA.app
-   ```
-
-Both are one-time; later launches open normally. Only ever do this for software
-whose origin you trust — for the original AVA that means the upstream Releases page linked above, where
-every DMG is built in public by GitHub Actions from the tagged commit.
-
-## Fonts
-
-All fonts are **bundled** (no runtime download) and declared in
-`app/pubspec.yaml`; see `app/assets/fonts/README.md` for details.
-
-| Family | Theme | Role | Source / License |
-|---|---|---|---|
-| [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch) | Neon | display | OFL 1.1 |
-| [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) | Neon | code | OFL 1.1 |
-| [Noto Sans SC](https://fonts.google.com/noto/specimen/Noto+Sans+SC) | Neon | Chinese (CJK) fallback | OFL 1.1 |
-| [Fusion Pixel](https://github.com/TakWolf/fusion-pixel-font) | Pixel | display + code (Latin + full CJK incl. 簡/繁, kana, hangul) | OFL 1.1 |
-
-The Pixel theme uses the **full** Fusion Pixel font for complete CJK coverage
-(including rare characters in usernames). Noto Sans SC is subset to the CJK
-ideograph blocks (simplified + traditional). Latin-only fonts cover ASCII.
-
-## Credits
-
-The original AVA by freefrank was written from scratch in Flutter. This repository
-is a fork of that project. AVA was inspired by **Steam Desktop Authenticator** (by
-Jessecar96 and contributors), and stays compatible with its `.maFile` format so
-existing users can migrate. Steam auth protocol references:
-[SteamAuth](https://github.com/geel9/SteamAuth),
-[node-steam-session](https://github.com/DoctorMcKay/node-steam-session).
+Keep a backup of your account files and revocation code. Importing a code-only
+account does not establish an online Steam session; sign-in, trading and market
+actions still depend on Steam's session and account requirements.
+See the [installation and migration steps][migration] and [Windows sign-in guide][switch-guide].
 
 ## Privacy
 
-Accounts, secrets and codes stay on your device. Steam requests go to Valve,
-without a backend operated by this fork. Detected external HTTP proxies or
-system VPN/TUN routes take priority; enabling the optional built-in fallback
-uses your selected node when the external route is absent. Normal TLS
-verification remains enabled. This fork disables Pro
-verification, payments and advertising, and has no default upstream update
-check. Feedback opens this fork's GitHub issues without sending a report or
-log automatically. Optional WebDAV synchronization uses your chosen server.
-See the [fork privacy notice](docs/fork-privacy.md)
-([简体中文](docs/fork-privacy-zh.md)); the original policies remain in the
-repository for reference.
+Accounts and authenticator keys are stored locally. Steam operations use Valve's
+services over the selected network route. Optional WebDAV sync sends encrypted
+account data and enabled settings to a server you choose. Backup login codes and
+QR screenshots are held in memory, not saved to logs or synced. Reports are not
+uploaded automatically; feedback opens this repository's Issues page.
 
-## License
+Read the [fork privacy notice][privacy] for network routes, subscriptions, update
+mirrors and sync metadata. The root `PRIVACY.md` files describe the original AVA.
 
-See [LICENSE](LICENSE). Bundled fonts retain their own OFL 1.1 licenses.
+## Source and development
+
+The fork's application development is on
+[`feature/windows-steam-account-switch`][source]. Use that branch or a published
+release tag to build the fork. Requires **Flutter 3.44.4 / Dart 3.12.2** and the
+platform's build tools.
+
+```sh
+git clone --branch feature/windows-steam-account-switch https://github.com/gooesman/AnotherVaporAuth.git
+cd AnotherVaporAuth/app
+flutter pub get --enforce-lockfile
+flutter analyze
+flutter test
+flutter run -d windows
+```
+
+Android uses `cn` / `play` flavors. The distributed fork uses the **CN ARM64**
+build, a separate package identity and a persistent signing key. Follow the
+[build notes][build-guide] and [release workflow][releases-guide] for those settings;
+self-signed builds cannot replace the distributed APK in place.
+
+## Credits and licenses
+
+Thanks to **freefrank**, the creator of AVA, and its contributors. AVA was inspired
+by Steam Desktop Authenticator; protocol references include
+[SteamAuth](https://github.com/geel9/SteamAuth) and
+[node-steam-session](https://github.com/DoctorMcKay/node-steam-session).
+
+Application source retains the original author's [MIT license](LICENSE).
+[Bundled fonts][fonts] retain their own licenses. The optional Mihomo component is
+covered by its [third-party notices][mihomo]; matching source and license files
+are included with fork releases. Local feature availability does not grant access
+to the original project's paid online services.
+
+[source]: https://github.com/gooesman/AnotherVaporAuth/tree/feature/windows-steam-account-switch
+[build-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/app/README.md
+[releases-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-releases.md
+[switch-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md
+[connectivity]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#optional-steam-connectivity
+[migration]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#android-installation-and-migration
+[privacy]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy.md
+[fonts]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/app/assets/fonts/README.md
+[mihomo]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/third_party/mihomo/NOTICE
