@@ -5,6 +5,26 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.8] — 2026-10-13 · Fork
+
+### Added
+- Encrypted app-settings sync includes the Steam acceleration subscription, sanitized cached nodes and selected node. Explicit removal propagates; receiving a configuration does not start acceleration. Automatic startup stays per-device, and older documents preserve local subscriptions.
+
+### Fixed
+- Windows acceleration components download through a primary mirror, backup mirror and official fallback with pinned archive and executable hashes. Archive verification and extraction run in the background; the UI distinguishes downloading from starting and explains when an external proxy or VPN pauses the built-in core.
+- The update download-source selector stays visible on both platforms, including when already up to date or when a version check fails.
+- Late preference reads no longer overwrite freshly changed or synchronized settings; selecting a node cannot write an old node into a newly synchronized subscription. Locked settings imports and failed secure-storage writes cannot advance the sync baseline.
+- Passphrase rotation re-encrypts all referenced remote payloads, including settings disabled on this device, without replacing their contents. Retry and restart handling retains the previous key in secure storage until completion, and concurrent remote edits are re-read before retrying.
+
+### 新增
+- 加密设置同步纳入 Steam 加速订阅、筛选后的缓存节点与所选节点。清除订阅同样会同步；接收配置不会启动加速，自动启动开关仍由各设备独立保存，旧文档缺字段时保留本机订阅。
+
+### 修复
+- Windows 加速组件增加主镜像、备用镜像与官方回退，并校验压缩包和程序的固定摘要。压缩包校验及解压在后台执行，界面区分下载和启动阶段，明确提示外部代理或 VPN 导致的暂停。
+- 两端软件更新页始终显示下载源选项，没有新版或检查失败时也可查看。
+- 修复启动时旧设置覆盖刚修改或同步的设置，以及切换节点时旧节点写入新订阅的竞态；锁定时导入与安全存储失败均不会推进同步基线。
+- 更换同步口令时重新加密远端引用的全部载荷，包括本机已关闭同步的设置，保留其内容。失败重试和重启期间仅在安全存储中暂存旧口令，完成后清除；并发远端修改会在重试前重新读取。
+
 ## [v1.5.7] — 2026-10-12 · Fork
 
 ### Changed

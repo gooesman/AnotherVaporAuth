@@ -1934,7 +1934,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncAppSettingsDesc =>
-      '外观与行为偏好（皮肤、明暗、长按确认等）跟随你到每台设备；语言与字号保持各设备独立。';
+      '同步外观与行为偏好，以及加密保存的 Steam 加速订阅、节点和所选节点。语言、字号和加速自动启动开关保持各设备独立。';
 
   @override
   String get syncNowButton => '立即同步';
@@ -2580,16 +2580,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      '链接可能包含私人凭据，仅保存在本机。保存后点击“同步节点”获取可用节点。';
+      '链接可能包含私人凭据，会安全保存在设备上。开启“同步应用设置”后，订阅和节点也会通过同步口令加密同步。保存后点击“更新节点”加载节点。';
 
   @override
   String get steamAccelerationClear => '清除订阅';
 
   @override
-  String get steamAccelerationClearConfirm => '停止内置加速，并删除本机保存的订阅和节点？';
+  String get steamAccelerationClearConfirm =>
+      '停止内置加速并删除已保存的订阅和节点？开启设置同步时，这项删除也会同步到其他设备。';
 
   @override
-  String get steamAccelerationSync => '同步节点';
+  String get steamAccelerationSync => '更新节点';
+
+  @override
+  String get steamAccelerationDownloadingCore => '正在下载加速组件…';
+
+  @override
+  String get steamAccelerationCoreDownload => '加速组件下载失败，已尝试镜像和官方源，请稍后重试。';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      '检测到外部代理或 VPN，内置加速已让路。如需使用内置加速，请先关闭外部代理，再点重新检查。';
 
   @override
   String get steamAccelerationNodes => '节点';
@@ -4793,7 +4804,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get syncAppSettingsDesc =>
-      '外觀與行為偏好（面板、明暗、長按確認等）跟著你到每台裝置；語言與文字大小維持各裝置獨立。';
+      '同步外觀與行為偏好，以及加密儲存的 Steam 加速訂閱、節點和所選節點。語言、文字大小和加速自動啟動開關維持各裝置獨立。';
 
   @override
   String get syncNowButton => '立即同步';
@@ -5442,16 +5453,27 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      '連結可能含有私人憑證，僅儲存在本機。儲存後點選「同步節點」取得可用節點。';
+      '連結可能含有私人憑證，會安全儲存在裝置上。開啟「同步應用程式設定」後，訂閱與節點也會使用同步密碼加密同步。儲存後點選「更新節點」載入節點。';
 
   @override
   String get steamAccelerationClear => '清除訂閱';
 
   @override
-  String get steamAccelerationClearConfirm => '停止內建加速，並刪除本機儲存的訂閱和節點？';
+  String get steamAccelerationClearConfirm =>
+      '停止內建加速並刪除已儲存的訂閱和節點？開啟設定同步時，這項刪除也會同步到其他裝置。';
 
   @override
-  String get steamAccelerationSync => '同步節點';
+  String get steamAccelerationSync => '更新節點';
+
+  @override
+  String get steamAccelerationDownloadingCore => '正在下載加速元件…';
+
+  @override
+  String get steamAccelerationCoreDownload => '加速元件下載失敗，已嘗試鏡像與官方來源，請稍後再試。';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      '偵測到外部代理或 VPN，內建加速已暫停。如需使用內建加速，請先關閉外部代理，再點選重新檢查。';
 
   @override
   String get steamAccelerationNodes => '節點';

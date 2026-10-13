@@ -2042,7 +2042,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncAppSettingsDesc =>
-      'Darstellungs- und Verhaltenseinstellungen (Skin, Design, Halten zum Bestätigen …) begleiten dich auf jedes Gerät. Sprache und Textgröße bleiben pro Gerät.';
+      'Synchronisiert Darstellung und Verhalten sowie verschlüsselte Steam-Abonnements, Knoten und die Knotenauswahl. Sprache, Textgröße und automatischer Beschleunigungsstart bleiben gerätespezifisch.';
 
   @override
   String get syncNowButton => 'Jetzt synchronisieren';
@@ -2747,17 +2747,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'Dieser Link kann private Zugangsdaten enthalten und wird nur auf diesem Gerät gespeichert. Synchronisiere nach dem Speichern die verfügbaren Knoten.';
+      'Dieser Link kann private Zugangsdaten enthalten und wird sicher gespeichert. Bei aktivierter Einstellungssynchronisierung werden Abonnements und Knoten mit deinem Synchronisierungspasswort verschlüsselt und synchronisiert. Nach dem Speichern: Knoten aktualisieren.';
 
   @override
   String get steamAccelerationClear => 'Abonnement löschen';
 
   @override
   String get steamAccelerationClearConfirm =>
-      'Interne Beschleunigung stoppen und das gespeicherte Abonnement sowie die Knoten von diesem Gerät löschen?';
+      'Interne Beschleunigung stoppen und das gespeicherte Abonnement samt Knoten löschen? Bei aktivierter Einstellungssynchronisierung wird diese Löschung auch auf andere Geräte übertragen.';
 
   @override
-  String get steamAccelerationSync => 'Knoten synchronisieren';
+  String get steamAccelerationSync => 'Knoten aktualisieren';
+
+  @override
+  String get steamAccelerationDownloadingCore =>
+      'Beschleunigungskomponente wird heruntergeladen…';
+
+  @override
+  String get steamAccelerationCoreDownload =>
+      'Download über Spiegelserver und offizielle Quelle fehlgeschlagen. Bitte später erneut versuchen.';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      'Ein externer Proxy oder VPN ist aktiv; die interne Beschleunigung pausiert. Deaktiviere den externen Proxy und prüfe erneut, um sie zu verwenden.';
 
   @override
   String get steamAccelerationNodes => 'Knoten';

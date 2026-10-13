@@ -109,6 +109,8 @@ external proxies taking priority. Opening updates does not start another core.
 Automatic package downloads first try GH-Proxy's direct acceleration routes,
 independent of this app proxy, and fall back to GitHub. GitHub-only downloading
 is selectable; metadata and SHA-256 remain sourced from official GitHub.
+The source selector remains visible on both Windows and Android, including when
+already up to date or when checking the latest version fails.
 It does not accelerate the
 Steam desktop client, games, a browser or other apps, and never changes the
 system proxy, DNS, certificates or TUN routing. Unsupported nodes are reported;
@@ -132,12 +134,29 @@ do not automatically start a second core, but allow an explicit manual start.
 Manually stopping prevents automatic
 restart for the rest of that app session.
 
-Windows downloads a fixed, SHA-256-verified Mihomo component (about 22 MB) on
-first use. Android includes the ARM64 component because downloaded executable
+Windows downloads a fixed Mihomo component (about 22 MB) on first use, trying
+GH-Proxy's `axisnow.gh-proxy.org`, then `v4.gh-proxy.org`, then the official
+upstream GitHub release. Component downloads use an independent direct client
+without subscription or app-proxy credentials. Both the archive and extracted
+executable must match SHA-256 values pinned in the app; a verified local copy is
+reused. Archive verification and decompression run outside the UI isolate, and the acceleration
+page distinguishes component downloading, subscription loading and startup errors.
+Android includes the ARM64 component because downloaded executable
 code cannot be launched from its writable app storage; this adds about 22 MB
 compressed to the APK. The core listens only on an authenticated random local
 port and is stopped with the app. Subscription links and sanitized node credentials
-stay in local secure storage; they are not synced with accounts or logged.
+stay in local secure storage and are not logged. With WebDAV and **Sync app settings**
+enabled, the URL, sanitized cached nodes and selected node also travel inside the
+existing encrypted settings document. Explicitly clearing a subscription propagates
+the removal. Automatic startup, runtime state, listener credentials/ports and
+external-proxy detection remain local. A changed subscription received through
+sync is validated before stopping the old connection and saving the new configuration;
+it does not download nodes or start a new connection.
+Older clients do not support these fields. Missing fields in an older document
+preserve the newer client's local subscription without repeated uploads, but an
+older writer can omit them from the remote settings. Update both devices for
+complete subscription synchronization. Settings retain whole-document last-writer
+merging; account conflicts still require an explicit choice.
 Steam's normal TLS certificate checks remain enabled. See the
 [privacy notice](fork-privacy.md) and [component notices](../third_party/mihomo/NOTICE).
 

@@ -2,6 +2,7 @@
 enum SteamAccelerationPhase {
   off,
   loadingSubscription,
+  downloadingCore,
   starting,
   running,
   pausedExternal,
@@ -14,6 +15,7 @@ enum SteamAccelerationError {
   unsupportedSubscription,
   storage,
   coreUnavailable,
+  coreDownload,
   coreIntegrity,
   startFailed,
   unsupportedPlatform,

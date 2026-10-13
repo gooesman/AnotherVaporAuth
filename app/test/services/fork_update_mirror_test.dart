@@ -20,8 +20,11 @@ final _small = Uint8List.fromList(
   utf8.encode('synthetic installer, never run'),
 );
 
-ForkUpdateRelease _release(Uint8List bytes) => ForkUpdateRelease(
-  target: ForkUpdateTarget.androidArm64,
+ForkUpdateRelease _release(
+  Uint8List bytes, {
+  ForkUpdateTarget target = ForkUpdateTarget.androidArm64,
+}) => ForkUpdateRelease(
+  target: target,
   tag: _tag,
   version: '1.5.2',
   buildNumber: 100015,
@@ -30,8 +33,17 @@ ForkUpdateRelease _release(Uint8List bytes) => ForkUpdateRelease(
     'https://github.com/gooesman/AnotherVaporAuth/releases/tag/$_tag',
   ),
   asset: ForkUpdateAsset(
-    name: _name,
-    url: _official,
+    name: target == ForkUpdateTarget.windowsX64
+        ? 'AVA-pc-$_tag-windows-x64-setup.exe'
+        : _name,
+    url: target == ForkUpdateTarget.windowsX64
+        ? _official.replace(
+            pathSegments: [
+              ..._official.pathSegments.take(5),
+              'AVA-pc-$_tag-windows-x64-setup.exe',
+            ],
+          )
+        : _official,
     size: bytes.length,
     sha256: sha256.convert(bytes).toString(),
   ),
@@ -105,80 +117,82 @@ void main() {
     isEmpty,
   );
 
-  test(
-    'metadata stays official and automatic transport uses exact encoded mirror URL',
-    () async {
-      final release = _release(_small);
-      final events = <String>[];
-      final officialRequests = <Uri>[];
-      final sut = service(
-        official: (request) {
-          officialRequests.add(request.uri);
-          expect(request.uri.toString(), kForkLatestReleaseApi);
-          return ResponseBody.fromString(
-            jsonEncode({
-              'tag_name': release.tag,
-              'draft': false,
-              'prerelease': false,
-              'html_url': release.releaseUrl.toString(),
-              'assets': [
-                {
-                  'name': release.asset.name,
-                  'state': 'uploaded',
-                  'size': release.asset.size,
-                  'digest': 'sha256:${release.asset.sha256}',
-                  'browser_download_url': release.asset.url.toString(),
-                },
-              ],
-            }),
-            200,
-          );
-        },
-        mirror: (request) {
-          expect(
-            request.uri.toString(),
-            'https://axisnow.gh-proxy.org/https://github.com/gooesman/AnotherVaporAuth/releases/download/v1.5.2%2B100015/AVA-Fork-v1.5.2%2B100015-android-arm64.apk',
-          );
-          expect(request.followRedirects, isFalse);
-          expect(request.maxRedirects, 0);
-          expect(request.headers['Accept-Encoding'], 'identity');
-          expect(
-            request.headers.keys.map((key) => key.toLowerCase()),
-            isNot(
-              contains(
-                anyOf(
-                  'authorization',
-                  'cookie',
-                  'proxy-authorization',
-                  'x-github-api-version',
+  for (final target in ForkUpdateTarget.values) {
+    test(
+      '$target metadata stays official and automatic transport uses exact encoded mirror URL',
+      () async {
+        final release = _release(_small, target: target);
+        final events = <String>[];
+        final officialRequests = <Uri>[];
+        final sut = service(
+          official: (request) {
+            officialRequests.add(request.uri);
+            expect(request.uri.toString(), kForkLatestReleaseApi);
+            return ResponseBody.fromString(
+              jsonEncode({
+                'tag_name': release.tag,
+                'draft': false,
+                'prerelease': false,
+                'html_url': release.releaseUrl.toString(),
+                'assets': [
+                  {
+                    'name': release.asset.name,
+                    'state': 'uploaded',
+                    'size': release.asset.size,
+                    'digest': 'sha256:${release.asset.sha256}',
+                    'browser_download_url': release.asset.url.toString(),
+                  },
+                ],
+              }),
+              200,
+            );
+          },
+          mirror: (request) {
+            expect(
+              request.uri.toString(),
+              'https://axisnow.gh-proxy.org/https://github.com/gooesman/AnotherVaporAuth/releases/download/v1.5.2%2B100015/${Uri.encodeComponent(release.asset.name)}',
+            );
+            expect(request.followRedirects, isFalse);
+            expect(request.maxRedirects, 0);
+            expect(request.headers['Accept-Encoding'], 'identity');
+            expect(
+              request.headers.keys.map((key) => key.toLowerCase()),
+              isNot(
+                contains(
+                  anyOf(
+                    'authorization',
+                    'cookie',
+                    'proxy-authorization',
+                    'x-github-api-version',
+                  ),
                 ),
               ),
-            ),
-          );
-          expect(request.sendTimeout, const Duration(seconds: 8));
-          expect(request.receiveTimeout, const Duration(seconds: 12));
-          return ResponseBody.fromBytes(_small, 200);
-        },
-      );
-      final checked = await sut.check(
-        target: ForkUpdateTarget.androidArm64,
-        currentVersion: '1.5.1-fork',
-        currentBuild: '100014',
-      );
-      expect(checked.status, ForkUpdateCheckStatus.available);
-      expect(checked.release!.asset.url, _official);
-      final verified = await sut.download(
-        checked.release!,
-        onSourceChanged: (source) => events.add(source.name),
-        onProgress: (received, _) => events.add('$received'),
-      );
-      expect(events.take(2), ['axisNow', '0']);
-      expect(events.last, '${_small.length}');
-      expect(officialRequests, hasLength(1));
-      expect(await verified.file.readAsBytes(), _small);
-      await sut.verifyAgain(verified);
-    },
-  );
+            );
+            expect(request.sendTimeout, const Duration(seconds: 8));
+            expect(request.receiveTimeout, const Duration(seconds: 12));
+            return ResponseBody.fromBytes(_small, 200);
+          },
+        );
+        final checked = await sut.check(
+          target: target,
+          currentVersion: '1.5.1-fork',
+          currentBuild: '100014',
+        );
+        expect(checked.status, ForkUpdateCheckStatus.available);
+        expect(checked.release!.asset.url, release.asset.url);
+        final verified = await sut.download(
+          checked.release!,
+          onSourceChanged: (source) => events.add(source.name),
+          onProgress: (received, _) => events.add('$received'),
+        );
+        expect(events.take(2), ['axisNow', '0']);
+        expect(events.last, '${_small.length}');
+        expect(officialRequests, hasLength(1));
+        expect(await verified.file.readAsBytes(), _small);
+        await sut.verifyAgain(verified);
+      },
+    );
+  }
 
   test(
     'failed mirrors use ordered fresh sources before the official asset',

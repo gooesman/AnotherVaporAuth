@@ -2,28 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
-import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'steam_acceleration_types.dart';
-
-const steamCoreVersion = 'v1.19.32';
-const _windowsArchiveUrl =
-    'https://github.com/MetaCubeX/mihomo/releases/download/'
-    'v1.19.32/mihomo-windows-amd64-v1-v1.19.32.zip';
-const _windowsArchiveHash =
-    '00549b347d8e124600e46cac67d59293358454f465e9d86d2511567da56b7029';
-const _windowsExecutableHash =
-    '0b54ea7b10e26f6ca628b49e77c13ad9b2587b23393a5b715769cbaeed012af6';
+import 'steam_windows_core.dart';
 
 abstract class SteamAccelerationRuntime {
   bool get supported;
   Future<SteamAccelerationEnvironment> detectEnvironment();
-  Future<void> start(String configuration, SteamProxyEndpoint endpoint);
+  Future<void> start(
+    String configuration,
+    SteamProxyEndpoint endpoint, {
+    void Function(SteamAccelerationPhase)? onPhaseChanged,
+  });
   Future<bool> isRunning();
   Future<void> stop();
 }
@@ -57,7 +50,11 @@ class PlatformSteamAccelerationRuntime implements SteamAccelerationRuntime {
   }
 
   @override
-  Future<void> start(String configuration, SteamProxyEndpoint endpoint) async {
+  Future<void> start(
+    String configuration,
+    SteamProxyEndpoint endpoint, {
+    void Function(SteamAccelerationPhase)? onPhaseChanged,
+  }) async {
     if (!supported) {
       throw const SteamAccelerationException(
         SteamAccelerationError.unsupportedPlatform,
@@ -82,7 +79,18 @@ class PlatformSteamAccelerationRuntime implements SteamAccelerationRuntime {
         await _channel.invokeMethod<void>('restrictDirectory', {
           'path': base.path,
         });
-        final executable = await _prepareWindowsCore(base);
+        final core = SteamWindowsCore();
+        late final File executable;
+        try {
+          executable = await core.prepare(
+            base,
+            onDownload: () =>
+                onPhaseChanged?.call(SteamAccelerationPhase.downloadingCore),
+          );
+        } finally {
+          core.close();
+        }
+        onPhaseChanged?.call(SteamAccelerationPhase.starting);
         final run = await base.createTemp('run-');
         _runDirectory = run;
         final process = await Process.start(
@@ -135,55 +143,6 @@ class PlatformSteamAccelerationRuntime implements SteamAccelerationRuntime {
       key: ?Platform.environment[key],
     // Do not inherit proxy variables or arbitrary core SAFE_PATHS overrides.
   };
-
-  Future<File> _prepareWindowsCore(Directory base) async {
-    final folder = Directory(p.join(base.path, steamCoreVersion));
-    await folder.create(recursive: true);
-    final executable = File(p.join(folder.path, 'ava-steam-core.exe'));
-    if (await executable.exists() &&
-        await _fileHash(executable) == _windowsExecutableHash) {
-      return executable;
-    }
-    final bytes = await downloadBoundedHttps(
-      Uri.parse(_windowsArchiveUrl),
-      maxBytes: 32 * 1024 * 1024,
-      allowedHosts: const {
-        'github.com',
-        'release-assets.githubusercontent.com',
-        'objects.githubusercontent.com',
-      },
-      timeout: const Duration(minutes: 5),
-    );
-    if (sha256.convert(bytes).toString() != _windowsArchiveHash) {
-      throw const SteamAccelerationException(
-        SteamAccelerationError.coreIntegrity,
-      );
-    }
-    final archive = ZipDecoder().decodeBytes(bytes, verify: true);
-    // Fixed upstream archive has exactly one flat executable. No path extraction.
-    if (archive.length != 1 ||
-        archive.first.name != 'mihomo-windows-amd64-v1.exe' ||
-        !archive.first.isFile ||
-        archive.first.size > 80 * 1024 * 1024) {
-      throw const SteamAccelerationException(
-        SteamAccelerationError.coreIntegrity,
-      );
-    }
-    final content = archive.first.content;
-    if (sha256.convert(content).toString() != _windowsExecutableHash) {
-      throw const SteamAccelerationException(
-        SteamAccelerationError.coreIntegrity,
-      );
-    }
-    final temporary = File('${executable.path}.pending');
-    await temporary.writeAsBytes(content, flush: true);
-    if (await executable.exists()) await executable.delete();
-    await temporary.rename(executable.path);
-    return executable;
-  }
-
-  Future<String> _fileHash(File file) async =>
-      (await sha256.bind(file.openRead()).first).toString();
 
   Future<void> _waitForAuthenticatedListener(
     SteamProxyEndpoint endpoint,
@@ -285,66 +244,4 @@ SteamExternalProxy? parseExternalSteamProxy(dynamic raw) {
     return null;
   }
   return SteamExternalProxy(host: uri.host, port: uri.port);
-}
-
-/// Bounded direct client, separate from Steam sessions. Diagnostics never escape
-/// as Dio exceptions because request URLs may include subscription credentials.
-Future<List<int>> downloadBoundedHttps(
-  Uri uri, {
-  required int maxBytes,
-  Set<String>? allowedHosts,
-  Duration timeout = const Duration(seconds: 40),
-}) async {
-  final dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 20),
-      followRedirects: false,
-      validateStatus: (_) => true,
-      headers: {'User-Agent': 'AVA-Steam-Acceleration/1'},
-    ),
-  );
-  final cancellation = CancelToken();
-  final deadline = Timer(timeout, () => cancellation.cancel());
-  try {
-    var target = uri;
-    for (var redirects = 0; redirects <= 4; redirects++) {
-      if (target.scheme != 'https' ||
-          target.host.isEmpty ||
-          target.userInfo.isNotEmpty ||
-          allowedHosts != null && !allowedHosts.contains(target.host)) {
-        throw const FormatException();
-      }
-      final response = await dio.getUri<ResponseBody>(
-        target,
-        options: Options(responseType: ResponseType.stream),
-        cancelToken: cancellation,
-      );
-      if ([301, 302, 303, 307, 308].contains(response.statusCode)) {
-        final location = response.headers.value('location');
-        await response.data?.stream.drain<void>();
-        if (location == null) throw const FormatException();
-        target = target.resolve(location);
-        continue;
-      }
-      if (response.statusCode != 200 || response.data == null) {
-        throw const FormatException();
-      }
-      final data = <int>[];
-      await for (final chunk in response.data!.stream) {
-        if (data.length + chunk.length > maxBytes) {
-          throw const FormatException();
-        }
-        data.addAll(chunk);
-      }
-      return data;
-    }
-    throw const FormatException();
-  } catch (_) {
-    throw const SteamAccelerationException(SteamAccelerationError.network);
-  } finally {
-    deadline.cancel();
-    cancellation.cancel();
-    dio.close(force: true);
-  }
 }

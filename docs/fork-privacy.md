@@ -1,6 +1,6 @@
 # GooeSteamKit privacy notice
 
-Updated: 2026-10-12. This notice describes **GooeSteamKit**, gooesman's independent
+Updated: 2026-10-13. This notice describes **GooeSteamKit**, gooesman's independent
 fork of freefrank's AVA for Windows and Android. Earlier builds were named
 **AVA-pc** and **AVA Fork**. The new name and icon retain the existing data paths
 and Android package/signing identity; existing AVA Fork users do not need to
@@ -22,13 +22,27 @@ logs or WebDAV.
 
 Steam acceleration is optional and starts manually by default. Subscription
 URLs and sanitized node credentials are kept in local secure storage, separately
-from account synchronization. Explicit synchronization contacts your subscription
-provider; automatic startup may fetch it when no cached node is available.
+from account files. When WebDAV synchronization and **Sync app settings** are
+enabled, the subscription URL, sanitized cached nodes and selected node are
+included in the settings document encrypted with your synchronization passphrase.
+Clearing a subscription also synchronizes its removal. Automatic startup and
+running state, local listener credentials/ports and detected proxy/VPN information
+stay on each device. Applying a synchronized subscription does not fetch nodes
+or start acceleration. Older apps cannot synchronize these fields; an older
+document missing them leaves the newer app's local subscription intact. Update
+both devices to synchronize subscriptions reliably.
+Choosing **Refresh nodes** contacts your subscription provider; automatic startup
+may fetch it when no cached node is available.
 HTTP and HTTPS subscriptions are supported; credentials in the URL are sent as
 HTTP Basic authentication to that origin only. An HTTP subscription sends its
 URL, credentials and response without transport encryption. This does not change
 the TLS validation used by Steam connections or component downloads.
-Windows first-use core downloads contact the pinned upstream GitHub release.
+Windows downloads its fixed-version component on first use, trying
+`axisnow.gh-proxy.org`, then `v4.gh-proxy.org`, then the upstream GitHub release.
+These requests use an independent direct client without subscription or app-proxy
+credentials; an existing system VPN/TUN may still carry them. Providers can see
+the client IP, public component path, timing and traffic volume. Both the archive
+and extracted executable must match SHA-256 values pinned in the app before use.
 The Android package includes the same core. The core uses a private local
 listener and receives its configuration in memory, with no retained diagnostics.
 GooeSteamKit detects system proxy/VPN information locally to pause its own core; it does
@@ -39,8 +53,11 @@ changes, on foreground return when the last result is stale, or when you choose
 to check, rather than continuously polling Steam.
 Results describe reachability, not account authentication or trading permission.
 
-Optional WebDAV synchronization sends encrypted account data to the server you
-choose. It is disabled until you configure it. Local debug logs may include
+Optional WebDAV synchronization sends encrypted account payloads and, when
+enabled, the curated settings document to the server you choose. It is disabled
+until you configure it. Server-visible synchronization metadata includes SteamIDs,
+revisions and payload hashes, not plaintext subscription credentials.
+Local debug logs may include
 account names and SteamIDs; the app does not automatically upload those logs.
 Screen selections for Steam QR login are decoded locally in memory, and are
 not saved or uploaded as screenshots.
@@ -53,7 +70,9 @@ No token is fabricated and no access to the author's online services is granted.
 Opening the update page in Settings checks this fork's public GitHub releases.
 Automatic downloads first contact GH-Proxy's `axisnow.gh-proxy.org`, then
 `v4.gh-proxy.org`, falling back to GitHub. You can select GitHub only before
-downloading. Mirror requests use a separate direct client without application
+downloading. The download-source selector remains visible on Windows and Android
+even when no update is available or the version check fails. Mirror requests use
+a separate direct client without application
 proxy credentials; an existing system VPN/TUN may still carry that traffic.
 The mirror operator can see your IP address, public file path, user agent,
 request timing and traffic volume. No Steam account, authenticator secret,

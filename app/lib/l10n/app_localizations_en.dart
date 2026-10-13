@@ -2026,7 +2026,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncAppSettingsDesc =>
-      'Appearance and behavior preferences (skin, theme, hold-to-confirm…) follow you to every device. Language and text size stay per-device.';
+      'Sync appearance and behavior preferences plus encrypted Steam acceleration subscriptions, nodes and the selected node. Language, text size and acceleration auto-start stay per-device.';
 
   @override
   String get syncNowButton => 'Sync now';
@@ -2726,17 +2726,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'This link may contain private credentials and is stored only on this device. After saving, sync the subscription to load available nodes.';
+      'This link may contain private credentials and is stored securely on your device. With Sync app settings enabled, subscriptions and nodes are also encrypted with your sync passphrase and synced. After saving, select Refresh nodes.';
 
   @override
   String get steamAccelerationClear => 'Clear subscription';
 
   @override
   String get steamAccelerationClearConfirm =>
-      'Stop built-in acceleration and remove the saved subscription and nodes from this device?';
+      'Stop built-in acceleration and delete the saved subscription and nodes? With settings sync enabled, this deletion also syncs to your other devices.';
 
   @override
-  String get steamAccelerationSync => 'Sync nodes';
+  String get steamAccelerationSync => 'Refresh nodes';
+
+  @override
+  String get steamAccelerationDownloadingCore =>
+      'Downloading acceleration component…';
+
+  @override
+  String get steamAccelerationCoreDownload =>
+      'Could not download the acceleration component after trying mirrors and the official source. Try again later.';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      'An external proxy or VPN is active, so built-in acceleration is paused. To use it, turn off the external proxy, then check again.';
 
   @override
   String get steamAccelerationNodes => 'Nodes';

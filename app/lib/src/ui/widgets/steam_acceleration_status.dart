@@ -33,6 +33,7 @@ String steamAccelerationPhaseLabel(
 ) => switch (phase) {
   SteamAccelerationPhase.off => l.steamAccelerationOff,
   SteamAccelerationPhase.loadingSubscription => l.steamAccelerationLoading,
+  SteamAccelerationPhase.downloadingCore => l.steamAccelerationDownloadingCore,
   SteamAccelerationPhase.starting => l.steamAccelerationStarting,
   SteamAccelerationPhase.running => l.steamAccelerationRunning,
   SteamAccelerationPhase.pausedExternal => l.steamAccelerationPaused,

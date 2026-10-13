@@ -218,32 +218,74 @@ _Service _available({
 );
 
 void main() {
-  testWidgets('automatic source is default and official can be selected', (
-    tester,
-  ) async {
-    final service = _available()..pendingDownload = Completer();
-    await _show(tester, service, _Installer());
-    final l = AppLocalizations.of(
-      tester.element(find.byType(ForkUpdateScreen)),
-    );
-    await _tap(tester, 'fork-update-source-mode');
-    await tester.tap(find.text(l.forkUpdateSourceOfficial).last);
-    await tester.pumpAndSettle();
-    await _tap(tester, 'fork-update-download');
-    expect(service.requestedMode, ForkUpdateDownloadMode.github);
-    expect(
-      tester
-          .widget<Text>(find.byKey(const ValueKey('fork-update-active-source')))
-          .data,
-      l.forkUpdateSourceOfficial,
-    );
-    final picker = tester
-        .widget<DropdownButtonFormField<ForkUpdateDownloadMode>>(
-          find.byKey(const ValueKey('fork-update-source-mode')),
+  for (final target in ForkUpdateTarget.values) {
+    testWidgets(
+      '$target automatic source is default and official can be selected',
+      (tester) async {
+        final service = _available(target: target)
+          ..pendingDownload = Completer();
+        await _show(tester, service, _Installer(), target: target);
+        final l = AppLocalizations.of(
+          tester.element(find.byType(ForkUpdateScreen)),
         );
-    expect(picker.onChanged, isNull);
-    await _tap(tester, 'fork-update-cancel-download');
-  });
+        await _tap(tester, 'fork-update-source-mode');
+        await tester.tap(find.text(l.forkUpdateSourceOfficial).last);
+        await tester.pumpAndSettle();
+        await _tap(tester, 'fork-update-download');
+        expect(service.requestedMode, ForkUpdateDownloadMode.github);
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const ValueKey('fork-update-active-source')),
+              )
+              .data,
+          l.forkUpdateSourceOfficial,
+        );
+        final picker = tester
+            .widget<DropdownButtonFormField<ForkUpdateDownloadMode>>(
+              find.byKey(const ValueKey('fork-update-source-mode')),
+            );
+        expect(picker.onChanged, isNull);
+        await _tap(tester, 'fork-update-cancel-download');
+      },
+    );
+
+    for (final status in [
+      ForkUpdateCheckStatus.upToDate,
+      ForkUpdateCheckStatus.networkError,
+    ]) {
+      testWidgets('$target exposes download source while $status', (
+        tester,
+      ) async {
+        final service = _Service(ForkUpdateCheck(status: status));
+        final installer = _Installer();
+        await _show(tester, service, installer, target: target);
+        final l = AppLocalizations.of(
+          tester.element(find.byType(ForkUpdateScreen)),
+        );
+        expect(find.text(l.forkUpdateSourceAutomatic), findsOneWidget);
+        expect(find.text(l.forkUpdateConnectionHint), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('fork-update-download')),
+          findsNothing,
+        );
+        expect(service.downloads, 0);
+        expect(installer.installs, 0);
+        await _tap(tester, 'fork-update-source-mode');
+        await tester.tap(find.text(l.forkUpdateSourceOfficial).last);
+        await tester.pumpAndSettle();
+        service.result = ForkUpdateCheck(
+          status: ForkUpdateCheckStatus.available,
+          release: _release(target: target),
+        );
+        await _tap(tester, 'fork-update-check');
+        await _tap(tester, 'fork-update-download');
+        expect(service.requestedMode, ForkUpdateDownloadMode.github);
+        expect(installer.installs, 0);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 
   testWidgets('source fallback resets transfer and verification state', (
     tester,

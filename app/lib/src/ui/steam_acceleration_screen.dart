@@ -49,6 +49,7 @@ class _SteamAccelerationScreenState
       (!_unexpectedError &&
           switch (_service.state.phase) {
             SteamAccelerationPhase.loadingSubscription ||
+            SteamAccelerationPhase.downloadingCore ||
             SteamAccelerationPhase.starting => true,
             _ => false,
           });
@@ -138,6 +139,8 @@ class _SteamAccelerationScreenState
         SteamAccelerationPhase.off => l.steamAccelerationOff,
         SteamAccelerationPhase.loadingSubscription =>
           l.steamAccelerationLoading,
+        SteamAccelerationPhase.downloadingCore =>
+          l.steamAccelerationDownloadingCore,
         SteamAccelerationPhase.starting => l.steamAccelerationStarting,
         SteamAccelerationPhase.running => l.steamAccelerationRunning,
         SteamAccelerationPhase.pausedExternal => l.steamAccelerationPaused,
@@ -152,6 +155,7 @@ class _SteamAccelerationScreenState
         SteamAccelerationError.unsupportedSubscription =>
           l.steamAccelerationUnsupportedSubscription,
         SteamAccelerationError.storage => l.steamAccelerationStorageError,
+        SteamAccelerationError.coreDownload => l.steamAccelerationCoreDownload,
         SteamAccelerationError.coreUnavailable =>
           l.steamAccelerationCoreUnavailable,
         SteamAccelerationError.coreIntegrity =>
@@ -219,6 +223,25 @@ class _SteamAccelerationScreenState
                             l.steamConnectionNoVpnIcon,
                             style: TextStyle(color: t.muted),
                           ),
+                          if (supported && environment.hasExternal) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              l.steamAccelerationExternalActiveHelp,
+                              key: const ValueKey(
+                                'steam-acceleration-external-help',
+                              ),
+                            ),
+                            TextButton.icon(
+                              key: const ValueKey(
+                                'steam-acceleration-recheck-external',
+                              ),
+                              onPressed: _busy
+                                  ? null
+                                  : () => _run(_service.checkEnvironment),
+                              icon: const Icon(Icons.refresh),
+                              label: Text(l.commonRefresh),
+                            ),
+                          ],
                           if (supported &&
                               !environment.detectionAvailable &&
                               !environment.hasExternal &&

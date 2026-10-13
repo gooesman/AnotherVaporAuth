@@ -475,6 +475,49 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                         icon: const Icon(Icons.refresh),
                         label: Text(l.forkUpdateCheck),
                       ),
+                      // Keep the download route visible even when this device
+                      // is already up to date or the version check fails.
+                      if (ref.watch(forkUpdateTargetProvider) != null) ...[
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<ForkUpdateDownloadMode>(
+                          key: const ValueKey('fork-update-source-mode'),
+                          initialValue: _downloadMode,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: l.forkUpdateSourceLabel,
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: ForkUpdateDownloadMode.automatic,
+                              child: Text(
+                                l.forkUpdateSourceAutomatic,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: ForkUpdateDownloadMode.github,
+                              child: Text(
+                                l.forkUpdateSourceOfficial,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                          onChanged: _busy || _verified != null
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _downloadMode = value);
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l.forkUpdateConnectionHint,
+                          style: TextStyle(color: t.muted),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -513,42 +556,6 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                             style: TextStyle(color: t.bad),
                           ),
                           const SizedBox(height: 12),
-                        ],
-                        if (_verified == null) ...[
-                          DropdownButtonFormField<ForkUpdateDownloadMode>(
-                            key: const ValueKey('fork-update-source-mode'),
-                            initialValue: _downloadMode,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              labelText: l.forkUpdateSourceLabel,
-                            ),
-                            items: [
-                              DropdownMenuItem(
-                                value: ForkUpdateDownloadMode.automatic,
-                                child: Text(
-                                  l.forkUpdateSourceAutomatic,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              DropdownMenuItem(
-                                value: ForkUpdateDownloadMode.github,
-                                child: Text(
-                                  l.forkUpdateSourceOfficial,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                            onChanged: _busy
-                                ? null
-                                : (value) {
-                                    if (value != null) {
-                                      setState(() => _downloadMode = value);
-                                    }
-                                  },
-                          ),
-                          const SizedBox(height: 16),
                         ],
                         if (_downloadSource case final source?) ...[
                           Text(
@@ -636,11 +643,6 @@ class _ForkUpdateScreenState extends ConsumerState<ForkUpdateScreen> {
                             label: Text(l.forkUpdateDownload),
                           ),
                         if (_cancelled) Text(l.forkUpdateCancelled),
-                        const SizedBox(height: 12),
-                        Text(
-                          l.forkUpdateConnectionHint,
-                          style: TextStyle(color: t.muted),
-                        ),
                       ],
                     ),
                   ),

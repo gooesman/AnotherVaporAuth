@@ -2106,7 +2106,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get syncAppSettingsDesc =>
-      'Настройки внешнего вида и поведения (обложка, тема, удержание для подтверждения…) следуют за вами на каждое устройство. Язык и размер текста остаются на каждом устройстве своими.';
+      'Синхронизация оформления и поведения, зашифрованных подписок ускорения Steam, узлов и выбранного узла. Язык, размер текста и автоматический запуск ускорения остаются отдельными для каждого устройства.';
 
   @override
   String get syncNowButton => 'Синхронизировать';
@@ -2811,17 +2811,29 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'Ссылка может содержать личные учётные данные и хранится только на этом устройстве. После сохранения синхронизируйте доступные узлы.';
+      'Ссылка может содержать личные учётные данные и хранится защищённо. При синхронизации настроек подписки и узлы шифруются вашим паролем синхронизации и передаются между устройствами. После сохранения обновите узлы.';
 
   @override
   String get steamAccelerationClear => 'Удалить подписку';
 
   @override
   String get steamAccelerationClearConfirm =>
-      'Остановить встроенное ускорение и удалить сохранённую подписку и узлы с этого устройства?';
+      'Остановить встроенное ускорение и удалить сохранённую подписку и узлы? При включённой синхронизации настроек удаление также передастся на другие устройства.';
 
   @override
-  String get steamAccelerationSync => 'Синхронизировать узлы';
+  String get steamAccelerationSync => 'Обновить узлы';
+
+  @override
+  String get steamAccelerationDownloadingCore =>
+      'Загрузка компонента ускорения…';
+
+  @override
+  String get steamAccelerationCoreDownload =>
+      'Не удалось загрузить компонент с зеркал и официального источника. Повторите попытку позже.';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      'Работает внешний прокси или VPN, поэтому встроенное ускорение приостановлено. Чтобы использовать его, отключите внешний прокси и повторите проверку.';
 
   @override
   String get steamAccelerationNodes => 'Узлы';

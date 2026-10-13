@@ -3590,7 +3590,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncAppSettingsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Appearance and behavior preferences (skin, theme, hold-to-confirm…) follow you to every device. Language and text size stay per-device.'**
+  /// **'Sync appearance and behavior preferences plus encrypted Steam acceleration subscriptions, nodes and the selected node. Language, text size and acceleration auto-start stay per-device.'**
   String get syncAppSettingsDesc;
 
   /// No description provided for @syncNowButton.
@@ -4808,7 +4808,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationSubscriptionHelp.
   ///
   /// In en, this message translates to:
-  /// **'This link may contain private credentials and is stored only on this device. After saving, sync the subscription to load available nodes.'**
+  /// **'This link may contain private credentials and is stored securely on your device. With Sync app settings enabled, subscriptions and nodes are also encrypted with your sync passphrase and synced. After saving, select Refresh nodes.'**
   String get steamAccelerationSubscriptionHelp;
 
   /// No description provided for @steamAccelerationClear.
@@ -4820,14 +4820,32 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationClearConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Stop built-in acceleration and remove the saved subscription and nodes from this device?'**
+  /// **'Stop built-in acceleration and delete the saved subscription and nodes? With settings sync enabled, this deletion also syncs to your other devices.'**
   String get steamAccelerationClearConfirm;
 
   /// No description provided for @steamAccelerationSync.
   ///
   /// In en, this message translates to:
-  /// **'Sync nodes'**
+  /// **'Refresh nodes'**
   String get steamAccelerationSync;
+
+  /// No description provided for @steamAccelerationDownloadingCore.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading acceleration component…'**
+  String get steamAccelerationDownloadingCore;
+
+  /// No description provided for @steamAccelerationCoreDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download the acceleration component after trying mirrors and the official source. Try again later.'**
+  String get steamAccelerationCoreDownload;
+
+  /// No description provided for @steamAccelerationExternalActiveHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'An external proxy or VPN is active, so built-in acceleration is paused. To use it, turn off the external proxy, then check again.'**
+  String get steamAccelerationExternalActiveHelp;
 
   /// No description provided for @steamAccelerationNodes.
   ///

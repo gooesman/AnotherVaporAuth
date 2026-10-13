@@ -13,6 +13,7 @@ import '../services/sync/sync_engine.dart';
 import '../services/sync/sync_trash.dart';
 import '../services/sync/webdav_transport.dart';
 import 'providers.dart';
+import 'steam_acceleration_providers.dart';
 import 'theme.dart';
 
 /// The engine. Kept alive by _Root watching [syncStatusProvider]; account
@@ -48,6 +49,13 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   ref.listen(deleteHoldProvider, onSetting);
   ref.listen(hapticsProvider, onSetting);
   ref.listen(blockScreenshotsProvider, onSetting);
+  final accelerationChanges = ref
+      .read(steamAccelerationServiceProvider)
+      .configurationChanges;
+  accelerationChanges.addListener(engine.notifyAccountsChanged);
+  ref.onDispose(
+    () => accelerationChanges.removeListener(engine.notifyAccountsChanged),
+  );
   return engine;
 });
 
@@ -67,7 +75,8 @@ WebDavTransport buildWebDavTransport(SyncConfig config, String password) {
 /// The engine's status as UI-watchable state.
 final syncStatusProvider =
     NotifierProvider<SyncStatusController, SyncEngineStatus>(
-        SyncStatusController.new);
+      SyncStatusController.new,
+    );
 
 class SyncStatusController extends Notifier<SyncEngineStatus> {
   @override
@@ -133,7 +142,7 @@ class AppSettingsPort implements SyncSettingsPort {
     final data = ref.read(appControllerProvider).value;
     if (data == null || data.locked) return null;
     final store = ref.read(settingsStoreProvider);
-    return {
+    final snapshot = <String, dynamic>{
       'skin': (await store.loadSkin()) ?? AvaSkin.none.name,
       'brightness_mode':
           (await store.loadBrightnessMode()) ?? AvaBrightnessMode.system.name,
@@ -141,13 +150,38 @@ class AppSettingsPort implements SyncSettingsPort {
       'delete_hold': await store.loadDeleteHold(),
       'haptics': await store.loadHaptics(),
       'block_screenshots': await store.loadBlockScreenshots(),
-      'auto_confirm_market':
-          data.store.manifest.autoConfirmMarketTransactions,
+      'auto_confirm_market': data.store.manifest.autoConfirmMarketTransactions,
+      'steam_acceleration': await ref
+          .read(steamAccelerationServiceProvider)
+          .exportSyncConfiguration(),
     };
+    if (!ref.mounted) return null;
+    final current = ref.read(appControllerProvider).value;
+    return current == null || current.locked ? null : snapshot;
   }
 
   @override
   Future<void> apply(Map<String, dynamic> doc) async {
+    void requireUnlocked() {
+      if (!ref.mounted) throw StateError('Sync settings unavailable');
+      final current = ref.read(appControllerProvider).value;
+      if (current == null || current.locked) {
+        throw StateError('Sync settings unavailable');
+      }
+    }
+
+    requireUnlocked();
+    // Validate and persist credential-bearing settings first. If this fails,
+    // ordinary preferences must remain unchanged so the pull can be retried.
+    // Older clients omit the key; absence does not delete a local subscription.
+    if (doc.containsKey('steam_acceleration')) {
+      await ref
+          .read(steamAccelerationServiceProvider)
+          .applySyncConfiguration(doc['steam_acceleration']);
+      // A lock while secure storage was saving cannot undo that write, but
+      // must stop the remaining preferences and leave this pull retryable.
+      requireUnlocked();
+    }
     // Through the notifiers, so the UI updates live and each value
     // persists via its own write-through path.
     final skin = doc['skin'];
@@ -157,8 +191,9 @@ class AppSettingsPort implements SyncSettingsPort {
     }
     final mode = doc['brightness_mode'];
     if (mode is String) {
-      final v = AvaBrightnessMode.values
-          .firstWhereOrNull((m) => m.name == mode);
+      final v = AvaBrightnessMode.values.firstWhereOrNull(
+        (m) => m.name == mode,
+      );
       if (v != null) {
         await ref.read(brightnessModeProvider.notifier).setMode(v);
       }

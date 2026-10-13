@@ -2055,7 +2055,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAppSettingsDesc =>
-      'Les préférences d’apparence et de comportement (habillage, thème, appui long…) vous suivent sur chaque appareil. La langue et la taille du texte restent propres à chaque appareil.';
+      'Synchronise l’apparence et le comportement, ainsi que les abonnements d’accélération Steam chiffrés, les nœuds et leur sélection. La langue, la taille du texte et le démarrage automatique restent propres à chaque appareil.';
 
   @override
   String get syncNowButton => 'Synchroniser maintenant';
@@ -2763,17 +2763,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'Ce lien peut contenir des identifiants privés et reste sur cet appareil. Après l’enregistrement, synchronisez les nœuds disponibles.';
+      'Ce lien peut contenir des identifiants privés et est stocké de façon sécurisée. Si la synchronisation des réglages est activée, les abonnements et les nœuds sont chiffrés avec votre mot de passe de synchronisation puis synchronisés. Après l’enregistrement, actualisez les nœuds.';
 
   @override
   String get steamAccelerationClear => 'Effacer l’abonnement';
 
   @override
   String get steamAccelerationClearConfirm =>
-      'Arrêter l’accélération intégrée et supprimer l’abonnement et les nœuds enregistrés sur cet appareil ?';
+      'Arrêter l’accélération intégrée et supprimer l’abonnement et les nœuds enregistrés ? Si la synchronisation des réglages est activée, cette suppression sera aussi synchronisée avec vos autres appareils.';
 
   @override
-  String get steamAccelerationSync => 'Synchroniser les nœuds';
+  String get steamAccelerationSync => 'Actualiser les nœuds';
+
+  @override
+  String get steamAccelerationDownloadingCore =>
+      'Téléchargement du composant d’accélération…';
+
+  @override
+  String get steamAccelerationCoreDownload =>
+      'Le téléchargement depuis les miroirs et la source officielle a échoué. Réessayez plus tard.';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      'Un proxy externe ou VPN est actif ; l’accélération intégrée est en pause. Pour l’utiliser, désactivez le proxy externe puis vérifiez à nouveau.';
 
   @override
   String get steamAccelerationNodes => 'Nœuds';

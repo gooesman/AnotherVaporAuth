@@ -68,7 +68,11 @@ class _Runtime implements SteamAccelerationRuntime {
   @override
   Future<bool> isRunning() async => running;
   @override
-  Future<void> start(String configuration, SteamProxyEndpoint endpoint) async {
+  Future<void> start(
+    String configuration,
+    SteamProxyEndpoint endpoint, {
+    void Function(SteamAccelerationPhase)? onPhaseChanged,
+  }) async {
     starts++;
     this.configuration = configuration;
     this.endpoint = endpoint;

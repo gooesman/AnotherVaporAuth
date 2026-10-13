@@ -150,19 +150,24 @@ class PersistedSettingController<T> extends Notifier<T> {
   final T _defaultValue;
   final Future<T?> Function(SettingsStore store) _load;
   final Future<void> Function(SettingsStore store, T value) _save;
+  int _revision = 0;
 
   PersistedSettingController(this._defaultValue, this._load, this._save);
 
   @override
   T build() {
+    final revision = ++_revision;
     _load(ref.read(settingsStoreProvider)).then((v) {
-      if (!ref.mounted || v == null) return;
+      // An explicit change (including a sync pull) wins over a slower cold
+      // start read that captured this preference before the change.
+      if (!ref.mounted || revision != _revision || v == null) return;
       state = v;
     });
     return _defaultValue;
   }
 
   Future<void> set(T value) async {
+    _revision++;
     state = value;
     await _save(ref.read(settingsStoreProvider), value);
   }

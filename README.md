@@ -43,7 +43,8 @@ Settings → Software updates checks this fork's published releases and
 lets you download and open the installer. Android uses the same update page;
 installation still requires the system confirmation. Automatic downloads use
 GH-Proxy's direct acceleration routes, with GitHub as fallback; GitHub-only
-downloads remain selectable. Official requests can reuse an active proxy.
+downloads remain selectable. The source selector stays visible on both platforms,
+even without a new release or if the version check fails. Official requests can reuse an active proxy.
 Both routes support parallel downloads, speed/remaining-time display and full
 SHA-256 verification against the official GitHub metadata.
 
@@ -115,7 +116,11 @@ shown above while retaining the existing skin styles.
   automatic start pauses when an external proxy or VPN is detected. System
   proxy settings and other apps are untouched. A compact status entry separates
   core operation from checked API/community reachability; no system VPN icon is
-  expected. See the [scope and limitations](docs/windows-steam-switch.md#optional-steam-connectivity).
+  expected. Windows downloads its optional core through a primary mirror, backup
+  mirror and official fallback, verifying both archive and executable SHA-256;
+  Android includes the core. With encrypted settings sync enabled, subscription
+  links, sanitized cached nodes and node selection follow you between devices;
+  startup choices stay local. See the [scope and limitations](docs/windows-steam-switch.md#optional-steam-connectivity).
 
 - **Inventory rarity and prices (branch preview)** — restrained rarity-colored
   icon borders in the inventory and trade picker. Right-click, long-press or
@@ -180,6 +185,11 @@ shown above while retaining the existing skin styles.
   device before it leaves — the server stores ciphertext and never sees a
   passphrase. Conflicts resolve per account rather than per file, so two devices
   editing different accounts both keep their work. Off until you configure it.
+  **Sync app settings** also includes acceleration subscriptions and explicit
+  subscription removals. Receiving a subscription does not start acceleration;
+  its automatic-start preference and runtime state remain per-device. Both devices
+  need this feature for full subscription sync; older documents leave the newer
+  app's local subscription intact. Settings use whole-document last-writer merging.
 - **Animated avatars** — pulls each account's Steam avatar and avatar frame and
   plays them (GIF natively; APNG parsed and composited by hand, honoring each
   frame's offset / blend / dispose, so offset-based frames don't flicker).
@@ -225,7 +235,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1420 tests
+flutter test                       # 1475 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

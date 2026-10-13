@@ -40,7 +40,11 @@ class _Runtime implements SteamAccelerationRuntime {
   Future<SteamAccelerationEnvironment> detectEnvironment() async =>
       _clearEnvironment;
   @override
-  Future<void> start(String configuration, SteamProxyEndpoint endpoint) async {}
+  Future<void> start(
+    String configuration,
+    SteamProxyEndpoint endpoint, {
+    void Function(SteamAccelerationPhase)? onPhaseChanged,
+  }) async {}
   @override
   Future<bool> isRunning() async => false;
   @override
@@ -526,6 +530,9 @@ void main() {
       expect(tester.widget<Text>(_key('status')).data, '内置加速已暂停');
       expect(find.text(l.steamAccelerationDetectionUnavailable), findsNothing);
       expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNull);
+      expect(find.text(l.steamAccelerationExternalActiveHelp), findsOneWidget);
+      await _tap(tester, 'recheck-external');
+      expect(service.checks, 2);
       await _tap(tester, 'check-environment');
       expect(find.text(l.steamAccelerationDetectionUnavailable), findsNothing);
       expect(
@@ -536,17 +543,53 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(service.checks, 2);
+      expect(service.checks, 3);
       expect(service.starts, 0);
       service.emit(
         environment: _clearEnvironment,
         phase: SteamAccelerationPhase.off,
       );
       await tester.pump();
+      expect(_key('external-help'), findsNothing);
       await _reveal(tester, _key('toggle'));
       expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNotNull);
     });
   }
+
+  testWidgets(
+    'component download has its own status and prevents duplicate starts',
+    (tester) async {
+      final service = _Service(_ready)
+        ..emit(phase: SteamAccelerationPhase.downloadingCore);
+      await _pump(tester, service);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(SteamAccelerationScreen)),
+      );
+      expect(
+        tester.widget<Text>(_key('status')).data,
+        l.steamAccelerationDownloadingCore,
+      );
+      expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNull);
+      expect(service.starts, 0);
+    },
+  );
+
+  testWidgets(
+    'component download failure is distinct from subscription failure',
+    (tester) async {
+      final service = _Service(_ready)
+        ..emit(
+          phase: SteamAccelerationPhase.error,
+          error: SteamAccelerationError.coreDownload,
+        );
+      await _pump(tester, service);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(SteamAccelerationScreen)),
+      );
+      expect(find.text(l.steamAccelerationCoreDownload), findsOneWidget);
+      expect(find.text(l.steamAccelerationNetworkError), findsNothing);
+    },
+  );
 
   testWidgets(
     'unknown detection explains paused auto mode and allows only an explicit start',

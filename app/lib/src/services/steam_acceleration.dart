@@ -64,6 +64,11 @@ class SteamAccelerationService extends ChangeNotifier {
   bool _checking = false;
   bool _manuallyStopped = false;
   bool _startedAutomatically = false;
+  bool _configurationAvailable = false;
+  final ChangeNotifier _configurationChanges = ChangeNotifier();
+
+  /// Only committed portable configuration changes, never status polling.
+  Listenable get configurationChanges => _configurationChanges;
 
   Future<void> load() => _load ??= _enqueue(() async {
     try {
@@ -71,11 +76,11 @@ class SteamAccelerationService extends ChangeNotifier {
       if (raw != null) {
         final saved = jsonDecode(raw);
         if (saved is! Map || saved['v'] != 1) throw const FormatException();
-        _subscriptionUrl = validateSteamSubscriptionUrl(
-          saved['url'] as String,
-        ).toString();
+        _subscriptionUrl = saved['url'] == null
+            ? null
+            : validateSteamSubscriptionUrl(saved['url'] as String).toString();
         _autoStart = saved['auto'] == true;
-        if (saved['nodes'] is String) {
+        if (_subscriptionUrl != null && saved['nodes'] is String) {
           _catalog = SteamAccelerationSubscription.parse(
             saved['nodes'] as String,
           );
@@ -85,6 +90,7 @@ class SteamAccelerationService extends ChangeNotifier {
             : null;
         _repairSelection();
       }
+      _configurationAvailable = true;
       _publish(SteamAccelerationPhase.off);
       _startMonitoring();
     } catch (_) {
@@ -133,6 +139,8 @@ class SteamAccelerationService extends ChangeNotifier {
       _selected = null;
       _autoStart = autoStart;
       _manuallyStopped = false;
+      _configurationAvailable = true;
+      _notifyConfigurationChanged();
       _publish(SteamAccelerationPhase.off);
       _startMonitoring();
     });
@@ -165,6 +173,7 @@ class SteamAccelerationService extends ChangeNotifier {
         if (!_current(ticket)) return;
         _catalog = catalog;
         _selected = selected;
+        _notifyConfigurationChanged();
         _publish(SteamAccelerationPhase.off);
       } catch (error) {
         if (_current(ticket)) {
@@ -194,9 +203,13 @@ class SteamAccelerationService extends ChangeNotifier {
     if (_catalog?.nodes.any((node) => node.id == id) != true) return;
     await stop();
     await _enqueue(() async {
+      // A sync pull can replace the catalog while stop() is queued. Never
+      // persist a choice from the previous subscription into its replacement.
+      if (_catalog?.nodes.any((node) => node.id == id) != true) return;
       try {
         await _persist(selected: id);
         _selected = id;
+        _notifyConfigurationChanged();
         _publish(SteamAccelerationPhase.off);
       } catch (_) {
         _publish(SteamAccelerationPhase.error, SteamAccelerationError.storage);
@@ -212,6 +225,7 @@ class SteamAccelerationService extends ChangeNotifier {
       return;
     }
     if (_state.phase == SteamAccelerationPhase.starting ||
+        _state.phase == SteamAccelerationPhase.downloadingCore ||
         _state.phase == SteamAccelerationPhase.loadingSubscription ||
         _state.phase == SteamAccelerationPhase.running) {
       return;
@@ -250,6 +264,7 @@ class SteamAccelerationService extends ChangeNotifier {
           if (!_current(ticket)) return;
           _catalog = catalog;
           _selected = catalog.nodes.first.id;
+          _notifyConfigurationChanged();
         }
         final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
         final port = socket.port;
@@ -271,6 +286,9 @@ class SteamAccelerationService extends ChangeNotifier {
             endpoint,
           ),
           endpoint,
+          onPhaseChanged: (phase) {
+            if (_current(ticket)) _publish(phase);
+          },
         );
         if (!_current(ticket)) {
           await _runtime.stop();
@@ -386,6 +404,8 @@ class SteamAccelerationService extends ChangeNotifier {
         _catalog = null;
         _selected = null;
         _autoStart = false;
+        _configurationAvailable = true;
+        _notifyConfigurationChanged();
         _monitor?.cancel();
         _monitor = null;
         _publish(SteamAccelerationPhase.off);
@@ -393,6 +413,148 @@ class SteamAccelerationService extends ChangeNotifier {
         _publish(SteamAccelerationPhase.error, SteamAccelerationError.storage);
       }
     });
+  }
+
+  /// Plaintext exists only in memory until the sync engine encrypts its payload.
+  /// Runtime credentials and this device's auto-start preference are excluded.
+  Future<Map<String, dynamic>> exportSyncConfiguration() async {
+    await load();
+    if (_disposed || !_configurationAvailable) {
+      throw const SteamAccelerationException(SteamAccelerationError.storage);
+    }
+    return _portableConfiguration();
+  }
+
+  Map<String, dynamic> _portableConfiguration() => {
+    'v': 1,
+    'configured': _subscriptionUrl != null,
+    if (_subscriptionUrl != null) ...{
+      'url': _subscriptionUrl,
+      if (_catalog != null) 'nodes': _catalog!.toSecureCache(),
+      if (_selected != null) 'selected': _selected,
+    },
+  };
+
+  /// Missing fields in an older document are handled by the caller (no change).
+  /// An explicit configured:false is the only remote deletion marker.
+  /// Import never fetches a subscription or starts a core.
+  Future<void> applySyncConfiguration(Object? document) async {
+    String? url;
+    SteamAccelerationSubscription? catalog;
+    String? selected;
+    try {
+      if (document is! Map ||
+          document['v'] != 1 ||
+          document['configured'] is! bool) {
+        throw const FormatException();
+      }
+      if (document['configured'] == true) {
+        if (document['url'] is! String) throw const FormatException();
+        url = validateSteamSubscriptionUrl(
+          document['url'] as String,
+        ).toString();
+        final nodes = document['nodes'];
+        if (nodes != null) {
+          if (nodes is! String) throw const FormatException();
+          catalog = SteamAccelerationSubscription.parse(nodes);
+        }
+        final nodeId = document['selected'];
+        if (nodeId != null &&
+            (nodeId is! String ||
+                !RegExp(r'^[a-f0-9]{64}$').hasMatch(nodeId))) {
+          throw const FormatException();
+        }
+        selected = catalog == null
+            ? null
+            : catalog.nodes.any((node) => node.id == nodeId)
+            ? nodeId as String
+            : catalog.nodes.first.id;
+      } else if (document.keys.any(
+        (key) => key != 'v' && key != 'configured',
+      )) {
+        throw const FormatException();
+      }
+    } catch (_) {
+      throw const SteamAccelerationException(
+        SteamAccelerationError.invalidSubscription,
+      );
+    }
+    await load();
+    if (_disposed || !_configurationAvailable) {
+      throw const SteamAccelerationException(SteamAccelerationError.storage);
+    }
+    final incoming = <String, dynamic>{
+      'v': 1,
+      'configured': url != null,
+      if (url != null) ...{
+        'url': url,
+        if (catalog != null) 'nodes': catalog.toSecureCache(),
+        'selected': ?selected,
+      },
+    };
+    // No-op pulls must not stop an already running connection.
+    if (jsonEncode(incoming) == jsonEncode(_portableConfiguration())) return;
+    final ticket = ++_epoch;
+    _endpoint = null;
+    Object? failure;
+    await _enqueue(() async {
+      if (!_current(ticket)) {
+        failure = const SteamAccelerationException(
+          SteamAccelerationError.storage,
+        );
+        return;
+      }
+      try {
+        await _runtime.stop();
+        if (!_current(ticket)) {
+          throw const SteamAccelerationException(
+            SteamAccelerationError.storage,
+          );
+        }
+        // Keep automatic startup local. A cleared subscription remains inert,
+        // even if the local preference was on before the remote removal.
+        await _store.write(
+          jsonEncode({
+            'v': 1,
+            'url': url,
+            'auto': _autoStart,
+            'selected': selected,
+            'nodes': catalog?.toSecureCache(),
+          }),
+        );
+        _subscriptionUrl = url;
+        _catalog = catalog;
+        _selected = selected;
+        _manuallyStopped = true;
+        _startedAutomatically = false;
+        if (_disposed) {
+          throw const SteamAccelerationException(
+            SteamAccelerationError.storage,
+          );
+        }
+        _notifyConfigurationChanged();
+        if (url == null) {
+          _monitor?.cancel();
+          _monitor = null;
+        } else {
+          _startMonitoring();
+        }
+        _publish(SteamAccelerationPhase.off);
+      } catch (_) {
+        failure = const SteamAccelerationException(
+          SteamAccelerationError.storage,
+        );
+        _publish(SteamAccelerationPhase.error, SteamAccelerationError.storage);
+      }
+    });
+    if (failure != null || _disposed) {
+      throw failure ??
+          const SteamAccelerationException(SteamAccelerationError.storage);
+    }
+  }
+
+  void _notifyConfigurationChanged() {
+    if (!_disposed) _configurationChanges.notifyListeners();
   }
 
   Future<void> _persist({
@@ -493,6 +655,7 @@ class SteamAccelerationService extends ChangeNotifier {
     _endpoint = null;
     _monitor?.cancel();
     _disposed = true;
+    _configurationChanges.dispose();
     unawaited(_runtime.stop().catchError((_) {}));
     super.dispose();
   }
