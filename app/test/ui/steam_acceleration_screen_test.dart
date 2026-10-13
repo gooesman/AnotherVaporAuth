@@ -83,6 +83,7 @@ class _Service extends SteamAccelerationService {
     SteamAccelerationPhase? phase,
     bool? configured,
     bool? autoStart,
+    bool? enabled,
     List<SteamAccelerationNode>? nodes,
     String? selectedNodeId,
     SteamAccelerationEnvironment? environment,
@@ -92,6 +93,7 @@ class _Service extends SteamAccelerationService {
       phase: phase ?? value.phase,
       configured: configured ?? value.configured,
       autoStart: autoStart ?? value.autoStart,
+      enabled: enabled ?? value.enabled,
       nodes: nodes ?? value.nodes,
       selectedNodeId: selectedNodeId ?? value.selectedNodeId,
       environment: environment ?? value.environment,
@@ -144,13 +146,18 @@ class _Service extends SteamAccelerationService {
   Future<void> start({bool automatic = false}) async {
     expect(automatic, isFalse, reason: 'The page must only start explicitly');
     starts++;
-    emit(phase: SteamAccelerationPhase.running);
+    emit(
+      enabled: true,
+      phase: value.environment.hasExternal
+          ? SteamAccelerationPhase.pausedExternal
+          : SteamAccelerationPhase.running,
+    );
   }
 
   @override
   Future<void> stop() async {
     stops++;
-    emit(phase: SteamAccelerationPhase.off);
+    emit(phase: SteamAccelerationPhase.off, enabled: false);
   }
 
   @override
@@ -347,6 +354,35 @@ void main() {
   );
 
   testWidgets(
+    'home names an external route without needing an internal subscription',
+    (tester) async {
+      final service = _Service(
+        const SteamAccelerationState(
+          environment: SteamAccelerationEnvironment(
+            detectionAvailable: true,
+            vpnOrTunnelDetected: true,
+          ),
+        ),
+      );
+      final probe = _Probe()
+        ..result = const SteamConnectionResult(api: true, community: true);
+      await _pump(
+        tester,
+        service,
+        probe: probe,
+        home: const Scaffold(body: SteamAccelerationStatusChip()),
+        locale: const Locale('zh'),
+      );
+      expect(_key('home-status'), findsOneWidget);
+      expect(find.textContaining('外部 VPN'), findsOneWidget);
+      expect(find.textContaining('连接可用'), findsOneWidget);
+      expect(probe.calls, 1);
+      expect(service.starts, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'opening the page keeps manual mode and never fetches a subscription',
     (tester) async {
       final service = _Service();
@@ -510,50 +546,79 @@ void main() {
       vpnOrTunnelDetected: true,
     ),
   }.entries) {
-    testWidgets('${entry.key} environment prevents accidental internal start', (
-      tester,
-    ) async {
-      final service = _Service(_ready)
-        ..emit(
-          phase: entry.value.hasExternal
-              ? SteamAccelerationPhase.pausedExternal
-              : SteamAccelerationPhase.off,
-          environment: entry.value,
-          error: entry.value.detectionAvailable
-              ? null
-              : SteamAccelerationError.environmentUnknown,
+    testWidgets(
+      '${entry.key} permits arming fallback while using external routing',
+      (tester) async {
+        final service = _Service(_ready)
+          ..emit(
+            phase: entry.value.hasExternal
+                ? SteamAccelerationPhase.pausedExternal
+                : SteamAccelerationPhase.off,
+            environment: entry.value,
+            error: entry.value.detectionAvailable
+                ? null
+                : SteamAccelerationError.environmentUnknown,
+          );
+        await _pump(tester, service, locale: const Locale('zh'));
+        final l = AppLocalizations.of(
+          tester.element(find.byType(SteamAccelerationScreen)),
         );
-      await _pump(tester, service, locale: const Locale('zh'));
-      final l = AppLocalizations.of(
-        tester.element(find.byType(SteamAccelerationScreen)),
-      );
-      expect(tester.widget<Text>(_key('status')).data, '内置加速已暂停');
-      expect(find.text(l.steamAccelerationDetectionUnavailable), findsNothing);
-      expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNull);
-      expect(find.text(l.steamAccelerationExternalActiveHelp), findsOneWidget);
-      await _tap(tester, 'recheck-external');
-      expect(service.checks, 2);
-      await _tap(tester, 'check-environment');
-      expect(find.text(l.steamAccelerationDetectionUnavailable), findsNothing);
-      expect(
-        find.text(
+        expect(
+          tester.widget<Text>(_key('status')).data,
+          l.steamAccelerationPaused,
+        );
+        expect(
+          find.text(l.steamAccelerationDetectionUnavailable),
+          findsNothing,
+        );
+        expect(
+          tester.widget<FilledButton>(_key('toggle')).onPressed,
+          isNotNull,
+        );
+        expect(
+          tester.widget<Text>(_key('external-help')).data,
           entry.value.vpnOrTunnelDetected
-              ? l.steamAccelerationExternalVpn
-              : l.steamAccelerationExternalProxy,
-        ),
-        findsOneWidget,
-      );
-      expect(service.checks, 3);
-      expect(service.starts, 0);
-      service.emit(
-        environment: _clearEnvironment,
-        phase: SteamAccelerationPhase.off,
-      );
-      await tester.pump();
-      expect(_key('external-help'), findsNothing);
-      await _reveal(tester, _key('toggle'));
-      expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNotNull);
-    });
+              ? l.steamAccelerationExternalActiveHelp
+              : l.steamConnectionPacHelp,
+        );
+        await _tap(tester, 'recheck-external');
+        expect(service.checks, 2);
+        await _tap(tester, 'check-environment');
+        expect(
+          find.text(l.steamAccelerationDetectionUnavailable),
+          findsNothing,
+        );
+        expect(
+          find.text(
+            entry.value.vpnOrTunnelDetected
+                ? l.steamAccelerationExternalVpn
+                : l.steamAccelerationExternalProxy,
+          ),
+          findsOneWidget,
+        );
+        expect(service.checks, 3);
+        expect(service.starts, 0);
+        await _tap(tester, 'toggle');
+        expect(service.starts, 1);
+        expect(service.state.enabled, isTrue);
+        expect(service.state.phase, SteamAccelerationPhase.pausedExternal);
+        expect(find.text(l.steamAccelerationStop), findsOneWidget);
+        await _tap(tester, 'toggle');
+        expect(service.stops, 1);
+        expect(service.state.enabled, isFalse);
+        service.emit(
+          environment: _clearEnvironment,
+          phase: SteamAccelerationPhase.off,
+        );
+        await tester.pump();
+        expect(_key('external-help'), findsNothing);
+        await _reveal(tester, _key('toggle'));
+        expect(
+          tester.widget<FilledButton>(_key('toggle')).onPressed,
+          isNotNull,
+        );
+      },
+    );
   }
 
   testWidgets(
@@ -605,7 +670,10 @@ void main() {
         tester.element(find.byType(SteamAccelerationScreen)),
       );
       expect(find.text(l.steamAccelerationDetectionUnavailable), findsWidgets);
-      expect(tester.widget<Text>(_key('status')).data, '内置加速已暂停');
+      expect(
+        tester.widget<Text>(_key('status')).data,
+        l.steamAccelerationPaused,
+      );
       expect(find.text(l.steamAccelerationNoExternal), findsNothing);
       expect(service.starts, 0);
       expect(tester.widget<FilledButton>(_key('toggle')).onPressed, isNotNull);

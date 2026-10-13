@@ -2721,7 +2721,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamAccelerationDesc =>
-      'Accélère uniquement les requêtes Steam de GooeSteamKit, sans affecter les autres applications.';
+      'Le proxy externe est prioritaire. À sa fermeture, la connexion intégrée prend le relais pour les requêtes Steam de GooeSteamKit.';
 
   @override
   String get steamAccelerationOff => 'Désactivée';
@@ -2736,7 +2736,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get steamAccelerationRunning => 'En cours';
 
   @override
-  String get steamAccelerationPaused => 'Accélération intégrée en pause';
+  String get steamAccelerationPaused => 'Accélération intégrée en attente';
 
   @override
   String get steamAccelerationFailed => 'Accélération indisponible';
@@ -2785,7 +2785,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamAccelerationExternalActiveHelp =>
-      'Un proxy externe ou VPN est actif ; l’accélération intégrée est en pause. Pour l’utiliser, désactivez le proxy externe puis vérifiez à nouveau.';
+      'Connexion externe utilisée. Avec le basculement automatique activé, la connexion intégrée prend le relais à sa fermeture.';
 
   @override
   String get steamAccelerationNodes => 'Nœuds';
@@ -2798,17 +2798,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get steamAccelerationNode => 'Nœud sélectionné';
 
   @override
-  String get steamAccelerationStart => 'Activer l’accélération';
+  String get steamAccelerationStart => 'Activer le basculement';
 
   @override
-  String get steamAccelerationStop => 'Arrêter l’accélération';
+  String get steamAccelerationStop => 'Suspendre le basculement';
 
   @override
-  String get steamAccelerationAuto => 'Démarrage automatique';
+  String get steamAccelerationAuto => 'Activer au démarrage';
 
   @override
   String get steamAccelerationAutoDesc =>
-      'Démarrer à l’ouverture de GooeSteamKit ; mettre en pause l’accélération intégrée si un proxy externe est détecté.';
+      'Priorité au proxy ou VPN externe, puis à la connexion intégrée. Une pause manuelle dure jusqu’au prochain démarrage.';
 
   @override
   String get steamAccelerationEnvironment => 'Détection des proxys externes';
@@ -2824,11 +2824,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamAccelerationDetectionUnavailable =>
-      'L’état des proxys externes est inconnu. Le démarrage automatique est suspendu ; vous pouvez démarrer manuellement.';
+      'L’état des proxys externes est inconnu ; la connexion intégrée ne démarrera pas. Vérifiez les paramètres du proxy système, puis relancez la vérification.';
 
   @override
   String get steamAccelerationEnvironmentHelp =>
-      'L’accélération intégrée laisse la priorité aux proxys externes détectés. La détection peut dépendre des autorisations système.';
+      'Vérifie les paramètres locaux quand l’application est visible, sans modifier le proxy ou VPN du système.';
 
   @override
   String steamAccelerationSkipped(int count) {
@@ -2918,14 +2918,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get steamConnectionFailed => 'Échec de la connexion';
 
   @override
-  String get steamConnectionInternal => 'Connexion interne GooeSteamKit';
+  String get steamConnectionInternal => 'Connexion intégrée';
 
   @override
   String get steamConnectionExternal => 'Proxy HTTP externe';
 
   @override
-  String get steamConnectionSystem =>
-      'Connexion système actuelle (réseau externe détecté)';
+  String get steamConnectionSystem => 'VPN / tunnel externe';
 
   @override
   String get steamConnectionDirect => 'Connexion directe';
@@ -2970,7 +2969,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'GooeSteamKit détecte PAC sans interpréter ses règles. Cette vérification utilise la connexion système actuelle.';
+      'Un proxy système a été détecté, mais aucun point HTTP ou VPN utilisable. Les scripts PAC ne sont pas évalués. Activez le proxy HTTP ou le VPN dans l’application externe.';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -3072,4 +3071,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String marketSearchRequestedCurrency(String currency) {
     return 'Devise demandée : $currency';
   }
+
+  @override
+  String get steamConnectionUnresolvedProxy => 'Proxy système indisponible';
+
+  @override
+  String get steamDesktopLoginButton => 'Ouvrir Steam et se connecter';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      'Ouvrez Steam avec le compte sélectionné ou passez à ce compte, puis approuvez automatiquement le code QR de la fenêtre de connexion Steam de cet ordinateur. Quittez d’abord les jeux en cours.';
+
+  @override
+  String get steamDesktopLoginPreparing => 'Préparation du compte sélectionné…';
+
+  @override
+  String get steamDesktopLoginWaitingQr =>
+      'En attente du code QR de connexion Steam de cet ordinateur…';
+
+  @override
+  String get steamDesktopLoginApproving =>
+      'Approbation de la connexion sur cet ordinateur…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount =>
+      'Vérification de la connexion à Steam…';
+
+  @override
+  String get steamDesktopLoginComplete =>
+      'Le compte actuel du client Steam a été vérifié et correspond au compte sélectionné.';
+
+  @override
+  String get steamDesktopLoginManual =>
+      'Steam est ouvert, mais son code QR de connexion local n’a pas pu être vérifié. Utilisez l’option de scan QR ci-dessous pour continuer.';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      'Une demande d’approbation de connexion a été envoyée, mais la connexion à Steam n’est pas encore confirmée. Vérifiez la fenêtre Steam, puis actualisez l’état.';
+
+  @override
+  String get steamDesktopLoginCancelled => 'Connexion automatique arrêtée';
+
+  @override
+  String get steamDesktopLoginCancel => 'Arrêter l’approbation automatique';
+
+  @override
+  String get steamDesktopLoginWrongAccount =>
+      'Steam est connecté à un autre compte. L’approbation automatique a été arrêtée.';
 }

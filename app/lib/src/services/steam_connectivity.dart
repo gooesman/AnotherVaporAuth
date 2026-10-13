@@ -14,7 +14,13 @@ enum SteamConnectionStatus {
   unavailable,
 }
 
-enum SteamConnectionRoute { direct, internal, externalProxy, system }
+enum SteamConnectionRoute {
+  direct,
+  internal,
+  externalProxy,
+  system,
+  unresolvedProxy,
+}
 
 class SteamConnectionResult {
   const SteamConnectionResult({required this.api, required this.community});
@@ -123,7 +129,11 @@ class SteamConnectivityProbe {
   }
 }
 
-typedef _RouteStamp = (SteamConnectionRoute, SteamNetworkProxy?);
+typedef _RouteStamp = (
+  SteamConnectionRoute,
+  SteamNetworkProxy?,
+  (bool, bool, bool, bool),
+);
 
 /// One check when an accelerated route becomes active, on stale foreground
 /// resumes, and on explicit checks.
@@ -155,16 +165,25 @@ class SteamConnectivityMonitor extends ChangeNotifier {
     final acceleration = _service.state;
     final environment = acceleration.environment;
     final proxy = effectiveProxy();
-    final route = !acceleration.configured
-        ? SteamConnectionRoute.direct
-        : environment.externalHttpProxy != null && proxy != null
+    final route = environment.externalHttpProxy != null && proxy != null
         ? SteamConnectionRoute.externalProxy
-        : environment.hasExternal
+        : environment.vpnOrTunnelDetected
         ? SteamConnectionRoute.system
+        : environment.hasExternal
+        ? SteamConnectionRoute.unresolvedProxy
         : acceleration.phase == SteamAccelerationPhase.running && proxy != null
         ? SteamConnectionRoute.internal
         : SteamConnectionRoute.direct;
-    return (route, proxy);
+    return (
+      route,
+      proxy,
+      (
+        environment.vpnOrTunnelDetected,
+        environment.pacDetected,
+        environment.systemProxyDetected,
+        environment.detectionAvailable,
+      ),
+    );
   }
 
   void _routeChanged() {
@@ -185,6 +204,18 @@ class SteamConnectivityMonitor extends ChangeNotifier {
     final generation = ++_generation;
     final route = _currentRoute();
     _route = route;
+    // Dart sockets do not evaluate system PAC rules. A detected setting is
+    // not evidence that these requests use an external proxy or VPN.
+    if (route.$1 == SteamConnectionRoute.unresolvedProxy) {
+      _cancel?.cancel();
+      _cancel = null;
+      _state = SteamConnectionState(
+        route: route.$1,
+        status: SteamConnectionStatus.unavailable,
+      );
+      notifyListeners();
+      return;
+    }
     final cancel = CancelToken();
     _cancel = cancel;
     _state = SteamConnectionState(
@@ -215,8 +246,8 @@ class SteamConnectivityMonitor extends ChangeNotifier {
   /// probe, while an old success cannot remain green after a long suspension.
   Future<void> refreshIfStale() async {
     if (_disposed ||
-        !_service.state.configured ||
-        _currentRoute().$1 == SteamConnectionRoute.direct) {
+        _currentRoute().$1 == SteamConnectionRoute.direct ||
+        _currentRoute().$1 == SteamConnectionRoute.unresolvedProxy) {
       return;
     }
     final checkedAt = _state.checkedAt;

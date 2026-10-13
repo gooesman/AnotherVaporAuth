@@ -62,12 +62,15 @@ class SteamNetworkProxy {
 class SteamNetwork {
   static SteamNetworkProxy? Function() _proxy = () => null;
   static Future<bool>? _readiness;
+  static Object? Function()? _routeIdentity;
 
   static void configureProxy(
     SteamNetworkProxy? Function() proxy, {
     Future<void>? readiness,
+    Object? Function()? routeIdentity,
   }) {
     _proxy = proxy;
+    _routeIdentity = routeIdentity;
     // Dio runs interceptors in a child error zone. An error from a Future
     // created outside that zone cannot cross into its try/catch; the request
     // would hang and report an uncaught startup error. Normalize it here, in
@@ -104,6 +107,7 @@ class SteamNetwork {
   }) => createScopedDio(
     options,
     proxy: () => _proxy(),
+    routeIdentity: () => _routeIdentity?.call(),
     isAllowedRequest: isSteamRequest,
     readiness: () => _readiness,
     securityContext: securityContext,
@@ -117,12 +121,14 @@ class SteamNetwork {
     required SteamNetworkProxy? Function() proxy,
     required bool Function(Uri) isAllowedRequest,
     Future<bool>? Function()? readiness,
+    Object? Function()? routeIdentity,
     SecurityContext? securityContext,
     Future<ConnectionTask<Socket>> Function(String host, int port)?
     socketConnector,
   }) {
     final dio = Dio(options);
     var active = proxy();
+    var activeRoute = routeIdentity?.call();
     IOHttpClientAdapter adapter(SteamNetworkProxy? proxy) =>
         IOHttpClientAdapter(
           createHttpClient: () {
@@ -160,10 +166,12 @@ class SteamNetwork {
             return;
           }
           final current = proxy();
-          if (current != active) {
+          final currentRoute = routeIdentity?.call();
+          if (current != active || currentRoute != activeRoute) {
             final old = dio.httpClientAdapter;
             dio.httpClientAdapter = adapter(current);
             active = current;
+            activeRoute = currentRoute;
             // New requests adopt the new route. Let already-started requests finish
             // without silently replaying trades, SMS requests or other writes.
             old.close(force: false);

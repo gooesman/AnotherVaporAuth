@@ -2716,7 +2716,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamAccelerationDesc =>
-      'Acelera solo las solicitudes de GooeSteamKit a Steam, sin afectar a otras aplicaciones.';
+      'Se prioriza el proxy externo. Al cerrarlo, la aceleración integrada continúa las solicitudes de Steam de GooeSteamKit.';
 
   @override
   String get steamAccelerationOff => 'Desactivada';
@@ -2731,7 +2731,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get steamAccelerationRunning => 'En ejecución';
 
   @override
-  String get steamAccelerationPaused => 'Aceleración integrada en pausa';
+  String get steamAccelerationPaused => 'Aceleración integrada en espera';
 
   @override
   String get steamAccelerationFailed => 'Aceleración no disponible';
@@ -2780,7 +2780,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamAccelerationExternalActiveHelp =>
-      'Hay un proxy externo o VPN activo; la aceleración integrada está en pausa. Para usarla, desactiva el proxy externo y vuelve a comprobar.';
+      'Se usa la conexión externa. Con el cambio automático activado, la conexión integrada la sustituye cuando se cierra.';
 
   @override
   String get steamAccelerationNodes => 'Nodos';
@@ -2793,17 +2793,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get steamAccelerationNode => 'Nodo seleccionado';
 
   @override
-  String get steamAccelerationStart => 'Activar aceleración';
+  String get steamAccelerationStart => 'Activar cambio automático';
 
   @override
-  String get steamAccelerationStop => 'Detener aceleración';
+  String get steamAccelerationStop => 'Pausar cambio automático';
 
   @override
-  String get steamAccelerationAuto => 'Inicio automático';
+  String get steamAccelerationAuto => 'Activar al iniciar';
 
   @override
   String get steamAccelerationAutoDesc =>
-      'Iniciar al abrir GooeSteamKit; pausar la aceleración integrada cuando se detecte un proxy externo.';
+      'Se prioriza el proxy o VPN externo; al cerrarlo, se usa la conexión integrada. La pausa manual dura hasta el próximo inicio.';
 
   @override
   String get steamAccelerationEnvironment => 'Detección de proxy externo';
@@ -2821,11 +2821,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamAccelerationDetectionUnavailable =>
-      'Se desconoce el estado del proxy externo. El inicio automático está pausado; puedes iniciar manualmente.';
+      'Se desconoce el estado del proxy externo, por lo que la conexión integrada no se iniciará. Revisa los ajustes del proxy del sistema y vuelve a comprobar.';
 
   @override
   String get steamAccelerationEnvironmentHelp =>
-      'La aceleración integrada cede ante los proxies externos detectados. La detección puede depender de los permisos del sistema.';
+      'Comprueba los ajustes locales mientras la aplicación está visible. No modifica el proxy ni la VPN del sistema.';
 
   @override
   String steamAccelerationSkipped(int count) {
@@ -2915,14 +2915,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get steamConnectionFailed => 'Error de conexión';
 
   @override
-  String get steamConnectionInternal => 'Ruta interna de GooeSteamKit';
+  String get steamConnectionInternal => 'Conexión integrada';
 
   @override
   String get steamConnectionExternal => 'Proxy HTTP externo';
 
   @override
-  String get steamConnectionSystem =>
-      'Ruta actual del sistema (red externa detectada)';
+  String get steamConnectionSystem => 'VPN / túnel externo';
 
   @override
   String get steamConnectionDirect => 'Conexión directa';
@@ -2967,7 +2966,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'GooeSteamKit detecta PAC, pero no interpreta sus reglas. Esta comprobación usa la ruta actual del sistema.';
+      'Se detectó un proxy del sistema, pero no un puerto HTTP ni una VPN utilizables. No se evalúan scripts PAC. Active el proxy HTTP o la VPN de la aplicación externa.';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -3069,4 +3068,53 @@ class AppLocalizationsEs extends AppLocalizations {
   String marketSearchRequestedCurrency(String currency) {
     return 'Moneda solicitada: $currency';
   }
+
+  @override
+  String get steamConnectionUnresolvedProxy =>
+      'Proxy del sistema no disponible';
+
+  @override
+  String get steamDesktopLoginButton => 'Abrir Steam e iniciar sesión';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      'Abre Steam con la cuenta seleccionada o cambia a ella y aprueba automáticamente el código QR de la ventana de inicio de sesión de Steam de este equipo. Cierra primero los juegos en ejecución.';
+
+  @override
+  String get steamDesktopLoginPreparing => 'Preparando la cuenta seleccionada…';
+
+  @override
+  String get steamDesktopLoginWaitingQr =>
+      'Esperando el código QR de inicio de sesión de Steam de este equipo…';
+
+  @override
+  String get steamDesktopLoginApproving =>
+      'Aprobando el inicio de sesión de este equipo…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount =>
+      'Comprobando el estado de inicio de sesión de Steam…';
+
+  @override
+  String get steamDesktopLoginComplete =>
+      'Se ha verificado que la cuenta actual del cliente de Steam coincide con la seleccionada.';
+
+  @override
+  String get steamDesktopLoginManual =>
+      'Steam está abierto, pero no se pudo verificar su código QR de inicio de sesión local. Usa la opción de escaneo QR de abajo para continuar.';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      'Se ha enviado una solicitud de aprobación del inicio de sesión, pero aún no se ha confirmado la sesión de Steam. Revisa la ventana de Steam y actualiza el estado.';
+
+  @override
+  String get steamDesktopLoginCancelled =>
+      'Inicio de sesión automático detenido';
+
+  @override
+  String get steamDesktopLoginCancel => 'Detener la aprobación automática';
+
+  @override
+  String get steamDesktopLoginWrongAccount =>
+      'Steam tiene una sesión iniciada con otra cuenta. La aprobación automática se ha detenido.';
 }

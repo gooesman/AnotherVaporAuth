@@ -76,6 +76,7 @@ class SteamAccelerationState {
     this.phase = SteamAccelerationPhase.off,
     this.configured = false,
     this.autoStart = false,
+    this.enabled = false,
     this.nodes = const [],
     this.selectedNodeId,
     this.environment = const SteamAccelerationEnvironment(),
@@ -85,6 +86,10 @@ class SteamAccelerationState {
   final SteamAccelerationPhase phase;
   final bool configured;
   final bool autoStart;
+
+  /// Session intent to use the built-in core when the external route ends.
+  /// This does not enable/disable or claim connectivity of an external proxy.
+  final bool enabled;
   final List<SteamAccelerationNode> nodes;
   final String? selectedNodeId;
   final SteamAccelerationEnvironment environment;

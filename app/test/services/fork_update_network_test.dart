@@ -267,6 +267,41 @@ void main() {
   });
 
   test(
+    'update connection pool follows a direct to TUN route identity change',
+    () async {
+      final fixture = await _NetworkFixture.create();
+      addTearDown(fixture.close);
+      var systemRoute = false;
+      var connections = 0;
+      ForkUpdateNetwork.configureProxy(
+        () => null,
+        routeIdentity: () => systemRoute,
+      );
+      final dio = ForkUpdateNetwork.createDio(
+        securityContext: fixture.trust,
+        socketConnector: (host, port) {
+          expect(host, 'api.github.com');
+          expect(port, 443);
+          connections++;
+          return Socket.startConnect(
+            InternetAddress.loopbackIPv4,
+            fixture.server.port,
+          );
+        },
+      );
+      addTearDown(() => dio.close(force: true));
+      expect((await dio.get<String>(_latest)).data, 'ok');
+      expect((await dio.get<String>(_latest)).data, 'ok');
+      expect(connections, 1);
+      systemRoute = true;
+      expect((await dio.get<String>(_latest)).data, 'ok');
+      expect(connections, 2);
+      expect(fixture.authorizationAtOrigin, everyElement(isNull));
+      expect(fixture.cookiesAtOrigin, everyElement(isNull));
+    },
+  );
+
+  test(
     'default TLS rejects an untrusted certificate through update proxy',
     () async {
       final fixture = await _NetworkFixture.create();

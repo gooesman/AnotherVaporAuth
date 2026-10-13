@@ -2685,7 +2685,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamAccelerationDesc =>
-      'Accelerate only Steam requests made by GooeSteamKit, without affecting other apps.';
+      'Use an external proxy first, then built-in acceleration when it closes. Only Steam requests in GooeSteamKit use the built-in route.';
 
   @override
   String get steamAccelerationOff => 'Off';
@@ -2700,7 +2700,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamAccelerationRunning => 'Running';
 
   @override
-  String get steamAccelerationPaused => 'Built-in acceleration is paused';
+  String get steamAccelerationPaused => 'Built-in acceleration is on standby';
 
   @override
   String get steamAccelerationFailed => 'Acceleration unavailable';
@@ -2748,7 +2748,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamAccelerationExternalActiveHelp =>
-      'An external proxy or VPN is active, so built-in acceleration is paused. To use it, turn off the external proxy, then check again.';
+      'Using the external connection. With automatic switching enabled, the built-in route takes over when it closes. No manual switching is needed.';
 
   @override
   String get steamAccelerationNodes => 'Nodes';
@@ -2761,17 +2761,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamAccelerationNode => 'Selected node';
 
   @override
-  String get steamAccelerationStart => 'Enable acceleration';
+  String get steamAccelerationStart => 'Enable automatic switching';
 
   @override
-  String get steamAccelerationStop => 'Stop acceleration';
+  String get steamAccelerationStop => 'Pause automatic switching';
 
   @override
-  String get steamAccelerationAuto => 'Start automatically';
+  String get steamAccelerationAuto => 'Enable on launch';
 
   @override
   String get steamAccelerationAutoDesc =>
-      'Start when GooeSteamKit opens; pause built-in acceleration when an external proxy is detected.';
+      'Prefer an external proxy or VPN; resume the built-in route when it closes. Pausing applies until the next launch.';
 
   @override
   String get steamAccelerationEnvironment => 'External proxy detection';
@@ -2787,11 +2787,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamAccelerationDetectionUnavailable =>
-      'External proxy status is unknown. Automatic startup is paused; you can start manually.';
+      'External proxy status is unknown, so the built-in route will not start. Check the system proxy settings, then check again.';
 
   @override
   String get steamAccelerationEnvironmentHelp =>
-      'Built-in acceleration yields to detected external proxies. Detection may depend on system permissions.';
+      'Checks the local connection settings while the app is visible. System proxy and VPN settings are never changed.';
 
   @override
   String steamAccelerationSkipped(int count) {
@@ -2879,14 +2879,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamConnectionFailed => 'Connection failed';
 
   @override
-  String get steamConnectionInternal => 'GooeSteamKit internal route';
+  String get steamConnectionInternal => 'Built-in route';
 
   @override
   String get steamConnectionExternal => 'External HTTP proxy';
 
   @override
-  String get steamConnectionSystem =>
-      'Current system route (external network detected)';
+  String get steamConnectionSystem => 'External VPN / tunnel';
 
   @override
   String get steamConnectionDirect => 'Direct connection';
@@ -2931,7 +2930,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'PAC is detected but not evaluated by GooeSteamKit. This check uses the current system route.';
+      'A system proxy setting was found, but no usable HTTP endpoint or VPN route is available. PAC scripts are not evaluated. Enable the external app’s HTTP proxy or VPN mode.';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -3032,4 +3031,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String marketSearchRequestedCurrency(String currency) {
     return 'Requested currency: $currency';
   }
+
+  @override
+  String get steamConnectionUnresolvedProxy => 'System proxy unavailable';
+
+  @override
+  String get steamDesktopLoginButton => 'Open Steam and sign in';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      'Open or switch Steam to the selected account and automatically approve the QR code in this computer\'s Steam sign-in window. Please exit any running games first.';
+
+  @override
+  String get steamDesktopLoginPreparing => 'Preparing the selected account…';
+
+  @override
+  String get steamDesktopLoginWaitingQr =>
+      'Waiting for this computer\'s Steam sign-in QR code…';
+
+  @override
+  String get steamDesktopLoginApproving =>
+      'Approving this computer\'s sign-in…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount =>
+      'Confirming Steam sign-in status…';
+
+  @override
+  String get steamDesktopLoginComplete =>
+      'Verified that the Steam client\'s current account matches the selected account.';
+
+  @override
+  String get steamDesktopLoginManual =>
+      'Steam is open, but its local sign-in QR code could not be verified. Use the QR scanning option below to continue.';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      'A sign-in approval request was submitted, but Steam sign-in has not been confirmed. Check the Steam window, then refresh the status.';
+
+  @override
+  String get steamDesktopLoginCancelled => 'Automatic sign-in stopped';
+
+  @override
+  String get steamDesktopLoginCancel => 'Stop automatic approval';
+
+  @override
+  String get steamDesktopLoginWrongAccount =>
+      'Steam is signed in to a different account. Automatic approval has stopped.';
 }

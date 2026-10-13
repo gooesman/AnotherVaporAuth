@@ -3,12 +3,14 @@
 #include <windows.h>
 #include <aclapi.h>
 #include <tlhelp32.h>
+#include <dwmapi.h>
 
 #include <flutter/standard_method_codec.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <limits>
 #include <optional>
 #include <string>
@@ -464,6 +466,9 @@ void ReadStatus(const std::wstring& executable, Result* result) {
   result->Success(Value(values));
 }
 
+void BindLoginCaptureLaunch(const std::wstring& executable, HANDLE process,
+                            DWORD pid);
+
 bool LaunchSteam(const std::wstring& executable, bool shutdown, Error* error) {
   // lpApplicationName is explicit, and the only optional argument is fixed.
   // No shell is used and no caller-controlled command text is interpreted.
@@ -485,6 +490,10 @@ bool LaunchSteam(const std::wstring& executable, bool shutdown, Error* error) {
   }
   Handle process_handle(process.hProcess);
   Handle thread_handle(process.hThread);
+  if (!shutdown) {
+    AllowSetForegroundWindow(process.dwProcessId);
+    BindLoginCaptureLaunch(executable, process.hProcess, process.dwProcessId);
+  }
   // Never wait for Steam here. The Dart caller polls the running state.
   return true;
 }
@@ -919,6 +928,225 @@ void ReplaceConfigFile(const Map& arguments, Result* result) {
   result->Success();
 }
 
+// A capture lease is issued only for an explicit desktop-login action. It
+// expires quickly and accepts windows of a Steam process born after the lease,
+// never a pre-existing Steam/browser window or an arbitrary HWND from Dart.
+struct LoginCaptureLease {
+  int64_t id;
+  std::wstring executable;
+  FILETIME earliest;
+  ULONGLONG expires;
+  DWORD launched_pid = 0;
+  uint64_t launched_creation = 0;
+};
+std::optional<LoginCaptureLease> login_capture_lease;
+int64_t next_login_capture_id = 0;
+
+uint64_t FileTimeNumber(const FILETIME& time) {
+  return (static_cast<uint64_t>(time.dwHighDateTime) << 32) |
+         time.dwLowDateTime;
+}
+
+void BindLoginCaptureLaunch(const std::wstring& executable, HANDLE process,
+                            DWORD pid) {
+  if (!login_capture_lease || login_capture_lease->launched_pid != 0 ||
+      !EqualPath(executable, login_capture_lease->executable) ||
+      GetTickCount64() > login_capture_lease->expires) return;
+  FILETIME started{}, exited{}, kernel{}, user{};
+  if (GetProcessTimes(process, &started, &exited, &kernel, &user) &&
+      CompareFileTime(&started, &login_capture_lease->earliest) >= 0) {
+    login_capture_lease->launched_pid = pid;
+    login_capture_lease->launched_creation = FileTimeNumber(started);
+  }
+}
+
+bool LoginProcess(DWORD pid, const LoginCaptureLease& lease,
+                  DWORD* steam_pid, uint64_t* creation, int depth = 0) {
+  if (depth > 8 || pid == 0) return false;
+  Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE,
+                             FALSE, pid));
+  if (!process.get() || WaitForSingleObject(process.get(), 0) != WAIT_TIMEOUT) {
+    return false;
+  }
+  FILETIME started{}, exited{}, kernel{}, user{};
+  if (!GetProcessTimes(process.get(), &started, &exited, &kernel, &user) ||
+      CompareFileTime(&started, &lease.earliest) < 0) return false;
+  std::vector<wchar_t> buffer(32768);
+  DWORD length = static_cast<DWORD>(buffer.size());
+  std::wstring image;
+  Error ignored;
+  if (!QueryFullProcessImageNameW(process.get(), 0, buffer.data(), &length) ||
+      !CanonicalFile(std::wstring(buffer.data(), length), &image, &ignored)) {
+    return false;
+  }
+  *creation = FileTimeNumber(started);
+  if (EqualPath(image, lease.executable)) {
+    // Bind to the exact process created by this invocation, including its
+    // creation time (PID reuse). Another manual launch or a Steam self-update
+    // restart requires a new explicit click/manual scan, never silent rebinding.
+    if (pid != lease.launched_pid || *creation != lease.launched_creation) {
+      return false;
+    }
+    *steam_pid = pid;
+    return true;
+  }
+  const std::wstring root = ParentPath(lease.executable) + L"\\";
+  if (!EqualPath(BaseName(image), L"steamwebhelper.exe") ||
+      image.size() <= root.size() ||
+      !EqualPath(image.substr(0, root.size()), root)) return false;
+  Handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+  if (snapshot.get() == INVALID_HANDLE_VALUE) return false;
+  PROCESSENTRY32W entry{};
+  entry.dwSize = static_cast<DWORD>(sizeof(entry));
+  if (!Process32FirstW(snapshot.get(), &entry)) return false;
+  do {
+    if (entry.th32ProcessID != pid) continue;
+    uint64_t parent_creation = 0;
+    return LoginProcess(entry.th32ParentProcessID, lease, steam_pid,
+                         &parent_creation, depth + 1) &&
+           parent_creation <= *creation;
+  } while (Process32NextW(snapshot.get(), &entry));
+  return false;
+}
+
+bool IsSteamLoginWindow(HWND window) {
+  wchar_t title[256]{};
+  if (!GetWindowTextW(window, title, 256)) return false;
+  // Fail closed for unknown translations/layouts; manual region scanning
+  // remains available. A generic Steam/community browser title is not enough.
+  constexpr const wchar_t* titles[] = {
+      L"Steam Sign In", L"Sign in to Steam", L"Steam Login",
+      L"\u767b\u5f55 Steam", L"Steam \u767b\u5f55",
+      L"\u767b\u5f55\u81f3 Steam", L"\u767b\u5165 Steam",
+      L"Steam \u767b\u5165", L"\u767b\u5165 Steam \u5e33\u6236"};
+  for (const auto* expected : titles) {
+    if (_wcsicmp(title, expected) == 0) return true;
+  }
+  return false;
+}
+
+struct OcclusionCheck { HWND target; RECT client; bool clear = false; };
+BOOL CALLBACK CheckLoginOcclusion(HWND window, LPARAM parameter) {
+  auto* check = reinterpret_cast<OcclusionCheck*>(parameter);
+  if (window == check->target) {
+    check->clear = true;
+    return FALSE;
+  }
+  if (!IsWindowVisible(window) || IsIconic(window)) return TRUE;
+  DWORD cloaked = 0;
+  DwmGetWindowAttribute(window, DWMWA_CLOAKED, &cloaked, sizeof(cloaked));
+  if (cloaked) return TRUE;
+  RECT bounds{}, overlap{};
+  if (GetWindowRect(window, &bounds) &&
+      IntersectRect(&overlap, &bounds, &check->client)) return FALSE;
+  return TRUE;
+}
+
+void CaptureLoginWindow(const std::wstring& executable, const Map& arguments,
+                        Result* result) {
+  const auto* argument = FindArgument(arguments, "attempt");
+  const auto* id64 = argument ? std::get_if<int64_t>(argument) : nullptr;
+  const auto* id32 = argument ? std::get_if<int32_t>(argument) : nullptr;
+  const int64_t id = id64 ? *id64 : id32 ? *id32 : 0;
+  if (!login_capture_lease || login_capture_lease->id != id ||
+      !EqualPath(login_capture_lease->executable, executable) ||
+      GetTickCount64() > login_capture_lease->expires) {
+    result->Error("login_capture_expired", "The local Steam login attempt expired.");
+    return;
+  }
+  const HWND window = GetForegroundWindow();
+  const auto unavailable = [&]() { result->Success(); };
+  if (!window || !IsWindowVisible(window) || IsIconic(window) ||
+      !IsSteamLoginWindow(window)) { unavailable(); return; }
+  DWORD pid = 0, steam_pid = 0;
+  GetWindowThreadProcessId(window, &pid);
+  uint64_t creation = 0;
+  if (!LoginProcess(pid, *login_capture_lease, &steam_pid, &creation)) {
+    unavailable(); return;
+  }
+  RegistryKey key;
+  if (RegOpenKeyExW(HKEY_CURRENT_USER, kSteamActiveProcessKey, 0,
+                    KEY_QUERY_VALUE, &key.value) == ERROR_SUCCESS &&
+      ReadStatusDword(key.value, L"pid") == steam_pid &&
+      ReadStatusDword(key.value, L"ActiveUser").value_or(0) != 0) {
+    unavailable(); return;
+  }
+  RECT client{};
+  POINT origin{};
+  if (!GetClientRect(window, &client) || !ClientToScreen(window, &origin)) {
+    unavailable(); return;
+  }
+  const int width = client.right, height = client.bottom;
+  if (width < 160 || height < 160 || width > 2048 || height > 2048 ||
+      static_cast<int64_t>(width) * height > 3000000) {
+    unavailable(); return;
+  }
+  const RECT screen{origin.x, origin.y, origin.x + width, origin.y + height};
+  const RECT desktop{GetSystemMetrics(SM_XVIRTUALSCREEN),
+                     GetSystemMetrics(SM_YVIRTUALSCREEN),
+                     GetSystemMetrics(SM_XVIRTUALSCREEN) + GetSystemMetrics(SM_CXVIRTUALSCREEN),
+                     GetSystemMetrics(SM_YVIRTUALSCREEN) + GetSystemMetrics(SM_CYVIRTUALSCREEN)};
+  RECT clipped{};
+  if (!IntersectRect(&clipped, &screen, &desktop) ||
+      !EqualRect(&clipped, &screen)) { unavailable(); return; }
+  OcclusionCheck visibility{window, screen};
+  EnumWindows(CheckLoginOcclusion, reinterpret_cast<LPARAM>(&visibility));
+  if (!visibility.clear) { unavailable(); return; }
+
+  // Copy only the verified login window's visible client rectangle. No full
+  // desktop image, file, upload, PrintWindow (which can hang), or injected click.
+  const size_t count = static_cast<size_t>(width) * height * 4;
+  std::vector<uint8_t> bytes(count);
+  HDC source = GetDC(nullptr);
+  HDC memory = source ? CreateCompatibleDC(source) : nullptr;
+  BITMAPINFO info{};
+  info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  info.bmiHeader.biWidth = width;
+  info.bmiHeader.biHeight = -height;
+  info.bmiHeader.biPlanes = 1;
+  info.bmiHeader.biBitCount = 32;
+  info.bmiHeader.biCompression = BI_RGB;
+  void* pixels = nullptr;
+  HBITMAP bitmap = memory ? CreateDIBSection(source, &info, DIB_RGB_COLORS,
+                                             &pixels, nullptr, 0) : nullptr;
+  HGDIOBJ previous = bitmap ? SelectObject(memory, bitmap) : nullptr;
+  const bool captured = previous && previous != HGDI_ERROR &&
+      BitBlt(memory, 0, 0, width, height, source, origin.x, origin.y,
+             SRCCOPY | CAPTUREBLT);
+  if (captured) {
+    memcpy(bytes.data(), pixels, count);
+    SecureZeroMemory(pixels, count);
+  }
+  if (previous && previous != HGDI_ERROR) SelectObject(memory, previous);
+  if (bitmap) DeleteObject(bitmap);
+  if (memory) DeleteDC(memory);
+  if (source) ReleaseDC(nullptr, source);
+  DWORD final_pid = 0, final_steam_pid = 0;
+  uint64_t final_creation = 0;
+  RECT final_client{};
+  POINT final_origin{};
+  GetWindowThreadProcessId(window, &final_pid);
+  visibility.clear = false;
+  EnumWindows(CheckLoginOcclusion, reinterpret_cast<LPARAM>(&visibility));
+  if (!captured || !GetClientRect(window, &final_client) ||
+      !ClientToScreen(window, &final_origin) ||
+      !EqualRect(&client, &final_client) || origin.x != final_origin.x ||
+      origin.y != final_origin.y ||
+      GetForegroundWindow() != window || !visibility.clear ||
+      final_pid != pid || !IsSteamLoginWindow(window) ||
+      !LoginProcess(pid, *login_capture_lease, &final_steam_pid, &final_creation) ||
+      final_creation != creation || final_steam_pid != steam_pid) {
+    if (!bytes.empty()) SecureZeroMemory(bytes.data(), bytes.size());
+    unavailable(); return;
+  }
+  result->Success(Value(Map{
+      {Value("window"), Value(std::to_string(reinterpret_cast<uintptr_t>(window)) +
+          ":" + std::to_string(pid) + ":" + std::to_string(creation) +
+          ":" + std::to_string(steam_pid))},
+      {Value("width"), Value(width)}, {Value("height"), Value(height)},
+      {Value("bgra"), Value(std::move(bytes))}}));
+}
+
 void HandleMethod(const flutter::MethodCall<Value>& call,
                   std::unique_ptr<Result> result) {
   if (call.method_name() == "discoverPath") {
@@ -932,6 +1160,9 @@ void HandleMethod(const flutter::MethodCall<Value>& call,
   if (call.method_name() != "isRunning" && call.method_name() != "readStatus" &&
       call.method_name() != "shutdown" &&
       call.method_name() != "start" && call.method_name() != "writeAutoLogin" &&
+      call.method_name() != "beginLoginCapture" &&
+      call.method_name() != "endLoginCapture" &&
+      call.method_name() != "captureLoginWindow" &&
       call.method_name() != "secureDirectory" && call.method_name() != "replaceFile") {
     result->NotImplemented();
     return;
@@ -962,6 +1193,33 @@ void HandleMethod(const flutter::MethodCall<Value>& call,
   }
   if (call.method_name() == "readStatus") {
     ReadStatus(executable, result.get());
+    return;
+  }
+  if (call.method_name() == "beginLoginCapture") {
+    FILETIME earliest{};
+    GetSystemTimeAsFileTime(&earliest);
+    login_capture_lease = LoginCaptureLease{++next_login_capture_id, executable,
+                                            earliest, GetTickCount64() + 150000};
+    result->Success(Value(login_capture_lease->id));
+    return;
+  }
+  if (call.method_name() == "endLoginCapture") {
+    if (login_capture_lease && EqualPath(login_capture_lease->executable, executable)) {
+      const auto* argument = FindArgument(*arguments, "attempt");
+      const auto* id64 = argument ? std::get_if<int64_t>(argument) : nullptr;
+      const auto* id32 = argument ? std::get_if<int32_t>(argument) : nullptr;
+      if ((id64 && *id64 == login_capture_lease->id) ||
+          (id32 && *id32 == login_capture_lease->id)) login_capture_lease.reset();
+    }
+    result->Success();
+    return;
+  }
+  if (call.method_name() == "captureLoginWindow") {
+    try {
+      CaptureLoginWindow(executable, *arguments, result.get());
+    } catch (const std::exception&) {
+      result->Error("login_capture_failed", "The Steam login window could not be read.");
+    }
     return;
   }
   if (call.method_name() == "isRunning") {

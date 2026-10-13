@@ -7,13 +7,34 @@ import '../../l10n/app_localizations.dart';
 import '../app/providers.dart';
 import '../app/responsive.dart';
 import '../core/models/steam_guard_account.dart';
+import '../core/protocol/qr_approval_client.dart';
+import '../services/auto_login.dart';
+import '../services/desktop_steam_login.dart';
 import '../services/steam_client_service.dart';
+import '../services/steam_request_scope.dart';
 import 'approve_login_screen.dart';
 import 'login_screen.dart';
 
 final steamClientServiceProvider = Provider<SteamClientService>(
   (ref) => SteamClientService(),
 );
+
+final desktopSteamLoginProvider = Provider<DesktopSteamLogin>((ref) {
+  return DesktopSteamLogin(
+    steam: ref.read(steamClientServiceProvider),
+    approval: QrApprovalClient(ref.read(apiClientProvider)),
+    ensureSession: (account) async {
+      if (!AutoLogin.accessTokenStale(account.session.accessToken)) return true;
+      final controller = ref.read(appControllerProvider.notifier);
+      if (await ref.read(autoLoginProvider).ensureSession(account) !=
+          AutoLoginOutcome.ok) {
+        return false;
+      }
+      await controller.persistSession(account);
+      return true;
+    },
+  );
+});
 
 /// Steam's remembered desktop accounts are separate from AVA's authenticator
 /// accounts. Merely opening this screen never changes Steam's configuration.
@@ -37,6 +58,11 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
   bool _launched = false;
   bool _missingInitial = false;
   SteamSwitchStage? _stage;
+  DesktopLoginStage? _desktopStage;
+  DesktopLoginOutcome? _desktopOutcome;
+  bool _cancelDesktopLogin = false;
+  SteamRequestScope? _desktopScope;
+  SteamGuardAccount? _desktopAccount;
   Object? _error;
   String? _backupPath;
   SteamClientStatus? _status;
@@ -53,6 +79,8 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
 
   @override
   void dispose() {
+    _cancelDesktopLogin = true;
+    _desktopScope?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -100,6 +128,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
       _error = null;
       _launched = false;
       _missingInitial = false;
+      _desktopOutcome = null;
       _accounts = [];
       _status = null;
       _statusLoading = true;
@@ -209,6 +238,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
       _error = null;
       _backupPath = null;
       _stage = SteamSwitchStage.stopping;
+      _desktopOutcome = null;
       _status = null;
       _statusLoading = true;
     });
@@ -263,6 +293,89 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
     );
     if (mounted) await _refreshStatus();
   }
+
+  Future<void> _loginDesktop(int steamId) async {
+    final account = _currentAvaAccount(steamId);
+    final path = _path;
+    if (_loading || _switching || path == null || account == null) return;
+    ++_statusGeneration;
+    final scope = _desktopScope = SteamRequestScope(
+      timeout: const Duration(seconds: 20),
+    );
+    _desktopAccount = account;
+    setState(() {
+      _switching = true;
+      _cancelDesktopLogin = false;
+      _desktopOutcome = null;
+      _desktopStage = DesktopLoginStage.preparing;
+      _stage = null;
+      _launched = false;
+      _error = null;
+      _backupPath = null;
+      _status = null;
+      _statusLoading = true;
+    });
+    try {
+      final result = await ref
+          .read(desktopSteamLoginProvider)
+          .login(
+            path: path,
+            account: account,
+            requestScope: scope,
+            isCurrent: () {
+              if (!mounted || _cancelDesktopLogin) return false;
+              final data = ref.read(appControllerProvider).value;
+              return data != null &&
+                  !data.locked &&
+                  data.visibleAccounts.any((item) => identical(item, account));
+            },
+            onProgress: (stage) {
+              if (mounted) setState(() => _desktopStage = stage);
+            },
+          );
+      if (mounted) {
+        setState(() {
+          _desktopOutcome = result.outcome;
+          _backupPath = result.backupPath;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _error = error;
+          if (error is SteamClientException) _backupPath = error.backupPath;
+        });
+      }
+    } finally {
+      scope.cancel();
+      _desktopScope = null;
+      _desktopAccount = null;
+      if (mounted) {
+        setState(() {
+          _switching = false;
+          _desktopStage = null;
+        });
+        await _refreshStatus();
+      }
+    }
+  }
+
+  String _desktopStageText(AppLocalizations l) => switch (_desktopStage) {
+    DesktopLoginStage.preparing => l.steamDesktopLoginPreparing,
+    DesktopLoginStage.waitingQr => l.steamDesktopLoginWaitingQr,
+    DesktopLoginStage.approving => l.steamDesktopLoginApproving,
+    DesktopLoginStage.waitingAccount => l.steamDesktopLoginWaitingAccount,
+    null => '',
+  };
+
+  String _desktopOutcomeText(AppLocalizations l) => switch (_desktopOutcome) {
+    DesktopLoginOutcome.loggedIn => l.steamDesktopLoginComplete,
+    DesktopLoginOutcome.manualRequired => l.steamDesktopLoginManual,
+    DesktopLoginOutcome.approvedUnconfirmed => l.steamDesktopLoginUnconfirmed,
+    DesktopLoginOutcome.cancelled => l.steamDesktopLoginCancelled,
+    DesktopLoginOutcome.differentAccount => l.steamDesktopLoginWrongAccount,
+    null => '',
+  };
 
   bool _isCurrentAccount(SteamClientAccount account) =>
       !_statusLoading &&
@@ -369,11 +482,11 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            l.steamSwitchQrTitle,
+            l.steamDesktopLoginButton,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          Text(l.steamSwitchQrHelp),
+          Text(l.steamDesktopLoginHelp),
           const SizedBox(height: 16),
           if (accounts.isEmpty)
             Text(l.steamSwitchQrNoAccounts)
@@ -400,7 +513,10 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
               ],
               onChanged: _switching
                   ? null
-                  : (value) => setState(() => _selectedAvaSteamId = value),
+                  : (value) => setState(() {
+                      _selectedAvaSteamId = value;
+                      _desktopOutcome = null;
+                    }),
             ),
           if (selected != null && !selected.session.hasTokens) ...[
             const SizedBox(height: 12),
@@ -417,6 +533,54 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
           ],
           const SizedBox(height: 12),
           FilledButton.icon(
+            key: const ValueKey('steam-client-login'),
+            onPressed:
+                !_loading &&
+                    !_switching &&
+                    _path != null &&
+                    selected != null &&
+                    selected.session.hasTokens &&
+                    (selected.sharedSecret?.isNotEmpty ?? false)
+                ? () => _loginDesktop(selected.steamId)
+                : null,
+            icon: const Icon(Icons.login),
+            label: Text(l.steamDesktopLoginButton),
+          ),
+          if (_desktopStage != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(_desktopStageText(l)),
+                  ),
+                ),
+              ],
+            ),
+            TextButton(
+              key: const ValueKey('steam-client-login-cancel'),
+              onPressed: _cancelDesktopLogin
+                  ? null
+                  : () => setState(() {
+                      _cancelDesktopLogin = true;
+                      _desktopScope?.cancel();
+                    }),
+              child: Text(l.steamDesktopLoginCancel),
+            ),
+          ],
+          if (_desktopOutcome != null) ...[
+            const SizedBox(height: 12),
+            Semantics(liveRegion: true, child: Text(_desktopOutcomeText(l))),
+          ],
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
             key: const ValueKey('steam-client-qr-login'),
             onPressed:
                 !_switching && selected != null && selected.session.hasTokens
@@ -440,6 +604,8 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
       'credentials_not_saved' => l.steamSwitchNeedsLogin,
       'shutdown_failed' || 'shutdown_timeout' => l.steamSwitchCloseFailed,
       'busy' => l.steamSwitchBusy,
+      'session_expired' => l.sessionExpired,
+      'identity_mismatch' => l.loginAccountMismatch,
       'concurrent_change' => l.steamSwitchChanged,
       _ => l.steamSwitchFailed,
     };
@@ -456,6 +622,17 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(appControllerProvider, (_, next) {
+      final account = _desktopAccount;
+      if (account == null) return;
+      final data = next.value;
+      if (data == null ||
+          data.locked ||
+          !data.visibleAccounts.any((item) => identical(item, account))) {
+        _cancelDesktopLogin = true;
+        _desktopScope?.cancel();
+      }
+    });
     final l = AppLocalizations.of(context);
     final avaAccounts =
         ref.watch(appControllerProvider).value?.visibleAccounts ??
@@ -572,11 +749,12 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
                           }
                           _error = null;
                           _launched = false;
+                          _desktopOutcome = null;
                         }),
                 ),
               ),
             const SizedBox(height: 16),
-            if (_switching) ...[
+            if (_switching && _stage != null) ...[
               const LinearProgressIndicator(),
               const SizedBox(height: 8),
               Semantics(liveRegion: true, child: Text(_stageText(l))),

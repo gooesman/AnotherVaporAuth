@@ -2769,7 +2769,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationDesc =>
-      'Ускоряет только запросы GooeSteamKit к Steam, не затрагивая другие приложения.';
+      'Приоритет у внешнего прокси. После его отключения встроенное ускорение продолжает запросы Steam в GooeSteamKit.';
 
   @override
   String get steamAccelerationOff => 'Выключено';
@@ -2784,7 +2784,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steamAccelerationRunning => 'Работает';
 
   @override
-  String get steamAccelerationPaused => 'Встроенное ускорение приостановлено';
+  String get steamAccelerationPaused => 'Встроенное ускорение ожидает';
 
   @override
   String get steamAccelerationFailed => 'Ускорение недоступно';
@@ -2833,7 +2833,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationExternalActiveHelp =>
-      'Работает внешний прокси или VPN, поэтому встроенное ускорение приостановлено. Чтобы использовать его, отключите внешний прокси и повторите проверку.';
+      'Используется внешнее соединение. При включённом автопереключении после его отключения используется встроенный маршрут.';
 
   @override
   String get steamAccelerationNodes => 'Узлы';
@@ -2846,17 +2846,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steamAccelerationNode => 'Выбранный узел';
 
   @override
-  String get steamAccelerationStart => 'Включить ускорение';
+  String get steamAccelerationStart => 'Включить автопереключение';
 
   @override
-  String get steamAccelerationStop => 'Остановить ускорение';
+  String get steamAccelerationStop => 'Приостановить переключение';
 
   @override
-  String get steamAccelerationAuto => 'Автоматический запуск';
+  String get steamAccelerationAuto => 'Включать при запуске';
 
   @override
   String get steamAccelerationAutoDesc =>
-      'Запускать при открытии GooeSteamKit; при обнаружении внешнего прокси приостанавливать встроенное ускорение.';
+      'Сначала внешний прокси или VPN, затем встроенный маршрут. Ручная пауза действует до следующего запуска приложения.';
 
   @override
   String get steamAccelerationEnvironment => 'Проверка внешнего прокси';
@@ -2873,11 +2873,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationDetectionUnavailable =>
-      'Состояние внешнего прокси неизвестно. Автозапуск приостановлен; можно запустить вручную.';
+      'Состояние внешнего прокси неизвестно, поэтому встроенное соединение не запускается. Проверьте настройки системного прокси и повторите проверку.';
 
   @override
   String get steamAccelerationEnvironmentHelp =>
-      'Встроенное ускорение уступает обнаруженным внешним прокси. Обнаружение может зависеть от системных разрешений.';
+      'Локальные настройки проверяются, пока приложение видно. Системный прокси и VPN не изменяются.';
 
   @override
   String steamAccelerationSkipped(int count) {
@@ -2965,14 +2965,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get steamConnectionFailed => 'Ошибка соединения';
 
   @override
-  String get steamConnectionInternal => 'Встроенный маршрут GooeSteamKit';
+  String get steamConnectionInternal => 'Встроенный маршрут';
 
   @override
   String get steamConnectionExternal => 'Внешний HTTP-прокси';
 
   @override
-  String get steamConnectionSystem =>
-      'Текущий системный маршрут (обнаружена внешняя сеть)';
+  String get steamConnectionSystem => 'Внешний VPN / туннель';
 
   @override
   String get steamConnectionDirect => 'Прямое соединение';
@@ -3017,7 +3016,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'GooeSteamKit обнаруживает PAC, но не обрабатывает его правила. Проверка использует текущий системный маршрут.';
+      'Обнаружены настройки прокси, но нет доступного HTTP-порта или VPN. Скрипты PAC не выполняются. Включите HTTP-прокси или VPN во внешнем приложении.';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -3119,4 +3118,52 @@ class AppLocalizationsRu extends AppLocalizations {
   String marketSearchRequestedCurrency(String currency) {
     return 'Запрошенная валюта: $currency';
   }
+
+  @override
+  String get steamConnectionUnresolvedProxy => 'Системный прокси недоступен';
+
+  @override
+  String get steamDesktopLoginButton => 'Открыть Steam и войти';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      'Откройте Steam с выбранным аккаунтом или переключитесь на него и автоматически подтвердите QR-код в окне входа Steam на этом компьютере. Сначала завершите запущенные игры.';
+
+  @override
+  String get steamDesktopLoginPreparing => 'Подготовка выбранного аккаунта…';
+
+  @override
+  String get steamDesktopLoginWaitingQr =>
+      'Ожидание QR-кода входа Steam на этом компьютере…';
+
+  @override
+  String get steamDesktopLoginApproving =>
+      'Подтверждение входа на этом компьютере…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount =>
+      'Проверка состояния входа в Steam…';
+
+  @override
+  String get steamDesktopLoginComplete =>
+      'Проверено: текущий аккаунт клиента Steam совпадает с выбранным.';
+
+  @override
+  String get steamDesktopLoginManual =>
+      'Steam открыт, но локальный QR-код входа не удалось проверить. Используйте сканирование QR-кода ниже, чтобы продолжить.';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      'Запрос на подтверждение входа отправлен, но вход в Steam ещё не подтверждён. Проверьте окно Steam и обновите состояние.';
+
+  @override
+  String get steamDesktopLoginCancelled => 'Автоматический вход остановлен';
+
+  @override
+  String get steamDesktopLoginCancel =>
+      'Остановить автоматическое подтверждение';
+
+  @override
+  String get steamDesktopLoginWrongAccount =>
+      'В Steam выполнен вход в другой аккаунт. Автоматическое подтверждение остановлено.';
 }

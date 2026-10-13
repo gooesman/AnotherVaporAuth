@@ -11,6 +11,7 @@ import 'steam_network.dart';
 class ForkUpdateNetwork {
   static SteamNetworkProxy? Function() _proxy = () => null;
   static Future<bool>? _readiness;
+  static Object? Function()? _routeIdentity;
 
   static const _mirrorHosts = {
     ForkUpdateDownloadSource.axisNow: 'axisnow.gh-proxy.org',
@@ -68,8 +69,10 @@ class ForkUpdateNetwork {
   static void configureProxy(
     SteamNetworkProxy? Function() proxy, {
     Future<void>? readiness,
+    Object? Function()? routeIdentity,
   }) {
     _proxy = proxy;
+    _routeIdentity = routeIdentity;
     // Normalize in the caller's zone, as with the Steam transport.
     _readiness = readiness?.then(
       (_) => true,
@@ -120,6 +123,7 @@ class ForkUpdateNetwork {
   }) => SteamNetwork.createScopedDio(
     options ?? BaseOptions(),
     proxy: () => _proxy(),
+    routeIdentity: () => _routeIdentity?.call(),
     isAllowedRequest: isOfficialRequest,
     readiness: () => _readiness,
     securityContext: securityContext,

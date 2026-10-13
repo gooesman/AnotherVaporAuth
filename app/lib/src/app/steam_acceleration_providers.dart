@@ -52,15 +52,20 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
   void initState() {
     super.initState();
     _service = ref.read(steamAccelerationServiceProvider);
+    _service.setMonitoringActive(
+      _canMonitor(WidgetsBinding.instance.lifecycleState),
+    );
     WidgetsBinding.instance.addObserver(this);
     final environmentReady = _initializeEnvironment();
     SteamNetwork.configureProxy(
       () => steamProxyFor(_service),
       readiness: _startAutomatically(environmentReady),
+      routeIdentity: () => steamRouteIdentity(_service),
     );
     ForkUpdateNetwork.configureProxy(
       () => forkUpdateProxyFor(_service),
       readiness: environmentReady,
+      routeIdentity: () => steamRouteIdentity(_service),
     );
     // Start observing after installing routing. Its asynchronous probe waits
     // for readiness without holding up initialization, avoiding a dependency
@@ -72,6 +77,7 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
     if (!_service.supported) return;
     try {
       await _service.load();
+      if (!mounted) return;
       await _service.checkEnvironment();
     } catch (_) {
       // The service reports credential-free status to its settings page.
@@ -91,6 +97,7 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _service.setMonitoringActive(_canMonitor(state));
     if (state == AppLifecycleState.resumed && _service.supported) {
       unawaited(
         _service.checkEnvironment().then((_) => _connectivity.refreshIfStale()),
@@ -100,9 +107,17 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
     }
   }
 
+  // A desktop window losing keyboard focus is still visible. Continue local
+  // detection while the user operates an external proxy next to this window.
+  bool _canMonitor(AppLifecycleState? state) =>
+      state == null ||
+      state == AppLifecycleState.resumed ||
+      state == AppLifecycleState.inactive;
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _service.setMonitoringActive(false);
     SteamNetwork.configureProxy(() => null);
     ForkUpdateNetwork.configureProxy(() => null);
     super.dispose();
@@ -112,11 +127,22 @@ class _SteamAccelerationScopeState extends ConsumerState<SteamAccelerationScope>
   Widget build(BuildContext context) => widget.child;
 }
 
+/// System tunnels do not have an HTTP endpoint. Still invalidate pooled
+/// connections when the system route changes; no existing write is replayed.
+Object steamRouteIdentity(SteamAccelerationService service) {
+  final environment = service.state.environment;
+  return (
+    environment.vpnOrTunnelDetected,
+    environment.pacDetected,
+    environment.systemProxyDetected,
+    environment.detectionAvailable,
+  );
+}
+
 /// A VPN/TUN already routes operating-system sockets. PAC is detected but not
 /// evaluated here; its presence pauses the internal core without pretending an
 /// HTTP endpoint was discovered. No system proxy settings are ever written.
 SteamNetworkProxy? steamProxyFor(SteamAccelerationService service) {
-  if (!service.state.configured) return null;
   final environment = service.state.environment;
   final external = environment.externalHttpProxy;
   if (external != null) {

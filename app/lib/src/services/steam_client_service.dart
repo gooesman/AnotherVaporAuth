@@ -329,6 +329,39 @@ class SteamClientService {
     required String path,
     required String steamId,
     void Function(SteamSwitchStage)? onProgress,
+  }) => _switchAccount(path: path, steamId: steamId, onProgress: onProgress);
+
+  /// User-initiated desktop login. A new/unremembered account opens a clean
+  /// login prompt instead of requiring credentials to have been saved in Steam.
+  /// This does not authorize any login: the separate QR flow owns that step.
+  Future<SteamSwitchResult> prepareLogin({
+    required String path,
+    required String steamId,
+    void Function(SteamSwitchStage)? onProgress,
+  }) => _switchAccount(
+    path: path,
+    steamId: steamId,
+    onProgress: onProgress,
+    allowQrLogin: true,
+  );
+
+  Future<void> open(String path) async {
+    _requireSupported();
+    await _validatePath(path);
+    if (_switching) {
+      throw const SteamClientException(
+        'busy',
+        'A Steam switch is in progress.',
+      );
+    }
+    await _platform.start(path);
+  }
+
+  Future<SteamSwitchResult> _switchAccount({
+    required String path,
+    required String steamId,
+    void Function(SteamSwitchStage)? onProgress,
+    bool allowQrLogin = false,
   }) async {
     _requireSupported();
     if (_switching) {
@@ -355,8 +388,18 @@ class SteamClientService {
 
     try {
       await _validatePath(path);
-      final initial = _LoginUsers.parse(await _files.read(_loginFile(path)));
-      final initialTarget = initial.target(steamId);
+      if (!RegExp(r'^[0-9]{1,20}$').hasMatch(steamId)) {
+        throw const SteamClientException(
+          'account_missing',
+          'Invalid Steam ID.',
+        );
+      }
+      final initial = allowQrLogin && !await _files.exists(_loginFile(path))
+          ? null
+          : _LoginUsers.parse(await _files.read(_loginFile(path)));
+      final initialTarget = allowQrLogin
+          ? initial?.accounts.where((a) => a.steamId == steamId).firstOrNull
+          : initial!.target(steamId);
       progress(SteamSwitchStage.stopping);
       failureCode = 'shutdown_failed';
       if (await _platform.isRunning(path)) {
@@ -377,19 +420,31 @@ class SteamClientService {
       // pre-shutdown snapshot, and revalidate the target after it has exited.
       failureCode = 'invalid_config';
       final loginPath = _loginFile(path);
-      final loginBytes = await _files.read(loginPath);
-      final login = _LoginUsers.parse(loginBytes);
-      final target = login.target(steamId);
-      if (initialTarget.accountName != target.accountName) {
+      final loginBytes = allowQrLogin && !await _files.exists(loginPath)
+          ? null
+          : await _files.read(loginPath);
+      final login = loginBytes == null ? null : _LoginUsers.parse(loginBytes);
+      final target = allowQrLogin
+          ? login?.accounts.where((a) => a.steamId == steamId).firstOrNull
+          : login!.target(steamId);
+      if (initialTarget?.accountName != target?.accountName) {
         throw const SteamClientException(
           'account_changed',
           'The selected Steam account changed during shutdown.',
         );
       }
+      final remembered = target?.rememberPassword == true;
       final planned = <_FileEdit>[
-        _FileEdit(loginPath, loginBytes, login.select(steamId)),
+        if (loginBytes != null)
+          _FileEdit(
+            loginPath,
+            loginBytes,
+            remembered ? login!.select(steamId) : login!.prompt(),
+          ),
       ];
-      final backups = <String, List<int>>{'loginusers.vdf': loginBytes};
+      final backups = <String, List<int>>{
+        'loginusers.vdf': ?loginBytes,
+      };
       final configPath = p.join(path, 'config', 'config.vdf');
       if (await _files.exists(configPath)) {
         final original = await _files.read(configPath);
@@ -398,7 +453,7 @@ class SteamClientService {
       }
       oldRegistry = await _platform.readAutoLogin();
       newRegistry = SteamAutoLogin(
-        autoLoginUser: target.accountName,
+        autoLoginUser: remembered ? target!.accountName : '',
         rememberPassword: 1,
       );
       backups['auto-login.json'] = utf8.encode(jsonEncode(oldRegistry.toMap()));
@@ -645,6 +700,15 @@ class _LoginUsers {
     final selected = records[steamId]!;
     document.setString(selected, 'AutoLogin', '1');
     document.setString(selected, 'AllowAutoLogin', '1');
+    return utf8.encode(document.render());
+  }
+
+  List<int> prompt() {
+    for (final record in records.values) {
+      document.setString(record, 'MostRecent', '0');
+      document.setString(record, 'AutoLogin', '0');
+      document.setString(record, 'AllowAutoLogin', '0');
+    }
     return utf8.encode(document.render());
   }
 }

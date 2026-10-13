@@ -36,7 +36,7 @@ class SteamAccelerationService extends ChangeNotifier {
     SteamAccelerationStore? store,
     SteamAccelerationRuntime? runtime,
     Future<String> Function(Uri)? fetchSubscription,
-    this.environmentInterval = const Duration(seconds: 15),
+    this.environmentInterval = const Duration(seconds: 5),
   }) : _store = store ?? SteamAccelerationStore(),
        _runtime = runtime ?? PlatformSteamAccelerationRuntime(),
        _fetchSubscription = fetchSubscription ?? downloadSteamSubscription;
@@ -63,7 +63,8 @@ class SteamAccelerationService extends ChangeNotifier {
   bool _disposed = false;
   bool _checking = false;
   bool _manuallyStopped = false;
-  bool _startedAutomatically = false;
+  bool _enabled = false;
+  bool _monitoringActive = true;
   bool _configurationAvailable = false;
   final ChangeNotifier _configurationChanges = ChangeNotifier();
 
@@ -99,6 +100,7 @@ class SteamAccelerationService extends ChangeNotifier {
       _autoStart = false;
       _selected = null;
       _publish(SteamAccelerationPhase.error, SteamAccelerationError.storage);
+      _startMonitoring();
     }
   });
 
@@ -118,6 +120,7 @@ class SteamAccelerationService extends ChangeNotifier {
       return;
     }
     final ticket = ++_epoch;
+    _enabled = false;
     _endpoint = null;
     await _enqueue(() async {
       await _runtime.stop();
@@ -156,6 +159,7 @@ class SteamAccelerationService extends ChangeNotifier {
       return;
     }
     final ticket = ++_epoch;
+    _enabled = false;
     _endpoint = null;
     await _enqueue(() async {
       await _runtime.stop();
@@ -238,6 +242,7 @@ class SteamAccelerationService extends ChangeNotifier {
       return;
     }
     if (!automatic) _manuallyStopped = false;
+    _enabled = true;
     final ticket = ++_epoch;
     await _enqueue(() async {
       if (!_current(ticket)) return;
@@ -245,8 +250,7 @@ class SteamAccelerationService extends ChangeNotifier {
       try {
         _environment = await _detectEnvironment();
         if (!_current(ticket)) return;
-        if (_environment.hasExternal ||
-            automatic && !_environment.detectionAvailable) {
+        if (_environment.hasExternal || !_environment.detectionAvailable) {
           _publish(
             SteamAccelerationPhase.pausedExternal,
             !_environment.detectionAvailable
@@ -298,7 +302,7 @@ class SteamAccelerationService extends ChangeNotifier {
         _environment = await _detectEnvironment();
         if (!_current(ticket) ||
             _environment.hasExternal ||
-            automatic && !_environment.detectionAvailable) {
+            !_environment.detectionAvailable) {
           await _runtime.stop();
           if (_current(ticket)) {
             _publish(
@@ -310,7 +314,6 @@ class SteamAccelerationService extends ChangeNotifier {
           }
           return;
         }
-        _startedAutomatically = automatic;
         _endpoint = endpoint;
         _publish(SteamAccelerationPhase.running);
         _startMonitoring();
@@ -328,6 +331,7 @@ class SteamAccelerationService extends ChangeNotifier {
   Future<void> stop() {
     _epoch++;
     _manuallyStopped = true;
+    _enabled = false;
     _endpoint = null;
     _publish(SteamAccelerationPhase.off);
     return _enqueue(() async {
@@ -345,13 +349,23 @@ class SteamAccelerationService extends ChangeNotifier {
   Future<void> checkEnvironment({bool allowAutomaticStart = true}) async {
     if (_disposed || _checking) return;
     _checking = true;
+    final observedEpoch = _epoch;
     try {
       final environment = await _detectEnvironment();
       if (_disposed) return;
       _environment = environment;
-      if ((environment.hasExternal ||
-              _startedAutomatically && !environment.detectionAvailable) &&
-          _endpoint != null) {
+      // A stop/configuration change while detection was pending wins. Still
+      // publish the OS route so external routing works without a subscription.
+      if (observedEpoch != _epoch) {
+        _publish(_state.phase, _state.error);
+        return;
+      }
+      final blocked =
+          environment.hasExternal || !environment.detectionAvailable;
+      final busy =
+          _state.phase == SteamAccelerationPhase.starting ||
+          _state.phase == SteamAccelerationPhase.downloadingCore;
+      if (blocked && (_endpoint != null || busy)) {
         final ticket = ++_epoch;
         _endpoint = null;
         final error = !environment.detectionAvailable
@@ -364,32 +378,52 @@ class SteamAccelerationService extends ChangeNotifier {
             _publish(SteamAccelerationPhase.pausedExternal, error);
           }
         });
-      } else if (_endpoint != null && !await _runtime.isRunning()) {
-        _endpoint = null;
+      } else if (_endpoint != null) {
+        final running = await _runtime.isRunning();
+        if (!_current(observedEpoch)) return;
+        if (!running) {
+          _endpoint = null;
+          _publish(
+            SteamAccelerationPhase.error,
+            SteamAccelerationError.startFailed,
+          );
+        } else {
+          _publish(_state.phase, _state.error);
+        }
+      } else if (_state.phase == SteamAccelerationPhase.pausedExternal) {
         _publish(
-          SteamAccelerationPhase.error,
-          SteamAccelerationError.startFailed,
+          SteamAccelerationPhase.pausedExternal,
+          environment.detectionAvailable
+              ? null
+              : SteamAccelerationError.environmentUnknown,
         );
       } else {
         _publish(_state.phase, _state.error);
       }
       if (allowAutomaticStart &&
+          _monitoringActive &&
           !_environment.hasExternal &&
           _environment.detectionAvailable &&
           _state.phase == SteamAccelerationPhase.pausedExternal &&
-          _autoStart &&
+          _enabled &&
           !_manuallyStopped) {
-        await start(automatic: true);
+        // Manual activation arms the same session fallback as startup auto;
+        // autoStart only decides whether a new app session is initially armed.
+        await start();
       }
     } catch (_) {
+      if (!_current(observedEpoch)) return;
       _endpoint = null;
-      try {
-        await _runtime.stop();
-      } catch (_) {}
       _publish(
         SteamAccelerationPhase.error,
         SteamAccelerationError.startFailed,
       );
+      await _enqueue(() async {
+        if (!_current(observedEpoch)) return;
+        try {
+          await _runtime.stop();
+        } catch (_) {}
+      });
     } finally {
       _checking = false;
     }
@@ -406,8 +440,7 @@ class SteamAccelerationService extends ChangeNotifier {
         _autoStart = false;
         _configurationAvailable = true;
         _notifyConfigurationChanged();
-        _monitor?.cancel();
-        _monitor = null;
+        _startMonitoring();
         _publish(SteamAccelerationPhase.off);
       } catch (_) {
         _publish(SteamAccelerationPhase.error, SteamAccelerationError.storage);
@@ -526,19 +559,14 @@ class SteamAccelerationService extends ChangeNotifier {
         _catalog = catalog;
         _selected = selected;
         _manuallyStopped = true;
-        _startedAutomatically = false;
+        _enabled = false;
         if (_disposed) {
           throw const SteamAccelerationException(
             SteamAccelerationError.storage,
           );
         }
         _notifyConfigurationChanged();
-        if (url == null) {
-          _monitor?.cancel();
-          _monitor = null;
-        } else {
-          _startMonitoring();
-        }
+        _startMonitoring();
         _publish(SteamAccelerationPhase.off);
       } catch (_) {
         failure = const SteamAccelerationException(
@@ -588,10 +616,25 @@ class SteamAccelerationService extends ChangeNotifier {
   }
 
   void _startMonitoring() {
-    if (_disposed || _subscriptionUrl == null || _monitor != null) return;
+    if (_disposed || !supported || !_monitoringActive || _monitor != null) {
+      return;
+    }
     _monitor = Timer.periodic(environmentInterval, (_) {
       unawaited(checkEnvironment());
     });
+  }
+
+  /// Pause periodic native checks when the app is hidden. Keep user intent and
+  /// an existing core; the foreground owner performs an immediate route check.
+  void setMonitoringActive(bool value) {
+    if (_disposed || _monitoringActive == value) return;
+    _monitoringActive = value;
+    if (value) {
+      _startMonitoring();
+    } else {
+      _monitor?.cancel();
+      _monitor = null;
+    }
   }
 
   Future<SteamAccelerationEnvironment> _detectEnvironment() async {
@@ -636,16 +679,40 @@ class SteamAccelerationService extends ChangeNotifier {
       _endpoint = null;
       unawaited(_enqueue(() => _runtime.stop()));
     }
-    _state = SteamAccelerationState(
+    final next = SteamAccelerationState(
       phase: phase,
       configured: _subscriptionUrl != null,
       autoStart: _autoStart,
+      enabled: _enabled,
       nodes: _catalog?.nodes ?? const [],
       selectedNodeId: _selected,
       environment: _environment,
       error: error,
       skippedNodes: _catalog?.skipped ?? 0,
     );
+    final previousEnvironment = _state.environment;
+    if (_state.phase == next.phase &&
+        _state.configured == next.configured &&
+        _state.autoStart == next.autoStart &&
+        _state.enabled == next.enabled &&
+        _state.error == next.error &&
+        _state.selectedNodeId == next.selectedNodeId &&
+        _state.skippedNodes == next.skippedNodes &&
+        listEquals(_state.nodes, next.nodes) &&
+        previousEnvironment.detectionAvailable ==
+            _environment.detectionAvailable &&
+        previousEnvironment.systemProxyDetected ==
+            _environment.systemProxyDetected &&
+        previousEnvironment.vpnOrTunnelDetected ==
+            _environment.vpnOrTunnelDetected &&
+        previousEnvironment.pacDetected == _environment.pacDetected &&
+        previousEnvironment.externalHttpProxy?.host ==
+            _environment.externalHttpProxy?.host &&
+        previousEnvironment.externalHttpProxy?.port ==
+            _environment.externalHttpProxy?.port) {
+      return;
+    }
+    _state = next;
     notifyListeners();
   }
 

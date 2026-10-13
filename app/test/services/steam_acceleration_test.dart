@@ -46,6 +46,7 @@ class _Runtime implements SteamAccelerationRuntime {
     detectionAvailable: true,
   );
   bool failDetection = false;
+  bool failStart = false;
   int starts = 0;
   int stops = 0;
   int detections = 0;
@@ -53,6 +54,7 @@ class _Runtime implements SteamAccelerationRuntime {
   String? configuration;
   SteamProxyEndpoint? endpoint;
   Completer<void>? pendingStart;
+  Completer<bool>? pendingHealth;
   Completer<void>? pendingStop;
   Completer<void>? stopEntered;
   void Function()? afterStart;
@@ -66,7 +68,7 @@ class _Runtime implements SteamAccelerationRuntime {
   }
 
   @override
-  Future<bool> isRunning() async => running;
+  Future<bool> isRunning() async => pendingHealth?.future ?? running;
   @override
   Future<void> start(
     String configuration,
@@ -74,6 +76,11 @@ class _Runtime implements SteamAccelerationRuntime {
     void Function(SteamAccelerationPhase)? onPhaseChanged,
   }) async {
     starts++;
+    if (failStart) {
+      throw const SteamAccelerationException(
+        SteamAccelerationError.startFailed,
+      );
+    }
     this.configuration = configuration;
     this.endpoint = endpoint;
     await pendingStart?.future;
@@ -261,23 +268,211 @@ void main() {
     },
   );
 
-  test('manual mode stays paused until another explicit start', () async {
-    await configure();
-    await service.start();
+  test(
+    'manual activation resumes automatically for the current session',
+    () async {
+      await configure();
+      await service.start();
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        vpnOrTunnelDetected: true,
+      );
+      await service.checkEnvironment();
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+      );
+      await service.checkEnvironment();
+      expect(runtime.starts, 2);
+      expect(service.state.phase, SteamAccelerationPhase.running);
+      expect(service.state.enabled, isTrue);
+      expect(service.state.autoStart, isFalse);
+      expect(fetches, 1);
+    },
+  );
+
+  test(
+    'manual enable behind external proxy arms fallback without core work',
+    () async {
+      await configure();
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        systemProxyDetected: true,
+        externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+      );
+      await service.start();
+      expect(service.state.enabled, isTrue);
+      expect(service.state.phase, SteamAccelerationPhase.pausedExternal);
+      expect(runtime.starts, 0);
+      expect(fetches, 0);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+      );
+      await service.checkEnvironment();
+      expect(runtime.starts, 1);
+      expect(service.state.phase, SteamAccelerationPhase.running);
+    },
+  );
+
+  test('fallback startup failure is not retried by recurring checks', () async {
+    await configure(auto: true);
     runtime.environment = const SteamAccelerationEnvironment(
       detectionAvailable: true,
       vpnOrTunnelDetected: true,
     );
-    await service.checkEnvironment();
+    await service.start(automatic: true);
     runtime.environment = const SteamAccelerationEnvironment(
       detectionAvailable: true,
     );
+    runtime.failStart = true;
     await service.checkEnvironment();
+    expect(service.state.phase, SteamAccelerationPhase.error);
+    expect(service.state.enabled, isTrue);
+    for (var i = 0; i < 4; i++) {
+      await service.checkEnvironment();
+    }
     expect(runtime.starts, 1);
-    expect(service.state.phase, SteamAccelerationPhase.pausedExternal);
+    expect(fetches, 1);
+    runtime.failStart = false;
     await service.start();
     expect(runtime.starts, 2);
+    expect(service.state.phase, SteamAccelerationPhase.running);
   });
+
+  test(
+    'manual stop while external does not rearm after its disconnect',
+    () async {
+      await configure();
+      await service.start();
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        vpnOrTunnelDetected: true,
+      );
+      await service.checkEnvironment();
+      await service.stop();
+      expect(service.state.enabled, isFalse);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+      );
+      await service.checkEnvironment();
+      expect(runtime.starts, 1);
+      expect(service.state.phase, SteamAccelerationPhase.off);
+      await service.start();
+      expect(runtime.starts, 2);
+      expect(service.state.enabled, isTrue);
+    },
+  );
+
+  test('stable environment polling does not rebuild listeners', () async {
+    await service.load();
+    var notices = 0;
+    service.addListener(() => notices++);
+    await service.checkEnvironment();
+    expect(notices, 1);
+    await service.checkEnvironment();
+    expect(notices, 1);
+    runtime.environment = const SteamAccelerationEnvironment(
+      detectionAvailable: true,
+      systemProxyDetected: true,
+      externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+    );
+    await service.checkEnvironment();
+    expect(notices, 2);
+    runtime.environment = const SteamAccelerationEnvironment(
+      detectionAvailable: true,
+      systemProxyDetected: true,
+      externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+    );
+    await service.checkEnvironment();
+    expect(notices, 2);
+    expect(service.state.configured, isFalse);
+    expect(runtime.starts, 0);
+  });
+
+  testWidgets(
+    'unconfigured foreground monitors external route and pauses hidden',
+    (tester) async {
+      final monitored = SteamAccelerationService(
+        store: store,
+        runtime: runtime,
+      );
+      addTearDown(monitored.dispose);
+      await monitored.load();
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        vpnOrTunnelDetected: true,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      expect(monitored.state.environment.vpnOrTunnelDetected, isTrue);
+      expect(runtime.detections, 1);
+      monitored.setMonitoringActive(false);
+      await tester.pump(const Duration(seconds: 20));
+      expect(runtime.detections, 1);
+      monitored.setMonitoringActive(true);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      expect(monitored.state.environment.vpnOrTunnelDetected, isFalse);
+      expect(runtime.detections, 2);
+      expect(runtime.starts, 0);
+      expect(fetches, 0);
+      await monitored.clearConfiguration();
+      await tester.pump(const Duration(seconds: 5));
+      expect(runtime.detections, 3);
+      monitored.setMonitoringActive(false);
+    },
+  );
+
+  test('stale failing health check cannot stop a newer manual start', () async {
+    await configure();
+    await service.start();
+    final pending = Completer<bool>();
+    runtime.pendingHealth = pending;
+    final checking = service.checkEnvironment();
+    await Future<void>.delayed(Duration.zero);
+    await service.stop();
+    runtime.pendingHealth = null;
+    await service.start();
+    final stopCount = runtime.stops;
+    pending.completeError(StateError('stale native failure'));
+    await checking;
+    expect(runtime.stops, stopCount);
+    expect(runtime.running, isTrue);
+    expect(service.state.phase, SteamAccelerationPhase.running);
+    expect(service.proxyEndpoint, isNotNull);
+  });
+
+  test(
+    'external route during delayed core start discards the old endpoint',
+    () async {
+      await configure();
+      final pending = Completer<void>();
+      runtime.pendingStart = pending;
+      final starting = service.start();
+      while (runtime.starts == 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        vpnOrTunnelDetected: true,
+      );
+      final checking = service.checkEnvironment();
+      await Future<void>.delayed(Duration.zero);
+      expect(service.state.phase, SteamAccelerationPhase.pausedExternal);
+      pending.complete();
+      await Future.wait([starting, checking]);
+      expect(runtime.running, isFalse);
+      expect(service.proxyEndpoint, isNull);
+      expect(service.state.enabled, isTrue);
+      runtime.pendingStart = null;
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+      );
+      await service.checkEnvironment();
+      expect(runtime.starts, 2);
+      expect(runtime.running, isTrue);
+    },
+  );
 
   test(
     'unknown native detection pauses automatic mode without leaking errors',

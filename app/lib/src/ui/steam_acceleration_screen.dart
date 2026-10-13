@@ -179,17 +179,16 @@ class _SteamAccelerationScreenState
           builder: (context, _) {
             final state = _service.state;
             final running = state.phase == SteamAccelerationPhase.running;
+            final enabled =
+                running ||
+                state.enabled && state.phase != SteamAccelerationPhase.error;
             final environment = state.environment;
             final supported = _service.supported;
             final hasSelection = state.nodes.any(
               (node) => node.id == state.selectedNodeId,
             );
             final canStart =
-                supported &&
-                !_busy &&
-                state.configured &&
-                hasSelection &&
-                !environment.hasExternal;
+                supported && !_busy && state.configured && hasSelection;
             return Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
@@ -198,7 +197,7 @@ class _SteamAccelerationScreenState
                   padding: context.rSafeInsets(all: 20),
                   children: [
                     AvaPanel(
-                      emphasized: running,
+                      emphasized: running || environment.hasExternal,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -226,7 +225,10 @@ class _SteamAccelerationScreenState
                           if (supported && environment.hasExternal) ...[
                             const SizedBox(height: 12),
                             Text(
-                              l.steamAccelerationExternalActiveHelp,
+                              environment.externalHttpProxy == null &&
+                                      !environment.vpnOrTunnelDetected
+                                  ? l.steamConnectionPacHelp
+                                  : l.steamAccelerationExternalActiveHelp,
                               key: const ValueKey(
                                 'steam-acceleration-external-help',
                               ),
@@ -253,8 +255,8 @@ class _SteamAccelerationScreenState
                             const SizedBox(height: 12),
                             const LinearProgressIndicator(),
                           ],
-                          // An already detected proxy/VPN takes priority over
-                          // an incomplete scan; manual startup stays disabled.
+                          // An external route is usable even if another part
+                          // of the environment scan could not finish.
                           if (state.error != null &&
                               !(state.error ==
                                       SteamAccelerationError
@@ -271,18 +273,18 @@ class _SteamAccelerationScreenState
                             const SizedBox(height: 16),
                             FilledButton.icon(
                               key: const ValueKey('steam-acceleration-toggle'),
-                              onPressed: running
+                              onPressed: enabled
                                   ? (_busy ? null : () => _run(_service.stop))
                                   : (canStart
                                         ? () => _run(_service.start)
                                         : null),
                               icon: Icon(
-                                running
+                                enabled
                                     ? Icons.stop_outlined
                                     : Icons.play_arrow_outlined,
                               ),
                               label: Text(
-                                running
+                                enabled
                                     ? l.steamAccelerationStop
                                     : l.steamAccelerationStart,
                               ),
@@ -500,7 +502,6 @@ class _ConnectionCheckCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final monitor = ref.watch(steamConnectivityProvider);
-    final service = ref.watch(steamAccelerationServiceProvider);
     final l = AppLocalizations.of(context);
     final t = Theme.of(context).extension<AvaTokens>()!;
     return ListenableBuilder(
@@ -545,7 +546,7 @@ class _ConnectionCheckCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(steamConnectionRouteLabel(l, state.route)),
-              if (service.state.environment.pacDetected) ...[
+              if (state.route == SteamConnectionRoute.unresolvedProxy) ...[
                 const SizedBox(height: 8),
                 Text(
                   l.steamConnectionPacHelp,

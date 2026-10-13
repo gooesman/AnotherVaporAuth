@@ -15,6 +15,34 @@ installation. The current name and icon path replace the old shortcut details;
 links to other installations remain unchanged. Actual available updates are those
 published through the [fork release process](fork-releases.md).
 
+## Open Steam and sign in
+
+Open an account's overview and choose **Switch Steam account**, or use the
+account menu / Settings entry. Select the intended GooeSteamKit account and
+choose **Open Steam and sign in**. Exit running games first. The app checks the
+account session before requesting a normal Steam restart, and backs up local
+Steam settings before changing them. A remembered account can sign in directly;
+an unremembered account opens Steam's sign-in window.
+
+For QR approval, the app accepts only a foreground, visible, unobscured sign-in
+window belonging to the verified Steam installation and a process started for
+this attempt. It reads that window's client area locally, checks Steam's session
+details, and reads the same window and QR challenge again before submitting one
+approval. Browser QR codes and unrelated pending account requests are not
+automatically approved. Keep the Steam sign-in window visible while it waits.
+Unknown window titles/layouts, covered windows or an unverifiable request fall
+back to the manual scan flow. The wait is bounded; it does not keep scanning
+after the attempt ends.
+
+The final result checks the active local Steam process and its current account.
+It does not prove server-side session availability or permission to trade.
+An uncertain approval response is not retried; the app only continues checking
+the client's account and reports an unconfirmed result if it cannot verify it.
+**Stop automatic approval**, locking the vault, removing/changing the selected
+account or leaving the page prevents further approval. It cannot revoke a request
+already submitted to Steam. A usable account session and authenticator secret
+are required; an offline token alone cannot authorize this flow.
+
 ## Sign in by selecting Steam's QR code on screen
 
 Open an account's overview and choose **Switch Steam account**, or use the
@@ -101,7 +129,7 @@ Settings → Steam acceleration accepts HTTP or HTTPS Clash-format subscriptions
 including URL-encoded Basic authentication and custom ports, and a selected
 supported node. Subscription requests identify as Clash so providers return
 Clash YAML instead of a generic link list. Credentials are not forwarded across
-origins; HTTPS certificate checks remain enabled. It starts manually by default; **Start automatically**
+origins; HTTPS certificate checks remain enabled. It starts manually by default; **Enable on launch**
 is optional. This app's Steam HTTPS requests use the connection, including QR
 approval, community, market, images and backup codes. The app's official GitHub
 update checks/downloads can also reuse the already-active connection, with
@@ -127,12 +155,30 @@ does not establish that the account is signed in or allowed to trade.
 Detected external HTTP proxy settings take priority. A detected VPN/TUN already
 routes operating-system sockets, so GooeSteamKit pauses its own core. PAC is detected but
 not evaluated; the UI reports its presence and pauses internal acceleration.
-Environment checks run on entry, foreground return and
-periodically while configured. Detection cannot identify every VPN product or
-eliminate the short interval before a change is noticed. Unknown environments
-do not automatically start a second core, but allow an explicit manual start.
-Manually stopping prevents automatic
-restart for the rest of that app session.
+External routing also works without a saved subscription or an enabled built-in
+core. The UI distinguishes an external HTTP proxy, system VPN/TUN, internal
+connection, direct connection and an unresolved system proxy. Detected PAC or
+unusable proxy settings are not shown as a working accelerated route.
+
+**Enable automatic switching** arms the built-in fallback for this app session.
+An external route takes priority; when it disappears and detection confirms a
+clear environment, the internal core resumes without another click. The optional
+startup setting arms the same behavior when the app next opens. **Pause automatic
+switching** stops the internal core and cancels this session's fallback; external
+routing still follows system settings. A failed core start is reported without
+repeated automatic startup attempts.
+
+Environment checks run on entry, foreground return and every five seconds while
+the app is visible, even without a subscription. These are local OS checks,
+not repeated Steam requests. Periodic checks pause while hidden; an existing core
+is retained until a later route check or explicit stop. Detection cannot identify
+every VPN product or eliminate the interval before a change is noticed. Unknown
+environments, including unresolved Windows automatic proxy discovery, prevent
+both manual and automatic internal startup. PAC is not evaluated. Check system
+proxy settings and refresh when the environment cannot be determined.
+New requests adopt a changed route without replaying earlier requests. Stopping
+the old core or an external proxy can interrupt an in-flight request; trade,
+market, SMS and approval writes are never automatically resent to compensate.
 
 Windows downloads a fixed Mihomo component (about 22 MB) on first use, trying
 GH-Proxy's `axisnow.gh-proxy.org`, then `v4.gh-proxy.org`, then the official

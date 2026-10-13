@@ -5,6 +5,28 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.9] — 2026-10-13 · Fork
+
+### Added
+- One Windows action opens or switches Steam to the selected account and submits approval for a QR challenge read twice from the same verified local Steam login window. It never approves unrelated pending requests, and confirms the selected account using the client's current local identity. Manual QR selection remains available when automatic recognition cannot be verified.
+
+### Changed
+- External HTTP proxies and VPN/tunnel routes take priority even without an internal subscription. Once enabled, automatic switching resumes the built-in route after the external route closes; the startup preference remains local to each device. The home status names the current route separately from Steam connectivity.
+- Local environment checks run every five seconds while the app is visible and pause while hidden. Stable checks do not rebuild the UI; new requests use a fresh connection pool after route changes, without replaying an in-flight trade or login approval.
+
+### Fixed
+- Stopped external Windows tunnels with only local interface routes no longer prevent built-in fallback. Unknown or unresolved system proxy settings remain clearly identified, and component failures do not trigger repeated automatic restarts.
+
+### 新增
+- Windows 一次操作即可打开或切换到所选 Steam 账号，并批准从同一个已核验本机 Steam 登录窗口两次读取的二维码请求。不批准其他待处理请求，以客户端当前本机身份核对账号；无法确认自动识别时保留手动框选扫码。
+
+### 调整
+- 即使未添加内置订阅，也优先使用外部 HTTP 代理或 VPN／隧道。启用自动切换后，外部关闭会接续内置线路；启动偏好仍由每台设备独立保存。首页分别显示当前线路和 Steam 连接结果。
+- 应用可见时每五秒检查本机网络设置，隐藏后暂停。环境不变时不重建界面，线路改变后新请求使用新连接，不重复发送正在处理的交易或登录批准。
+
+### 修复
+- Windows 外部代理退出后，只有本地接口路由的空隧道网卡不再阻挡内置接续。未知或无法解析的系统代理有明确提示，组件失败后不会自动反复重启。
+
 ## [v1.5.8] — 2026-10-13 · Fork
 
 ### Added

@@ -2540,7 +2540,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationTitle => 'Steam 加速';
 
   @override
-  String get steamAccelerationDesc => '仅加速 GooeSteamKit 访问 Steam，不影响其他应用。';
+  String get steamAccelerationDesc =>
+      '优先使用外部代理，外部关闭后接续内置加速。内置线路仅用于 GooeSteamKit 的 Steam 访问。';
 
   @override
   String get steamAccelerationOff => '未启用';
@@ -2555,7 +2556,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationRunning => '运行中';
 
   @override
-  String get steamAccelerationPaused => '内置加速已暂停';
+  String get steamAccelerationPaused => '内置加速待命';
 
   @override
   String get steamAccelerationFailed => '加速不可用';
@@ -2600,7 +2601,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamAccelerationExternalActiveHelp =>
-      '检测到外部代理或 VPN，内置加速已让路。如需使用内置加速，请先关闭外部代理，再点重新检查。';
+      '当前使用外部连接。开启自动切换后，外部关闭时会接上内置线路，无需手动切换。';
 
   @override
   String get steamAccelerationNodes => '节点';
@@ -2612,17 +2613,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationNode => '使用节点';
 
   @override
-  String get steamAccelerationStart => '启用加速';
+  String get steamAccelerationStart => '开启自动切换';
 
   @override
-  String get steamAccelerationStop => '停止加速';
+  String get steamAccelerationStop => '暂停自动切换';
 
   @override
-  String get steamAccelerationAuto => '自动启用';
+  String get steamAccelerationAuto => '启动时自动开启';
 
   @override
   String get steamAccelerationAutoDesc =>
-      '打开 GooeSteamKit 时自动启用；检测到外部代理时暂停内置加速。';
+      '优先使用外部代理或 VPN，关闭后恢复内置线路。手动暂停仅在本次运行期间生效。';
 
   @override
   String get steamAccelerationEnvironment => '外部代理检测';
@@ -2637,11 +2638,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAccelerationNoExternal => '未检测到外部代理';
 
   @override
-  String get steamAccelerationDetectionUnavailable => '无法确认外部代理；自动启动已暂停，可手动开启。';
+  String get steamAccelerationDetectionUnavailable =>
+      '无法确认外部代理，内置线路暂不启动。请检查系统代理设置后重新检测。';
 
   @override
   String get steamAccelerationEnvironmentHelp =>
-      '内置加速会避让检测到的外部代理。检测结果可能受系统权限影响。';
+      '应用可见时自动检查本机连接设置，不修改系统代理或 VPN。';
 
   @override
   String steamAccelerationSkipped(int count) {
@@ -2723,13 +2725,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamConnectionFailed => '连接失败';
 
   @override
-  String get steamConnectionInternal => 'GooeSteamKit 内置线路';
+  String get steamConnectionInternal => '内置线路';
 
   @override
   String get steamConnectionExternal => '外部 HTTP 代理';
 
   @override
-  String get steamConnectionSystem => '当前系统线路（检测到外部网络）';
+  String get steamConnectionSystem => '外部 VPN／隧道';
 
   @override
   String get steamConnectionDirect => '直接连接';
@@ -2772,7 +2774,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamConnectionPacHelp =>
-      'GooeSteamKit 仅检测 PAC，不解析其规则；本次检查使用当前系统线路。';
+      '检测到了系统代理设置，但没有可用的 HTTP 端口或 VPN 线路。本程序不解析 PAC 脚本，请开启外部代理的 HTTP 代理或 VPN 模式。';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -2869,6 +2871,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String marketSearchRequestedCurrency(String currency) {
     return '请求币种：$currency';
   }
+
+  @override
+  String get steamConnectionUnresolvedProxy => '系统代理不可用';
+
+  @override
+  String get steamDesktopLoginButton => '打开 Steam 并登录';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      '使用所选账号打开或切换 Steam，并自动批准本次本机登录窗口的二维码。请先退出正在运行的游戏。';
+
+  @override
+  String get steamDesktopLoginPreparing => '正在准备所选账号…';
+
+  @override
+  String get steamDesktopLoginWaitingQr => '正在等待本机 Steam 登录二维码…';
+
+  @override
+  String get steamDesktopLoginApproving => '正在批准本机登录…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount => '正在确认 Steam 登录状态…';
+
+  @override
+  String get steamDesktopLoginComplete => '已核验 Steam 客户端当前账号为所选账号。';
+
+  @override
+  String get steamDesktopLoginManual => 'Steam 已打开，但未能确认本机登录二维码。可使用下方扫码入口继续。';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      '已提交登录批准请求，但尚未确认 Steam 已登录。请查看 Steam 窗口后刷新状态。';
+
+  @override
+  String get steamDesktopLoginCancelled => '已停止自动登录';
+
+  @override
+  String get steamDesktopLoginCancel => '停止自动批准';
+
+  @override
+  String get steamDesktopLoginWrongAccount => 'Steam 当前登录了其他账号，已停止自动批准。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5413,7 +5456,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationTitle => 'Steam 加速';
 
   @override
-  String get steamAccelerationDesc => '僅加速 GooeSteamKit 存取 Steam，不影響其他應用程式。';
+  String get steamAccelerationDesc =>
+      '優先使用外部代理，外部關閉後接續內建加速。內建線路僅用於 GooeSteamKit 的 Steam 存取。';
 
   @override
   String get steamAccelerationOff => '未啟用';
@@ -5428,7 +5472,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationRunning => '執行中';
 
   @override
-  String get steamAccelerationPaused => '內建加速已暫停';
+  String get steamAccelerationPaused => '內建加速待命';
 
   @override
   String get steamAccelerationFailed => '加速無法使用';
@@ -5473,7 +5517,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamAccelerationExternalActiveHelp =>
-      '偵測到外部代理或 VPN，內建加速已暫停。如需使用內建加速，請先關閉外部代理，再點選重新檢查。';
+      '目前使用外部連線。開啟自動切換後，外部關閉時會接上內建線路，無需手動切換。';
 
   @override
   String get steamAccelerationNodes => '節點';
@@ -5485,17 +5529,17 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationNode => '使用節點';
 
   @override
-  String get steamAccelerationStart => '啟用加速';
+  String get steamAccelerationStart => '開啟自動切換';
 
   @override
-  String get steamAccelerationStop => '停止加速';
+  String get steamAccelerationStop => '暫停自動切換';
 
   @override
-  String get steamAccelerationAuto => '自動啟用';
+  String get steamAccelerationAuto => '啟動時自動開啟';
 
   @override
   String get steamAccelerationAutoDesc =>
-      '開啟 GooeSteamKit 時自動啟用；偵測到外部代理時暫停內建加速。';
+      '優先使用外部代理或 VPN，關閉後恢復內建線路。手動暫停僅在本次執行期間生效。';
 
   @override
   String get steamAccelerationEnvironment => '外部代理偵測';
@@ -5510,11 +5554,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamAccelerationNoExternal => '未偵測到外部代理';
 
   @override
-  String get steamAccelerationDetectionUnavailable => '無法確認外部代理；自動啟動已暫停，可手動開啟。';
+  String get steamAccelerationDetectionUnavailable =>
+      '無法確認外部代理，內建線路暫不啟動。請檢查系統代理設定後重新偵測。';
 
   @override
   String get steamAccelerationEnvironmentHelp =>
-      '內建加速會避讓偵測到的外部代理。偵測結果可能受系統權限影響。';
+      '應用程式可見時自動檢查本機連線設定，不修改系統代理或 VPN。';
 
   @override
   String steamAccelerationSkipped(int count) {
@@ -5596,13 +5641,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get steamConnectionFailed => '連線失敗';
 
   @override
-  String get steamConnectionInternal => 'GooeSteamKit 內建線路';
+  String get steamConnectionInternal => '內建線路';
 
   @override
   String get steamConnectionExternal => '外部 HTTP 代理';
 
   @override
-  String get steamConnectionSystem => '目前系統線路（偵測到外部網路）';
+  String get steamConnectionSystem => '外部 VPN／通道';
 
   @override
   String get steamConnectionDirect => '直接連線';
@@ -5645,7 +5690,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamConnectionPacHelp =>
-      'GooeSteamKit 僅偵測 PAC，不解析其規則；本次檢查使用目前系統線路。';
+      '偵測到系統代理設定，但沒有可用的 HTTP 連接埠或 VPN 線路。本程式不解析 PAC 指令碼，請開啟外部代理的 HTTP 代理或 VPN 模式。';
 
   @override
   String forkUpdateTransferSize(String received, String total) {
@@ -5742,4 +5787,45 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String marketSearchRequestedCurrency(String currency) {
     return '要求幣別：$currency';
   }
+
+  @override
+  String get steamConnectionUnresolvedProxy => '系統代理無法使用';
+
+  @override
+  String get steamDesktopLoginButton => '開啟 Steam 並登入';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      '使用所選帳號開啟或切換 Steam，並自動核准本次本機登入視窗的 QR 碼。請先退出正在執行的遊戲。';
+
+  @override
+  String get steamDesktopLoginPreparing => '正在準備所選帳號…';
+
+  @override
+  String get steamDesktopLoginWaitingQr => '正在等待本機 Steam 登入 QR 碼…';
+
+  @override
+  String get steamDesktopLoginApproving => '正在核准本機登入…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount => '正在確認 Steam 登入狀態…';
+
+  @override
+  String get steamDesktopLoginComplete => '已核驗 Steam 用戶端目前帳號為所選帳號。';
+
+  @override
+  String get steamDesktopLoginManual => 'Steam 已開啟，但未能確認本機登入 QR 碼。可使用下方掃碼入口繼續。';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      '已提交登入核准請求，但尚未確認 Steam 已登入。請查看 Steam 視窗後重新整理狀態。';
+
+  @override
+  String get steamDesktopLoginCancelled => '已停止自動登入';
+
+  @override
+  String get steamDesktopLoginCancel => '停止自動核准';
+
+  @override
+  String get steamDesktopLoginWrongAccount => 'Steam 目前登入了其他帳號，已停止自動核准。';
 }

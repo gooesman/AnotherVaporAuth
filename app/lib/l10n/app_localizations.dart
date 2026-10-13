@@ -4730,7 +4730,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationDesc.
   ///
   /// In en, this message translates to:
-  /// **'Accelerate only Steam requests made by GooeSteamKit, without affecting other apps.'**
+  /// **'Use an external proxy first, then built-in acceleration when it closes. Only Steam requests in GooeSteamKit use the built-in route.'**
   String get steamAccelerationDesc;
 
   /// No description provided for @steamAccelerationOff.
@@ -4760,7 +4760,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationPaused.
   ///
   /// In en, this message translates to:
-  /// **'Built-in acceleration is paused'**
+  /// **'Built-in acceleration is on standby'**
   String get steamAccelerationPaused;
 
   /// No description provided for @steamAccelerationFailed.
@@ -4844,7 +4844,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationExternalActiveHelp.
   ///
   /// In en, this message translates to:
-  /// **'An external proxy or VPN is active, so built-in acceleration is paused. To use it, turn off the external proxy, then check again.'**
+  /// **'Using the external connection. With automatic switching enabled, the built-in route takes over when it closes. No manual switching is needed.'**
   String get steamAccelerationExternalActiveHelp;
 
   /// No description provided for @steamAccelerationNodes.
@@ -4868,25 +4868,25 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationStart.
   ///
   /// In en, this message translates to:
-  /// **'Enable acceleration'**
+  /// **'Enable automatic switching'**
   String get steamAccelerationStart;
 
   /// No description provided for @steamAccelerationStop.
   ///
   /// In en, this message translates to:
-  /// **'Stop acceleration'**
+  /// **'Pause automatic switching'**
   String get steamAccelerationStop;
 
   /// No description provided for @steamAccelerationAuto.
   ///
   /// In en, this message translates to:
-  /// **'Start automatically'**
+  /// **'Enable on launch'**
   String get steamAccelerationAuto;
 
   /// No description provided for @steamAccelerationAutoDesc.
   ///
   /// In en, this message translates to:
-  /// **'Start when GooeSteamKit opens; pause built-in acceleration when an external proxy is detected.'**
+  /// **'Prefer an external proxy or VPN; resume the built-in route when it closes. Pausing applies until the next launch.'**
   String get steamAccelerationAutoDesc;
 
   /// No description provided for @steamAccelerationEnvironment.
@@ -4916,13 +4916,13 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationDetectionUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'External proxy status is unknown. Automatic startup is paused; you can start manually.'**
+  /// **'External proxy status is unknown, so the built-in route will not start. Check the system proxy settings, then check again.'**
   String get steamAccelerationDetectionUnavailable;
 
   /// No description provided for @steamAccelerationEnvironmentHelp.
   ///
   /// In en, this message translates to:
-  /// **'Built-in acceleration yields to detected external proxies. Detection may depend on system permissions.'**
+  /// **'Checks the local connection settings while the app is visible. System proxy and VPN settings are never changed.'**
   String get steamAccelerationEnvironmentHelp;
 
   /// No description provided for @steamAccelerationSkipped.
@@ -5078,7 +5078,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamConnectionInternal.
   ///
   /// In en, this message translates to:
-  /// **'GooeSteamKit internal route'**
+  /// **'Built-in route'**
   String get steamConnectionInternal;
 
   /// No description provided for @steamConnectionExternal.
@@ -5090,7 +5090,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamConnectionSystem.
   ///
   /// In en, this message translates to:
-  /// **'Current system route (external network detected)'**
+  /// **'External VPN / tunnel'**
   String get steamConnectionSystem;
 
   /// No description provided for @steamConnectionDirect.
@@ -5156,7 +5156,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamConnectionPacHelp.
   ///
   /// In en, this message translates to:
-  /// **'PAC is detected but not evaluated by GooeSteamKit. This check uses the current system route.'**
+  /// **'A system proxy setting was found, but no usable HTTP endpoint or VPN route is available. PAC scripts are not evaluated. Enable the external app’s HTTP proxy or VPN mode.'**
   String get steamConnectionPacHelp;
 
   /// No description provided for @forkUpdateTransferSize.
@@ -5320,6 +5320,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Requested currency: {currency}'**
   String marketSearchRequestedCurrency(String currency);
+
+  /// No description provided for @steamConnectionUnresolvedProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'System proxy unavailable'**
+  String get steamConnectionUnresolvedProxy;
+
+  /// No description provided for @steamDesktopLoginButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Steam and sign in'**
+  String get steamDesktopLoginButton;
+
+  /// No description provided for @steamDesktopLoginHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open or switch Steam to the selected account and automatically approve the QR code in this computer\'s Steam sign-in window. Please exit any running games first.'**
+  String get steamDesktopLoginHelp;
+
+  /// No description provided for @steamDesktopLoginPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the selected account…'**
+  String get steamDesktopLoginPreparing;
+
+  /// No description provided for @steamDesktopLoginWaitingQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for this computer\'s Steam sign-in QR code…'**
+  String get steamDesktopLoginWaitingQr;
+
+  /// No description provided for @steamDesktopLoginApproving.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving this computer\'s sign-in…'**
+  String get steamDesktopLoginApproving;
+
+  /// No description provided for @steamDesktopLoginWaitingAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming Steam sign-in status…'**
+  String get steamDesktopLoginWaitingAccount;
+
+  /// No description provided for @steamDesktopLoginComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified that the Steam client\'s current account matches the selected account.'**
+  String get steamDesktopLoginComplete;
+
+  /// No description provided for @steamDesktopLoginManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is open, but its local sign-in QR code could not be verified. Use the QR scanning option below to continue.'**
+  String get steamDesktopLoginManual;
+
+  /// No description provided for @steamDesktopLoginUnconfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'A sign-in approval request was submitted, but Steam sign-in has not been confirmed. Check the Steam window, then refresh the status.'**
+  String get steamDesktopLoginUnconfirmed;
+
+  /// No description provided for @steamDesktopLoginCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic sign-in stopped'**
+  String get steamDesktopLoginCancelled;
+
+  /// No description provided for @steamDesktopLoginCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop automatic approval'**
+  String get steamDesktopLoginCancel;
+
+  /// No description provided for @steamDesktopLoginWrongAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is signed in to a different account. Automatic approval has stopped.'**
+  String get steamDesktopLoginWrongAccount;
 }
 
 class _AppLocalizationsDelegate

@@ -48,10 +48,15 @@ class _Runtime implements SteamAccelerationRuntime {
   bool running = false;
   int starts = 0;
   int stops = 0;
+  int detections = 0;
   @override
   bool get supported => true;
   @override
-  Future<SteamAccelerationEnvironment> detectEnvironment() async => environment;
+  Future<SteamAccelerationEnvironment> detectEnvironment() async {
+    detections++;
+    return environment;
+  }
+
   @override
   Future<bool> isRunning() async => running;
   @override
@@ -88,26 +93,30 @@ void main() {
     ForkUpdateNetwork.configureProxy(() => null);
   });
 
-  test('updates honor external HTTP proxy without any subscription', () async {
-    final runtime = _Runtime()
-      ..environment = const SteamAccelerationEnvironment(
-        detectionAvailable: true,
-        systemProxyDetected: true,
-        externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+  test(
+    'Steam and updates use external HTTP without an internal subscription',
+    () async {
+      final runtime = _Runtime()
+        ..environment = const SteamAccelerationEnvironment(
+          detectionAvailable: true,
+          systemProxyDetected: true,
+          externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+        );
+      final service = SteamAccelerationService(
+        store: _EmptyStore(),
+        runtime: runtime,
       );
-    final service = SteamAccelerationService(
-      store: _EmptyStore(),
-      runtime: runtime,
-    );
-    addTearDown(service.dispose);
-    await service.load();
-    await service.checkEnvironment();
-    expect(service.state.configured, isFalse);
-    expect(steamProxyFor(service), isNull);
-    expect(forkUpdateProxyFor(service)!.port, 7890);
-    expect(forkUpdateProxyFor(service)!.username, isNull);
-    expect(runtime.starts, 0);
-  });
+      addTearDown(service.dispose);
+      await service.load();
+      await service.checkEnvironment();
+      expect(service.state.configured, isFalse);
+      expect(steamProxyFor(service)!.port, 7890);
+      expect(steamProxyFor(service)!.username, isNull);
+      expect(forkUpdateProxyFor(service)!.port, 7890);
+      expect(forkUpdateProxyFor(service)!.username, isNull);
+      expect(runtime.starts, 0);
+    },
+  );
 
   test('updates never start a stopped or manually configured core', () async {
     final runtime = _Runtime();
@@ -162,12 +171,10 @@ void main() {
       addTearDown(service.dispose);
       await service.load();
       await service.start();
-      // Steam's explicit manual override remains valid; updates do not silently
-      // extend that override to another destination category.
-      expect(runtime.running, isTrue);
-      expect(steamProxyFor(service), isNotNull);
+      expect(runtime.running, isFalse);
+      expect(steamProxyFor(service), isNull);
       expect(forkUpdateProxyFor(service), isNull);
-      expect(runtime.starts, 1);
+      expect(runtime.starts, 0);
     },
   );
 
@@ -296,6 +303,51 @@ void main() {
       expect(route.port, 7890);
       expect(route.username, isNull);
       expect(route.password, isNull);
+      await close(tester, service);
+    },
+  );
+
+  testWidgets(
+    'visible external routing refreshes without a subscription and pauses when hidden',
+    (tester) async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      final runtime = _Runtime();
+      final service = SteamAccelerationService(
+        store: _EmptyStore(),
+        runtime: runtime,
+      );
+      await pumpScope(tester, service);
+      await flush(tester);
+      expect(service.state.configured, isFalse);
+      expect(steamProxyFor(service), isNull);
+      final before = steamRouteIdentity(service);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        vpnOrTunnelDetected: true,
+      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await flush(tester);
+      final hiddenDetections = runtime.detections;
+      await tester.pump(const Duration(seconds: 20));
+      await flush(tester);
+      expect(runtime.detections, hiddenDetections);
+      expect(steamRouteIdentity(service), before);
+      // Losing focus to an external proxy app must not disable detection.
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump(const Duration(seconds: 6));
+      await flush(tester);
+      expect(runtime.detections, greaterThan(hiddenDetections));
+      expect(steamProxyFor(service), isNull); // VPN uses OS sockets.
+      expect(steamRouteIdentity(service), isNot(before));
+      expect(runtime.starts, 0);
+      runtime.environment = const SteamAccelerationEnvironment(
+        detectionAvailable: true,
+        systemProxyDetected: true,
+        externalHttpProxy: SteamExternalProxy(host: '127.0.0.1', port: 7890),
+      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await flush(tester);
+      expect(steamProxyFor(service)!.port, 7890);
       await close(tester, service);
     },
   );

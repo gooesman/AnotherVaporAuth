@@ -9,9 +9,10 @@ reimport accounts.
 Steam accounts and authenticator secrets are stored on your device. Steam
 authentication, inventory, market and trading requests use Valve's services.
 Those operations require the relevant account/session information; they do not
-go through a server operated by this fork. Optional acceleration routes encrypted
-Steam connections through your selected subscription node or detected external
-proxy. Its operator can see connection metadata, including destinations, timing
+go through a server operated by this fork. Detected external HTTP proxies and
+system VPN/TUN routes take priority even without a subscription. The optional
+built-in fallback uses your selected subscription node when no external route
+is detected. A proxy operator can see connection metadata, including destinations, timing
 and volume; normal Steam TLS certificate validation remains enabled.
 
 Steam backup login codes are requested only when you choose the in-app SMS and
@@ -45,8 +46,15 @@ the client IP, public component path, timing and traffic volume. Both the archiv
 and extracted executable must match SHA-256 values pinned in the app before use.
 The Android package includes the same core. The core uses a private local
 listener and receives its configuration in memory, with no retained diagnostics.
-GooeSteamKit detects system proxy/VPN information locally to pause its own core; it does
-not upload that information or modify system proxy, DNS or certificates.
+GooeSteamKit checks system proxy/VPN information locally every five seconds while
+visible and on foreground return. It does not upload that information or modify
+system proxy, DNS or certificates. An enabled session fallback pauses its core
+for an external route and resumes after the external route disappears and the
+environment is known-clear. Pausing automatic switching cancels that session's
+fallback, while external routing remains in effect. The startup preference stays
+local. Unknown or unresolved PAC/automatic-discovery settings prevent internal
+startup; the app does not run PAC scripts. Local checks pause while the app is
+hidden. Changing routes does not automatically repeat an in-flight write.
 Connectivity checks contact Steam's public API and community over the same
 current route, without account cookies or tokens. They run after relevant route
 changes, on foreground return when the last result is stale, or when you choose
@@ -60,7 +68,14 @@ revisions and payload hashes, not plaintext subscription credentials.
 Local debug logs may include
 account names and SteamIDs; the app does not automatically upload those logs.
 Screen selections for Steam QR login are decoded locally in memory, and are
-not saved or uploaded as screenshots.
+not saved or uploaded as screenshots. After an explicit **Open Steam and sign
+in** action, the app can also read the visible client area of the verified local
+Steam sign-in window created for that attempt. It verifies the same window and
+QR challenge twice, then sends one approval to Valve using the selected account.
+It does not automatically approve unrelated pending login requests. Cancellation,
+locking or leaving the page stops further approval; a request already submitted
+cannot be revoked by stopping. The result verifies the Steam client's current
+local account, not server-side session availability. Images stay in local memory.
 
 This fork does not verify Pro subscriptions, redeem purchases, load ads or
 refresh existing entitlement tokens. Local features do not require an upstream

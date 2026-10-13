@@ -91,6 +91,9 @@ class AuthSessionInfo {
   final String city;
   final String country;
   final String deviceName;
+
+  /// Steam's EAuthTokenPlatformType (SteamClient = 1). Null means unreported.
+  final int? platformType;
   const AuthSessionInfo({
     required this.clientId,
     required this.version,
@@ -98,6 +101,7 @@ class AuthSessionInfo {
     required this.city,
     required this.country,
     required this.deviceName,
+    this.platformType,
   });
 
   String get location => [city, country].where((s) => s.isNotEmpty).join(', ');
@@ -163,6 +167,7 @@ class QrApprovalClient {
       city: f[3]?.asString ?? '',
       country: f[5]?.asString ?? '',
       deviceName: f[7]?.asString ?? '',
+      platformType: f[6]?.asInt,
     );
   }
 

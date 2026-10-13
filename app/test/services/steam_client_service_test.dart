@@ -512,6 +512,72 @@ void main() {
     );
     expect(platform.calls.last, 'start');
   });
+
+  test(
+    'one-click first login disables automatic other accounts without deleting credentials',
+    () async {
+      await service.prepareLogin(path: _path, steamId: '76561198000000003');
+      expect(platform.registry.autoLoginUser, '');
+      final document = SteamVdfDocument.parse(
+        utf8.decode(files.data[_loginPath]!),
+      );
+      final users = document.object(document.root, 'users')!;
+      for (final id in [_firstId, _secondId]) {
+        final record = document.object(users, id)!;
+        expect(document.string(record, 'MostRecent'), '0');
+        expect(document.string(record, 'AutoLogin'), '0');
+        expect(document.string(record, 'AllowAutoLogin'), '0');
+        expect(document.string(record, 'RememberPassword'), '1');
+      }
+      expect(files.backups!['loginusers.vdf'], utf8.encode(_login));
+      expect(platform.calls.last, 'start');
+    },
+  );
+
+  test('one-click unremembered target opens login prompt', () async {
+    files.data[_loginPath] = utf8.encode(
+      _login.replaceAll('"RememberPassword" "1"', '"RememberPassword" "0"'),
+    );
+    await service.prepareLogin(path: _path, steamId: _secondId);
+    expect(platform.registry.autoLoginUser, '');
+    expect(platform.calls.last, 'start');
+  });
+
+  test(
+    'fresh installation backs up registry without creating loginusers',
+    () async {
+      files.data.remove(_loginPath);
+      files.data.remove(_configPath);
+      await service.prepareLogin(path: _path, steamId: _secondId);
+      expect(files.data.containsKey(_loginPath), isFalse);
+      expect(files.writes, 0);
+      expect(files.backups!.keys, ['auto-login.json']);
+      expect(platform.registry.autoLoginUser, '');
+      expect(platform.calls.last, 'start');
+    },
+  );
+
+  test(
+    'one-click remembered target keeps existing safe switch behavior',
+    () async {
+      await service.prepareLogin(path: _path, steamId: _secondId);
+      expect(platform.registry.autoLoginUser, 'bob');
+      expect(files.backups!['loginusers.vdf'], utf8.encode(_login));
+      expect(platform.calls.last, 'start');
+    },
+  );
+
+  test('failed first-login launch restores files and registry', () async {
+    final oldRegistry = platform.registry;
+    platform.failStart = true;
+    await expectLater(
+      service.prepareLogin(path: _path, steamId: '76561198000000003'),
+      throwsA(_code('launch_failed')),
+    );
+    expect(platform.registry, oldRegistry);
+    expect(files.data[_loginPath], utf8.encode(_login));
+    expect(files.data[_configPath], utf8.encode(_config));
+  });
 }
 
 class _Platform implements SteamClientPlatform {

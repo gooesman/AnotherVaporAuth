@@ -3,6 +3,7 @@
 
 #include <aclapi.h>
 #include <iphlpapi.h>
+#include <netioapi.h>
 #include <sddl.h>
 #include <shlobj.h>
 #include <tlhelp32.h>
@@ -121,8 +122,8 @@ Map Environment() {
   const bool pac = config.lpszAutoConfigUrl && *config.lpszAutoConfigUrl;
   Map result{
       // WPAD merely says auto-discovery is enabled; it does not prove a proxy
-      // was resolved. Automatic acceleration pauses; manual start stays possible
-      // with an explicit unknown-status indication in the UI.
+      // was resolved. Do not start another route while proxy discovery remains
+      // unresolved; the UI distinguishes unknown status from an external route.
       {Value("available"), Value(proxy_available && !config.fAutoDetect)},
       {Value("systemProxy"), Value(proxy)},
       {Value("httpProxy"), Value(Utf8(config.lpszProxy))},
@@ -144,7 +145,9 @@ Map Environment() {
         GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER, nullptr, adapters, &size);
   }
   bool tunnel = false;
-  if (status == NO_ERROR) {
+  PMIB_IPFORWARD_TABLE2 routes = nullptr;
+  const ULONG routes_status = GetIpForwardTable2(AF_UNSPEC, &routes);
+  if (status == NO_ERROR && routes_status == NO_ERROR) {
     for (auto adapter = adapters; adapter; adapter = adapter->Next) {
       if (adapter->OperStatus != IfOperStatusUp) continue;
       std::wstring name = adapter->Description ? adapter->Description : L"";
@@ -152,16 +155,29 @@ Map Environment() {
       std::transform(name.begin(), name.end(), name.begin(), [](wchar_t c) {
         return static_cast<wchar_t>(std::towlower(c));
       });
-      if (adapter->IfType == IF_TYPE_TUNNEL || adapter->IfType == IF_TYPE_PPP ||
+      const bool candidate = adapter->IfType == IF_TYPE_TUNNEL || adapter->IfType == IF_TYPE_PPP ||
           name.find(L"wintun") != std::wstring::npos ||
           name.find(L"wireguard") != std::wstring::npos ||
           name.find(L"clash") != std::wstring::npos ||
           name.find(L"mihomo") != std::wstring::npos ||
-          name.find(L"sing-box") != std::wstring::npos) tunnel = true;
+          name.find(L"sing-box") != std::wstring::npos;
+      if (!candidate) continue;
+      // Some proxy apps leave their virtual interface Up after stopping. An
+      // address's connected/local routes alone do not constitute an active
+      // tunnel. Require an actual forwarding route on the candidate interface.
+      for (ULONG index = 0; index < routes->NumEntries; ++index) {
+        const auto& route = routes->Table[index];
+        if (route.InterfaceLuid.Value == adapter->Luid.Value &&
+            !route.Loopback && route.Protocol != MIB_IPPROTO_LOCAL) {
+          tunnel = true;
+          break;
+        }
+      }
     }
   } else {
     result[Value("available")] = Value(false);
   }
+  if (routes) FreeMibTable(routes);
   // These are conservative hints, not proof that every third-party TUN is known.
   result[Value("vpnOrTunnel")] = Value(tunnel);
   return result;

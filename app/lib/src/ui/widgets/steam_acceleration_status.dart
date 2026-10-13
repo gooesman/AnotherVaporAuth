@@ -25,6 +25,7 @@ String steamConnectionRouteLabel(
   SteamConnectionRoute.internal => l.steamConnectionInternal,
   SteamConnectionRoute.externalProxy => l.steamConnectionExternal,
   SteamConnectionRoute.system => l.steamConnectionSystem,
+  SteamConnectionRoute.unresolvedProxy => l.steamConnectionUnresolvedProxy,
 };
 
 String steamAccelerationPhaseLabel(
@@ -51,7 +52,9 @@ class SteamAccelerationStatusChip extends ConsumerWidget {
     return ListenableBuilder(
       listenable: service,
       builder: (context, _) {
-        if (!service.supported || !service.state.configured) {
+        if (!service.supported ||
+            (!service.state.configured &&
+                !service.state.environment.hasExternal)) {
           return const SizedBox.shrink();
         }
         return _ConnectionChip(service: service);
@@ -113,8 +116,8 @@ class _ConnectionChip extends ConsumerWidget {
                 color: color,
               ),
               label: Text(
-                'Steam · $status',
-                maxLines: 1,
+                '${steamConnectionRouteLabel(l, connection.route)} · $status',
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               style: OutlinedButton.styleFrom(

@@ -8,6 +8,10 @@ import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
 import 'package:ava/src/services/account_store.dart';
 import 'package:ava/src/services/credential_store.dart';
+import 'package:ava/src/services/desktop_steam_login.dart';
+import 'package:ava/src/services/steam_api_client.dart';
+import 'package:ava/src/services/steam_request_scope.dart';
+import 'package:ava/src/core/protocol/qr_approval_client.dart';
 import 'package:ava/src/services/steam_client_service.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/approve_login_screen.dart';
@@ -92,6 +96,37 @@ class _Service extends SteamClientService {
   }
 }
 
+class _DesktopLogin extends DesktopSteamLogin {
+  _DesktopLogin()
+    : super(
+        steam: _Service([]),
+        approval: QrApprovalClient(SteamApiClient()),
+        ensureSession: (_) async => true,
+      );
+  int calls = 0;
+  SteamGuardAccount? selected;
+  SteamRequestScope? scope;
+  bool Function()? current;
+  Future<DesktopLoginResult> Function()? handler;
+  @override
+  Future<DesktopLoginResult> login({
+    required String path,
+    required SteamGuardAccount account,
+    required bool Function() isCurrent,
+    SteamRequestScope? requestScope,
+    void Function(DesktopLoginStage)? onProgress,
+  }) async {
+    calls++;
+    selected = account;
+    scope = requestScope;
+    current = isCurrent;
+    onProgress?.call(DesktopLoginStage.waitingQr);
+    return handler == null
+        ? const DesktopLoginResult(DesktopLoginOutcome.loggedIn)
+        : await handler!();
+  }
+}
+
 SteamClientAccount _account({bool remembered = true}) => SteamClientAccount(
   steamId: '76561198000000001',
   accountName: 'test-account',
@@ -106,6 +141,7 @@ SteamGuardAccount _avaAccount({
   String? accessToken,
   String? refreshToken,
 }) => SteamGuardAccount(
+  sharedSecret: 'aGVsbG8=',
   accountName: name,
   session: SessionData(
     steamId: int.parse(steamId),
@@ -120,6 +156,7 @@ Future<void> _show(
   String steamId = '76561198000000001',
   List<SteamGuardAccount>? avaAccounts,
   _Controller? controller,
+  DesktopSteamLogin? desktopLogin,
 }) async {
   tester.view.physicalSize = const Size(1100, 1000);
   tester.view.devicePixelRatio = 1;
@@ -130,6 +167,8 @@ Future<void> _show(
     ProviderScope(
       overrides: [
         steamClientServiceProvider.overrideWithValue(service),
+        if (desktopLogin != null)
+          desktopSteamLoginProvider.overrideWithValue(desktopLogin),
         settingsStoreProvider.overrideWithValue(_Settings()),
         credentialStoreProvider.overrideWithValue(_Credentials()),
         appControllerProvider.overrideWith(
@@ -155,10 +194,77 @@ Future<Finder> _switchButton(WidgetTester tester) async {
     300,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(button);
+  await tester.pumpAndSettle();
   return button;
 }
 
 void main() {
+  testWidgets(
+    'one explicit click launches selected account without extra approval dialog',
+    (tester) async {
+      final local = _Service([]);
+      final flow = _DesktopLogin();
+      final account = _avaAccount(accessToken: 'token');
+      await _show(tester, local, avaAccounts: [account], desktopLogin: flow);
+      expect(flow.calls, 0);
+      await tester.tap(find.byKey(const ValueKey('steam-client-login')));
+      await tester.pumpAndSettle();
+      expect(flow.calls, 1);
+      expect(identical(flow.selected, account), isTrue);
+      expect(flow.scope, isNotNull);
+      expect(find.byType(AlertDialog), findsNothing);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(SteamClientScreen)),
+      );
+      expect(find.text(l.steamDesktopLoginComplete), findsOneWidget);
+    },
+  );
+
+  for (final lock in [false, true]) {
+    testWidgets(
+      lock
+          ? 'locking cancels queued automatic approval'
+          : 'stop button cancels queued automatic approval',
+      (tester) async {
+        final account = _avaAccount(accessToken: 'token');
+        final controller = _Controller([account]);
+        final flow = _DesktopLogin();
+        final gate = Completer<DesktopLoginResult>();
+        flow.handler = () => gate.future;
+        await _show(
+          tester,
+          _Service([]),
+          controller: controller,
+          desktopLogin: flow,
+        );
+        await tester.tap(find.byKey(const ValueKey('steam-client-login')));
+        await tester.pump();
+        expect(flow.calls, 1);
+        if (lock) {
+          controller.replaceAccounts([account], locked: true);
+        } else {
+          await tester.tap(
+            find.byKey(const ValueKey('steam-client-login-cancel')),
+          );
+        }
+        await tester.pump();
+        expect(flow.current!(), isFalse);
+        var called = false;
+        await expectLater(
+          flow.scope!.run(() async {
+            called = true;
+          }),
+          throwsA(anything),
+        );
+        expect(called, isFalse);
+        gate.complete(const DesktopLoginResult(DesktopLoginOutcome.cancelled));
+        await tester.pumpAndSettle();
+      },
+    );
+  }
+
   testWidgets(
     'stopped Steam never exposes its remembered last login as current',
     (tester) async {
@@ -281,7 +387,7 @@ void main() {
     expect(find.text(l.steamClientStopped), findsNothing);
     expect(
       tester
-          .widget<FilledButton>(
+          .widget<ButtonStyleButton>(
             find.byKey(const ValueKey('steam-client-qr-login')),
           )
           .onPressed,
@@ -413,7 +519,7 @@ void main() {
     final service = _Service([_account()]);
     await _show(tester, service, steamId: '76561198000000002');
     final switchButton = await _switchButton(tester);
-    expect(tester.widget<FilledButton>(switchButton).onPressed, isNull);
+    expect(tester.widget<ButtonStyleButton>(switchButton).onPressed, isNull);
     expect(service.switches, 0);
   });
 
@@ -422,7 +528,7 @@ void main() {
   ) async {
     await _show(tester, _Service([_account(remembered: false)]));
     final switchButton = await _switchButton(tester);
-    expect(tester.widget<FilledButton>(switchButton).onPressed, isNull);
+    expect(tester.widget<ButtonStyleButton>(switchButton).onPressed, isNull);
   });
 
   testWidgets('successful launch asks the user to verify Steam login', (
@@ -455,7 +561,7 @@ void main() {
     final account = _avaAccount(accessToken: 'synthetic-access');
     await _show(tester, service, avaAccounts: [account]);
     final button = find.byKey(const ValueKey('steam-client-qr-login'));
-    expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
+    expect(tester.widget<ButtonStyleButton>(button).onPressed, isNotNull);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(
@@ -548,7 +654,7 @@ void main() {
       );
       expect(
         tester
-            .widget<FilledButton>(
+            .widget<ButtonStyleButton>(
               find.byKey(const ValueKey('steam-client-qr-login')),
             )
             .onPressed,
@@ -596,7 +702,7 @@ void main() {
       expect(find.byType(DropdownButtonFormField<int>), findsNothing);
       expect(
         tester
-            .widget<FilledButton>(
+            .widget<ButtonStyleButton>(
               find.byKey(const ValueKey('steam-client-qr-login')),
             )
             .onPressed,
@@ -617,7 +723,7 @@ void main() {
       expect(find.byType(DropdownButtonFormField<int>), findsNothing);
       expect(
         tester
-            .widget<FilledButton>(
+            .widget<ButtonStyleButton>(
               find.byKey(const ValueKey('steam-client-qr-login')),
             )
             .onPressed,

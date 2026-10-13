@@ -93,12 +93,14 @@ shown above while retaining the existing skin styles.
 
 ## Highlights
 
-- **Windows Steam account switching (branch preview)** — select a locally
-  remembered Steam account from the overview, Settings or the right-click menu.
-  Requests a normal Steam restart, backs up settings before editing, and reports
-  when a normal login is still needed. The same page can sign in a new account:
-  choose its session in GooeSteamKit, drag-select Steam's on-screen QR code and review the
-  login request. Screen images are decoded locally in memory. See the
+- **Windows Steam account switching (branch preview)** — choose an account and
+  **Open Steam and sign in** from the overview, Settings or the right-click menu.
+  The app requests a normal Steam restart, backs up settings before editing,
+  and can approve the QR code from the verified local Steam sign-in window for
+  this attempt. A usable account session is required; the result is verified
+  against the Steam client's current local account. Manual QR selection and
+  remembered-account switching remain available. Images are decoded locally
+  in memory. See the
   [preview guide](docs/windows-steam-switch.md).
 
 - **Account overview (branch preview)** — Windows and Android share configurable
@@ -112,10 +114,13 @@ shown above while retaining the existing skin styles.
   Market, friends and other account tools are available in that overview.
 
 - **Optional Steam acceleration (branch preview)** — choose a node from an HTTP
-  or HTTPS Clash subscription, including Basic-auth URLs, for this app's Steam requests. Manual start is the default;
-  automatic start pauses when an external proxy or VPN is detected. System
-  proxy settings and other apps are untouched. A compact status entry separates
-  core operation from checked API/community reachability; no system VPN icon is
+  or HTTPS Clash subscription, including Basic-auth URLs, for this app's Steam requests.
+  Detected external HTTP proxies and VPN/TUN routes take priority even without a
+  subscription. Enabling automatic switching arms the built-in fallback for this
+  session; optional startup activation arms it next time too. Local environment
+  checks run every five seconds while visible, without continuous Steam probes.
+  System proxy settings and other apps are untouched. A compact status entry
+  shows the route separately from checked API/community reachability; no system VPN icon is
   expected. Windows downloads its optional core through a primary mirror, backup
   mirror and official fallback, verifying both archive and executable SHA-256;
   Android includes the core. With encrypted settings sync enabled, subscription
@@ -235,7 +240,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1475 tests
+flutter test                       # 1520 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.
@@ -318,9 +323,10 @@ existing users can migrate. Steam auth protocol references:
 ## Privacy
 
 Accounts, secrets and codes stay on your device. Steam requests go to Valve,
-without a backend operated by this fork. When optional acceleration is enabled,
-connections use your selected node or detected external proxy with normal TLS
-verification. This fork disables Pro
+without a backend operated by this fork. Detected external HTTP proxies or
+system VPN/TUN routes take priority; enabling the optional built-in fallback
+uses your selected node when the external route is absent. Normal TLS
+verification remains enabled. This fork disables Pro
 verification, payments and advertising, and has no default upstream update
 check. Feedback opens this fork's GitHub issues without sending a report or
 log automatically. Optional WebDAV synchronization uses your chosen server.

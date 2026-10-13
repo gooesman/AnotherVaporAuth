@@ -241,6 +241,7 @@ void main() {
           ..writeString(1, '192.0.2.1')
           ..writeString(3, 'Example city')
           ..writeString(5, 'Example country')
+          ..writeVarint(6, 1)
           ..writeString(7, 'Steam Desktop')
           ..writeVarint(8, 1);
         final client = QrApprovalClient(
@@ -252,6 +253,7 @@ void main() {
         );
         expect(info?.clientId, 123);
         expect(info?.version, 1);
+        expect(info?.platformType, 1);
         expect(info?.deviceName, 'Steam Desktop');
         expect(info?.location, 'Example city, Example country');
       },

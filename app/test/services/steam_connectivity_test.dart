@@ -235,6 +235,99 @@ void main() {
     },
   );
 
+  for (final tunnel in [false, true]) {
+    test(
+      'external route is checked without a subscription (VPN=$tunnel)',
+      () async {
+        final service = _Service();
+        final probe = _Probe();
+        final monitor = SteamConnectivityMonitor(
+          service,
+          effectiveProxy: () => steamProxyFor(service),
+          probe: probe,
+        );
+        addTearDown(monitor.dispose);
+        addTearDown(service.dispose);
+        service.emit(
+          SteamAccelerationState(
+            environment: SteamAccelerationEnvironment(
+              detectionAvailable: true,
+              vpnOrTunnelDetected: tunnel,
+              systemProxyDetected: !tunnel,
+              externalHttpProxy: tunnel
+                  ? null
+                  : const SteamExternalProxy(host: '127.0.0.1', port: 7890),
+            ),
+          ),
+        );
+        expect(
+          monitor.state.route,
+          tunnel
+              ? SteamConnectionRoute.system
+              : SteamConnectionRoute.externalProxy,
+        );
+        expect(monitor.state.status, SteamConnectionStatus.checking);
+        expect(probe.pending, hasLength(1));
+        // Disconnect before the external check finishes. Its late success must
+        // not leave a green external label after the operating-system route ends.
+        service.emit(
+          const SteamAccelerationState(
+            environment: SteamAccelerationEnvironment(detectionAvailable: true),
+          ),
+        );
+        expect(monitor.state.route, SteamConnectionRoute.direct);
+        expect(probe.cancellations.single.isCancelled, isTrue);
+        probe.pending.single.complete(connected);
+        await Future<void>.delayed(Duration.zero);
+        expect(monitor.state.status, SteamConnectionStatus.unchecked);
+        expect(probe.pending, hasLength(1));
+      },
+    );
+  }
+
+  test(
+    'unresolved PAC never passes a direct probe off as external connectivity',
+    () async {
+      final service = _Service();
+      final probe = _Probe();
+      final monitor = SteamConnectivityMonitor(
+        service,
+        effectiveProxy: () => steamProxyFor(service),
+        probe: probe,
+      );
+      addTearDown(monitor.dispose);
+      addTearDown(service.dispose);
+      service.emit(
+        const SteamAccelerationState(
+          environment: SteamAccelerationEnvironment(
+            detectionAvailable: true,
+            pacDetected: true,
+          ),
+        ),
+      );
+      expect(monitor.state.route, SteamConnectionRoute.unresolvedProxy);
+      expect(monitor.state.status, SteamConnectionStatus.unavailable);
+      await monitor.check();
+      await monitor.refreshIfStale();
+      expect(probe.pending, isEmpty);
+      // An actual VPN does route native sockets even if a PAC setting coexists.
+      service.emit(
+        const SteamAccelerationState(
+          environment: SteamAccelerationEnvironment(
+            detectionAvailable: true,
+            pacDetected: true,
+            vpnOrTunnelDetected: true,
+          ),
+        ),
+      );
+      expect(monitor.state.route, SteamConnectionRoute.system);
+      expect(probe.pending, hasLength(1));
+      probe.pending.single.complete(connected);
+      await Future<void>.delayed(Duration.zero);
+      expect(monitor.state.status, SteamConnectionStatus.available);
+    },
+  );
+
   test('explicit direct check works and disposal ignores completion', () async {
     final service = _Service();
     final probe = _Probe();

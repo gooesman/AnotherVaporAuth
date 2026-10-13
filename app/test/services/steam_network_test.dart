@@ -215,6 +215,78 @@ void main() {
   );
 
   test(
+    'direct to TUN route change replaces idle pools without replaying an active write',
+    () async {
+      final fixture = await _NetworkFixture.create();
+      addTearDown(fixture.close);
+      var route = false;
+      var connections = 0;
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      var writes = 0;
+      fixture.beforeResponse = (request) async {
+        if (request.method != 'POST') return;
+        writes++;
+        entered.complete();
+        await release.future;
+      };
+      SteamNetwork.configureProxy(() => null, routeIdentity: () => route);
+      final dio = SteamNetwork.createDio(
+        BaseOptions(
+          followRedirects: false,
+          connectTimeout: const Duration(seconds: 3),
+          receiveTimeout: const Duration(seconds: 3),
+        ),
+        securityContext: fixture.trust,
+        socketConnector: (host, port) {
+          expect(host, 'steamcommunity.com');
+          expect(port, 443);
+          connections++;
+          // Simulate the OS route switching while all traffic stays on loopback.
+          return Socket.startConnect(
+            InternetAddress.loopbackIPv4,
+            fixture.server.port,
+          );
+        },
+      );
+      addTearDown(() => dio.close(force: true));
+      final pending = dio.post<String>(
+        'https://steamcommunity.com/write',
+        data: 'synthetic-write',
+      );
+      await entered.future;
+      final originalAdapter = dio.httpClientAdapter;
+      try {
+        route = true;
+        expect(
+          (await dio.get<String>('https://steamcommunity.com/read')).data,
+          'ok',
+        );
+        expect(dio.httpClientAdapter, isNot(same(originalAdapter)));
+        final tunnelAdapter = dio.httpClientAdapter;
+        expect(
+          (await dio.get<String>('https://steamcommunity.com/read')).data,
+          'ok',
+        );
+        expect(dio.httpClientAdapter, same(tunnelAdapter));
+        expect(connections, 2);
+        route = false;
+        expect(
+          (await dio.get<String>('https://steamcommunity.com/read')).data,
+          'ok',
+        );
+        expect(dio.httpClientAdapter, isNot(same(tunnelAdapter)));
+        expect(connections, 3);
+      } finally {
+        release.complete();
+      }
+      expect((await pending).data, 'ok');
+      expect(writes, 1);
+      expect(fixture.steamHosts, hasLength(4));
+    },
+  );
+
+  test(
     'wrong proxy credentials fail without retrying or sending Steam data',
     () async {
       final fixture = await _NetworkFixture.create();
@@ -441,6 +513,7 @@ class _NetworkFixture {
   final sockets = <Socket>[];
   final proxyHeadersAtSteam = <String?>[];
   final steamHosts = <String?>[];
+  Future<void> Function(HttpRequest)? beforeResponse;
 
   /// Every socket stays on loopback, even if production incorrectly bypasses
   /// the proxy. TLS still uses the original URI host for certificate checks.
@@ -472,6 +545,7 @@ class _NetworkFixture {
       );
       fixture.steamHosts.add(request.headers.value(HttpHeaders.hostHeader));
       await request.drain<void>();
+      await fixture.beforeResponse?.call(request);
       request.response.write('ok');
       await request.response.close();
     });
