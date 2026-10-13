@@ -408,7 +408,8 @@ partial failures, rollback, concurrent changes, and UI cancellation/selection.
 Windows native regressions compile the production bridge and selector code,
 using temporary synthetic Steam executables and an isolated, never-visible
 desktop with generated pixels. They do not read real account files or approve
-real logins. The preview workflow runs these checks and builds both platforms.
+real logins. The preview workflow runs these checks against the pinned Flutter
+release engine before full app testing and packaging, then builds both platforms.
 
 Real two-account switching, expired credentials, and behavior after future
 Steam client updates still require a manual check on a suitable Steam setup.

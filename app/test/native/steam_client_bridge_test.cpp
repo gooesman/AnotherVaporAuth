@@ -14,6 +14,7 @@ struct Reply {
   bool success = false;
   Value value;
   std::string error;
+  std::string message;
   Value details;
 };
 class TestResult final : public Result {
@@ -24,9 +25,10 @@ class TestResult final : public Result {
     reply_->success = true;
     if (value) reply_->value = *value;
   }
-  void ErrorInternal(const std::string& code, const std::string&,
+  void ErrorInternal(const std::string& code, const std::string& message,
                      const Value* details) override {
     reply_->error = code;
+    reply_->message = message;
     if (details) reply_->details = *details;
   }
   void NotImplementedInternal() override { reply_->error = "not_implemented"; }
@@ -36,6 +38,9 @@ class TestResult final : public Result {
 int checks = 0;
 int64_t reported_launch_error = 0;
 DWORD direct_launch_error = ERROR_SUCCESS;
+Reply last_reply;
+std::string last_method;
+DWORD last_native_api_error = ERROR_SUCCESS;
 void Check(bool condition, const char* name) {
   if (!condition) throw std::runtime_error(name);
   ++checks;
@@ -50,6 +55,8 @@ Reply Call(const char* method, Map arguments) {
   Reply reply;
   flutter::MethodCall<Value> call(method, std::make_unique<Value>(std::move(arguments)));
   HandleMethod(call, std::make_unique<TestResult>(&reply));
+  last_reply = reply;
+  last_method = method;
   return reply;
 }
 Map Path(const fs::path& path) { return {{Value("path"), Value(Utf8(path))}}; }
@@ -111,8 +118,9 @@ void WaitFixture(const fs::path& directory, bool shutdown) {
 void CheckPrivateAcl(const fs::path& directory) {
   PACL acl = nullptr;
   PSECURITY_DESCRIPTOR descriptor = nullptr;
-  Check(GetNamedSecurityInfoW(const_cast<wchar_t*>(directory.c_str()), SE_FILE_OBJECT,
-      DACL_SECURITY_INFORMATION, nullptr, nullptr, &acl, nullptr, &descriptor) == ERROR_SUCCESS,
+  last_native_api_error = GetNamedSecurityInfoW(const_cast<wchar_t*>(directory.c_str()), SE_FILE_OBJECT,
+      DACL_SECURITY_INFORMATION, nullptr, nullptr, &acl, nullptr, &descriptor);
+  Check(last_native_api_error == ERROR_SUCCESS,
       "read-backup-acl");
   SECURITY_DESCRIPTOR_CONTROL control{};
   DWORD revision = 0;
@@ -122,10 +130,14 @@ void CheckPrivateAcl(const fs::path& directory) {
   LocalFree(descriptor);
   Check(restricted, "backup-has-two-protected-aces");
 }
-void Run(const fs::path& root, const fs::path& fixture) {
+fs::path CreateSteamFixture(const fs::path& root, const fs::path& fixture) {
   const auto steam = root / L"Program Files" / L"Steam \u6d4b\u8bd5";
   fs::create_directories(steam);
   fs::copy_file(fixture, steam / L"steam.exe");
+  return steam;
+}
+void RunLaunch(const fs::path& root, const fs::path& fixture) {
+  const auto steam = CreateSteamFixture(root, fixture);
   std::wstring canonical;
   Error error;
   Check(PathArgument(Path(steam), &canonical, &error), "directory-argument-resolves-exe");
@@ -171,17 +183,32 @@ void Run(const fs::path& root, const fs::path& fixture) {
   Check(!started && direct_launch_error != ERROR_SUCCESS, "invalid-pe-rejected-by-win32");
   Check(error_number && *error_number == static_cast<int64_t>(direct_launch_error),
         "exact-native-win32-launch-error");
-
+}
+void RunBackup(const fs::path& root, const fs::path& fixture) {
+  const auto steam = CreateSteamFixture(root, fixture);
   const auto config = steam / L"config";
   const auto backup = config / L"ava-switch-backups" / L"switch-native-test";
   fs::create_directories(backup);
   Check(Call("secureDirectory", Path(backup)).success, "secure-new-backup");
   CheckPrivateAcl(backup);
   Write(backup / L"auto-login.json", "{\"synthetic\":true}");
-  Check(!Call("secureDirectory", Path(backup)).success, "nonempty-backup-rejected");
+  Check(Call("secureDirectory", Path(backup)).error == "backup_security_failed", "nonempty-backup-rejected");
+}
+void RunTemporary(const fs::path& root, const fs::path& fixture) {
+  const auto steam = CreateSteamFixture(root, fixture);
+  const auto config = steam / L"config";
   const auto temp = config / L".ava-native-test";
-  fs::create_directory(temp);
+  fs::create_directories(temp);
   Check(Call("secureDirectory", Path(temp)).success, "secure-temp-directory");
+  CheckPrivateAcl(temp);
+}
+void RunReplacement(const fs::path& root, const fs::path& fixture) {
+  const auto steam = CreateSteamFixture(root, fixture);
+  const auto config = steam / L"config";
+  const auto temp = config / L".ava-native-test";
+  // Directory ACLs are independently checked above. This group's own fresh
+  // paths let ReplaceFileW run even if an unrelated ACL regression fails.
+  fs::create_directories(temp);
   Write(config / L"loginusers.vdf", "synthetic-before");
   Write(temp / L"loginusers.vdf", "synthetic-after");
   Map replacement = Path(config / L"loginusers.vdf");
@@ -191,6 +218,49 @@ void Run(const fs::path& root, const fs::path& fixture) {
   Check(!fs::exists(temp / L"loginusers.vdf"), "atomic-source-consumed");
   replacement[Value("path")] = Value(Utf8(config / L"unrelated.txt"));
   Check(Call("replaceFile", replacement).error == "unsafe_file_path", "unmanaged-file-rejected");
+}
+std::string JsonText(const std::string& value) {
+  std::string output = "\"";
+  for (const unsigned char ch : value) {
+    if (ch == '\\' || ch == '"') output += '\\';
+    if (ch >= 32) output += static_cast<char>(ch);
+  }
+  return output + "\"";
+}
+void PrintFailure(const char* group, const char* check) {
+  const auto* details = std::get_if<Map>(&last_reply.details);
+  const auto* number = details ? FindArgument(*details, "win32Error") : nullptr;
+  const auto* native_error = number ? std::get_if<int64_t>(number) : nullptr;
+  // Native messages here are fixed implementation strings from synthetic
+  // fixtures; never print paths, account data, filesystem exception text or SIDs.
+  std::cout << "{\"success\":false,\"group\":" << JsonText(group)
+            << ",\"checks\":" << checks << ",\"failedCheck\":" << JsonText(check)
+            << ",\"method\":" << JsonText(last_method)
+            << ",\"nativeCode\":" << JsonText(last_reply.error)
+            << ",\"nativeMessage\":" << JsonText(last_reply.message)
+            << ",\"hasWin32Error\":" << (native_error ? "true" : "false")
+            << ",\"nativeWin32Error\":" << (native_error ? *native_error : 0)
+            << ",\"directApiError\":" << last_native_api_error
+            << ",\"reportedWin32Error\":" << reported_launch_error
+            << ",\"directWin32Error\":" << direct_launch_error << "}\n";
+}
+using TestGroup = void (*)(const fs::path&, const fs::path&);
+bool RunGroup(const char* name, TestGroup run, const fs::path& root, const fs::path& fixture) {
+  last_reply = {};
+  last_method.clear();
+  last_native_api_error = ERROR_SUCCESS;
+  try {
+    run(root / name, fixture);
+    std::cout << "{\"success\":true,\"group\":" << JsonText(name)
+              << ",\"checks\":" << checks << "}\n";
+    return true;
+  } catch (const fs::filesystem_error& error) {
+    last_native_api_error = static_cast<DWORD>(error.code().value());
+    PrintFailure(name, "filesystem-operation");
+  } catch (const std::exception& error) {
+    PrintFailure(name, error.what());
+  }
+  return false;
 }
 }  // namespace
 
@@ -211,16 +281,27 @@ int wmain() {
     // Production deliberately refuses alias/reparse paths for configuration
     // writes. Use the canonical spelling of our new, isolated test root for
     // those tests; no production safety check is weakened for the harness.
-    Run(CanonicalDirectory(root), fs::path(image).parent_path() / L"steam_client_launch_fixture.exe");
+    const auto canonical = CanonicalDirectory(root);
+    const auto fixture = fs::path(image).parent_path() / L"steam_client_launch_fixture.exe";
+    // Run every independent native group even if an earlier one fails, so a
+    // single CI build reports path, ACL and replacement failures together.
+    const bool launch = RunGroup("launch", RunLaunch, canonical, fixture);
+    const bool backup = RunGroup("backup", RunBackup, canonical, fixture);
+    const bool temporary_directory = RunGroup("temporary", RunTemporary, canonical, fixture);
+    const bool replacement = RunGroup("replacement", RunReplacement, canonical, fixture);
+    const bool success = launch && backup && temporary_directory && replacement;
     fs::remove_all(root);
-    std::cout << "{\"success\":true,\"checks\":" << checks << "}\n";
-    return 0;
+    std::cout << "{\"success\":" << (success ? "true" : "false")
+              << ",\"groups\":4,\"checks\":" << checks << "}\n";
+    return success ? 0 : 1;
+  } catch (const fs::filesystem_error& error) {
+    last_native_api_error = static_cast<DWORD>(error.code().value());
+    PrintFailure("setup-or-cleanup", "filesystem-operation");
+    std::error_code ignored;
+    fs::remove_all(root, ignored);
+    return 1;
   } catch (const std::exception& error) {
-    // Errors contain only fixed assertion names, not local accounts or paths.
-    std::cout << "{\"success\":false,\"checks\":" << checks
-              << ",\"failedCheck\":\"" << error.what()
-              << "\",\"reportedWin32Error\":" << reported_launch_error
-              << ",\"directWin32Error\":" << direct_launch_error << "}\n";
+    PrintFailure("setup-or-cleanup", error.what());
     std::error_code ignored;
     fs::remove_all(root, ignored);
     return 1;

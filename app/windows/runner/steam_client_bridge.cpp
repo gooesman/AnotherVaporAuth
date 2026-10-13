@@ -787,7 +787,9 @@ void SecureDirectory(const Map& arguments, Result* result) {
     ReportError(result, error);
     return;
   }
-  Handle directory(CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | WRITE_DAC,
+  // SetSecurityInfo reads the existing descriptor while applying a protected,
+  // inheritable DACL. Request READ_CONTROL as well as permission to replace it.
+  Handle directory(CreateFileW(path.c_str(), FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC,
       FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
       FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
   if (directory.get() == INVALID_HANDLE_VALUE) {

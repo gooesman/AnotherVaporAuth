@@ -7,6 +7,7 @@ set(FLUTTER_WRAPPER_INCLUDE_DIR "" CACHE PATH "Flutter cpp_client_wrapper/includ
 if(NOT EXISTS "${FLUTTER_WRAPPER_INCLUDE_DIR}/flutter/method_result.h")
   message(FATAL_ERROR "Set FLUTTER_WRAPPER_INCLUDE_DIR to Flutter's generated cpp_client_wrapper/include directory.")
 endif()
+get_filename_component(FLUTTER_WRAPPER_DIR "${FLUTTER_WRAPPER_INCLUDE_DIR}" DIRECTORY)
 add_executable(steam_client_native_test steam_client_bridge_test.cpp)
 add_executable(steam_client_launch_fixture WIN32 steam_client_launch_fixture.cpp)
 foreach(target steam_client_native_test steam_client_launch_fixture)
@@ -34,8 +35,8 @@ if(NOT EXISTS "${FLUTTER_ENGINE_DIR}/flutter_windows.dll.lib")
 endif()
 add_executable(screen_qr_capture_test
   screen_qr_capture_test.cpp
-  "${FLUTTER_ENGINE_DIR}/cpp_client_wrapper/core_implementations.cc"
-  "${FLUTTER_ENGINE_DIR}/cpp_client_wrapper/standard_codec.cc")
+  "${FLUTTER_WRAPPER_DIR}/core_implementations.cc"
+  "${FLUTTER_WRAPPER_DIR}/standard_codec.cc")
 target_compile_features(screen_qr_capture_test PRIVATE cxx_std_17)
 target_compile_definitions(screen_qr_capture_test PRIVATE UNICODE _UNICODE NOMINMAX)
 if(MSVC)
