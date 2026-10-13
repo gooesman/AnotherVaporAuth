@@ -8,11 +8,13 @@ preview builds through its [manual release process](docs/fork-releases.md).
 ## [v1.5.10] — 2026-10-13 · Fork
 
 ### Fixed
+- Market search now automatically loads the lowest asking price in the selected currency for visible items and item details, instead of showing the search endpoint's default-dollar quotes. Reads are spaced, cached and cancelled when hidden; failed prices stay unavailable and can be retried. Recent-sale medians remain separate.
 - Windows screen QR scans no longer report failure after successfully decoding a selection: working pixels are copied before clearing the engine's read-only reply. This also fixes automatic desktop login QR decoding.
 - Steam opens before the online session check for one-click sign-in. A separate **Open Steam** button works without an imported account; launch and settings-access failures retain safe, actionable diagnostics.
 - Screen selection waits for the app's hide transition to finish and composes the dimmed overlay offscreen before presenting it, avoiding app ghosts and intermediate flashes while dragging. Busy, changed-display and oversized-selection errors are distinguished.
 
 ### 修复
+- 市场列表和商品详情自动按所选币种加载最低在售价，不再直接显示搜索接口默认返回的美元报价，也不以最近成交中位价替代。查价限速、缓存并在离页时取消；失败不回退错误币种，可手动重试。
 - 修复 Windows 框选二维码完成后误报失败：先复制系统只读截图，再清理解码工作内存；一键登录的二维码解码同步修复。
 - 一键登录先打开本机 Steam，再检查在线会话。新增无需导入账号的独立“打开 Steam”按钮，启动及设置读写失败显示具体阶段与安全诊断信息。
 - 框选前等待主程序隐藏完成，遮罩和选区先在内存合成再统一显示，避免主程序残影与拖动闪烁；区分截图占用、屏幕变化和选区过大等错误。

@@ -482,10 +482,13 @@ bool LaunchSteam(const std::wstring& executable, bool shutdown, Error* error) {
   const std::wstring working_directory = ParentPath(executable);
   if (!CreateProcessW(executable.c_str(), command.data(), nullptr, nullptr, FALSE,
                        0, nullptr, working_directory.c_str(), &startup, &process)) {
+    // LastError belongs to this failed API call. Capture it before allocating
+    // diagnostic strings, whose runtime helpers can change the thread value.
+    const DWORD status = GetLastError();
     *error = {shutdown ? "steam_shutdown_failed" : "steam_start_failed",
               shutdown ? "Could not request a normal Steam shutdown."
                        : "Could not start Steam.",
-              GetLastError()};
+              status};
     return false;
   }
   Handle process_handle(process.hProcess);

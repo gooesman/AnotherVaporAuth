@@ -34,6 +34,8 @@ class TestResult final : public Result {
   Reply* reply_;
 };
 int checks = 0;
+int64_t reported_launch_error = 0;
+DWORD direct_launch_error = ERROR_SUCCESS;
 void Check(bool condition, const char* name) {
   if (!condition) throw std::runtime_error(name);
   ++checks;
@@ -150,7 +152,25 @@ void Run(const fs::path& root, const fs::path& fixture) {
   const auto* details = std::get_if<Map>(&failed.details);
   const auto* number = details ? FindArgument(*details, "win32Error") : nullptr;
   const auto* error_number = number ? std::get_if<int64_t>(number) : nullptr;
-  Check(error_number && *error_number == ERROR_BAD_EXE_FORMAT, "real-win32-error-193");
+  reported_launch_error = error_number ? *error_number : 0;
+  // Windows versions can report different loader errors for this invalid PE.
+  // Require exactly the real CreateProcessW error on the same fixture; merely
+  // accepting any nonzero error would miss a broken bridge diagnostic.
+  const auto invalid_executable = (invalid / L"steam.exe").wstring();
+  std::wstring command = L"\"" + invalid_executable + L"\"";
+  STARTUPINFOW startup{};
+  startup.cb = static_cast<DWORD>(sizeof(startup));
+  PROCESS_INFORMATION process{};
+  const BOOL started = CreateProcessW(invalid_executable.c_str(), command.data(),
+      nullptr, nullptr, FALSE, 0, nullptr, invalid.c_str(), &startup, &process);
+  direct_launch_error = started ? ERROR_SUCCESS : GetLastError();
+  if (started) {
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+  }
+  Check(!started && direct_launch_error != ERROR_SUCCESS, "invalid-pe-rejected-by-win32");
+  Check(error_number && *error_number == static_cast<int64_t>(direct_launch_error),
+        "exact-native-win32-launch-error");
 
   const auto config = steam / L"config";
   const auto backup = config / L"ava-switch-backups" / L"switch-native-test";
@@ -198,7 +218,9 @@ int wmain() {
   } catch (const std::exception& error) {
     // Errors contain only fixed assertion names, not local accounts or paths.
     std::cout << "{\"success\":false,\"checks\":" << checks
-              << ",\"failedCheck\":\"" << error.what() << "\"}\n";
+              << ",\"failedCheck\":\"" << error.what()
+              << "\",\"reportedWin32Error\":" << reported_launch_error
+              << ",\"directWin32Error\":" << direct_launch_error << "}\n";
     std::error_code ignored;
     fs::remove_all(root, ignored);
     return 1;

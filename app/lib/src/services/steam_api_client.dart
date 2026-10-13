@@ -234,10 +234,17 @@ class SteamApiClient {
   ///    that decodes to an object is returned so the message reaches the
   ///    caller (which already handles `success != true`); anything else
   ///    → [SteamApiException].
+  ///  - HTTP 429 always throws [SteamApiException] with its status retained,
+  ///    including JSON bodies without eresult, so read queues can cool down.
   static Map<String, dynamic>? _gateCommunityStatus(
       Response<String> resp, String path) {
     final status = resp.statusCode ?? 0;
     if (status >= 200 && status < 300) return null;
+    // Retain rate limiting even when Steam's JSON body omits eresult. Otherwise
+    // a quote queue would mistake HTTP 429 for a missing price and keep going.
+    if (status == 429) {
+      throw SteamApiException(84, 'HTTP 429', path, httpStatus: 429);
+    }
     if (status == 401 || status == 403) {
       dlog('  ✗ $path HTTP $status (stale session?)');
       throw CommunityAuthException(status, path);

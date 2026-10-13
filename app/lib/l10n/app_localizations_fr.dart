@@ -3054,7 +3054,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get marketSearchPriceNote =>
-      'Les prix indicatifs peuvent changer. La devise affichée est celle renvoyée par Steam.';
+      'Les prix indicatifs sont chargés dans la devise sélectionnée uniquement pour les objets visibles et peuvent changer.';
 
   @override
   String get marketSearchRefreshPrice => 'Actualiser le prix';

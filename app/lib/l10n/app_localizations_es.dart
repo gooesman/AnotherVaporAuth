@@ -3051,7 +3051,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get marketSearchPriceNote =>
-      'Los precios de referencia pueden cambiar. La moneda se muestra tal como la devuelve Steam.';
+      'Los precios de referencia se cargan en la moneda seleccionada solo para los artículos visibles y pueden cambiar.';
 
   @override
   String get marketSearchRefreshPrice => 'Actualizar precio';

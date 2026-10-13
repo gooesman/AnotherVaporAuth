@@ -170,10 +170,13 @@ shown above while retaining the existing skin styles.
   active listings. Open it from the account overview or desktop context menu.
   A separate read-only **Market** tab searches by item name, game and currency.
   Opening the tab or typing does not fetch data: submit a search to load one page
-  with its returned prices, then explicitly load more. Recent pages are cached
-  for five minutes; only refreshing an item's price makes an extra price request.
+  of items, then explicitly load more. Only visible items request reference
+  prices in the selected currency, one at a time with a one-second gap. Recent
+  pages and successful quotes are cached for five minutes; failed quotes pause
+  requests and offer an explicit retry. Hidden pages cancel outstanding reads.
   Inventory and personal listings load when their respective tabs are opened.
-  Prices retain Steam's returned currency; the selected currency is a request preference.
+  Search-result prices with an unspecified currency are never reused as selected-currency
+  quotes. No local exchange-rate conversion or periodic price polling is performed.
 - **Automatic session refresh** — refreshes the access token from the refresh
   token, and (optionally) does a full headless re-login with a stored password
   plus the account's own TOTP when the refresh token expires.
@@ -241,7 +244,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1542 tests
+flutter test                       # 1554 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

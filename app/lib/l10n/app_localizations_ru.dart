@@ -3101,7 +3101,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get marketSearchPriceNote =>
-      'Ориентировочные цены могут меняться. Валюта указана так, как её возвращает Steam.';
+      'Ориентировочные цены загружаются в выбранной валюте только для видимых предметов и могут меняться.';
 
   @override
   String get marketSearchRefreshPrice => 'Обновить цену';

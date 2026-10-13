@@ -955,7 +955,7 @@
   "marketSearchMore": "載入更多",
   "marketSearchListings": "上架數量：{count}",
   "marketSearchPriceUnavailable": "暫無價格",
-  "marketSearchPriceNote": "參考價格可能變動，幣別以 Steam 回傳的報價為準。",
+  "marketSearchPriceNote": "僅為畫面中可見的商品依所選幣別載入參考價格；價格可能變動。",
   "marketSearchRefreshPrice": "更新價格",
   "marketSearchRateLimited": "Steam 請求過多，請稍後再試。",
   "marketSearchUnavailable": "暫時無法取得市場商品，請稍後再試。",

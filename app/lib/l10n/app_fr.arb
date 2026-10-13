@@ -885,7 +885,7 @@
   "marketSearchMore": "Charger plus",
   "marketSearchListings": "Annonces : {count}",
   "marketSearchPriceUnavailable": "Prix indisponible",
-  "marketSearchPriceNote": "Les prix indicatifs peuvent changer. La devise affichée est celle renvoyée par Steam.",
+  "marketSearchPriceNote": "Les prix indicatifs sont chargés dans la devise sélectionnée uniquement pour les objets visibles et peuvent changer.",
   "marketSearchRefreshPrice": "Actualiser le prix",
   "marketSearchRateLimited": "Trop de requêtes vers Steam. Réessayez plus tard.",
   "marketSearchUnavailable": "Les objets du marché sont indisponibles pour le moment. Réessayez plus tard.",

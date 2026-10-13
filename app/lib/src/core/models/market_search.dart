@@ -9,10 +9,12 @@ class MarketSearchItem {
   final String rarityColor;
 
   /// Raw amount from Steam, whose response does not identify its currency.
-  /// Never relabel this with the requested currency: show [priceText] instead.
+  /// Never relabel this with the requested currency. Search prices are not used
+  /// for selected-currency quotes; the UI queries priceoverview for visible rows.
   final int? lowestPriceMinor;
 
-  /// Steam's already formatted price, including the currency it actually used.
+  /// Steam's already formatted, unverified search price. The search endpoint
+  /// may ignore the requested currency, so this is not a selected-currency quote.
   final String? priceText;
   final int listingCount;
 

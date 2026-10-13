@@ -3014,7 +3014,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get marketSearchPriceNote =>
-      'Reference prices may change. Currency is shown as returned by Steam.';
+      'Reference prices load in the selected currency only for visible items and may change.';
 
   @override
   String get marketSearchRefreshPrice => 'Refresh price';

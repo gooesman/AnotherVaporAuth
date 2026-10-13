@@ -91,6 +91,57 @@ Map<String, dynamic> _page({
 
 void main() {
   test(
+    'price quotes send the chosen currency and preserve actual returned amounts',
+    () async {
+      final (client, adapter) = _client({
+        'success': true,
+        'lowest_price': '¥ 15.36',
+      });
+      final cny = await client.priceOverviewChecked(
+        440,
+        'Mann Co. Supply Crate Key',
+        23,
+      );
+      expect(cny!.lowest, '¥ 15.36');
+      expect(adapter.requests.single.uri.queryParameters['currency'], '23');
+      adapter.body = {'success': true, 'lowest_price': r'$2.16'};
+      final usd = await client.priceOverviewChecked(
+        440,
+        'Mann Co. Supply Crate Key',
+        1,
+      );
+      expect(usd!.lowest, r'$2.16');
+      expect(adapter.requests.last.uri.queryParameters['currency'], '1');
+      expect(
+        adapter.requests.every(
+          (r) => r.uri.path == '/market/priceoverview/' && r.method == 'GET',
+        ),
+        isTrue,
+      );
+      expect(
+        adapter.requests.every((r) => !r.headers.containsKey('Cookie')),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'price HTTP 429 JSON without eresult remains a typed rate limit',
+    () async {
+      final (client, adapter) = _client({'success': false})..$2.status = 429;
+      await expectLater(
+        client.priceOverviewChecked(440, 'key', 23),
+        throwsA(
+          isA<SteamApiException>()
+              .having((e) => e.httpStatus, 'status', 429)
+              .having((e) => e.eresult, 'eresult', 84),
+        ),
+      );
+      expect(adapter.requests, hasLength(1));
+    },
+  );
+
+  test(
     'anonymous search sends locale/currency and no cookie, one read only',
     () async {
       final (client, adapter) = _client(_page());
@@ -295,7 +346,7 @@ void main() {
   });
 
   test(
-    'JSON diagnostics retain only the explicit Steam rate-limit code',
+    'HTTP 429 stays rate limited even if its JSON diagnostics omit eresult',
     () async {
       for (final code in [84, '84', 2, 'RateLimitExceeded', null]) {
         final (client, adapter) = _client({
@@ -309,7 +360,7 @@ void main() {
             isA<SteamApiException>().having(
               (error) => error.eresult,
               'eresult',
-              code == 84 || code == '84' ? 84 : 2,
+              84,
             ),
           ),
         );

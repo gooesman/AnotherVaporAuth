@@ -28,8 +28,9 @@ class MarketClient {
   String _inventoryReferer(SteamGuardAccount a) =>
       '${SteamApiClient.communityBase}/profiles/${a.steamId}/inventory';
 
-  /// Reads one public search page, including its quoted prices. No account
-  /// cookies, login, retries, or per-item requests are needed. A caller's
+  /// Reads one public item search page. Its prices may ignore [currency]; the
+  /// caller obtains selected-currency quotes separately. No account cookies,
+  /// login, or retries are needed for this page request. A caller's
   /// SteamRequestScope supplies cancellation and its whole-operation deadline
   /// through SteamApiClient (the search screen uses twelve seconds).
   Future<MarketSearchPage> search({
@@ -67,9 +68,9 @@ class MarketClient {
     });
     if (json['success'] != true &&
         !(json['success'] is int && json['success'] == 1)) {
-      // A 429 can carry JSON diagnostics; the shared community transport
-      // preserves that body rather than the status. Keep Steam's explicit
-      // RateLimitExceeded code, without guessing from arbitrary message text.
+      // HTTP 429 already throws in the shared transport. Also retain an
+      // explicit RateLimitExceeded in a 2xx JSON response, without guessing
+      // from arbitrary message text.
       final result = json['eresult'];
       final rateLimited = (result is int && result == 84) || result == '84';
       throw SteamApiException(
@@ -124,16 +125,37 @@ class MarketClient {
     int currency,
   ) async {
     try {
-      final json = await api.communityGetJson('/market/priceoverview/', {
-        'appid': '$appid',
-        'currency': '$currency',
-        'market_hash_name': marketHashName,
-      });
-      if (json['success'] != true) return null;
-      return MarketPrice.fromJson(json);
+      return await priceOverviewChecked(appid, marketHashName, currency);
     } catch (_) {
       return null;
     }
+  }
+
+  /// Same read as [priceOverview], retaining failures so the search queue can
+  /// stop on rate limits. Unlike search/render, this endpoint takes the quote
+  /// currency. Never substitute the search response's currency-less amount.
+  Future<MarketPrice?> priceOverviewChecked(
+    int appid,
+    String marketHashName,
+    int currency,
+  ) async {
+    final json = await api.communityGetJson('/market/priceoverview/', {
+      'appid': '$appid',
+      'currency': '$currency',
+      'market_hash_name': marketHashName,
+    });
+    if (json['success'] != true) {
+      final result = json['eresult'];
+      if (result == 84 || result == '84') {
+        throw SteamApiException(
+          84,
+          'Steam market price rate limited',
+          '/market/priceoverview/',
+        );
+      }
+      return null;
+    }
+    return MarketPrice.fromJson(json);
   }
 
   /// Lists [item] for sale. [priceReceive] is the amount the seller receives, in

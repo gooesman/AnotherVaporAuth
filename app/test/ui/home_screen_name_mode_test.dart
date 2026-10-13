@@ -31,6 +31,18 @@ class _DelayedSettings extends SettingsStore {
   Future<String?> loadAccountNameMode() => loaded.future;
 }
 
+class _ObservedSettings extends SettingsStore {
+  _ObservedSettings(super.storage);
+  Future<String?>? firstNameRead;
+
+  @override
+  Future<String?> loadAccountNameMode() {
+    final read = super.loadAccountNameMode();
+    firstNameRead ??= read;
+    return read;
+  }
+}
+
 File _settingsFile(Directory directory) =>
     File(p.join(directory.path, 'app_settings.json'));
 
@@ -220,10 +232,10 @@ void main() {
           'ava_name_mode_',
         );
         addTearDown(() => directory.delete(recursive: true));
-        await _settingsFile(directory).writeAsString(
-          jsonEncode({'account_name_mode': ?value}),
-        );
-        final settings = SettingsStore(_TemporaryStorage(directory));
+        await _settingsFile(
+          directory,
+        ).writeAsString(jsonEncode({'account_name_mode': ?value}));
+        final settings = _ObservedSettings(_TemporaryStorage(directory));
         final container = ProviderContainer(
           overrides: [settingsStoreProvider.overrideWithValue(settings)],
         );
@@ -232,8 +244,10 @@ void main() {
           container.read(accountNameModeProvider),
           AccountNameMode.username,
         );
-        await settings.loadAccountNameMode();
-        await Future<void>.delayed(Duration.zero);
+        // Await the actual read started by provider.build. A second load can
+        // finish first and leave the original Windows file handle open when
+        // teardown tries to remove this temporary directory.
+        await settings.firstNameRead!;
         expect(
           container.read(accountNameModeProvider),
           AccountNameMode.username,

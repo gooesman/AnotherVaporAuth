@@ -1316,7 +1316,7 @@
   "marketSearchMore": "加载更多",
   "marketSearchListings": "在售数量：{count}",
   "marketSearchPriceUnavailable": "暂无价格",
-  "marketSearchPriceNote": "参考价格可能变化，币种以 Steam 返回的报价为准。",
+  "marketSearchPriceNote": "仅为可见商品按所选币种加载参考价格；价格可能变化。",
   "marketSearchRefreshPrice": "刷新价格",
   "marketSearchRateLimited": "Steam 请求过多，请稍后重试。",
   "marketSearchUnavailable": "暂时无法获取市场商品，请稍后重试。",

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -15,6 +16,7 @@ import '../../services/steam_request_scope.dart';
 import '../error_text.dart';
 import '../widgets/steam_image_provider.dart';
 import 'item_market_actions.dart';
+import 'market_search_prices.dart';
 
 typedef _AccountKey = (int, bool, String?, String?, String?, Object?);
 typedef _Query = ({String text, int? appid, int currency, String language});
@@ -56,6 +58,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
   final _cache = <_PageKey, (DateTime, MarketSearchPage)>{};
   late _AccountKey _account;
   late MarketClient _client;
+  late MarketSearchPrices _prices;
   String? _locale;
   String? _language;
   int? _currency;
@@ -67,6 +70,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
   int _nextStart = 0;
   bool _hasMore = false;
   bool _loading = false;
+  bool _foreground = true;
   Object? _error;
   int? _retryStart;
   _DetailLifetime? _details;
@@ -81,8 +85,14 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
     super.initState();
     _account = _accountKey(widget.account);
     _client = ref.read(marketClientProvider);
+    _prices = _newPrices(_client);
     WidgetsBinding.instance.addObserver(this);
   }
+
+  MarketSearchPrices _newPrices(MarketClient client) => MarketSearchPrices(
+    ItemMarketPriceCache(client, now: ref.read(clockProvider), checked: true),
+    now: ref.read(clockProvider),
+  );
 
   @override
   void didChangeDependencies() {
@@ -123,8 +133,11 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed && mounted) {
-      setState(_cancel);
+    if (mounted) {
+      setState(() {
+        _foreground = state == AppLifecycleState.resumed;
+        if (!_foreground) _cancel();
+      });
     }
   }
 
@@ -148,6 +161,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
     _scope?.cancel();
     _scope = null;
     _loading = false;
+    _prices.reset();
     _closeDetails();
   }
 
@@ -166,6 +180,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cancel();
+    _prices.dispose();
     _cache.clear();
     _text.dispose();
     _scroll.dispose();
@@ -209,7 +224,10 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
     final scope = SteamRequestScope();
     final key = (query, start);
     final now = ref.read(clockProvider)();
-    if (force) _cache.removeWhere((key, _) => key.$1 == query);
+    if (force) {
+      _cache.removeWhere((key, _) => key.$1 == query);
+      _prices.cache.clear();
+    }
     final cached = _cache.remove(key);
     final cachedPage = cached != null && now.isBefore(cached.$1)
         ? cached.$2
@@ -293,6 +311,12 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
     final generation = _generation;
     final query = _submitted!;
     final client = _client;
+    final initialPrice = _prices.quote((
+      item.appid,
+      item.marketHashName,
+      query.currency,
+      query.language,
+    )).price;
     final lifetime = _DetailLifetime(
       () => _current(generation, query, client),
       _closeDetails,
@@ -305,17 +329,22 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
         currency: query.currency,
         client: client,
         lifetime: lifetime,
+        cache: _prices.cache,
+        initialPrice: initialPrice,
       ),
     );
     _details = lifetime;
     _detailRoute = route;
     _detailNavigator = navigator;
+    _prices.reset();
+    setState(() {});
     await navigator.push(route);
     lifetime.cancel();
     if (identical(_details, lifetime)) {
       _details = null;
       _detailRoute = null;
       _detailNavigator = null;
+      if (mounted) setState(() {});
     }
   }
 
@@ -327,6 +356,8 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
         _client = client;
         _language = client.api.steamLanguage;
         _reset(clearCache: true);
+        _prices.dispose();
+        _prices = _newPrices(client);
       });
     });
     final l = AppLocalizations.of(context);
@@ -375,9 +406,13 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      Text(
-                        _itemPrice(item, l),
-                        style: TextStyle(color: tokens.accent),
+                      _VisibleMarketPrice(
+                        item: item,
+                        prices: _prices,
+                        currency: _submitted!.currency,
+                        language: _submitted!.language,
+                        active:
+                            widget.active && _foreground && _details == null,
                       ),
                       Text(l.marketSearchListings(item.listingCount)),
                     ],
@@ -470,7 +505,20 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
       ],
       onChanged: (value) => setState(() {
         _currency = value!;
-        _reset();
+        final submitted = _submitted;
+        if (submitted != null && _items.isNotEmpty) {
+          // Search identities do not depend on currency. Keep the list and
+          // immediately quote its visible rows again, without another search.
+          _cancel();
+          _submitted = (
+            text: submitted.text,
+            appid: submitted.appid,
+            currency: value,
+            language: submitted.language,
+          );
+        } else {
+          _reset();
+        }
       }),
     );
     return Column(
@@ -517,11 +565,6 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
   }
 }
 
-String _itemPrice(MarketSearchItem item, AppLocalizations l) =>
-    item.priceText?.trim().isNotEmpty == true
-    ? item.priceText!.trim()
-    : l.marketSearchPriceUnavailable;
-
 String _searchError(AppLocalizations l, Object error) {
   if (error is SteamApiException) {
     return error.httpStatus == 429 || error.eresult == 84
@@ -530,6 +573,147 @@ String _searchError(AppLocalizations l, Object error) {
   }
   if (error is FormatException) return l.marketSearchUnavailable;
   return describeError(l, error);
+}
+
+/// Sliver builders also create offscreen cache children. Check actual viewport
+/// intersection after layout, so these children never prefetch market quotes.
+class _VisibleMarketPrice extends StatefulWidget {
+  const _VisibleMarketPrice({
+    required this.item,
+    required this.prices,
+    required this.currency,
+    required this.language,
+    required this.active,
+  });
+  final MarketSearchItem item;
+  final MarketSearchPrices prices;
+  final int currency;
+  final String language;
+  final bool active;
+
+  @override
+  State<_VisibleMarketPrice> createState() => _VisibleMarketPriceState();
+}
+
+class _VisibleMarketPriceState extends State<_VisibleMarketPrice> {
+  final _owner = Object();
+  ScrollPosition? _position;
+  bool _scheduled = false;
+  bool _inViewport = false;
+
+  MarketSearchPriceKey get _key => (
+    widget.item.appid,
+    widget.item.marketHashName,
+    widget.currency,
+    widget.language,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final position = Scrollable.maybeOf(context)?.position;
+    if (position != _position) {
+      _position?.removeListener(_schedule);
+      _position = position;
+      _position?.addListener(_schedule);
+    }
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(_VisibleMarketPrice oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.prices != widget.prices) {
+      oldWidget.prices.visible(_owner, null);
+    }
+    _schedule();
+  }
+
+  void _schedule() {
+    if (_scheduled) return;
+    _scheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduled = false;
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      var visible = false;
+      if (widget.active &&
+          widget.item.listingCount > 0 &&
+          box is RenderBox &&
+          box.hasSize &&
+          box.attached) {
+        final viewport = RenderAbstractViewport.maybeOf(box);
+        final viewportBox = viewport is RenderBox
+            ? viewport as RenderBox
+            : null;
+        if (viewportBox != null && viewportBox.hasSize) {
+          final rect =
+              box.localToGlobal(Offset.zero, ancestor: viewportBox) & box.size;
+          visible = rect.overlaps(Offset.zero & viewportBox.size);
+        }
+      }
+      widget.prices.visible(_owner, visible ? _key : null);
+      if (_inViewport != visible) setState(() => _inViewport = visible);
+    });
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_schedule);
+    widget.prices.visible(_owner, null);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: widget.prices,
+    builder: (context, _) {
+      _schedule();
+      final l = AppLocalizations.of(context);
+      final quote = widget.prices.quote(_key);
+      final price = quote.price?.lowest?.trim();
+      if (quote.loading &&
+          widget.active &&
+          _inViewport &&
+          widget.item.listingCount > 0) {
+        return Row(
+          children: [
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(strokeWidth: 1.5),
+            ),
+            const SizedBox(width: 8),
+            Text(steamCurrencyCode(widget.currency)),
+          ],
+        );
+      }
+      if (price?.isNotEmpty == true) {
+        return Text(
+          price!,
+          style: TextStyle(
+            color: Theme.of(context).extension<AvaTokens>()!.accent,
+          ),
+        );
+      }
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              quote.error == null
+                  ? l.marketSearchPriceUnavailable
+                  : _searchError(l, quote.error!),
+            ),
+          ),
+          IconButton(
+            tooltip: l.commonRetry,
+            onPressed: () => widget.prices.retry(_key),
+            icon: const Icon(Icons.refresh, size: 18),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _MarketThumbnail extends StatelessWidget {
@@ -602,11 +786,15 @@ class _MarketItemDetails extends ConsumerStatefulWidget {
     required this.currency,
     required this.client,
     required this.lifetime,
+    required this.cache,
+    this.initialPrice,
   });
   final MarketSearchItem item;
   final int currency;
   final MarketClient client;
   final _DetailLifetime lifetime;
+  final ItemMarketPriceCache cache;
+  final MarketPrice? initialPrice;
 
   @override
   ConsumerState<_MarketItemDetails> createState() => _MarketItemDetailsState();
@@ -620,12 +808,27 @@ class _MarketItemDetailsState extends ConsumerState<_MarketItemDetails> {
   Object? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _price = widget.initialPrice;
+    _checked = _price != null;
+    final hasQuote =
+        _price?.lowest?.trim().isNotEmpty == true ||
+        _price?.median?.trim().isNotEmpty == true;
+    if (!hasQuote) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.lifetime.valid) _refresh(invalidateCache: false);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     widget.lifetime.cancel();
     super.dispose();
   }
 
-  Future<void> _refresh() async {
+  Future<void> _refresh({bool invalidateCache = true}) async {
     if (_loading || !widget.lifetime.valid) return;
     final scope = SteamRequestScope();
     widget.lifetime.scope = scope;
@@ -634,8 +837,15 @@ class _MarketItemDetailsState extends ConsumerState<_MarketItemDetails> {
       _error = null;
     });
     try {
+      if (invalidateCache) {
+        widget.cache.invalidate(
+          widget.item.appid,
+          widget.item.marketHashName,
+          widget.currency,
+        );
+      }
       final price = await scope.run(
-        () => widget.client.priceOverview(
+        () => widget.cache.lookup(
           widget.item.appid,
           widget.item.marketHashName,
           widget.currency,
@@ -709,7 +919,6 @@ class _MarketItemDetailsState extends ConsumerState<_MarketItemDetails> {
                   steamCurrencyCode(widget.currency),
                 ),
               ),
-              Text(_itemPrice(widget.item, l)),
               Text(l.marketSearchListings(widget.item.listingCount)),
               const SizedBox(height: 12),
               if (_loading) const LinearProgressIndicator(),

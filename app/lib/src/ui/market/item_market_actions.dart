@@ -9,19 +9,34 @@ import '../../app/theme.dart';
 import '../../core/models/steam_item.dart';
 import '../../core/protocol/market_client.dart';
 import '../../core/steam_currency.dart';
+import '../../services/steam_request_scope.dart';
 
 typedef _PriceKey = (int, String, int, String);
 
 /// A small, memory-only cache for explicit, read-only price lookups. Identical
 /// copies share a request; failures briefly cool down instead of hammering Steam.
 class ItemMarketPriceCache {
-  ItemMarketPriceCache(this.client, {DateTime Function()? now})
-    : _now = now ?? DateTime.now;
+  ItemMarketPriceCache(
+    this.client, {
+    DateTime Function()? now,
+    this.checked = false,
+  }) : _now = now ?? DateTime.now;
 
   final MarketClient client;
+  final bool checked;
   final DateTime Function() _now;
   final _values = <_PriceKey, (DateTime, MarketPrice?)>{};
-  final _pending = <_PriceKey, Future<MarketPrice?>>{};
+  final _pending =
+      <_PriceKey, ({Future<MarketPrice?> future, bool Function() cancelled})>{};
+
+  /// A nullable record distinguishes a cached missing price from no entry.
+  ({MarketPrice? price})? peek(int appid, String hashName, int currency) {
+    final cached =
+        _values[(appid, hashName, currency, client.api.steamLanguage)];
+    return cached != null && _now().isBefore(cached.$1)
+        ? (price: cached.$2)
+        : null;
+  }
 
   Future<MarketPrice?> lookup(int appid, String hashName, int currency) {
     if (appid <= 0 || hashName.trim().isEmpty || currency <= 0) {
@@ -29,25 +44,36 @@ class ItemMarketPriceCache {
     }
     final key = (appid, hashName, currency, client.api.steamLanguage);
     final pending = _pending[key];
-    if (pending != null) return pending;
+    if (pending != null && !pending.cancelled()) return pending.future;
     final cached = _values[key];
     if (cached != null && _now().isBefore(cached.$1)) {
       return Future.value(cached.$2);
     }
-    final request = _fetch(key).whenComplete(() {
-      _pending.remove(key);
+    final cancel = SteamRequestScope.currentCancelToken;
+    late final Future<MarketPrice?> request;
+    request = _fetch(key).whenComplete(() {
+      if (identical(_pending[key]?.future, request)) _pending.remove(key);
     });
-    _pending[key] = request;
+    _pending[key] = (
+      future: request,
+      cancelled: () => cancel?.isCancelled == true,
+    );
     return request;
   }
 
   Future<MarketPrice?> _fetch(_PriceKey key) async {
+    final cancel = SteamRequestScope.currentCancelToken;
     MarketPrice? price;
     try {
-      price = await client.priceOverview(key.$1, key.$2, key.$3);
+      price = checked
+          ? await client.priceOverviewChecked(key.$1, key.$2, key.$3)
+          : await client.priceOverview(key.$1, key.$2, key.$3);
     } catch (_) {
+      if (checked) rethrow;
       // The read-only advisory price must never disrupt inventory selection.
     }
+    // Leaving a search must not turn a cancelled quotation into a cached miss.
+    if (cancel?.isCancelled == true) return null;
     final hasPrice =
         _nonblank(price?.lowest) != null || _nonblank(price?.median) != null;
     if (_values.length >= 256) _values.remove(_values.keys.first);
@@ -59,6 +85,11 @@ class ItemMarketPriceCache {
     );
     return price;
   }
+
+  void invalidate(int appid, String hashName, int currency) =>
+      _values.remove((appid, hashName, currency, client.api.steamLanguage));
+
+  void clear() => _values.clear();
 }
 
 final itemMarketPriceCacheProvider = Provider<ItemMarketPriceCache>(

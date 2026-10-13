@@ -3037,7 +3037,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get marketSearchPriceNote =>
-      'Richtpreise können sich ändern. Die Währung wird wie von Steam übermittelt angezeigt.';
+      'Richtpreise werden nur für sichtbare Artikel in der ausgewählten Währung geladen und können sich ändern.';
 
   @override
   String get marketSearchRefreshPrice => 'Preis aktualisieren';

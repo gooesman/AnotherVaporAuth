@@ -53,6 +53,7 @@ class _Market extends MarketClient {
   final priceTokens = <CancelToken?>[];
   Future<MarketSearchPage> Function(_Request)? onSearch;
   Completer<MarketPrice?>? pricePending;
+  Future<MarketPrice?> Function(String, int)? onPrice;
 
   @override
   Future<MarketSearchPage> search({
@@ -78,11 +79,23 @@ class _Market extends MarketClient {
   Future<MarketPrice?> priceOverview(int appid, String hash, int currency) {
     prices.add((appid, hash, currency));
     priceTokens.add(SteamRequestScope.currentCancelToken);
-    return pricePending?.future ??
+    return onPrice?.call(hash, currency) ??
+        pricePending?.future ??
         Future.value(
-          const MarketPrice(lowest: '¥ 1.25', median: '¥ 1.30', volume: 5),
+          MarketPrice(
+            lowest: currency == 23 ? '¥ 8.76' : r'$1.23',
+            median: currency == 23 ? '¥ 8.80' : r'$1.24',
+            volume: 5,
+          ),
         );
   }
+
+  @override
+  Future<MarketPrice?> priceOverviewChecked(
+    int appid,
+    String hash,
+    int currency,
+  ) => priceOverview(appid, hash, currency);
 }
 
 SteamGuardAccount _account({int id = 123, bool portable = false}) =>
@@ -182,10 +195,73 @@ class _Harness {
 
 void main() {
   testWidgets(
-    'returned currency text is retained; minor units alone never invent a price',
+    'currency changes requote the visible list, discard late dollars, and reuse CNY cache',
+    (tester) async {
+      final oldUsd = Completer<MarketPrice?>();
+      var firstUsd = true;
+      final market = _Market()
+        ..onPrice = (_, currency) {
+          if (currency == 1 && firstUsd) {
+            firstUsd = false;
+            return oldUsd.future;
+          }
+          return Future.value(
+            MarketPrice(lowest: currency == 23 ? '¥ 15.36' : r'$2.16'),
+          );
+        };
+      final h = _Harness(tester, market);
+      await h.show();
+      await h.submit('key', settle: false);
+      await tester.pump();
+      final dropdown = tester.widget<DropdownButtonFormField<int>>(
+        find.byKey(const ValueKey('market-search-currency')),
+      );
+      dropdown.onChanged!(23);
+      await tester.pumpAndSettle();
+      expect(market.priceTokens.first!.isCancelled, isTrue);
+      expect(find.text('¥ 15.36'), findsOneWidget);
+      expect(find.text(r'$1.23'), findsNothing);
+      oldUsd.complete(const MarketPrice(lowest: r'$999.99'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'$999.99'), findsNothing);
+      dropdown.onChanged!(1);
+      await tester.pumpAndSettle();
+      expect(find.text(r'$2.16'), findsOneWidget);
+      dropdown.onChanged!(23);
+      await tester.pump();
+      expect(find.text('¥ 15.36'), findsOneWidget);
+      expect(market.prices, [
+        (730, 'key', 1),
+        (730, 'key', 23),
+        (730, 'key', 1),
+      ]);
+      expect(market.requests, hasLength(1));
+    },
+  );
+
+  testWidgets(
+    'returning from background uses visible cached prices without another request',
+    (tester) async {
+      final market = _Market();
+      final h = _Harness(tester, market);
+      await h.show();
+      await h.submit('key');
+      expect(market.prices, hasLength(1));
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pumpAndSettle();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text(r'$1.23'), findsOneWidget);
+      expect(market.prices, hasLength(1));
+      expect(market.requests, hasLength(1));
+    },
+  );
+
+  testWidgets(
+    'CNY uses a separate true quote and never displays unverified search dollars',
     (tester) async {
       final market = _Market()
-        ..onSearch = (_) async => MarketSearchPage(
+        ..onSearch = ((_) async => MarketSearchPage(
           items: [
             _item('quoted', priceText: r'$1.23'),
             _item('unknown units', priceText: null),
@@ -193,12 +269,16 @@ void main() {
           start: 0,
           pageSize: 20,
           total: 2,
-        );
+        ))
+        ..onPrice = (hash, currency) async => hash == 'unknown units'
+            ? null
+            : const MarketPrice(lowest: '¥ 8.76');
       final h = _Harness(tester, market)..initialCurrency = 23;
       await h.show();
       await h.submit('price');
       expect(market.requests.single.currency, 23);
-      expect(find.text(r'$1.23'), findsOneWidget);
+      expect(find.text(r'$1.23'), findsNothing);
+      expect(find.text('¥ 8.76'), findsOneWidget);
       expect(find.text('CNY 1.23'), findsNothing);
       expect(find.text(h.l.marketSearchPriceUnavailable), findsOneWidget);
     },
@@ -312,7 +392,8 @@ void main() {
       );
       expect(find.text('result 19'), findsOneWidget);
       expect(market.requests, hasLength(1));
-      expect(market.prices, isEmpty);
+      expect(market.prices.length, greaterThan(0));
+      expect(market.prices.length, lessThan(20));
     },
   );
 
@@ -341,7 +422,7 @@ void main() {
   );
 
   testWidgets(
-    'submitted query is trimmed, results show price without per-item reads',
+    'submitted query is trimmed and visible prices use the selected currency',
     (tester) async {
       final market = _Market();
       final h = _Harness(tester, market)..initialCurrency = 23;
@@ -353,9 +434,10 @@ void main() {
         currency: 23,
         start: 0,
       ));
-      expect(find.text(r'$1.23'), findsOneWidget);
+      expect(find.text('¥ 8.76'), findsOneWidget);
+      expect(find.text(r'$1.23'), findsNothing);
       expect(find.text(h.l.marketSearchListings(12)), findsOneWidget);
-      expect(market.prices, isEmpty);
+      expect(market.prices.single, (730, 'AK-47', 23));
       expect(market.tokens.single, isNotNull);
       h.initialCurrency = 1;
       await h.show();
@@ -553,6 +635,58 @@ void main() {
   );
 
   testWidgets(
+    'detail automatically loads selected-currency lowest price when the row quote is pending',
+    (tester) async {
+      final oldQuote = Completer<MarketPrice?>();
+      var reads = 0;
+      final market = _Market()
+        ..onPrice = (_, currency) {
+          expect(currency, 23);
+          return ++reads == 1
+              ? oldQuote.future
+              : Future.value(
+                  const MarketPrice(lowest: '¥ 15.36', median: '¥ 15.20'),
+                );
+        };
+      final h = _Harness(tester, market)..initialCurrency = 23;
+      await h.show();
+      await h.submit('key', settle: false);
+      await tester.pump();
+      expect(market.prices, hasLength(1));
+      await tester.tap(find.text('key').last);
+      await tester.pumpAndSettle();
+      expect(market.priceTokens.first!.isCancelled, isTrue);
+      expect(market.prices, [(730, 'key', 23), (730, 'key', 23)]);
+      expect(find.text('${h.l.marketLowest}: ¥ 15.36'), findsOneWidget);
+      expect(find.text('${h.l.marketMedian}: ¥ 15.20'), findsOneWidget);
+      expect(find.text(r'$1.23'), findsNothing);
+      oldQuote.complete(const MarketPrice(lowest: r'$999.99'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'$999.99'), findsNothing);
+      expect(find.text('${h.l.marketLowest}: ¥ 15.36'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'median-only quote is never substituted for the list lowest price',
+    (tester) async {
+      final market = _Market()
+        ..onPrice = (_, _) async => const MarketPrice(median: '¥ 15.20');
+      final h = _Harness(tester, market)..initialCurrency = 23;
+      await h.show();
+      await h.submit('median-only');
+      expect(find.text(h.l.marketSearchPriceUnavailable), findsOneWidget);
+      expect(find.text('¥ 15.20'), findsNothing);
+      expect(find.text(r'$1.23'), findsNothing);
+      await tester.tap(find.text('median-only').last);
+      await tester.pumpAndSettle();
+      expect(find.text('${h.l.marketMedian}: ¥ 15.20'), findsOneWidget);
+      expect(find.text('${h.l.marketLowest}: ¥ 15.20'), findsNothing);
+      expect(market.prices, hasLength(1));
+    },
+  );
+
+  testWidgets(
     'detail opens without new requests, refreshes one price, and encodes official URL',
     (tester) async {
       const name = 'Rare / # ? % item';
@@ -566,13 +700,13 @@ void main() {
         find.byKey(const ValueKey('market-search-details')),
         findsOneWidget,
       );
-      expect(market.prices, isEmpty);
+      expect(market.prices, hasLength(1));
       await tester.tap(
         find.byKey(const ValueKey('market-search-refresh-price')),
       );
       await tester.pumpAndSettle();
-      expect(market.prices.single, (730, name, 1));
-      expect(find.text('${h.l.marketLowest}: ¥ 1.25'), findsOneWidget);
+      expect(market.prices, [(730, name, 1), (730, name, 1)]);
+      expect(find.text('${h.l.marketLowest}: \$1.23'), findsOneWidget);
       await tester.tap(find.text(h.l.itemMarketOpen));
       await tester.pumpAndSettle();
       final uri = h.opened.single;
@@ -587,10 +721,11 @@ void main() {
   testWidgets(
     'closing or invalidating detail cancels its pending price request',
     (tester) async {
-      final market = _Market()..pricePending = Completer<MarketPrice?>();
+      final market = _Market();
       final h = _Harness(tester, market);
       await h.show();
       await h.submit('detail');
+      market.pricePending = Completer<MarketPrice?>();
       await tester.tap(find.text('detail').last);
       await tester.pumpAndSettle();
       await tester.tap(
@@ -599,7 +734,7 @@ void main() {
       await tester.pump();
       h.active = false;
       await h.show();
-      expect(market.priceTokens.single!.isCancelled, isTrue);
+      expect(market.priceTokens.last!.isCancelled, isTrue);
       expect(find.byKey(const ValueKey('market-search-details')), findsNothing);
       market.pricePending!.complete(const MarketPrice(lowest: 'old price'));
       await tester.pumpAndSettle();

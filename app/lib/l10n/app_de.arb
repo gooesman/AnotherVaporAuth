@@ -955,7 +955,7 @@
   "marketSearchMore": "Mehr laden",
   "marketSearchListings": "Angebote: {count}",
   "marketSearchPriceUnavailable": "Preis nicht verfügbar",
-  "marketSearchPriceNote": "Richtpreise können sich ändern. Die Währung wird wie von Steam übermittelt angezeigt.",
+  "marketSearchPriceNote": "Richtpreise werden nur für sichtbare Artikel in der ausgewählten Währung geladen und können sich ändern.",
   "marketSearchRefreshPrice": "Preis aktualisieren",
   "marketSearchRateLimited": "Zu viele Anfragen an Steam. Bitte später erneut versuchen.",
   "marketSearchUnavailable": "Marktartikel sind derzeit nicht verfügbar. Bitte später erneut versuchen.",

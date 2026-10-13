@@ -1487,7 +1487,7 @@
   "marketSearchMore": "Load more",
   "marketSearchListings": "Listings: {count}",
   "marketSearchPriceUnavailable": "Price unavailable",
-  "marketSearchPriceNote": "Reference prices may change. Currency is shown as returned by Steam.",
+  "marketSearchPriceNote": "Reference prices load in the selected currency only for visible items and may change.",
   "marketSearchRefreshPrice": "Refresh price",
   "marketSearchRateLimited": "Steam is receiving too many requests. Please try again later.",
   "marketSearchUnavailable": "Market items are unavailable right now. Please try again later.",

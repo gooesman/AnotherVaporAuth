@@ -885,7 +885,7 @@
   "marketSearchMore": "Cargar más",
   "marketSearchListings": "Anuncios: {count}",
   "marketSearchPriceUnavailable": "Precio no disponible",
-  "marketSearchPriceNote": "Los precios de referencia pueden cambiar. La moneda se muestra tal como la devuelve Steam.",
+  "marketSearchPriceNote": "Los precios de referencia se cargan en la moneda seleccionada solo para los artículos visibles y pueden cambiar.",
   "marketSearchRefreshPrice": "Actualizar precio",
   "marketSearchRateLimited": "Demasiadas solicitudes a Steam. Inténtalo de nuevo más tarde.",
   "marketSearchUnavailable": "Los artículos del mercado no están disponibles ahora. Inténtalo de nuevo más tarde.",

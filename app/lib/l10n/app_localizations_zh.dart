@@ -2856,7 +2856,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get marketSearchPriceUnavailable => '暂无价格';
 
   @override
-  String get marketSearchPriceNote => '参考价格可能变化，币种以 Steam 返回的报价为准。';
+  String get marketSearchPriceNote => '仅为可见商品按所选币种加载参考价格；价格可能变化。';
 
   @override
   String get marketSearchRefreshPrice => '刷新价格';
@@ -5810,7 +5810,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get marketSearchPriceUnavailable => '暫無價格';
 
   @override
-  String get marketSearchPriceNote => '參考價格可能變動，幣別以 Steam 回傳的報價為準。';
+  String get marketSearchPriceNote => '僅為畫面中可見的商品依所選幣別載入參考價格；價格可能變動。';
 
   @override
   String get marketSearchRefreshPrice => '更新價格';

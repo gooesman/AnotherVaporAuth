@@ -5294,7 +5294,7 @@ abstract class AppLocalizations {
   /// No description provided for @marketSearchPriceNote.
   ///
   /// In en, this message translates to:
-  /// **'Reference prices may change. Currency is shown as returned by Steam.'**
+  /// **'Reference prices load in the selected currency only for visible items and may change.'**
   String get marketSearchPriceNote;
 
   /// No description provided for @marketSearchRefreshPrice.

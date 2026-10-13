@@ -885,7 +885,7 @@
   "marketSearchMore": "Загрузить ещё",
   "marketSearchListings": "Предложений: {count}",
   "marketSearchPriceUnavailable": "Цена недоступна",
-  "marketSearchPriceNote": "Ориентировочные цены могут меняться. Валюта указана так, как её возвращает Steam.",
+  "marketSearchPriceNote": "Ориентировочные цены загружаются в выбранной валюте только для видимых предметов и могут меняться.",
   "marketSearchRefreshPrice": "Обновить цену",
   "marketSearchRateLimited": "Слишком много запросов к Steam. Повторите попытку позже.",
   "marketSearchUnavailable": "Предметы на площадке сейчас недоступны. Повторите попытку позже.",

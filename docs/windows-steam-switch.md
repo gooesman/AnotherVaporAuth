@@ -457,9 +457,23 @@ market quote, not the seller's net proceeds or a guaranteed trade valuation.
 Temporarily unmarketable items can still be queried when they have a market name.
 Unavailable quotes are shown as unavailable, never invented as a zero price.
 
-Prices are requested only when chosen, with identical requests combined and
+For inventory and trade item menus, prices are requested only when chosen, with identical requests combined and
 memory-only caching (five minutes for quotes, thirty seconds for failures).
 Reopening the price action after expiry fetches a fresh quote; displayed labels
 are not continuously polled. Queries are keyed by game, exact market name,
 currency and language. These actions do not select items, submit offers or list
 items for sale.
+
+The separate **Market** search tab loads one item page after an explicit search.
+Steam's search endpoints can ignore their requested currency, so their formatted
+prices are not used as selected-currency quotes. Visible search rows instead
+request `priceoverview` in the selected currency, sharing a bounded five-minute
+currency/language cache with the search details. The automatic list queue makes
+one request at a time with a one-second gap; a failed read pauses that queue for
+thirty seconds and offers explicit retry. Switching currency clears old labels
+and cancels stale reads; hiding the page cancels queued work. There is no local
+exchange-rate conversion or periodic price polling. A missing or failed quote
+never falls back to a dollar value marked as another currency.
+Opening details uses the available quote or loads one automatically; its refresh
+button requests a fresh quote. The list uses the lowest current asking price,
+while the recent-sale median remains a separately labelled detail.
