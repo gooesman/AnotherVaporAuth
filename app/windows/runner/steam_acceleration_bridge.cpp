@@ -1,9 +1,10 @@
 #include <winsock2.h>
+// IP Helper v2 route declarations require _WS2IPDEF_ before iphlpapi.h.
+#include <ws2ipdef.h>
 #include "steam_acceleration_bridge.h"
 
 #include <aclapi.h>
 #include <iphlpapi.h>
-#include <netioapi.h>
 #include <sddl.h>
 #include <shlobj.h>
 #include <tlhelp32.h>
