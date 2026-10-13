@@ -6,7 +6,7 @@
   "steamSwitchNotFound": "Steam wurde nicht gefunden. Wähle steam.exe aus, um die Installation anzugeben.",
   "steamSwitchBrowse": "steam.exe auswählen",
   "steamSwitchNoAccounts": "Auf diesem PC wurden keine gespeicherten Steam-Konten gefunden. Melde dich in Steam an, lasse die Anmeldedaten speichern und lade die Liste neu.",
-  "steamSwitchNoMatch": "Das in GooeSteamKit gewählte Konto ist auf diesem PC nicht in Steam gespeichert. Melde dich mit diesem Konto in Steam an, lasse die Anmeldedaten speichern und lade die Liste neu.",
+  "steamSwitchNoMatch": "Für das ausgewählte Konto gibt es auf diesem PC noch keinen Anmeldeeintrag. Nutze die Ein-Klick-Anmeldung oben. Sobald Steam die Anmeldedaten gespeichert hat, aktualisiere die Liste, um unten zwischen Konten zu wechseln.",
   "steamSwitchNeedsLogin": "Melde dich mit diesem Konto in Steam an, lasse die Anmeldedaten speichern und lade die Liste neu.",
   "steamSwitchButton": "Konto wechseln",
   "steamSwitchConfirm": "Steam wird geschlossen und neu gestartet, um {account} anzumelden. Beende zuerst deine Spiele und warte, bis die Spielstände mit Steam Cloud synchronisiert sind. Fortfahren?",
@@ -986,5 +986,15 @@
   "steamDesktopLoginUnconfirmed": "Eine Anfrage zur Genehmigung der Anmeldung wurde gesendet, aber die Steam-Anmeldung ist noch nicht bestätigt. Prüfe das Steam-Fenster und aktualisiere dann den Status.",
   "steamDesktopLoginCancelled": "Automatische Anmeldung gestoppt",
   "steamDesktopLoginCancel": "Automatische Bestätigung stoppen",
-  "steamDesktopLoginWrongAccount": "Steam ist mit einem anderen Konto angemeldet. Die automatische Bestätigung wurde gestoppt."
+  "steamDesktopLoginWrongAccount": "Steam ist mit einem anderen Konto angemeldet. Die automatische Bestätigung wurde gestoppt.",
+  "steamClientOpen": "Steam öffnen",
+  "steamSwitchLaunchFailed": "Steam konnte nicht gestartet werden. Prüfe den Installationspfad und stelle sicher, dass Steam normal gestartet werden kann.",
+  "steamSwitchFileAccessFailed": "Die Steam-Einstellungen konnten nicht gesichert oder geändert werden. Prüfe die Lese- und Schreibberechtigungen für den Installationsordner.",
+  "steamDesktopLoginSession": "Steam ist geöffnet. Verbindung mit dem ausgewählten Konto wird hergestellt…",
+  "steamSwitchInspecting": "Steam auf diesem PC wird geprüft",
+  "steamSwitchErrorDetails": "Schritt: {stage}; Fehlercode: {code}; Windows: {systemError}.",
+  "approveScreenBusy": "Eine andere Bildschirmaufnahme läuft bereits. Schließe sie zuerst ab oder brich sie ab.",
+  "approveScreenDisplayChanged": "Die Bildschirmanordnung hat sich geändert. Wähle den QR-Code-Bereich erneut aus.",
+  "approveScreenRegionTooLarge": "Der ausgewählte Bereich ist zu groß. Wähle nur den QR-Code-Bereich aus.",
+  "approveScreenFailedDetail": "Der Bildschirm konnte nicht aufgenommen werden. Versuche es erneut. Fehlerdetails: {detail}."
 }

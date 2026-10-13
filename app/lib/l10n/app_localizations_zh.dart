@@ -30,7 +30,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'GooeSteamKit 所选账号不在本机 Steam 登录记录中。请先在 Steam 登录该账号并记住登录信息，再刷新列表。';
+      '所选账号尚无本机登录记录。可使用上方的一键登录；登录并记住登录信息后，刷新即可从下方列表切换。';
 
   @override
   String get steamSwitchNeedsLogin => '请先在 Steam 登录此账号并记住登录信息，再刷新列表。';
@@ -2912,6 +2912,44 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamDesktopLoginWrongAccount => 'Steam 当前登录了其他账号，已停止自动批准。';
+
+  @override
+  String get steamClientOpen => '打开 Steam';
+
+  @override
+  String get steamSwitchLaunchFailed => 'Steam 未能启动。请检查安装路径，并确认 Steam 可以正常运行。';
+
+  @override
+  String get steamSwitchFileAccessFailed => '无法备份或修改 Steam 设置，请检查安装目录的读写权限。';
+
+  @override
+  String get steamDesktopLoginSession => 'Steam 已打开，正在连接所选账户…';
+
+  @override
+  String get steamSwitchInspecting => '检查本机 Steam';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return '阶段：$stage；错误码：$code；Windows：$systemError。';
+  }
+
+  @override
+  String get approveScreenBusy => '另一个截图正在进行，请先完成或取消。';
+
+  @override
+  String get approveScreenDisplayChanged => '屏幕布局已变化，请重新框选。';
+
+  @override
+  String get approveScreenRegionTooLarge => '框选范围过大，请只选择二维码区域。';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return '无法截取屏幕，请重试。错误信息：$detail。';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2940,7 +2978,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamSwitchNoMatch =>
-      'GooeSteamKit 所選帳號不在這台電腦的 Steam 登入紀錄中。請先在 Steam 登入該帳號並記住登入資訊，再重新整理清單。';
+      '所選帳號尚無本機登入紀錄。可使用上方的一鍵登入；登入並記住登入資訊後，重新整理即可從下方清單切換。';
 
   @override
   String get steamSwitchNeedsLogin => '請先在 Steam 登入此帳號並記住登入資訊，再重新整理清單。';
@@ -5828,4 +5866,42 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamDesktopLoginWrongAccount => 'Steam 目前登入了其他帳號，已停止自動核准。';
+
+  @override
+  String get steamClientOpen => '開啟 Steam';
+
+  @override
+  String get steamSwitchLaunchFailed => 'Steam 無法啟動。請檢查安裝路徑，並確認 Steam 可以正常執行。';
+
+  @override
+  String get steamSwitchFileAccessFailed => '無法備份或修改 Steam 設定，請檢查安裝目錄的讀寫權限。';
+
+  @override
+  String get steamDesktopLoginSession => 'Steam 已開啟，正在連線至所選帳號…';
+
+  @override
+  String get steamSwitchInspecting => '檢查本機 Steam';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return '階段：$stage；錯誤碼：$code；Windows：$systemError。';
+  }
+
+  @override
+  String get approveScreenBusy => '另一項螢幕擷取正在進行，請先完成或取消。';
+
+  @override
+  String get approveScreenDisplayChanged => '螢幕配置已變更，請重新框選。';
+
+  @override
+  String get approveScreenRegionTooLarge => '框選範圍過大，請只選取 QR 碼區域。';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return '無法擷取螢幕，請重試。錯誤資訊：$detail。';
+  }
 }

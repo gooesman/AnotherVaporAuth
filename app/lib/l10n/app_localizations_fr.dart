@@ -31,7 +31,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'Le compte sélectionné dans GooeSteamKit ne figure pas dans les comptes Steam de ce PC. Connectez-vous à ce compte dans Steam, activez la mémorisation des informations de connexion, puis actualisez la liste.';
+      'Le compte sélectionné n’a pas encore de connexion enregistrée sur cet ordinateur. Utilisez la connexion en un clic ci-dessus. Une fois les informations de connexion mémorisées par Steam, actualisez la liste pour changer de compte depuis celle-ci.';
 
   @override
   String get steamSwitchNeedsLogin =>
@@ -3118,4 +3118,49 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get steamDesktopLoginWrongAccount =>
       'Steam est connecté à un autre compte. L’approbation automatique a été arrêtée.';
+
+  @override
+  String get steamClientOpen => 'Ouvrir Steam';
+
+  @override
+  String get steamSwitchLaunchFailed =>
+      'Impossible de démarrer Steam. Vérifiez le chemin d’installation et assurez-vous que Steam peut fonctionner normalement.';
+
+  @override
+  String get steamSwitchFileAccessFailed =>
+      'Impossible de sauvegarder ou de modifier les paramètres de Steam. Vérifiez les droits de lecture et d’écriture du dossier d’installation.';
+
+  @override
+  String get steamDesktopLoginSession =>
+      'Steam est ouvert. Connexion au compte sélectionné…';
+
+  @override
+  String get steamSwitchInspecting =>
+      'Vérification de Steam sur cet ordinateur';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return 'Étape : $stage ; code d’erreur : $code ; Windows : $systemError.';
+  }
+
+  @override
+  String get approveScreenBusy =>
+      'Une autre capture d’écran est en cours. Terminez-la ou annulez-la d’abord.';
+
+  @override
+  String get approveScreenDisplayChanged =>
+      'La disposition des écrans a changé. Sélectionnez à nouveau la zone du code QR.';
+
+  @override
+  String get approveScreenRegionTooLarge =>
+      'La zone sélectionnée est trop grande. Sélectionnez uniquement la zone du code QR.';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return 'Impossible de capturer l’écran. Réessayez. Détails de l’erreur : $detail.';
+  }
 }

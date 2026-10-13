@@ -97,7 +97,8 @@ shown above while retaining the existing skin styles.
   **Open Steam and sign in** from the overview, Settings or the right-click menu.
   The app requests a normal Steam restart, backs up settings before editing,
   and can approve the QR code from the verified local Steam sign-in window for
-  this attempt. A usable account session is required; the result is verified
+  this attempt. Steam opens before checking the session/network needed for QR
+  approval; **Open Steam** also works without an imported account. The result is verified
   against the Steam client's current local account. Manual QR selection and
   remembered-account switching remain available. Images are decoded locally
   in memory. See the
@@ -240,7 +241,7 @@ Requires the Flutter SDK (3.44.x). See `app/README.md` for details.
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1520 tests
+flutter test                       # 1542 tests
 flutter run -d linux               # or windows / macos
 
 # Android ships in two flavors (play / cn); a build without --flavor fails.

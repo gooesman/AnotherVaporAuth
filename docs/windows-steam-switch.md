@@ -19,10 +19,17 @@ published through the [fork release process](fork-releases.md).
 
 Open an account's overview and choose **Switch Steam account**, or use the
 account menu / Settings entry. Select the intended GooeSteamKit account and
-choose **Open Steam and sign in**. Exit running games first. The app checks the
-account session before requesting a normal Steam restart, and backs up local
-Steam settings before changing them. A remembered account can sign in directly;
-an unremembered account opens Steam's sign-in window.
+choose **Open Steam and sign in**. Exit running games first. The app first
+requests a local Steam start or normal restart, backing up settings before
+changing them. It then renews the account session for QR approval. A missing
+session, unavailable network or failed capture initialization does not block
+the local launch. A remembered account can sign in directly; an unremembered
+account opens Steam's sign-in window.
+
+The separate **Open Steam** button launches the selected installation without
+an imported account or online session and without editing account selection.
+Failures distinguish launch, configuration access and online approval, with
+safe stage/error identifiers and Windows error numbers for troubleshooting.
 
 For QR approval, the app accepts only a foreground, visible, unobscured sign-in
 window belonging to the verified Steam installation and a process started for
@@ -40,8 +47,9 @@ An uncertain approval response is not retried; the app only continues checking
 the client's account and reports an unconfirmed result if it cannot verify it.
 **Stop automatic approval**, locking the vault, removing/changing the selected
 account or leaving the page prevents further approval. It cannot revoke a request
-already submitted to Steam. A usable account session and authenticator secret
-are required; an offline token alone cannot authorize this flow.
+already submitted to Steam. QR approval requires a usable account session and
+authenticator secret; an offline token alone cannot authorize a login. These
+requirements do not apply to simply opening Steam.
 
 ## Sign in by selecting Steam's QR code on screen
 
@@ -55,7 +63,9 @@ remembered that account on this PC.
 2. In GooeSteamKit choose the intended account, then **Select a QR code on screen**.
 3. The app briefly hides. Drag around the complete QR code and release; Esc or
    right-click cancels. The selector supports multiple monitors and follows
-   the current skin's accent color.
+   the current skin's accent color. The app suppresses its hide transition and
+   waits for desktop composition before sampling. The selector composes the
+   dimmed background and selection offscreen before presenting one frame.
 4. The app decodes the selection locally, shows the chosen account and Steam's
    login details, and waits for approval. Steam then completes its own sign-in.
 
@@ -66,9 +76,16 @@ the account also needs a usable Steam login session in GooeSteamKit. The same sc
 offers re-login when that session is missing. Existing remembered-account
 switching remains available below this card.
 
-Synthetic QR images cover scale, rotation and dark backgrounds; UI tests cover
-confirmation and account changes. Real desktop selection, mixed-DPI displays,
-and an actual Steam sign-in still require a manual preview check.
+The decoder copies platform replies into its own writable buffer, so clearing
+working pixels after a scan cannot overwrite a read-only engine reply or turn a
+successful decode into an error. Busy selectors, display changes and oversized
+selections have specific messages; other failures retain safe diagnostic codes.
+No diagnostic includes raw native messages, screenshot pixels or login links.
+
+Synthetic QR images cover scale, rotation, dark backgrounds and the actual
+read-only platform-message format; UI tests cover confirmation and account
+changes. Physical mixed-DPI displays and an actual Steam sign-in still require
+a manual check on the user's setup.
 
 ## Account overview and Android preview additions
 
@@ -385,10 +402,13 @@ send Steam credentials to GitHub.
 
 ## Validation
 
-The automated tests use synthetic accounts, files, and a fake Windows bridge.
-They cover configuration preservation, shutdown timeout, missing credentials,
+The Dart tests use synthetic accounts and files, covering configuration
+preservation, shutdown timeout, missing credentials, offline local launch,
 partial failures, rollback, concurrent changes, and UI cancellation/selection.
-The Windows preview workflow analyzes, tests, and compiles the full application.
+Windows native regressions compile the production bridge and selector code,
+using temporary synthetic Steam executables and an isolated, never-visible
+desktop with generated pixels. They do not read real account files or approve
+real logins. The preview workflow runs these checks and builds both platforms.
 
 Real two-account switching, expired credentials, and behavior after future
 Steam client updates still require a manual check on a suitable Steam setup.

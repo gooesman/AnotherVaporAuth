@@ -1240,6 +1240,7 @@ void HandleMethod(const flutter::MethodCall<Value>& call,
 
 }  // namespace
 
+#ifndef STEAM_CLIENT_BRIDGE_NATIVE_TEST
 SteamClientBridge::SteamClientBridge(flutter::BinaryMessenger* messenger)
     : channel_(std::make_unique<flutter::MethodChannel<Value>>(
           messenger, "ava/steam_client", &flutter::StandardMethodCodec::GetInstance())) {
@@ -1249,3 +1250,4 @@ SteamClientBridge::SteamClientBridge(flutter::BinaryMessenger* messenger)
 SteamClientBridge::~SteamClientBridge() {
   channel_->SetMethodCallHandler(nullptr);
 }
+#endif

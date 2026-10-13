@@ -31,7 +31,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'The selected GooeSteamKit account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.';
+      'The selected account has no sign-in record on this PC. Use the one-click sign-in above, then refresh after Steam remembers the account to switch from the list below.';
 
   @override
   String get steamSwitchNeedsLogin =>
@@ -3078,4 +3078,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get steamDesktopLoginWrongAccount =>
       'Steam is signed in to a different account. Automatic approval has stopped.';
+
+  @override
+  String get steamClientOpen => 'Open Steam';
+
+  @override
+  String get steamSwitchLaunchFailed =>
+      'Steam could not start. Check the installation path and make sure Steam can run normally.';
+
+  @override
+  String get steamSwitchFileAccessFailed =>
+      'Could not back up or change Steam settings. Check read and write permissions for the installation folder.';
+
+  @override
+  String get steamDesktopLoginSession =>
+      'Steam is open. Connecting to the selected account…';
+
+  @override
+  String get steamSwitchInspecting => 'Checking Steam on this PC';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return 'Stage: $stage; error code: $code; Windows: $systemError.';
+  }
+
+  @override
+  String get approveScreenBusy =>
+      'Another screen capture is in progress. Finish or cancel it first.';
+
+  @override
+  String get approveScreenDisplayChanged =>
+      'The display layout has changed. Select the QR code area again.';
+
+  @override
+  String get approveScreenRegionTooLarge =>
+      'The selected area is too large. Select only the QR code area.';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return 'Could not capture the screen. Try again. Error details: $detail.';
+  }
 }

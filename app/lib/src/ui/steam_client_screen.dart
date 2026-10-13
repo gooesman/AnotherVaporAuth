@@ -337,6 +337,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
         setState(() {
           _desktopOutcome = result.outcome;
           _backupPath = result.backupPath;
+          _error = result.diagnostic;
         });
       }
     } catch (error) {
@@ -362,6 +363,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
 
   String _desktopStageText(AppLocalizations l) => switch (_desktopStage) {
     DesktopLoginStage.preparing => l.steamDesktopLoginPreparing,
+    DesktopLoginStage.connecting => l.steamDesktopLoginSession,
     DesktopLoginStage.waitingQr => l.steamDesktopLoginWaitingQr,
     DesktopLoginStage.approving => l.steamDesktopLoginApproving,
     DesktopLoginStage.waitingAccount => l.steamDesktopLoginWaitingAccount,
@@ -374,8 +376,36 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
     DesktopLoginOutcome.approvedUnconfirmed => l.steamDesktopLoginUnconfirmed,
     DesktopLoginOutcome.cancelled => l.steamDesktopLoginCancelled,
     DesktopLoginOutcome.differentAccount => l.steamDesktopLoginWrongAccount,
+    DesktopLoginOutcome.sessionRequired => l.steamSwitchQrNeedsSession,
     null => '',
   };
+
+  Future<void> _openSteam() async {
+    final path = _path;
+    if (_loading || _switching || path == null) return;
+    setState(() {
+      _switching = true;
+      _stage = SteamSwitchStage.starting;
+      _desktopOutcome = null;
+      _error = null;
+      _launched = false;
+      _backupPath = null;
+    });
+    try {
+      await ref.read(steamClientServiceProvider).open(path);
+      if (mounted) setState(() => _launched = true);
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _switching = false;
+          _stage = null;
+        });
+        await _refreshStatus();
+      }
+    }
+  }
 
   bool _isCurrentAccount(SteamClientAccount account) =>
       !_statusLoading &&
@@ -539,8 +569,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
                     !_switching &&
                     _path != null &&
                     selected != null &&
-                    selected.session.hasTokens &&
-                    (selected.sharedSecret?.isNotEmpty ?? false)
+                    selected.steamId > 0
                 ? () => _loginDesktop(selected.steamId)
                 : null,
             icon: const Icon(Icons.login),
@@ -603,12 +632,34 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
       'account_missing' || 'account_changed' => l.steamSwitchNoMatch,
       'credentials_not_saved' => l.steamSwitchNeedsLogin,
       'shutdown_failed' || 'shutdown_timeout' => l.steamSwitchCloseFailed,
+      'launch_failed' => l.steamSwitchLaunchFailed,
+      'backup_failed' || 'write_failed' => l.steamSwitchFileAccessFailed,
       'busy' => l.steamSwitchBusy,
       'session_expired' => l.sessionExpired,
       'identity_mismatch' => l.loginAccountMismatch,
       'concurrent_change' => l.steamSwitchChanged,
       _ => l.steamSwitchFailed,
     };
+  }
+
+  String? _errorDetails(AppLocalizations l, Object error) {
+    if (error is! SteamClientException || error.stage == null) return null;
+    final stage = switch (error.stage) {
+      'stopping' => l.steamSwitchStopping,
+      'backingUp' => l.steamSwitchBackingUp,
+      'configuring' => l.steamSwitchConfiguring,
+      'starting' => l.steamSwitchStarting,
+      'connecting' => l.steamDesktopLoginSession,
+      'capture' => l.steamDesktopLoginWaitingQr,
+      'approving' => l.steamDesktopLoginApproving,
+      'preparing' => l.steamDesktopLoginPreparing,
+      _ => l.steamSwitchInspecting,
+    };
+    return l.steamSwitchErrorDetails(
+      stage,
+      error.nativeCode ?? error.code,
+      '${error.win32Error ?? '—'}',
+    );
   }
 
   String _stageText(AppLocalizations l) => switch (_stage) {
@@ -661,6 +712,15 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
           padding: context.rSafeInsets(all: 24),
           children: [
             _statusCard(l, avaAccounts),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const ValueKey('steam-client-open'),
+              onPressed: !_loading && !_switching && _path != null
+                  ? _openSteam
+                  : null,
+              icon: const Icon(Icons.open_in_new),
+              label: Text(l.steamClientOpen),
+            ),
             const SizedBox(height: 12),
             _qrLoginCard(l, avaAccounts, selectedAva),
             const SizedBox(height: 24),
@@ -776,6 +836,13 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
                 _errorText(l, _error!),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
+              if (_errorDetails(l, _error!) case final String details) ...[
+                const SizedBox(height: 8),
+                SelectableText(
+                  details,
+                  key: const ValueKey('steam-client-error-details'),
+                ),
+              ],
             ],
             if (_backupPath != null) ...[
               const SizedBox(height: 12),

@@ -9,7 +9,13 @@ import 'screen_qr_capture.dart';
 import 'steam_client_service.dart';
 import 'steam_request_scope.dart';
 
-enum DesktopLoginStage { preparing, waitingQr, approving, waitingAccount }
+enum DesktopLoginStage {
+  preparing,
+  connecting,
+  waitingQr,
+  approving,
+  waitingAccount,
+}
 
 enum DesktopLoginOutcome {
   loggedIn,
@@ -17,12 +23,14 @@ enum DesktopLoginOutcome {
   approvedUnconfirmed,
   cancelled,
   differentAccount,
+  sessionRequired,
 }
 
 class DesktopLoginResult {
-  const DesktopLoginResult(this.outcome, {this.backupPath});
+  const DesktopLoginResult(this.outcome, {this.backupPath, this.diagnostic});
   final DesktopLoginOutcome outcome;
   final String? backupPath;
+  final SteamClientException? diagnostic;
 }
 
 class DesktopLoginQr {
@@ -122,6 +130,8 @@ class DesktopSteamLogin {
     int? attempt;
     String? backupPath;
     var submitted = false;
+    var stage = 'inspecting';
+    SteamClientException? diagnostic;
     final scope =
         requestScope ?? SteamRequestScope(timeout: const Duration(seconds: 20));
     bool current() =>
@@ -129,8 +139,11 @@ class DesktopSteamLogin {
         account.steamId == steamId &&
         account.sharedSecret == secret &&
         account.accountName == accountName;
-    DesktopLoginResult done(DesktopLoginOutcome outcome) =>
-        DesktopLoginResult(outcome, backupPath: backupPath);
+    DesktopLoginResult done(DesktopLoginOutcome outcome) => DesktopLoginResult(
+      outcome,
+      backupPath: backupPath,
+      diagnostic: diagnostic,
+    );
     DesktopLoginResult cancelled() => done(
       submitted
           ? DesktopLoginOutcome.approvedUnconfirmed
@@ -140,14 +153,41 @@ class DesktopSteamLogin {
       onProgress?.call(stage);
     }
 
+    Future<DesktopLoginResult?> verifyLocalAccount() async {
+      if (!current()) return cancelled();
+      SteamClientStatus status;
+      try {
+        status = await steam.status(path);
+      } catch (_) {
+        // Identity is advisory here; unknown must never be promoted to success.
+        return current() ? null : cancelled();
+      }
+      if (!current()) return cancelled();
+      if (!status.running || status.activeSteamId == null) return null;
+      diagnostic = null;
+      return done(
+        status.activeSteamId == '$steamId'
+            ? DesktopLoginOutcome.loggedIn
+            : DesktopLoginOutcome.differentAccount,
+      );
+    }
+
     try {
       if (!current() || steamId <= 0) {
         return done(DesktopLoginOutcome.cancelled);
       }
       progress(DesktopLoginStage.preparing);
-      final initial = await steam.status(path);
+      SteamClientStatus? initial;
+      try {
+        initial = await steam.status(path);
+      } on SteamClientException catch (error) {
+        if (error.code != 'status_unavailable') rethrow;
+        // Advisory identity detection must not prevent a local launch. The
+        // transaction still performs its own strict running-process checks.
+      }
       if (!current()) return cancelled();
-      if (initial.running && initial.activeSteamId == '$steamId') {
+      if (initial?.running == true && initial?.activeSteamId == '$steamId') {
+        stage = 'starting';
         await steam.open(path);
         final checked = await steam.status(path);
         if (!current()) return cancelled();
@@ -157,29 +197,48 @@ class DesktopSteamLogin {
               : DesktopLoginOutcome.manualRequired,
         );
       }
-      // Renew/persist before disrupting Steam. No working session means that
-      // one-click approval cannot be promised, so leave the client untouched.
-      if (!await scope.run(() => ensureSession(account))) {
-        throw const SteamClientException(
-          'session_expired',
-          'Refresh this account session.',
+      stage = 'capture';
+      try {
+        attempt = await capture.begin(path);
+      } catch (error) {
+        diagnostic = SteamClientException.fromFailure(
+          error,
+          code: 'capture_failed',
+          stage: stage,
         );
       }
       if (!current()) return cancelled();
-      if (!qrApprovalIdentityMatches(account) ||
-          secret == null ||
-          secret.isEmpty) {
+      stage = 'preparing';
+      backupPath = (await steam.prepareLogin(
+        path: path,
+        steamId: '$steamId',
+      )).backupPath;
+      if (!current()) return cancelled();
+      // A remembered desktop session can sign in without any AVA web session.
+      // Check the actual client before prompting for or renewing that session.
+      final localAccount = await verifyLocalAccount();
+      if (localAccount != null) return localAccount;
+      // Opening/switching Steam is local and must not depend on the network,
+      // a usable access token, or the capture bridge. Approval is subsequent.
+      stage = 'connecting';
+      progress(DesktopLoginStage.connecting);
+      if (!account.session.hasTokens || secret == null || secret.isEmpty) {
+        return done(DesktopLoginOutcome.sessionRequired);
+      }
+      if (!await scope.run(() => ensureSession(account))) {
+        if (!current()) return cancelled();
+        final localAccount = await verifyLocalAccount();
+        if (localAccount != null) return localAccount;
+        return done(DesktopLoginOutcome.sessionRequired);
+      }
+      if (!current()) return cancelled();
+      if (!qrApprovalIdentityMatches(account)) {
         throw const SteamClientException(
           'identity_mismatch',
           'Account identity changed.',
         );
       }
-      attempt = await capture.begin(path);
-      if (!current()) return cancelled();
-      backupPath = (await steam.prepareLogin(
-        path: path,
-        steamId: '$steamId',
-      )).backupPath;
+      if (attempt == null) return done(DesktopLoginOutcome.manualRequired);
       final clock = Stopwatch()..start();
       progress(DesktopLoginStage.waitingQr);
       while (clock.elapsed < timeout) {
@@ -194,9 +253,11 @@ class DesktopSteamLogin {
           );
         }
         if (!submitted && status.running) {
+          stage = 'capture';
           final qr = await capture.read(path, attempt);
           if (!current()) return cancelled();
           if (qr != null) {
+            stage = 'connecting';
             final info = await scope.run(
               () => approval.sessionInfo(account, qr.challenge.clientId),
             );
@@ -222,6 +283,7 @@ class DesktopSteamLogin {
               );
             }
             progress(DesktopLoginStage.approving);
+            stage = 'approving';
             if (!current()) return cancelled();
             if (clock.elapsed >= timeout) {
               return done(DesktopLoginOutcome.manualRequired);
@@ -256,12 +318,25 @@ class DesktopSteamLogin {
         error.message,
         backupPath: error.backupPath ?? backupPath,
         rollbackIncomplete: error.rollbackIncomplete,
+        stage: error.stage ?? stage,
+        nativeCode: error.nativeCode,
+        win32Error: error.win32Error,
       );
-    } catch (_) {
+    } catch (error) {
       if (!current()) return cancelled();
       if (submitted) return done(DesktopLoginOutcome.approvedUnconfirmed);
+      if (backupPath != null) {
+        final localAccount = await verifyLocalAccount();
+        if (localAccount != null) return localAccount;
+      }
+      diagnostic = SteamClientException.fromFailure(
+        error,
+        code: stage == 'connecting' ? 'session_failed' : 'operation_failed',
+        stage: stage,
+        backupPath: backupPath,
+      );
       if (backupPath != null) return done(DesktopLoginOutcome.manualRequired);
-      rethrow;
+      throw diagnostic!;
     } finally {
       scope.cancel();
       if (attempt != null) {

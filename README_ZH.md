@@ -103,7 +103,8 @@ release 优化构建。现有 AVA Fork 可直接覆盖更新为 GooeSteamKit，�
   选择账号后“打开 Steam 并登录”，正常退出并重启 Steam，修改前备份设置。
   使用可用会话自动批准本次新开的、已核实来源的本机 Steam 登录窗口二维码，
   再核验客户端当前账号；截图只在本机内存解码。保留拖框扫码和本机已记住账号的切换方式。
-  无可用会话时可先重新登录。见[试用说明](docs/windows-steam-switch.md)。
+  先打开本机 Steam，再处理扫码批准所需的在线会话；会话或网络失败不阻止启动。
+  独立“打开 Steam”按钮无需导入账号。见[试用说明](docs/windows-steam-switch.md)。
 
 - **maFile 兼容** —— 读写旧版 `.maFile` 格式（PBKDF2/SHA1 + AES-256-CBC），老账户零成本迁移，随时可导出。还能导入整个 Steam Desktop Authenticator 的 `maFiles/` 文件夹——**包括加密的**（把 `manifest.json` 和 `.maFile` 一起选中；salt 与 IV 存在 manifest 里，孤立的加密 maFile 谁也解不开）——以及其他工具的变体（Steam++ / Watt Toolkit），包括没有 SteamID 的导出（作为「仅验证码」账户导入，验证码离线可用）。
 - **Steam Guard 验证码** —— 每账户列表 + 实时倒计时环、点按复制；点名称在 用户名 / 昵称 / ID 间切换。显示方式同时应用于首页账户列表和当前账户面板，在本机保存，电脑和手机重启应用后都会恢复上次选择。
@@ -163,7 +164,7 @@ Authenticator —— 仅供参考存档，AVA 与它不共享任何代码。
 ```sh
 cd app
 flutter pub get --enforce-lockfile
-flutter test                       # 1520 项测试
+flutter test                       # 1542 项测试
 flutter run -d linux               # 或 windows / macos
 
 # Android 分 play / cn 两个 flavor，不带 --flavor 的构建会直接失败。

@@ -146,7 +146,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamSwitchNoMatch.
   ///
   /// In en, this message translates to:
-  /// **'The selected GooeSteamKit account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.'**
+  /// **'The selected account has no sign-in record on this PC. Use the one-click sign-in above, then refresh after Steam remembers the account to switch from the list below.'**
   String get steamSwitchNoMatch;
 
   /// No description provided for @steamSwitchNeedsLogin.
@@ -5398,6 +5398,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Steam is signed in to a different account. Automatic approval has stopped.'**
   String get steamDesktopLoginWrongAccount;
+
+  /// No description provided for @steamClientOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Steam'**
+  String get steamClientOpen;
+
+  /// No description provided for @steamSwitchLaunchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam could not start. Check the installation path and make sure Steam can run normally.'**
+  String get steamSwitchLaunchFailed;
+
+  /// No description provided for @steamSwitchFileAccessFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not back up or change Steam settings. Check read and write permissions for the installation folder.'**
+  String get steamSwitchFileAccessFailed;
+
+  /// No description provided for @steamDesktopLoginSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is open. Connecting to the selected account…'**
+  String get steamDesktopLoginSession;
+
+  /// No description provided for @steamSwitchInspecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking Steam on this PC'**
+  String get steamSwitchInspecting;
+
+  /// Safe diagnostics only: an allowlisted stage and error code, plus a Win32 error number or a placeholder when unavailable. Never pass raw exception text, paths or account data.
+  ///
+  /// In en, this message translates to:
+  /// **'Stage: {stage}; error code: {code}; Windows: {systemError}.'**
+  String steamSwitchErrorDetails(String stage, String code, String systemError);
+
+  /// No description provided for @approveScreenBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Another screen capture is in progress. Finish or cancel it first.'**
+  String get approveScreenBusy;
+
+  /// No description provided for @approveScreenDisplayChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The display layout has changed. Select the QR code area again.'**
+  String get approveScreenDisplayChanged;
+
+  /// No description provided for @approveScreenRegionTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected area is too large. Select only the QR code area.'**
+  String get approveScreenRegionTooLarge;
+
+  /// Screen capture failure with safe diagnostics containing only allowlisted error codes, stages and Win32 error numbers. Never pass raw exception text, paths or account data.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture the screen. Try again. Error details: {detail}.'**
+  String approveScreenFailedDetail(String detail);
 }
 
 class _AppLocalizationsDelegate

@@ -17,6 +17,9 @@ class ScreenQrCapture {
   ScreenQrCapture& operator=(const ScreenQrCapture&) = delete;
 
  private:
+#ifdef AVA_SCREEN_QR_CAPTURE_TESTING
+  friend struct ScreenQrCaptureTestPeer;
+#endif
   struct Impl;
   std::unique_ptr<Impl> impl_;
 };

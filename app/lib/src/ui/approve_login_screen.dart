@@ -272,8 +272,18 @@ class _ApproveLoginScreenState extends ConsumerState<ApproveLoginScreen> {
     } on ScreenQrNotFound {
       if (mounted) setState(() => _message = l.approveScreenNoCode);
       return;
-    } catch (_) {
-      if (mounted) setState(() => _message = l.approveScreenFailed);
+    } catch (error) {
+      final failure = ScreenQrFailure.fromError(error);
+      if (mounted) {
+        setState(
+          () => _message = switch (failure.code) {
+            'capture_busy' => l.approveScreenBusy,
+            'display_changed' => l.approveScreenDisplayChanged,
+            'region_too_large' => l.approveScreenRegionTooLarge,
+            _ => l.approveScreenFailedDetail(failure.diagnostic),
+          },
+        );
+      }
       return;
     } finally {
       if (mounted) setState(() => _busy = false);

@@ -6,7 +6,7 @@
   "steamSwitchNotFound": "No se encontró Steam. Selecciona steam.exe para indicar dónde está instalado.",
   "steamSwitchBrowse": "Seleccionar steam.exe",
   "steamSwitchNoAccounts": "No se encontraron cuentas de Steam guardadas en este PC. Inicia sesión en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.",
-  "steamSwitchNoMatch": "La cuenta seleccionada en GooeSteamKit no aparece en los registros de Steam de este PC. Inicia sesión con esa cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.",
+  "steamSwitchNoMatch": "La cuenta seleccionada aún no tiene un registro de inicio de sesión en este equipo. Usa el inicio de sesión con un clic de arriba. Cuando Steam recuerde los datos de acceso, actualiza la lista para cambiar de cuenta desde ella.",
   "steamSwitchNeedsLogin": "Inicia sesión con esta cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.",
   "steamSwitchButton": "Cambiar de cuenta",
   "steamSwitchConfirm": "Steam se cerrará y se reiniciará para iniciar sesión como {account}. Primero cierra tus juegos y espera a que termine la sincronización de las partidas guardadas en Steam Cloud. ¿Continuar?",
@@ -916,5 +916,15 @@
   "steamDesktopLoginUnconfirmed": "Se ha enviado una solicitud de aprobación del inicio de sesión, pero aún no se ha confirmado la sesión de Steam. Revisa la ventana de Steam y actualiza el estado.",
   "steamDesktopLoginCancelled": "Inicio de sesión automático detenido",
   "steamDesktopLoginCancel": "Detener la aprobación automática",
-  "steamDesktopLoginWrongAccount": "Steam tiene una sesión iniciada con otra cuenta. La aprobación automática se ha detenido."
+  "steamDesktopLoginWrongAccount": "Steam tiene una sesión iniciada con otra cuenta. La aprobación automática se ha detenido.",
+  "steamClientOpen": "Abrir Steam",
+  "steamSwitchLaunchFailed": "No se pudo iniciar Steam. Comprueba la ruta de instalación y asegúrate de que Steam pueda ejecutarse con normalidad.",
+  "steamSwitchFileAccessFailed": "No se pudo hacer una copia de seguridad ni modificar los ajustes de Steam. Comprueba los permisos de lectura y escritura de la carpeta de instalación.",
+  "steamDesktopLoginSession": "Steam está abierto. Conectando con la cuenta seleccionada…",
+  "steamSwitchInspecting": "Comprobando Steam en este equipo",
+  "steamSwitchErrorDetails": "Etapa: {stage}; código de error: {code}; Windows: {systemError}.",
+  "approveScreenBusy": "Hay otra captura de pantalla en curso. Complétala o cancélala primero.",
+  "approveScreenDisplayChanged": "La disposición de las pantallas ha cambiado. Vuelve a seleccionar el área del código QR.",
+  "approveScreenRegionTooLarge": "El área seleccionada es demasiado grande. Selecciona solo el área del código QR.",
+  "approveScreenFailedDetail": "No se pudo capturar la pantalla. Inténtalo de nuevo. Detalles del error: {detail}."
 }

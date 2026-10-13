@@ -6,7 +6,7 @@
   "steamSwitchNotFound": "找不到 Steam，請選擇 steam.exe 以指定安裝位置。",
   "steamSwitchBrowse": "選擇 steam.exe",
   "steamSwitchNoAccounts": "這台電腦尚無 Steam 登入紀錄。請先在 Steam 登入並記住登入資訊，再重新整理清單。",
-  "steamSwitchNoMatch": "GooeSteamKit 所選帳號不在這台電腦的 Steam 登入紀錄中。請先在 Steam 登入該帳號並記住登入資訊，再重新整理清單。",
+  "steamSwitchNoMatch": "所選帳號尚無本機登入紀錄。可使用上方的一鍵登入；登入並記住登入資訊後，重新整理即可從下方清單切換。",
   "steamSwitchNeedsLogin": "請先在 Steam 登入此帳號並記住登入資訊，再重新整理清單。",
   "steamSwitchButton": "切換帳號",
   "steamSwitchConfirm": "Steam 將關閉並重新啟動，以登入 {account}。請先結束遊戲，並等待 Steam 雲端存檔同步完成。是否繼續？",
@@ -986,5 +986,15 @@
   "steamDesktopLoginUnconfirmed": "已提交登入核准請求，但尚未確認 Steam 已登入。請查看 Steam 視窗後重新整理狀態。",
   "steamDesktopLoginCancelled": "已停止自動登入",
   "steamDesktopLoginCancel": "停止自動核准",
-  "steamDesktopLoginWrongAccount": "Steam 目前登入了其他帳號，已停止自動核准。"
+  "steamDesktopLoginWrongAccount": "Steam 目前登入了其他帳號，已停止自動核准。",
+  "steamClientOpen": "開啟 Steam",
+  "steamSwitchLaunchFailed": "Steam 無法啟動。請檢查安裝路徑，並確認 Steam 可以正常執行。",
+  "steamSwitchFileAccessFailed": "無法備份或修改 Steam 設定，請檢查安裝目錄的讀寫權限。",
+  "steamDesktopLoginSession": "Steam 已開啟，正在連線至所選帳號…",
+  "steamSwitchInspecting": "檢查本機 Steam",
+  "steamSwitchErrorDetails": "階段：{stage}；錯誤碼：{code}；Windows：{systemError}。",
+  "approveScreenBusy": "另一項螢幕擷取正在進行，請先完成或取消。",
+  "approveScreenDisplayChanged": "螢幕配置已變更，請重新框選。",
+  "approveScreenRegionTooLarge": "框選範圍過大，請只選取 QR 碼區域。",
+  "approveScreenFailedDetail": "無法擷取螢幕，請重試。錯誤資訊：{detail}。"
 }

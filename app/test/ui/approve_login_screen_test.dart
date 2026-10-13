@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
@@ -14,6 +13,7 @@ import 'package:ava/src/services/steam_api_client.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/approve_login_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -197,6 +197,39 @@ Future<void> _confirm(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets(
+    'screen capture errors retain safe stage details without approving',
+    (tester) async {
+      final harness = await _show(
+        tester,
+        capture: _Capture(
+          error: PlatformException(
+            code: 'capture_failed',
+            message: 'private native message',
+            details: {
+              'stage': 'snapshot',
+              'win32Error': 5,
+              'account': 'private account',
+            },
+          ),
+        ),
+      );
+      await _capture(tester);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(ApproveLoginScreen)),
+      );
+      expect(
+        find.text(
+          l.approveScreenFailedDetail('snapshot · capture_failed · Win32 5'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('private'), findsNothing);
+      expect(harness.api.calls, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'delayed account loading preserves the requested second account',
     (tester) async {

@@ -1,7 +1,7 @@
 name: ava
 description: "GooeSteamKit — a Steam authenticator and account assistant based on AVA"
 publish_to: 'none'
-version: 1.5.9+75
+version: 1.5.10+76
 
 environment:
   sdk: ^3.12.2

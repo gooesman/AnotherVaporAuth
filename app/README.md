@@ -46,7 +46,7 @@ lib/src/
 l10n/                   # ARB localizations (en, zh, zh_Hant, de, fr, es, ru)
 ```
 
-## Status (1.5.7)
+## Status (1.5.10)
 
 Implemented and statically verified end-to-end:
 
@@ -94,7 +94,10 @@ Implemented and statically verified end-to-end:
 - Add authenticator (phone → SMS → revocation confirm)
 - **Move an existing authenticator to this device** (`RemoveAuthenticatorViaChallenge*`;
   no 15-day trade hold, unlike removing it on the website)
-- **QR approve** external sign-ins (direction B; scan on mobile / paste on desktop)
+- **QR approve** external sign-ins (direction B; camera on mobile, screen-region
+  selection or paste on desktop), with locally decoded in-memory images.
+- **Windows Steam launch** independent of an online session; one-click account
+  login opens Steam first, then approves a verified local login-window challenge.
 - **Device sessions** — list every signed-in device/browser and remotely sign one
   out (`IAuthenticationService/EnumerateTokens` + `RevokeRefreshToken`)
 - **Redeem Steam product keys** — the store's own `/account/ajaxregisterkey/`
@@ -137,7 +140,7 @@ Implemented and statically verified end-to-end:
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Last recorded verification: `flutter analyze` clean, **1520 tests pass** (crypto RFC vectors,
+Last recorded verification: `flutter analyze` clean, **1542 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -175,7 +178,7 @@ Do not uninstall the old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1520 tests
+flutter test                       # 1542 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

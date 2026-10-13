@@ -31,7 +31,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'Выбранного в GooeSteamKit аккаунта нет в записях Steam на этом ПК. Войдите в этот аккаунт в Steam, включите сохранение данных входа, затем обновите список.';
+      'Для выбранного аккаунта ещё нет записи о входе на этом компьютере. Используйте вход одним нажатием выше. Когда Steam запомнит данные входа, обновите список, чтобы переключаться между аккаунтами в нём.';
 
   @override
   String get steamSwitchNeedsLogin =>
@@ -3166,4 +3166,48 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get steamDesktopLoginWrongAccount =>
       'В Steam выполнен вход в другой аккаунт. Автоматическое подтверждение остановлено.';
+
+  @override
+  String get steamClientOpen => 'Открыть Steam';
+
+  @override
+  String get steamSwitchLaunchFailed =>
+      'Не удалось запустить Steam. Проверьте путь установки и убедитесь, что Steam запускается без ошибок.';
+
+  @override
+  String get steamSwitchFileAccessFailed =>
+      'Не удалось создать резервную копию или изменить настройки Steam. Проверьте права на чтение и запись в папке установки.';
+
+  @override
+  String get steamDesktopLoginSession =>
+      'Steam открыт. Подключение к выбранному аккаунту…';
+
+  @override
+  String get steamSwitchInspecting => 'Проверка Steam на этом компьютере';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return 'Этап: $stage; код ошибки: $code; Windows: $systemError.';
+  }
+
+  @override
+  String get approveScreenBusy =>
+      'Другой захват экрана уже выполняется. Сначала завершите или отмените его.';
+
+  @override
+  String get approveScreenDisplayChanged =>
+      'Расположение экранов изменилось. Выберите область QR-кода заново.';
+
+  @override
+  String get approveScreenRegionTooLarge =>
+      'Выбранная область слишком велика. Выберите только область QR-кода.';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return 'Не удалось захватить экран. Повторите попытку. Сведения об ошибке: $detail.';
+  }
 }

@@ -71,6 +71,44 @@ void main() {
     }
   });
 
+  test('decoded region owns writable pixels without modifying engine data', () {
+    final original = Uint8List.fromList([1, 2, 3, 255]).asUnmodifiableView();
+    final region = ScreenQrRegion.fromMap({
+      'width': 1,
+      'height': 1,
+      'bgra': original,
+    });
+    region.bgra.fillRange(0, region.bgra.length, 0);
+    expect(region.bgra, [0, 0, 0, 0]);
+    expect(original, [1, 2, 3, 255]);
+  });
+
+  test('capture diagnostics discard arbitrary native messages and details', () {
+    final failure = ScreenQrFailure.fromError(
+      PlatformException(
+        code: 'capture_failed',
+        message: 'secret screenshot path',
+        details: {'stage': 'snapshot', 'win32Error': 5, 'token': 'private'},
+      ),
+    );
+    expect(failure.diagnostic, 'snapshot · capture_failed · Win32 5');
+    for (final invalid in [-1, 0x100000000, 'private']) {
+      expect(
+        ScreenQrFailure.fromError(
+          PlatformException(
+            code: 'private_token',
+            details: {'stage': 'private', 'win32Error': invalid},
+          ),
+        ).diagnostic,
+        'capture_failed',
+      );
+    }
+    expect(
+      ScreenQrFailure.fromError(const FormatException('private')).diagnostic,
+      'decode · invalid_pixels',
+    );
+  });
+
   test(
     'native cancellation returns no QR and passes localized UI options',
     () async {
@@ -105,6 +143,40 @@ void main() {
     expect(
       await service.capture(instruction: 'Select', accent: 0xff3366ff),
       code,
+    );
+  });
+
+  test(
+    'real engine read-only replies do not turn decoded QR into failure',
+    () async {
+      final region = _qr(code);
+      messenger.setMockMessageHandler(channel.name, (_) async {
+        // Flutter's engine wraps platform replies in an unmodifiable ByteData;
+        // setMockMethodCallHandler alone does not reproduce that boundary.
+        return const StandardMethodCodec().encodeSuccessEnvelope({
+          'width': region.width,
+          'height': region.height,
+          'bgra': region.bgra,
+        }).asUnmodifiableView();
+      });
+      expect(
+        await service.capture(instruction: 'Select', accent: 0xff3366ff),
+        code,
+      );
+    },
+  );
+
+  test('read-only blank capture preserves the retryable QR error', () async {
+    messenger.setMockMessageHandler(channel.name, (_) async {
+      return const StandardMethodCodec().encodeSuccessEnvelope({
+        'width': 64,
+        'height': 64,
+        'bgra': Uint8List(64 * 64 * 4),
+      }).asUnmodifiableView();
+    });
+    await expectLater(
+      service.capture(instruction: 'Select', accent: 0xff3366ff),
+      throwsA(isA<ScreenQrNotFound>()),
     );
   });
 

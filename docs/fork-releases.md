@@ -30,7 +30,7 @@ Android 应用名称与手机桌面标签统一为 GooeSteamKit。保持现有 A
 首次使用前，需要把发布工作流合入本 Fork 的默认分支，GitHub 才会提供该工作流的
 手动运行入口。预览分支的构建成功不等于已经发布稳定版本。
 
-1. 运行 **Windows and Android preview**，等待整个 run 成功。该流程会检查、构建两端，并生成 Windows 单文件安装器。现有 Windows 目录 artifact 和 Android APK artifact 保留；额外生成 `AVA-windows-installer-preview-<SHA>` 安装器 artifact。
+1. 运行 **Windows and Android preview**，等待整个 run 成功。该流程会检查、构建两端，并生成 Windows 单文件安装器。Windows 构建后还会运行实际原生桥接与截图回归测试，使用临时模拟程序和隔离桌面，不接触真实账户；测试程序单独保存为 `AVA-windows-native-tests-<SHA>`，不放进安装包。现有 Windows 目录 artifact 和 Android APK artifact 保留；额外生成 `AVA-windows-installer-preview-<SHA>` 安装器 artifact。
 2. 在 artifact 保留期（14 天）内检查安装包。两个安装包 artifact 分别包含 `windows-preview.json` / `android-preview.json`，记录仓库、源工作流、run ID、run number、attempt、提交、版本、构建号、文件名、大小和 SHA-256。Android 还记录已验证的包名与证书摘要。
 3. 手动运行 **Promote GooeSteamKit preview**，填写成功预览的 run ID 和这次版本的更新说明。此操作会发布稳定版本并设为 Latest；只在确实准备发布时执行。
 

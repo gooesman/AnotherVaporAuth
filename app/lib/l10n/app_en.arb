@@ -6,7 +6,7 @@
   "steamSwitchNotFound": "Steam was not found. Choose steam.exe to locate your installation.",
   "steamSwitchBrowse": "Choose steam.exe",
   "steamSwitchNoAccounts": "No saved Steam accounts were found on this PC. Sign in to Steam, enable remembering your sign-in details, then refresh.",
-  "steamSwitchNoMatch": "The selected GooeSteamKit account is not in this PC’s Steam records. Sign in to that account in Steam, enable remembering your sign-in details, then refresh.",
+  "steamSwitchNoMatch": "The selected account has no sign-in record on this PC. Use the one-click sign-in above, then refresh after Steam remembers the account to switch from the list below.",
   "steamSwitchNeedsLogin": "Sign in to this account in Steam and enable remembering your sign-in details, then refresh.",
   "steamSwitchButton": "Switch account",
   "steamSwitchConfirm": "Steam will close and restart to sign in as {account}. First close your games and wait for Steam Cloud saves to finish syncing. Continue?",
@@ -1518,5 +1518,29 @@
   "steamDesktopLoginUnconfirmed": "A sign-in approval request was submitted, but Steam sign-in has not been confirmed. Check the Steam window, then refresh the status.",
   "steamDesktopLoginCancelled": "Automatic sign-in stopped",
   "steamDesktopLoginCancel": "Stop automatic approval",
-  "steamDesktopLoginWrongAccount": "Steam is signed in to a different account. Automatic approval has stopped."
+  "steamDesktopLoginWrongAccount": "Steam is signed in to a different account. Automatic approval has stopped.",
+  "steamClientOpen": "Open Steam",
+  "steamSwitchLaunchFailed": "Steam could not start. Check the installation path and make sure Steam can run normally.",
+  "steamSwitchFileAccessFailed": "Could not back up or change Steam settings. Check read and write permissions for the installation folder.",
+  "steamDesktopLoginSession": "Steam is open. Connecting to the selected account…",
+  "steamSwitchInspecting": "Checking Steam on this PC",
+  "steamSwitchErrorDetails": "Stage: {stage}; error code: {code}; Windows: {systemError}.",
+  "@steamSwitchErrorDetails": {
+    "description": "Safe diagnostics only: an allowlisted stage and error code, plus a Win32 error number or a placeholder when unavailable. Never pass raw exception text, paths or account data.",
+    "placeholders": {
+      "stage": { "type": "String" },
+      "code": { "type": "String" },
+      "systemError": { "type": "String" }
+    }
+  },
+  "approveScreenBusy": "Another screen capture is in progress. Finish or cancel it first.",
+  "approveScreenDisplayChanged": "The display layout has changed. Select the QR code area again.",
+  "approveScreenRegionTooLarge": "The selected area is too large. Select only the QR code area.",
+  "approveScreenFailedDetail": "Could not capture the screen. Try again. Error details: {detail}.",
+  "@approveScreenFailedDetail": {
+    "description": "Screen capture failure with safe diagnostics containing only allowlisted error codes, stages and Win32 error numbers. Never pass raw exception text, paths or account data.",
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  }
 }

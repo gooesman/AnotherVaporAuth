@@ -51,11 +51,69 @@ class SteamClientException implements Exception {
     this.message, {
     this.backupPath,
     this.rollbackIncomplete = false,
+    this.stage,
+    this.nativeCode,
+    this.win32Error,
   });
   final String code;
   final String message;
   final String? backupPath;
   final bool rollbackIncomplete;
+  final String? stage;
+  final String? nativeCode;
+  final int? win32Error;
+
+  /// Keep actionable native diagnostics, never platform messages, URLs,
+  /// account names, token-bearing exception text, or file contents.
+  factory SteamClientException.fromFailure(
+    Object error, {
+    required String code,
+    required String stage,
+    String? backupPath,
+    bool rollbackIncomplete = false,
+  }) {
+    String? native;
+    int? system;
+    if (error is PlatformException) {
+      if (const {
+        'backup_security_failed',
+        'invalid_arguments',
+        'invalid_steam_path',
+        'invalid_text',
+        'login_capture_expired',
+        'login_capture_failed',
+        'process_query_failed',
+        'registry_read_failed',
+        'registry_rollback_failed',
+        'registry_write_failed',
+        'replace_file_failed',
+        'steam_shutdown_failed',
+        'steam_start_failed',
+        'unsafe_file_path',
+      }.contains(error.code)) {
+        native = error.code;
+      }
+      final details = error.details;
+      final value = details is Map ? details['win32Error'] : null;
+      if (value is int && value > 0 && value <= 0xffffffff) system = value;
+    } else if (error is FileSystemException) {
+      final value = error.osError?.errorCode;
+      if (value != null && value > 0 && value <= 0xffffffff) system = value;
+    }
+    return SteamClientException(
+      error is SteamClientException ? error.code : code,
+      'The Steam operation could not complete.',
+      stage: error is SteamClientException ? error.stage ?? stage : stage,
+      nativeCode: error is SteamClientException ? error.nativeCode : native,
+      win32Error: error is SteamClientException ? error.win32Error : system,
+      backupPath: error is SteamClientException
+          ? error.backupPath ?? backupPath
+          : backupPath,
+      rollbackIncomplete:
+          rollbackIncomplete ||
+          (error is SteamClientException && error.rollbackIncomplete),
+    );
+  }
 
   @override
   String toString() => 'SteamClientException($code): $message';
@@ -212,7 +270,7 @@ class LocalSteamClientFiles implements SteamClientFiles {
     Map<String, List<int>> originals,
   ) async {
     final root = Directory(p.join(steamPath, 'config', 'ava-switch-backups'));
-    await root.create();
+    await root.create(recursive: true);
     final directory = await root.createTemp('switch-');
     // Native ACL protection happens before any account data is written.
     await _channel.invokeMethod<void>('secureDirectory', {
@@ -293,10 +351,11 @@ class SteamClientService {
     await _validatePath(path);
     try {
       return await _platform.status(path);
-    } catch (_) {
-      throw const SteamClientException(
-        'status_unavailable',
-        'Steam runtime status could not be read.',
+    } catch (error) {
+      throw SteamClientException.fromFailure(
+        error,
+        code: 'status_unavailable',
+        stage: 'inspecting',
       );
     }
   }
@@ -354,7 +413,15 @@ class SteamClientService {
         'A Steam switch is in progress.',
       );
     }
-    await _platform.start(path);
+    try {
+      await _platform.start(path);
+    } catch (error) {
+      throw SteamClientException.fromFailure(
+        error,
+        code: 'launch_failed',
+        stage: 'starting',
+      );
+    }
   }
 
   Future<SteamSwitchResult> _switchAccount({
@@ -377,8 +444,10 @@ class SteamClientService {
     SteamAutoLogin? newRegistry;
     var registryAttempted = false;
     var failureCode = 'operation_failed';
+    var failureStage = 'inspecting';
     // A UI progress callback must never interrupt a configuration transaction.
     void progress(SteamSwitchStage stage) {
+      if (stage != SteamSwitchStage.restoring) failureStage = stage.name;
       try {
         onProgress?.call(stage);
       } catch (_) {
@@ -442,9 +511,7 @@ class SteamClientService {
             remembered ? login!.select(steamId) : login!.prompt(),
           ),
       ];
-      final backups = <String, List<int>>{
-        'loginusers.vdf': ?loginBytes,
-      };
+      final backups = <String, List<int>>{'loginusers.vdf': ?loginBytes};
       final configPath = p.join(path, 'config', 'config.vdf');
       if (await _files.exists(configPath)) {
         final original = await _files.read(configPath);
@@ -519,15 +586,10 @@ class SteamClientService {
           registryAttempted ? newRegistry : null,
         );
       }
-      throw SteamClientException(
-        error is SteamClientException
-            ? error.code
-            : error is FormatException
-            ? 'invalid_config'
-            : failureCode,
-        error is SteamClientException
-            ? error.message
-            : 'Steam could not complete the switch.',
+      throw SteamClientException.fromFailure(
+        error,
+        code: error is FormatException ? 'invalid_config' : failureCode,
+        stage: failureStage,
         backupPath: backupPath,
         rollbackIncomplete: incomplete,
       );

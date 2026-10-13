@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:ava/src/core/steam_vdf.dart';
 import 'package:ava/src/services/steam_client_service.dart';
@@ -578,6 +579,97 @@ void main() {
     expect(files.data[_loginPath], utf8.encode(_login));
     expect(files.data[_configPath], utf8.encode(_config));
   });
+
+  test(
+    'open Steam is local and never reads or edits account configuration',
+    () async {
+      await service.open(_path);
+      expect(platform.calls, ['start']);
+      expect(files.reads, 0);
+      expect(files.writes, 0);
+      expect(files.backups, isNull);
+    },
+  );
+
+  test(
+    'launch failure preserves native code number stage and rollback',
+    () async {
+      platform.onStart = () => throw PlatformException(
+        code: 'steam_start_failed',
+        message: 'private-account-token',
+        details: {'win32Error': 193, 'private': 'secret'},
+      );
+      for (final action in [
+        () => service.open(_path),
+        () => service.prepareLogin(path: _path, steamId: '76561198000000003'),
+      ]) {
+        await expectLater(
+          action(),
+          throwsA(
+            _code('launch_failed')
+                .having((e) => e.nativeCode, 'nativeCode', 'steam_start_failed')
+                .having((e) => e.win32Error, 'win32Error', 193)
+                .having((e) => e.stage, 'stage', 'starting')
+                .having(
+                  (e) => e.message,
+                  'message',
+                  isNot(contains('private-account')),
+                ),
+          ),
+        );
+      }
+      expect(files.data[_loginPath], utf8.encode(_login));
+      expect(files.data[_configPath], utf8.encode(_config));
+    },
+  );
+
+  test('diagnostics accept only known codes and bounded system integers', () {
+    for (final value in [0, -1, 0x100000000, '5', null]) {
+      final result = SteamClientException.fromFailure(
+        PlatformException(
+          code: 'secret_token',
+          message: 'private',
+          details: {'win32Error': value},
+        ),
+        code: 'launch_failed',
+        stage: 'starting',
+      );
+      expect(result.nativeCode, isNull);
+      expect(result.win32Error, isNull);
+      expect(result.message, isNot(contains('private')));
+    }
+  });
+
+  test(
+    'fresh local installation creates config and secures backup before bytes',
+    () async {
+      final root = await Directory.systemTemp.createTemp(
+        'steamkit-files-test-',
+      );
+      addTearDown(() => root.delete(recursive: true));
+      const channel = MethodChannelSteamClientPlatform.channel;
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      var secured = false;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        expect(call.method, 'secureDirectory');
+        final directory = Directory((call.arguments as Map)['path'] as String);
+        expect(directory.existsSync(), isTrue);
+        expect(directory.listSync(), isEmpty);
+        secured = true;
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      final backup = await LocalSteamClientFiles().backup(root.path, {
+        'auto-login.json': utf8.encode('{"synthetic":true}'),
+      });
+      expect(secured, isTrue);
+      expect(
+        await File(p.join(backup, 'auto-login.json')).readAsString(),
+        '{"synthetic":true}',
+      );
+    },
+  );
 }
 
 class _Platform implements SteamClientPlatform {

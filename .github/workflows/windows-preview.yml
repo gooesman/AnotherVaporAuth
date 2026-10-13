@@ -61,6 +61,29 @@ jobs:
       - name: Build Windows release
         run: flutter build windows --release --build-name=$env:AVA_VERSION --build-number=$env:AVA_BUILD_NUMBER --no-pub
 
+      - name: Build and run Windows native regressions
+        run: |
+          $engine = (Resolve-Path windows/flutter/ephemeral).Path
+          $wrapper = Join-Path $engine 'cpp_client_wrapper/include'
+          cmake -S test/native -B build/native-tests -A x64 "-DFLUTTER_ENGINE_DIR=$engine" "-DFLUTTER_WRAPPER_INCLUDE_DIR=$wrapper"
+          if ($LASTEXITCODE -ne 0) { throw 'Native test configuration failed' }
+          cmake --build build/native-tests --config Release
+          if ($LASTEXITCODE -ne 0) { throw 'Native test build failed' }
+          ctest --test-dir build/native-tests -C Release --output-on-failure --output-junit native-results.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Native regression tests failed' }
+
+      - name: Upload isolated Windows regression harnesses
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-windows-native-tests-${{ github.sha }}
+          path: |
+            app/build/native-tests/Release/*.exe
+            app/build/native-tests/Release/*.dll
+            app/build/native-tests/native-results.xml
+            app/build/native-tests/Testing/Temporary/LastTest.log
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Verify packaged shortcut icon
         run: |
           $iconHash = (Get-FileHash windows/runner/resources/app_icon.ico -Algorithm SHA256).Hash.ToLowerInvariant()

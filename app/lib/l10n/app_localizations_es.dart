@@ -31,7 +31,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get steamSwitchNoMatch =>
-      'La cuenta seleccionada en GooeSteamKit no aparece en los registros de Steam de este PC. Inicia sesión con esa cuenta en Steam, activa la opción de recordar los datos de acceso y actualiza la lista.';
+      'La cuenta seleccionada aún no tiene un registro de inicio de sesión en este equipo. Usa el inicio de sesión con un clic de arriba. Cuando Steam recuerde los datos de acceso, actualiza la lista para cambiar de cuenta desde ella.';
 
   @override
   String get steamSwitchNeedsLogin =>
@@ -3117,4 +3117,48 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get steamDesktopLoginWrongAccount =>
       'Steam tiene una sesión iniciada con otra cuenta. La aprobación automática se ha detenido.';
+
+  @override
+  String get steamClientOpen => 'Abrir Steam';
+
+  @override
+  String get steamSwitchLaunchFailed =>
+      'No se pudo iniciar Steam. Comprueba la ruta de instalación y asegúrate de que Steam pueda ejecutarse con normalidad.';
+
+  @override
+  String get steamSwitchFileAccessFailed =>
+      'No se pudo hacer una copia de seguridad ni modificar los ajustes de Steam. Comprueba los permisos de lectura y escritura de la carpeta de instalación.';
+
+  @override
+  String get steamDesktopLoginSession =>
+      'Steam está abierto. Conectando con la cuenta seleccionada…';
+
+  @override
+  String get steamSwitchInspecting => 'Comprobando Steam en este equipo';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return 'Etapa: $stage; código de error: $code; Windows: $systemError.';
+  }
+
+  @override
+  String get approveScreenBusy =>
+      'Hay otra captura de pantalla en curso. Complétala o cancélala primero.';
+
+  @override
+  String get approveScreenDisplayChanged =>
+      'La disposición de las pantallas ha cambiado. Vuelve a seleccionar el área del código QR.';
+
+  @override
+  String get approveScreenRegionTooLarge =>
+      'El área seleccionada es demasiado grande. Selecciona solo el área del código QR.';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return 'No se pudo capturar la pantalla. Inténtalo de nuevo. Detalles del error: $detail.';
+  }
 }

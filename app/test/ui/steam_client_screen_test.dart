@@ -60,6 +60,8 @@ class _Service extends SteamClientService {
   int switches = 0;
   int statusReads = 0;
   int accountReads = 0;
+  int opens = 0;
+  Object? openError;
   SteamClientStatus statusValue = const SteamClientStatus(running: false);
   SteamClientStatus? statusAfterSwitch;
   Future<SteamClientStatus> Function()? statusReader;
@@ -69,6 +71,12 @@ class _Service extends SteamClientService {
 
   @override
   Future<String?> discoverPath() async => r'C:\Steam';
+
+  @override
+  Future<void> open(String path) async {
+    opens++;
+    if (openError != null) throw openError!;
+  }
 
   @override
   Future<List<SteamClientAccount>> listAccounts(String path) async {
@@ -201,6 +209,60 @@ Future<Finder> _switchButton(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('open Steam works with no AVA session or local saved accounts', (
+    tester,
+  ) async {
+    final local = _Service([]);
+    await _show(tester, local, avaAccounts: []);
+    await tester.tap(find.byKey(const ValueKey('steam-client-open')));
+    await tester.pumpAndSettle();
+    expect(local.opens, 1);
+    expect(local.switches, 0);
+  });
+
+  testWidgets('one click can launch an imported account without a session', (
+    tester,
+  ) async {
+    final local = _Service([]);
+    final flow = _DesktopLogin();
+    flow.handler = () async =>
+        const DesktopLoginResult(DesktopLoginOutcome.sessionRequired);
+    await _show(tester, local, desktopLogin: flow);
+    await tester.tap(find.byKey(const ValueKey('steam-client-login')));
+    await tester.pumpAndSettle();
+    expect(flow.calls, 1);
+    expect(local.switches, 0);
+  });
+
+  testWidgets('open failure shows safe Windows code and launch phase', (
+    tester,
+  ) async {
+    final local = _Service([]);
+    local.openError = const SteamClientException(
+      'launch_failed',
+      'sensitive-raw-message',
+      stage: 'starting',
+      nativeCode: 'steam_start_failed',
+      win32Error: 193,
+    );
+    await _show(tester, local);
+    await tester.tap(find.byKey(const ValueKey('steam-client-open')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('steam-client-error-details')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final details = tester
+        .widget<SelectableText>(
+          find.byKey(const ValueKey('steam-client-error-details')),
+        )
+        .data!;
+    expect(details, contains('steam_start_failed'));
+    expect(details, contains('193'));
+    expect(find.textContaining('sensitive-raw-message'), findsNothing);
+  });
+
   testWidgets(
     'one explicit click launches selected account without extra approval dialog',
     (tester) async {
@@ -319,7 +381,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(l.steamClientCurrentAccount('Test player')), findsNothing);
-    await tester.ensureVisible(find.text('Actually signed in'));
+    await tester.scrollUntilVisible(
+      find.text('Actually signed in'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('steam-client-current-76561198000000002')),
