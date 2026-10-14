@@ -9,12 +9,14 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../l10n/app_localizations.dart';
 import '../app/account_name_mode.dart';
 import '../app/providers.dart';
+import '../app/steam_notifications_provider.dart';
 import '../app/responsive.dart';
 import '../app/theme.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/steam_totp.dart';
 import '../services/steam_time.dart';
 import 'widgets/animated_steam_image.dart';
+import 'widgets/account_identity_menu.dart';
 import 'widgets/app_logo.dart';
 import 'widgets/countdown_ring.dart';
 import 'widgets/flip_code.dart';
@@ -25,6 +27,9 @@ import 'widgets/scanline_overlay.dart';
 import 'widgets/update_banner.dart';
 import 'widgets/steam_image_provider.dart';
 import 'widgets/steam_acceleration_status.dart';
+import 'widgets/steam_notifications_button.dart';
+import 'widgets/pending_confirmation_badge.dart';
+import 'notifications/notifications_screen.dart';
 import 'approve_login_screen.dart';
 import 'account_dashboard.dart';
 import 'backup_codes_screen.dart';
@@ -58,6 +63,13 @@ String _initial(SteamGuardAccount a) {
 
 Color _avatarColor(SteamGuardAccount a) =>
     _palette[a.steamId.hashCode.abs() % _palette.length];
+
+bool _hasInlineDashboard(BuildContext context) {
+  final platform = Theme.of(context).platform;
+  return platform != TargetPlatform.android &&
+      platform != TargetPlatform.iOS &&
+      MediaQuery.sizeOf(context).width >= 640;
+}
 
 String _codeFor(SteamGuardAccount a, int tick) {
   try {
@@ -321,6 +333,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // selection while avatars load. Independent reads need not queue up.
     final selectedAccount =
         _selected < accounts.length ? accounts[_selected] : null;
+    // Counts update independently; an offline account must not hold the home
+    // refresh animation open while other accounts wait in the read queue.
+    unawaited(ref.read(steamNotificationCountsProvider.notifier)
+        .refreshAll(accounts, force: true));
     await Future.wait<void>([
       ref.read(appControllerProvider.notifier).refreshAvatars(),
       if (selectedAccount != null)
@@ -382,7 +398,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
     if (hasAccounts) _maybeShowTutorial();
 
-    return Scaffold(
+    return NotificationCountsRefresh(
+      accounts: accounts,
+      child: Scaffold(
       // Header removed — settings is a floating button in the bottom-right.
       // endFloat already lifts the FAB clear of minViewPadding.bottom, so the
       // gesture pill is handled — but it sits in the bottom-*right* corner,
@@ -553,6 +571,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
       ]),
+      ),
     );
   }
 
@@ -677,6 +696,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       BuildContext context, SteamGuardAccount account, String value) async {
     final l = AppLocalizations.of(context);
     switch (value) {
+      case 'notifications':
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => NotificationsScreen(account: account),
+        ));
+        break;
       case 'dashboard':
         _openDashboard(account);
         break;
@@ -1181,7 +1205,9 @@ class _SidebarRow extends ConsumerWidget {
       position: RelativeRect.fromRect(
           at & const Size(1, 1), Offset.zero & overlay.size),
       items: [
-        item('dashboard', Icons.dashboard_outlined, l.dashboardTitle),
+        if (!_hasInlineDashboard(context))
+          item('dashboard', Icons.dashboard_outlined, l.dashboardTitle),
+        item('notifications', Icons.notifications_outlined, l.notificationsTitle),
         item('friends', Icons.people_outline, l.friendsTitle),
         item('backup-codes', Icons.key_outlined, l.backupCodesTitle),
         if (Platform.isWindows)
@@ -1336,7 +1362,9 @@ class _SidebarRow extends ConsumerWidget {
           // hold the remaining management actions. Desktop keeps right-click.
           radius: t.radiusSm,
           onTap: onTap,
-          onLongPress: () => onAction(account, 'dashboard'),
+          onLongPress: _hasInlineDashboard(context)
+              ? null
+              : () => onAction(account, 'dashboard'),
           onSecondaryMenu: (pos) => _contextMenu(context, pos),
           child: Container(
             padding: context.rInsets(all: 8),
@@ -1411,6 +1439,14 @@ class _SidebarRow extends ConsumerWidget {
                               size: context.r(15), color: t.bad),
                         ),
                       ],
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: InkWell(
+                          key: ValueKey('account-pending-${account.steamId}'),
+                          onTap: () => onAction(account, 'confirm'),
+                          child: PendingConfirmationBadge(account: account),
+                        ),
+                      ),
                     ],
                   ),
                   _AccountCode(
@@ -1442,7 +1478,7 @@ class _PressableCard extends StatelessWidget {
   final Widget child;
   final double radius;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
   final void Function(Offset) onSecondaryMenu;
   const _PressableCard({
     required this.child,
@@ -1509,7 +1545,6 @@ class _MainPanel extends ConsumerWidget {
             children: [
               InkWell(
                 key: const ValueKey('selected-account-avatar'),
-                onTap: mobile ? null : onOpenDashboard,
                 onLongPress: mobile ? onOpenDashboard : null,
                 child: _Avatar(account: account, size: context.r(wide ? 76 : 56)),
               ),
@@ -1518,17 +1553,11 @@ class _MainPanel extends ConsumerWidget {
                 child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tap to cycle username / persona / id; long-press to copy.
-                  GestureDetector(
+                  // Tap still cycles the remembered display mode.
+                  AccountIdentityMenu(
+                    key: const ValueKey('selected-account-name'),
+                    account: account,
                     onTap: onTapName,
-                    onLongPress: () {
-                      final text = _displayName(account, nameMode);
-                      Clipboard.setData(ClipboardData(text: text));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l.copied)),
-                      );
-                    },
-                    behavior: HitTestBehavior.opaque,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                           maxWidth: MediaQuery.sizeOf(context).width * 0.6),
@@ -1620,6 +1649,14 @@ class _MainPanel extends ConsumerWidget {
               ),
               SizedBox(width: context.r(18)),
               _LiveCountdown(wide: wide),
+              if (mobile || !wide) ...[
+                const SizedBox(width: 8),
+                SteamNotificationsButton(
+                  account: account,
+                  compact: true,
+                  onPressed: () => onAction('notifications'),
+                ),
+              ],
             ],
           ),
         ],
@@ -1635,9 +1672,7 @@ class _MainPanel extends ConsumerWidget {
     final dashboard = AccountDashboard(
       key: ValueKey(('dashboard', account.steamId, account.fromPortable, wide)),
       account: account,
-      compact: !wide,
       onAction: onAction,
-      onExpand: onOpenDashboard,
     );
     return ListView(
       padding: context.rSafeInsets(left: 28, right: 96, top: 52, bottom: 96),

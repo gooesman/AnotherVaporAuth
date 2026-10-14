@@ -59,7 +59,8 @@ depend on your network. See the [update and release guide][releases-guide].
 | **Accounts and Steam Guard** | Multiple accounts, offline codes, countdowns, copy, maFile import/export and a remembered username/nickname/Steam ID display choice. |
 | **Account overview** | Wallet balance, pending funds and market activity. Desktop has room for overview cards; the phone home screen stays focused on codes and accounts. |
 | **Windows Steam sign-in** | Select an imported account and use either sign-in button to open/switch Steam and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
-| **Friends and trades** | Friends list, received/sent offers, both sides' inventories, offer review and trade confirmations. |
+| **Friends and trades** | Friends list, friend-request acceptance/decline, received/sent offers, both sides' inventories, offer review and trade confirmations. |
+| **Notifications and pending counts** | Home account rows show pending confirmations. Steam notifications can be marked read or ignored; messages and friend requests load when opened. Supported text is shown in-app; other types link to Steam's notification center. |
 | **Inventory and listings** | Game/context selection, name search, type/rarity filters, subtle rarity borders, Steam-provided cooldown details, batch listing, and active/held/pending listings. |
 | **Market prices** | Search by item, game and currency; save favorites for direct price viewing in your selected currency, view item details, or open the Steam market page. |
 | **Backup login codes** | Request and verify Steam's SMS code inside the app, then display the one-time backup login codes. |
@@ -70,7 +71,9 @@ depend on your network. See the [update and release guide][releases-guide].
 ### Everyday controls
 
 - **Phone:** tap an account to select its home-screen code; long-press to open its overview for inventory, market, friends and backup codes.
-- **Desktop:** select an account from the list; use its overview or right-click menu for actions. Account rows do not use left/right swipe actions.
+- **Desktop:** select an account from the list and use the inline overview or right-click menu. The avatar does not open a duplicate full-screen overview; a narrow window retains an overview menu entry. Account rows do not use left/right swipe actions.
+- **Copy account information:** right-click the selected name on desktop or long-press it on a phone to copy the exact Steam nickname, login name or SteamID. A normal tap still cycles the remembered display choice.
+- **Device sessions:** revoke other device authorizations after reviewing the listed targets, while retaining this GooeSteamKit session and the authenticator. Unconfirmed or failed operations are reported rather than retried silently.
 - **App lock:** system unlock is an option under startup verification. Turning startup verification off also turns system unlock off; local account files remain encrypted.
 
 ### Market prices in your selected currency

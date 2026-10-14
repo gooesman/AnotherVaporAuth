@@ -1395,5 +1395,80 @@
   "inventoryCooldownLocalTime": "时间已转换为本机时区。",
   "inventoryCooldownUnknown": "Steam 未提供可识别的解锁时间，不估算日期。",
   "inventoryCooldownElapsed": "该日期已到，请刷新库存，以 Steam 返回的最新限制状态为准。",
-  "inventoryCooldownRemaining": "剩余：{days} 天 {hours} 小时 {minutes} 分钟"
+  "inventoryCooldownRemaining": "剩余：{days} 天 {hours} 小时 {minutes} 分钟",
+  "deviceRevokeOthersAction": "撤销其他设备授权",
+  "deviceRevokeOthersConfirm": "撤销下方列出的其他 {count} 个设备授权？保留当前 GooeSteamKit 会话，其他设备需要重新登录。此操作不会移除 Steam 令牌验证器。",
+  "deviceRevokeOthersCurrentUnknown": "无法识别当前 GooeSteamKit 会话，请刷新后再撤销设备授权。",
+  "deviceRevokeOthersNone": "没有可撤销的其他设备授权。",
+  "deviceRevokeOthersBusy": "正在撤销其他设备授权…",
+  "deviceRevokeOthersDone": "已确认撤销 {count} 个其他设备授权。",
+  "deviceRevokeOthersPartial": "已确认撤销 {done} 个，另有 {failed} 个未完成或未确认。请核对下方详情及刷新后的设备列表，再决定是否重试。",
+  "@deviceRevokeOthersConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deviceRevokeOthersDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountCopyInfoTitle": "复制账户信息",
+  "accountCopyPersonaName": "复制 Steam 昵称",
+  "accountCopyLoginName": "复制登录名",
+  "accountCopyUnavailable": "暂未获取",
+  "accountCopyFailed": "复制失败，请重试。",
+  "notificationsTitle": "Steam 通知",
+  "notificationsInboxTab": "通知",
+  "notificationsRequestsTab": "好友申请",
+  "notificationsEmpty": "暂无通知。",
+  "notificationsRequestsEmpty": "暂无待处理好友申请。",
+  "notificationsMarkRead": "标为已读",
+  "notificationsMarkAllRead": "当前列表全部已读",
+  "notificationsHide": "忽略通知",
+  "notificationsItemTitle": "Steam 通知",
+  "notificationsItemFallback": "请在 Steam 中查看此通知。",
+  "notificationsOpenSteam": "在 Steam 中查看",
+  "notificationsAcceptRequest": "同意",
+  "notificationsRejectRequest": "拒绝",
+  "notificationsActionUnconfirmed": "未确认操作结果，请刷新核对后再重试。",
+  "notificationsActionDone": "已更新。",
+  "notificationsLoadFailed": "暂时无法加载，请刷新或重新登录。",
+  "notificationsOpenFailed": "无法打开 Steam 页面。",
+  "notificationsUnread": "未读",
+  "notificationsSessionChanged": "账户会话已变化，请刷新列表后继续。",
+  "confirmationBadgeCount": "{count} 项待确认",
+  "confirmationBadgeUnknown": "尚未获取待确认数量。",
+  "confirmationBadgeStale": "上次获取：{count} 项待确认，请刷新核对。",
+  "@confirmationBadgeCount": {"placeholders": {"count": {"type": "int"}}},
+  "@confirmationBadgeStale": {"placeholders": {"count": {"type": "int"}}},
+  "notificationsTypeGift": "礼物",
+  "notificationsTypeComment": "评论",
+  "notificationsTypeInventory": "库存物品",
+  "notificationsTypeFriend": "好友申请",
+  "notificationsTypeSale": "促销",
+  "notificationsTypeWishlist": "愿望单",
+  "notificationsTypeTrade": "交易报价",
+  "notificationsTypeAccount": "账户通知",
+  "notificationsTypeSupport": "Steam 客服",
+  "notificationsTypeModeration": "社区管理通知",
+  "notificationsTypeFamily": "家庭邀请",
+  "notificationsTypePlaytest": "测试邀请",
+  "notificationsTypeTradeReversal": "交易撤销",
+  "notificationsTypeReport": "举报结果",
+  "deviceRevokeOthersVerifyPending": "无法从刷新后的设备列表核实撤销结果，请刷新核对后再操作。",
+  "@deviceRevokeOthersPartial": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  }
 }

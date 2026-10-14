@@ -1,6 +1,7 @@
 import '../../services/steam_api_client.dart';
 import '../models/steam_friend.dart';
 import '../models/steam_guard_account.dart';
+import '../proto/protobuf_wire.dart';
 import 'community_session.dart';
 
 /// Reads the same authenticated community page as Steam's friends UI. Unlike
@@ -9,6 +10,139 @@ import 'community_session.dart';
 class FriendsClient {
   final SteamApiClient api;
   FriendsClient(this.api);
+
+  // Relationship endpoint/schema: node-steamcommunity/index.js getFriendsList.
+  // Profile batch: SteamTracking/Protobufs webui/service_player.proto.
+  Future<List<SteamFriendRequest>> fetchRequests(
+    SteamGuardAccount account,
+  ) async {
+    final token = requireAccessToken(account);
+    final relationships = await _relationships(account);
+    final requests = <String, SteamFriendRequest>{
+      for (final entry in relationships.entries)
+        if (entry.value == 2) entry.key: SteamFriendRequest(steamId: entry.key),
+    };
+    if (requests.isEmpty) return const [];
+    try {
+      final request = ProtoWriter();
+      for (final id in requests.keys) {
+        request.writeUint64(1, int.parse(id));
+      }
+      final response = await api.callProtobuf(
+        'IPlayerService',
+        'GetPlayerLinkDetails',
+        request: request,
+        accessToken: token,
+        useGet: true,
+      );
+      for (final field in response.parseAll()) {
+        if (field.number != 1 || field.bytes == null) continue;
+        final public = ProtoReader(field.bytes!).parse()[1]?.bytes;
+        if (public == null) continue;
+        final profile = ProtoReader(public).parse();
+        final id = profile[1]?.asFixed64.toString();
+        if (!requests.containsKey(id)) continue;
+        final avatar = profile[9]?.bytes;
+        final hash = avatar != null && avatar.length == 20
+            ? avatar.map((b) => b.toRadixString(16).padLeft(2, '0')).join()
+            : '';
+        requests[id!] = SteamFriendRequest(
+          steamId: id,
+          name: profile[10]?.asString ?? '',
+          avatarUrl: hash.isEmpty
+              ? ''
+              : 'https://avatars.steamstatic.com/${hash}_medium.jpg',
+        );
+      }
+    } catch (_) {
+      // Profile metadata is optional; do not hide valid incoming requests or
+      // retry individual profiles when this one batch lookup is unavailable.
+    }
+    return List.unmodifiable(requests.values);
+  }
+
+  Future<Map<String, int>> _relationships(SteamGuardAccount account) async {
+    requireAccessToken(account);
+    if (!isIndividualSteamId('${account.steamId}')) {
+      throw ArgumentError('Invalid SteamID');
+    }
+    final response = await api.communityGetJson(
+      '/textfilter/ajaxgetfriendslist',
+      const {},
+      cookies: communityCookies(account),
+    );
+    final list = response['friendslist'];
+    final friends = list is Map ? list['friends'] : null;
+    if (response['success'] != 1 || friends is! List) {
+      throw const FormatException('Steam friend relationships unavailable');
+    }
+    final result = <String, int>{};
+    for (final friend in friends) {
+      if (friend is! Map) {
+        throw const FormatException('Invalid Steam friend relationship');
+      }
+      final id = '${friend['ulfriendid']}';
+      final relationship = friend['efriendrelationship'];
+      if (!isIndividualSteamId(id) ||
+          relationship is! int ||
+          result.containsKey(id)) {
+        throw const FormatException('Invalid Steam friend relationship');
+      }
+      result[id] = relationship;
+    }
+    return result;
+  }
+
+  /// Official community profile.js uses AddFriendAjax(accept_invite=1) and
+  /// IgnoreFriendInviteAjax. Ignoring an invite does not block the inviter.
+  /// A write is sent once; uncertain responses must never replay it.
+  Future<void> respondToRequest(
+    SteamGuardAccount account,
+    String steamId, {
+    required bool accept,
+  }) async {
+    if (!isIndividualSteamId(steamId) || steamId == '${account.steamId}') {
+      throw ArgumentError('Invalid incoming friend SteamID');
+    }
+    final owner = account.steamId;
+    final token = requireAccessToken(account);
+    final refreshToken = account.session.refreshToken;
+    bool sameSession() =>
+        account.steamId == owner &&
+        account.session.accessToken == token &&
+        account.session.refreshToken == refreshToken;
+    final before = await _relationships(account);
+    if (!sameSession() || before[steamId] != 2) {
+      throw const FriendRequestStateException();
+    }
+    final sessionId = newCommunitySessionId();
+    final response = await api.communityPostJson(
+      accept ? '/actions/AddFriendAjax' : '/actions/IgnoreFriendInviteAjax',
+      {
+        'sessionID': sessionId,
+        'steamid': steamId,
+        if (accept) 'accept_invite': 1,
+      },
+      cookies: communityCookies(account, sessionId: sessionId),
+      referer: 'https://steamcommunity.com/profiles/$steamId',
+    );
+    // These endpoints can return an empty successful body. Do not invent a
+    // success field requirement; verify the authoritative relationship next.
+    final success = response['success'];
+    if (!sameSession() ||
+        (success != null && success != 1 && success != true)) {
+      throw const FriendRequestUnconfirmedException();
+    }
+    try {
+      final after = await _relationships(account);
+      final relation = after[steamId] ?? 0;
+      if (!sameSession() || (accept ? relation != 3 : relation != 0)) {
+        throw const FriendRequestUnconfirmedException();
+      }
+    } catch (_) {
+      throw const FriendRequestUnconfirmedException();
+    }
+  }
 
   Future<List<SteamFriend>> fetch(SteamGuardAccount account) async {
     requireAccessToken(account);
@@ -122,4 +256,12 @@ class FriendsClient {
           }[entity]!;
         },
       ).trim();
+}
+
+class FriendRequestStateException implements Exception {
+  const FriendRequestStateException();
+}
+
+class FriendRequestUnconfirmedException implements Exception {
+  const FriendRequestUnconfirmedException();
 }

@@ -1,6 +1,6 @@
 # GooeSteamKit privacy notice
 
-Updated: 2026-10-13. This notice describes **GooeSteamKit**, gooesman's independent
+Updated: 2026-10-14. This notice describes **GooeSteamKit**, gooesman's independent
 fork of freefrank's AVA for Windows and Android. Earlier builds were named
 **AVA-pc** and **AVA Fork**. The new name and icon retain the existing data paths
 and Android package/signing identity; existing AVA Fork users do not need to
@@ -20,6 +20,16 @@ verification steps. The selected account's session and entered verification code
 are sent to Valve over HTTPS. Returned codes stay in page memory and are cleared
 on leaving, hiding or locking the app; they are not written to account files,
 logs or WebDAV.
+
+While the home screen is visible and the account library is unlocked, existing
+sessions query Valve for pending-confirmation, unread-notification and friend-request
+counts. Reads are infrequent and reuse an in-memory cache. Notifications
+and friend requests load when opened; these contents are not included in sync.
+Supported text is displayed in-app; other types can be viewed in Steam's notification center.
+Marking read, ignoring notifications, responding to friend requests and revoking
+other device authorizations require your explicit action. This does not automatically
+handle trades or remove the authenticator. Copying a name or SteamID writes only
+to the device clipboard and makes no network request.
 
 Steam acceleration is optional and starts manually by default. Subscription
 URLs and sanitized node credentials are kept in local secure storage, separately

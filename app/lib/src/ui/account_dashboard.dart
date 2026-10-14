@@ -13,6 +13,9 @@ import '../services/account_dashboard_loader.dart';
 import 'market/market_screen.dart' show marketListingStateLabel;
 import 'pending/session_retry.dart';
 import 'widgets/ava_panel.dart';
+import 'widgets/account_identity_menu.dart';
+import 'widgets/pending_confirmation_badge.dart';
+import 'widgets/steam_notifications_button.dart';
 
 final dashboardSectionsProvider =
     NotifierProvider<DashboardSections, Set<String>>(DashboardSections.new);
@@ -295,6 +298,10 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
             _action(l.dashboardMarket, Icons.storefront_outlined, 'market'),
             _action(l.friendsTitle, Icons.people_outline, 'friends'),
             _action(l.pendingTitle, Icons.fact_check_outlined, 'confirm'),
+            SteamNotificationsButton(
+              account: widget.account,
+              onPressed: () => widget.onAction('notifications'),
+            ),
             _action(l.backupCodesTitle, Icons.key_outlined, 'backup-codes'),
           ],
         ),
@@ -476,7 +483,21 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
       OutlinedButton.icon(
         onPressed: () => widget.onAction(value),
         icon: Icon(icon, size: 18),
-        label: Text(label),
+        label: value != 'confirm'
+            ? Text(label)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: Text(label)),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: PendingConfirmationBadge(
+                      account: widget.account,
+                      showIcon: false,
+                    ),
+                  ),
+                ],
+              ),
       );
 }
 
@@ -491,8 +512,11 @@ class AccountDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(
-        account.personaName ?? account.accountName ?? '${account.steamId}',
+      title: AccountIdentityMenu(
+        account: account,
+        child: Text(
+          account.personaName ?? account.accountName ?? '${account.steamId}',
+        ),
       ),
     ),
     body: ListView(

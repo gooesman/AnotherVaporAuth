@@ -5686,6 +5686,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remaining: {days}d {hours}h {minutes}m'**
   String inventoryCooldownRemaining(int days, int hours, int minutes);
+
+  /// No description provided for @deviceRevokeOthersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke other device authorizations'**
+  String get deviceRevokeOthersAction;
+
+  /// No description provided for @deviceRevokeOthersConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke the {count} other device authorizations listed below? Keep the current GooeSteamKit session. Those devices will need to sign in again. This does not remove your Steam authenticator.'**
+  String deviceRevokeOthersConfirm(int count);
+
+  /// No description provided for @deviceRevokeOthersCurrentUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The current GooeSteamKit session could not be identified. Refresh before revoking device authorizations.'**
+  String get deviceRevokeOthersCurrentUnknown;
+
+  /// No description provided for @deviceRevokeOthersNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No other device authorizations to revoke.'**
+  String get deviceRevokeOthersNone;
+
+  /// No description provided for @deviceRevokeOthersBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoking other device authorizations…'**
+  String get deviceRevokeOthersBusy;
+
+  /// No description provided for @deviceRevokeOthersDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed: {count} other device authorizations revoked.'**
+  String deviceRevokeOthersDone(int count);
+
+  /// No description provided for @deviceRevokeOthersPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed revoked: {done}. Not completed or not confirmed: {failed}. Check the details below and the refreshed device list before trying again.'**
+  String deviceRevokeOthersPartial(int done, int failed);
+
+  /// No description provided for @accountCopyInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy account information'**
+  String get accountCopyInfoTitle;
+
+  /// No description provided for @accountCopyPersonaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Steam nickname'**
+  String get accountCopyPersonaName;
+
+  /// No description provided for @accountCopyLoginName.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy login name'**
+  String get accountCopyLoginName;
+
+  /// No description provided for @accountCopyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get accountCopyUnavailable;
+
+  /// No description provided for @accountCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy. Please try again.'**
+  String get accountCopyFailed;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsInboxTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsInboxTab;
+
+  /// No description provided for @notificationsRequestsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend requests'**
+  String get notificationsRequestsTab;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications.'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsRequestsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending friend requests.'**
+  String get notificationsRequestsEmpty;
+
+  /// No description provided for @notificationsMarkRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
+  String get notificationsMarkRead;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this list as read'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @notificationsHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore notification'**
+  String get notificationsHide;
+
+  /// No description provided for @notificationsItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam notification'**
+  String get notificationsItemTitle;
+
+  /// No description provided for @notificationsItemFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Steam to view this notification.'**
+  String get notificationsItemFallback;
+
+  /// No description provided for @notificationsOpenSteam.
+  ///
+  /// In en, this message translates to:
+  /// **'View in Steam'**
+  String get notificationsOpenSteam;
+
+  /// No description provided for @notificationsAcceptRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get notificationsAcceptRequest;
+
+  /// No description provided for @notificationsRejectRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get notificationsRejectRequest;
+
+  /// No description provided for @notificationsActionUnconfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'The result could not be confirmed. Refresh to check before trying again.'**
+  String get notificationsActionUnconfirmed;
+
+  /// No description provided for @notificationsActionDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated.'**
+  String get notificationsActionDone;
+
+  /// No description provided for @notificationsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load notifications. Please refresh or sign in again.'**
+  String get notificationsLoadFailed;
+
+  /// No description provided for @notificationsOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Steam.'**
+  String get notificationsOpenFailed;
+
+  /// No description provided for @notificationsUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get notificationsUnread;
+
+  /// No description provided for @notificationsSessionChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The account session changed. Refresh this list before continuing.'**
+  String get notificationsSessionChanged;
+
+  /// No description provided for @confirmationBadgeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pending confirmations'**
+  String confirmationBadgeCount(int count);
+
+  /// No description provided for @confirmationBadgeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending confirmations have not been checked.'**
+  String get confirmationBadgeUnknown;
+
+  /// No description provided for @confirmationBadgeStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked: {count} pending confirmations. Refresh to check again.'**
+  String confirmationBadgeStale(int count);
+
+  /// No description provided for @notificationsTypeGift.
+  ///
+  /// In en, this message translates to:
+  /// **'Gift'**
+  String get notificationsTypeGift;
+
+  /// No description provided for @notificationsTypeComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get notificationsTypeComment;
+
+  /// No description provided for @notificationsTypeInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory item'**
+  String get notificationsTypeInventory;
+
+  /// No description provided for @notificationsTypeFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request'**
+  String get notificationsTypeFriend;
+
+  /// No description provided for @notificationsTypeSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotion'**
+  String get notificationsTypeSale;
+
+  /// No description provided for @notificationsTypeWishlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Wishlist'**
+  String get notificationsTypeWishlist;
+
+  /// No description provided for @notificationsTypeTrade.
+  ///
+  /// In en, this message translates to:
+  /// **'Trade offer'**
+  String get notificationsTypeTrade;
+
+  /// No description provided for @notificationsTypeAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account notice'**
+  String get notificationsTypeAccount;
+
+  /// No description provided for @notificationsTypeSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam Support'**
+  String get notificationsTypeSupport;
+
+  /// No description provided for @notificationsTypeModeration.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderation notice'**
+  String get notificationsTypeModeration;
+
+  /// No description provided for @notificationsTypeFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family invitation'**
+  String get notificationsTypeFamily;
+
+  /// No description provided for @notificationsTypePlaytest.
+  ///
+  /// In en, this message translates to:
+  /// **'Playtest invitation'**
+  String get notificationsTypePlaytest;
+
+  /// No description provided for @notificationsTypeTradeReversal.
+  ///
+  /// In en, this message translates to:
+  /// **'Trade reversal'**
+  String get notificationsTypeTradeReversal;
+
+  /// No description provided for @notificationsTypeReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report result'**
+  String get notificationsTypeReport;
+
+  /// No description provided for @deviceRevokeOthersVerifyPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Removal could not be verified in the refreshed device list. Refresh and check before trying again.'**
+  String get deviceRevokeOthersVerifyPending;
 }
 
 class _AppLocalizationsDelegate

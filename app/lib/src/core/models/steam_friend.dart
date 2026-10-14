@@ -17,6 +17,20 @@ class SteamFriend {
 
 enum SteamFriendState { offline, online, playing }
 
+/// An incoming request. Missing optional profile data is represented explicitly
+/// so callers can display the SteamID when the batch profile lookup fails.
+class SteamFriendRequest {
+  final String steamId;
+  final String name;
+  final String avatarUrl;
+
+  const SteamFriendRequest({
+    required this.steamId,
+    this.name = '',
+    this.avatarUrl = '',
+  });
+}
+
 /// Public individual SteamIDs use universe 1, type 1, instance 1.
 /// Keeping IDs as decimal strings avoids precision loss on other targets.
 bool isIndividualSteamId(String value) {

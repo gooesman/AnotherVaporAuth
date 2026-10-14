@@ -3070,6 +3070,164 @@ class AppLocalizationsZh extends AppLocalizations {
   String inventoryCooldownRemaining(int days, int hours, int minutes) {
     return '剩余：$days 天 $hours 小时 $minutes 分钟';
   }
+
+  @override
+  String get deviceRevokeOthersAction => '撤销其他设备授权';
+
+  @override
+  String deviceRevokeOthersConfirm(int count) {
+    return '撤销下方列出的其他 $count 个设备授权？保留当前 GooeSteamKit 会话，其他设备需要重新登录。此操作不会移除 Steam 令牌验证器。';
+  }
+
+  @override
+  String get deviceRevokeOthersCurrentUnknown =>
+      '无法识别当前 GooeSteamKit 会话，请刷新后再撤销设备授权。';
+
+  @override
+  String get deviceRevokeOthersNone => '没有可撤销的其他设备授权。';
+
+  @override
+  String get deviceRevokeOthersBusy => '正在撤销其他设备授权…';
+
+  @override
+  String deviceRevokeOthersDone(int count) {
+    return '已确认撤销 $count 个其他设备授权。';
+  }
+
+  @override
+  String deviceRevokeOthersPartial(int done, int failed) {
+    return '已确认撤销 $done 个，另有 $failed 个未完成或未确认。请核对下方详情及刷新后的设备列表，再决定是否重试。';
+  }
+
+  @override
+  String get accountCopyInfoTitle => '复制账户信息';
+
+  @override
+  String get accountCopyPersonaName => '复制 Steam 昵称';
+
+  @override
+  String get accountCopyLoginName => '复制登录名';
+
+  @override
+  String get accountCopyUnavailable => '暂未获取';
+
+  @override
+  String get accountCopyFailed => '复制失败，请重试。';
+
+  @override
+  String get notificationsTitle => 'Steam 通知';
+
+  @override
+  String get notificationsInboxTab => '通知';
+
+  @override
+  String get notificationsRequestsTab => '好友申请';
+
+  @override
+  String get notificationsEmpty => '暂无通知。';
+
+  @override
+  String get notificationsRequestsEmpty => '暂无待处理好友申请。';
+
+  @override
+  String get notificationsMarkRead => '标为已读';
+
+  @override
+  String get notificationsMarkAllRead => '当前列表全部已读';
+
+  @override
+  String get notificationsHide => '忽略通知';
+
+  @override
+  String get notificationsItemTitle => 'Steam 通知';
+
+  @override
+  String get notificationsItemFallback => '请在 Steam 中查看此通知。';
+
+  @override
+  String get notificationsOpenSteam => '在 Steam 中查看';
+
+  @override
+  String get notificationsAcceptRequest => '同意';
+
+  @override
+  String get notificationsRejectRequest => '拒绝';
+
+  @override
+  String get notificationsActionUnconfirmed => '未确认操作结果，请刷新核对后再重试。';
+
+  @override
+  String get notificationsActionDone => '已更新。';
+
+  @override
+  String get notificationsLoadFailed => '暂时无法加载，请刷新或重新登录。';
+
+  @override
+  String get notificationsOpenFailed => '无法打开 Steam 页面。';
+
+  @override
+  String get notificationsUnread => '未读';
+
+  @override
+  String get notificationsSessionChanged => '账户会话已变化，请刷新列表后继续。';
+
+  @override
+  String confirmationBadgeCount(int count) {
+    return '$count 项待确认';
+  }
+
+  @override
+  String get confirmationBadgeUnknown => '尚未获取待确认数量。';
+
+  @override
+  String confirmationBadgeStale(int count) {
+    return '上次获取：$count 项待确认，请刷新核对。';
+  }
+
+  @override
+  String get notificationsTypeGift => '礼物';
+
+  @override
+  String get notificationsTypeComment => '评论';
+
+  @override
+  String get notificationsTypeInventory => '库存物品';
+
+  @override
+  String get notificationsTypeFriend => '好友申请';
+
+  @override
+  String get notificationsTypeSale => '促销';
+
+  @override
+  String get notificationsTypeWishlist => '愿望单';
+
+  @override
+  String get notificationsTypeTrade => '交易报价';
+
+  @override
+  String get notificationsTypeAccount => '账户通知';
+
+  @override
+  String get notificationsTypeSupport => 'Steam 客服';
+
+  @override
+  String get notificationsTypeModeration => '社区管理通知';
+
+  @override
+  String get notificationsTypeFamily => '家庭邀请';
+
+  @override
+  String get notificationsTypePlaytest => '测试邀请';
+
+  @override
+  String get notificationsTypeTradeReversal => '交易撤销';
+
+  @override
+  String get notificationsTypeReport => '举报结果';
+
+  @override
+  String get deviceRevokeOthersVerifyPending => '无法从刷新后的设备列表核实撤销结果，请刷新核对后再操作。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6144,4 +6302,163 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String inventoryCooldownRemaining(int days, int hours, int minutes) {
     return '剩餘：$days 天 $hours 小時 $minutes 分鐘';
   }
+
+  @override
+  String get deviceRevokeOthersAction => '撤銷其他裝置授權';
+
+  @override
+  String deviceRevokeOthersConfirm(int count) {
+    return '撤銷下方列出的其他 $count 個裝置授權？保留目前 GooeSteamKit 工作階段，其他裝置需要重新登入。此操作不會移除 Steam 驗證器。';
+  }
+
+  @override
+  String get deviceRevokeOthersCurrentUnknown =>
+      '無法識別目前 GooeSteamKit 工作階段，請重新整理後再撤銷裝置授權。';
+
+  @override
+  String get deviceRevokeOthersNone => '沒有可撤銷的其他裝置授權。';
+
+  @override
+  String get deviceRevokeOthersBusy => '正在撤銷其他裝置授權…';
+
+  @override
+  String deviceRevokeOthersDone(int count) {
+    return '已確認撤銷 $count 個其他裝置授權。';
+  }
+
+  @override
+  String deviceRevokeOthersPartial(int done, int failed) {
+    return '已確認撤銷 $done 個，另有 $failed 個未完成或未確認。請核對下方詳情及重新整理後的裝置清單，再決定是否重試。';
+  }
+
+  @override
+  String get accountCopyInfoTitle => '複製帳戶資訊';
+
+  @override
+  String get accountCopyPersonaName => '複製 Steam 暱稱';
+
+  @override
+  String get accountCopyLoginName => '複製登入名稱';
+
+  @override
+  String get accountCopyUnavailable => '尚未取得';
+
+  @override
+  String get accountCopyFailed => '複製失敗，請重試。';
+
+  @override
+  String get notificationsTitle => 'Steam 通知';
+
+  @override
+  String get notificationsInboxTab => '通知';
+
+  @override
+  String get notificationsRequestsTab => '好友申請';
+
+  @override
+  String get notificationsEmpty => '暫無通知。';
+
+  @override
+  String get notificationsRequestsEmpty => '暫無待處理好友申請。';
+
+  @override
+  String get notificationsMarkRead => '標為已讀';
+
+  @override
+  String get notificationsMarkAllRead => '目前清單全部標為已讀';
+
+  @override
+  String get notificationsHide => '忽略通知';
+
+  @override
+  String get notificationsItemTitle => 'Steam 通知';
+
+  @override
+  String get notificationsItemFallback => '請在 Steam 中查看此通知。';
+
+  @override
+  String get notificationsOpenSteam => '在 Steam 中查看';
+
+  @override
+  String get notificationsAcceptRequest => '同意';
+
+  @override
+  String get notificationsRejectRequest => '拒絕';
+
+  @override
+  String get notificationsActionUnconfirmed => '未確認操作結果，請重新整理確認後再重試。';
+
+  @override
+  String get notificationsActionDone => '已更新。';
+
+  @override
+  String get notificationsLoadFailed => '暫時無法載入，請重新整理或重新登入。';
+
+  @override
+  String get notificationsOpenFailed => '無法開啟 Steam 頁面。';
+
+  @override
+  String get notificationsUnread => '未讀';
+
+  @override
+  String get notificationsSessionChanged => '帳戶工作階段已變更，請重新整理清單後繼續。';
+
+  @override
+  String confirmationBadgeCount(int count) {
+    return '$count 項待確認';
+  }
+
+  @override
+  String get confirmationBadgeUnknown => '尚未取得待確認數量。';
+
+  @override
+  String confirmationBadgeStale(int count) {
+    return '上次取得：$count 項待確認，請重新整理確認。';
+  }
+
+  @override
+  String get notificationsTypeGift => '禮物';
+
+  @override
+  String get notificationsTypeComment => '評論';
+
+  @override
+  String get notificationsTypeInventory => '庫存物品';
+
+  @override
+  String get notificationsTypeFriend => '好友申請';
+
+  @override
+  String get notificationsTypeSale => '促銷';
+
+  @override
+  String get notificationsTypeWishlist => '願望清單';
+
+  @override
+  String get notificationsTypeTrade => '交易報價';
+
+  @override
+  String get notificationsTypeAccount => '帳戶通知';
+
+  @override
+  String get notificationsTypeSupport => 'Steam 客服';
+
+  @override
+  String get notificationsTypeModeration => '社群管理通知';
+
+  @override
+  String get notificationsTypeFamily => '家庭邀請';
+
+  @override
+  String get notificationsTypePlaytest => '測試邀請';
+
+  @override
+  String get notificationsTypeTradeReversal => '交易撤銷';
+
+  @override
+  String get notificationsTypeReport => '檢舉結果';
+
+  @override
+  String get deviceRevokeOthersVerifyPending =>
+      '無法從重新整理後的裝置清單確認撤銷結果，請重新整理核對後再操作。';
 }

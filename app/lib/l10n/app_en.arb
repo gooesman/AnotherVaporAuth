@@ -1590,5 +1590,80 @@
   "inventoryCooldownUnknown": "Steam has not provided a readable unlock time. No date is estimated.",
   "inventoryCooldownElapsed": "This date has passed. Refresh the inventory to check Steam’s current restrictions.",
   "inventoryCooldownRemaining": "Remaining: {days}d {hours}h {minutes}m",
-  "@inventoryCooldownRemaining": { "placeholders": { "days": { "type": "int" }, "hours": { "type": "int" }, "minutes": { "type": "int" } } }
+  "@inventoryCooldownRemaining": { "placeholders": { "days": { "type": "int" }, "hours": { "type": "int" }, "minutes": { "type": "int" } } },
+  "deviceRevokeOthersAction": "Revoke other device authorizations",
+  "deviceRevokeOthersConfirm": "Revoke the {count} other device authorizations listed below? Keep the current GooeSteamKit session. Those devices will need to sign in again. This does not remove your Steam authenticator.",
+  "deviceRevokeOthersCurrentUnknown": "The current GooeSteamKit session could not be identified. Refresh before revoking device authorizations.",
+  "deviceRevokeOthersNone": "No other device authorizations to revoke.",
+  "deviceRevokeOthersBusy": "Revoking other device authorizations…",
+  "deviceRevokeOthersDone": "Confirmed: {count} other device authorizations revoked.",
+  "deviceRevokeOthersPartial": "Confirmed revoked: {done}. Not completed or not confirmed: {failed}. Check the details below and the refreshed device list before trying again.",
+  "@deviceRevokeOthersConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deviceRevokeOthersDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountCopyInfoTitle": "Copy account information",
+  "accountCopyPersonaName": "Copy Steam nickname",
+  "accountCopyLoginName": "Copy login name",
+  "accountCopyUnavailable": "Unavailable",
+  "accountCopyFailed": "Could not copy. Please try again.",
+  "notificationsTitle": "Steam notifications",
+  "notificationsInboxTab": "Notifications",
+  "notificationsRequestsTab": "Friend requests",
+  "notificationsEmpty": "No notifications.",
+  "notificationsRequestsEmpty": "No pending friend requests.",
+  "notificationsMarkRead": "Mark as read",
+  "notificationsMarkAllRead": "Mark this list as read",
+  "notificationsHide": "Ignore notification",
+  "notificationsItemTitle": "Steam notification",
+  "notificationsItemFallback": "Open Steam to view this notification.",
+  "notificationsOpenSteam": "View in Steam",
+  "notificationsAcceptRequest": "Accept",
+  "notificationsRejectRequest": "Decline",
+  "notificationsActionUnconfirmed": "The result could not be confirmed. Refresh to check before trying again.",
+  "notificationsActionDone": "Updated.",
+  "notificationsLoadFailed": "Could not load notifications. Please refresh or sign in again.",
+  "notificationsOpenFailed": "Could not open Steam.",
+  "notificationsUnread": "Unread",
+  "notificationsSessionChanged": "The account session changed. Refresh this list before continuing.",
+  "confirmationBadgeCount": "{count} pending confirmations",
+  "confirmationBadgeUnknown": "Pending confirmations have not been checked.",
+  "confirmationBadgeStale": "Last checked: {count} pending confirmations. Refresh to check again.",
+  "@confirmationBadgeCount": {"placeholders": {"count": {"type": "int"}}},
+  "@confirmationBadgeStale": {"placeholders": {"count": {"type": "int"}}},
+  "notificationsTypeGift": "Gift",
+  "notificationsTypeComment": "Comment",
+  "notificationsTypeInventory": "Inventory item",
+  "notificationsTypeFriend": "Friend request",
+  "notificationsTypeSale": "Promotion",
+  "notificationsTypeWishlist": "Wishlist",
+  "notificationsTypeTrade": "Trade offer",
+  "notificationsTypeAccount": "Account notice",
+  "notificationsTypeSupport": "Steam Support",
+  "notificationsTypeModeration": "Moderation notice",
+  "notificationsTypeFamily": "Family invitation",
+  "notificationsTypePlaytest": "Playtest invitation",
+  "notificationsTypeTradeReversal": "Trade reversal",
+  "notificationsTypeReport": "Report result",
+  "deviceRevokeOthersVerifyPending": "Removal could not be verified in the refreshed device list. Refresh and check before trying again.",
+  "@deviceRevokeOthersPartial": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  }
 }

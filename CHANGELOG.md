@@ -5,6 +5,26 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.12] — 2026-10-14 · Fork
+
+### Added
+- Home account rows and the desktop pending action show confirmation counts. Notification and friend-request indicators use a shared, infrequently refreshed memory cache; hidden or locked screens cancel queued and in-flight count reads. Failed reads retain an explicitly stale or unknown value.
+- Steam notifications and incoming friend requests load on demand. Mark the displayed notification list as read, read or ignore individual notifications, and accept or decline incoming friend requests. Unsupported notification content opens Steam's notification center; declining a request does not block its sender. Uncertain writes require a refresh before retrying.
+- Right-click the selected account name on desktop or hold it on mobile to copy its Steam nickname, login name or SteamID. Ordinary taps still cycle the remembered name display.
+- Revoke other device authorizations together after reviewing the list, preserving the identified current GooeSteamKit session and Steam authenticator. Results are checked against a refreshed device list; partial failures are shown separately.
+
+### Changed
+- Desktop avatars no longer open a full-screen duplicate of the inline account overview. Narrow desktop windows keep an overview menu entry; mobile account long-press still opens its overview.
+
+### 新增
+- 首页账户行和电脑端待办按钮显示待确认数量；通知与好友申请提示共用低频内存缓存，隐藏或锁定时取消排队及在途计数请求。读取失败明确显示过期或未知状态。
+- Steam 通知与收到的好友申请按需加载；可将当前通知列表一键已读、单条已读或忽略，以及同意或拒绝好友申请。不支持的通知正文可进入 Steam 通知中心查看；拒绝申请不会屏蔽对方，写入结果未确认时需先刷新核对。
+- 电脑右键当前名称、手机长按当前名称可复制 Steam 昵称、登录名或 SteamID；普通点按仍切换并记住名称显示方式。
+- 登录设备可在核对列表后批量撤销其他授权，保留已识别的当前 GooeSteamKit 会话与 Steam 验证器；刷新设备列表核实结果，分别显示部分失败。
+
+### 调整
+- 电脑头像不再打开与首页重复的全屏账户概览；窄窗口仍保留概览菜单入口，手机长按账户进入概览的行为保持不变。
+
 ## [v1.5.11] — 2026-10-14 · Fork
 
 ### Added

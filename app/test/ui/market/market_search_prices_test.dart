@@ -41,20 +41,27 @@ void main() {
     final first = Completer<MarketPrice?>();
     market.onPrice = (hash, _) =>
         hash == 'first' ? first.future : Future.value(null);
+    // The delay's deadline and Timer must use the same virtual clock. Real
+    // elapsed time between deadline creation and scheduling can exceed 1 ms
+    // under parallel test load, invalidating an exact 999 ms boundary check.
+    final now = tester.binding.clock.now;
     final prices = MarketSearchPrices(
-      ItemMarketPriceCache(market, checked: true),
+      ItemMarketPriceCache(market, checked: true, now: now),
+      now: now,
     );
     addTearDown(prices.dispose);
     expect(market.calls, isEmpty);
     prices.visible('row1', _key('first'));
     prices.visible('row2', _key('second'));
     expect(market.calls, hasLength(1));
+    await tester.pump(const Duration(seconds: 2));
+    expect(market.calls, hasLength(1));
     first.complete(const MarketPrice(lowest: '¥ 15.36'));
     await tester.pump();
     expect(prices.quote(_key('first')).price!.lowest, '¥ 15.36');
     await tester.pump(const Duration(milliseconds: 999));
     expect(market.calls, hasLength(1));
-    await tester.pump(const Duration(milliseconds: 2));
+    await tester.pump(const Duration(milliseconds: 1));
     expect(market.calls, hasLength(2));
   });
 

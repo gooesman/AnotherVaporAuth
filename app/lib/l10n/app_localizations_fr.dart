@@ -3294,4 +3294,169 @@ class AppLocalizationsFr extends AppLocalizations {
   String inventoryCooldownRemaining(int days, int hours, int minutes) {
     return 'Remaining: ${days}d ${hours}h ${minutes}m';
   }
+
+  @override
+  String get deviceRevokeOthersAction => 'Revoke other device authorizations';
+
+  @override
+  String deviceRevokeOthersConfirm(int count) {
+    return 'Revoke the $count other device authorizations listed below? Keep the current GooeSteamKit session. Those devices will need to sign in again. This does not remove your Steam authenticator.';
+  }
+
+  @override
+  String get deviceRevokeOthersCurrentUnknown =>
+      'The current GooeSteamKit session could not be identified. Refresh before revoking device authorizations.';
+
+  @override
+  String get deviceRevokeOthersNone =>
+      'No other device authorizations to revoke.';
+
+  @override
+  String get deviceRevokeOthersBusy => 'Revoking other device authorizations…';
+
+  @override
+  String deviceRevokeOthersDone(int count) {
+    return 'Confirmed: $count other device authorizations revoked.';
+  }
+
+  @override
+  String deviceRevokeOthersPartial(int done, int failed) {
+    return 'Confirmed revoked: $done. Not completed or not confirmed: $failed. Check the details below and the refreshed device list before trying again.';
+  }
+
+  @override
+  String get accountCopyInfoTitle => 'Copy account information';
+
+  @override
+  String get accountCopyPersonaName => 'Copy Steam nickname';
+
+  @override
+  String get accountCopyLoginName => 'Copy login name';
+
+  @override
+  String get accountCopyUnavailable => 'Unavailable';
+
+  @override
+  String get accountCopyFailed => 'Could not copy. Please try again.';
+
+  @override
+  String get notificationsTitle => 'Steam notifications';
+
+  @override
+  String get notificationsInboxTab => 'Notifications';
+
+  @override
+  String get notificationsRequestsTab => 'Friend requests';
+
+  @override
+  String get notificationsEmpty => 'No notifications.';
+
+  @override
+  String get notificationsRequestsEmpty => 'No pending friend requests.';
+
+  @override
+  String get notificationsMarkRead => 'Mark as read';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark this list as read';
+
+  @override
+  String get notificationsHide => 'Ignore notification';
+
+  @override
+  String get notificationsItemTitle => 'Steam notification';
+
+  @override
+  String get notificationsItemFallback =>
+      'Open Steam to view this notification.';
+
+  @override
+  String get notificationsOpenSteam => 'View in Steam';
+
+  @override
+  String get notificationsAcceptRequest => 'Accept';
+
+  @override
+  String get notificationsRejectRequest => 'Decline';
+
+  @override
+  String get notificationsActionUnconfirmed =>
+      'The result could not be confirmed. Refresh to check before trying again.';
+
+  @override
+  String get notificationsActionDone => 'Updated.';
+
+  @override
+  String get notificationsLoadFailed =>
+      'Could not load notifications. Please refresh or sign in again.';
+
+  @override
+  String get notificationsOpenFailed => 'Could not open Steam.';
+
+  @override
+  String get notificationsUnread => 'Unread';
+
+  @override
+  String get notificationsSessionChanged =>
+      'The account session changed. Refresh this list before continuing.';
+
+  @override
+  String confirmationBadgeCount(int count) {
+    return '$count pending confirmations';
+  }
+
+  @override
+  String get confirmationBadgeUnknown =>
+      'Pending confirmations have not been checked.';
+
+  @override
+  String confirmationBadgeStale(int count) {
+    return 'Last checked: $count pending confirmations. Refresh to check again.';
+  }
+
+  @override
+  String get notificationsTypeGift => 'Gift';
+
+  @override
+  String get notificationsTypeComment => 'Comment';
+
+  @override
+  String get notificationsTypeInventory => 'Inventory item';
+
+  @override
+  String get notificationsTypeFriend => 'Friend request';
+
+  @override
+  String get notificationsTypeSale => 'Promotion';
+
+  @override
+  String get notificationsTypeWishlist => 'Wishlist';
+
+  @override
+  String get notificationsTypeTrade => 'Trade offer';
+
+  @override
+  String get notificationsTypeAccount => 'Account notice';
+
+  @override
+  String get notificationsTypeSupport => 'Steam Support';
+
+  @override
+  String get notificationsTypeModeration => 'Moderation notice';
+
+  @override
+  String get notificationsTypeFamily => 'Family invitation';
+
+  @override
+  String get notificationsTypePlaytest => 'Playtest invitation';
+
+  @override
+  String get notificationsTypeTradeReversal => 'Trade reversal';
+
+  @override
+  String get notificationsTypeReport => 'Report result';
+
+  @override
+  String get deviceRevokeOthersVerifyPending =>
+      'Removal could not be verified in the refreshed device list. Refresh and check before trying again.';
 }

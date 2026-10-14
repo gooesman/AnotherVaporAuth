@@ -1034,5 +1034,80 @@
   "inventoryCooldownLocalTime": "時間已轉換為本機時區。",
   "inventoryCooldownUnknown": "Steam 未提供可識別的解鎖時間，不估算日期。",
   "inventoryCooldownElapsed": "該日期已到，請重新整理庫存，以 Steam 傳回的最新限制狀態為準。",
-  "inventoryCooldownRemaining": "剩餘：{days} 天 {hours} 小時 {minutes} 分鐘"
+  "inventoryCooldownRemaining": "剩餘：{days} 天 {hours} 小時 {minutes} 分鐘",
+  "deviceRevokeOthersAction": "撤銷其他裝置授權",
+  "deviceRevokeOthersConfirm": "撤銷下方列出的其他 {count} 個裝置授權？保留目前 GooeSteamKit 工作階段，其他裝置需要重新登入。此操作不會移除 Steam 驗證器。",
+  "deviceRevokeOthersCurrentUnknown": "無法識別目前 GooeSteamKit 工作階段，請重新整理後再撤銷裝置授權。",
+  "deviceRevokeOthersNone": "沒有可撤銷的其他裝置授權。",
+  "deviceRevokeOthersBusy": "正在撤銷其他裝置授權…",
+  "deviceRevokeOthersDone": "已確認撤銷 {count} 個其他裝置授權。",
+  "deviceRevokeOthersPartial": "已確認撤銷 {done} 個，另有 {failed} 個未完成或未確認。請核對下方詳情及重新整理後的裝置清單，再決定是否重試。",
+  "@deviceRevokeOthersConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deviceRevokeOthersDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountCopyInfoTitle": "複製帳戶資訊",
+  "accountCopyPersonaName": "複製 Steam 暱稱",
+  "accountCopyLoginName": "複製登入名稱",
+  "accountCopyUnavailable": "尚未取得",
+  "accountCopyFailed": "複製失敗，請重試。",
+  "notificationsTitle": "Steam 通知",
+  "notificationsInboxTab": "通知",
+  "notificationsRequestsTab": "好友申請",
+  "notificationsEmpty": "暫無通知。",
+  "notificationsRequestsEmpty": "暫無待處理好友申請。",
+  "notificationsMarkRead": "標為已讀",
+  "notificationsMarkAllRead": "目前清單全部標為已讀",
+  "notificationsHide": "忽略通知",
+  "notificationsItemTitle": "Steam 通知",
+  "notificationsItemFallback": "請在 Steam 中查看此通知。",
+  "notificationsOpenSteam": "在 Steam 中查看",
+  "notificationsAcceptRequest": "同意",
+  "notificationsRejectRequest": "拒絕",
+  "notificationsActionUnconfirmed": "未確認操作結果，請重新整理確認後再重試。",
+  "notificationsActionDone": "已更新。",
+  "notificationsLoadFailed": "暫時無法載入，請重新整理或重新登入。",
+  "notificationsOpenFailed": "無法開啟 Steam 頁面。",
+  "notificationsUnread": "未讀",
+  "notificationsSessionChanged": "帳戶工作階段已變更，請重新整理清單後繼續。",
+  "confirmationBadgeCount": "{count} 項待確認",
+  "confirmationBadgeUnknown": "尚未取得待確認數量。",
+  "confirmationBadgeStale": "上次取得：{count} 項待確認，請重新整理確認。",
+  "@confirmationBadgeCount": {"placeholders": {"count": {"type": "int"}}},
+  "@confirmationBadgeStale": {"placeholders": {"count": {"type": "int"}}},
+  "notificationsTypeGift": "禮物",
+  "notificationsTypeComment": "評論",
+  "notificationsTypeInventory": "庫存物品",
+  "notificationsTypeFriend": "好友申請",
+  "notificationsTypeSale": "促銷",
+  "notificationsTypeWishlist": "願望清單",
+  "notificationsTypeTrade": "交易報價",
+  "notificationsTypeAccount": "帳戶通知",
+  "notificationsTypeSupport": "Steam 客服",
+  "notificationsTypeModeration": "社群管理通知",
+  "notificationsTypeFamily": "家庭邀請",
+  "notificationsTypePlaytest": "測試邀請",
+  "notificationsTypeTradeReversal": "交易撤銷",
+  "notificationsTypeReport": "檢舉結果",
+  "deviceRevokeOthersVerifyPending": "無法從重新整理後的裝置清單確認撤銷結果，請重新整理核對後再操作。",
+  "@deviceRevokeOthersPartial": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  }
 }

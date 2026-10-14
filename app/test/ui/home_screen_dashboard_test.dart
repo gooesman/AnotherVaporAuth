@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
 import 'package:ava/src/app/settings_store.dart';
+import 'package:ava/src/app/steam_notifications_provider.dart';
+import 'package:ava/src/app/route_observer.dart';
 import 'package:ava/src/app/theme.dart';
 import 'package:ava/src/core/entitlement.dart';
 import 'package:ava/src/core/models/session_data.dart';
@@ -17,6 +19,9 @@ import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/skins/skin_spec.dart';
 import 'package:ava/src/ui/account_dashboard.dart';
 import 'package:ava/src/ui/home_screen.dart';
+import 'package:ava/src/ui/notifications/notifications_screen.dart';
+import 'package:ava/src/ui/widgets/pending_confirmation_badge.dart';
+import 'package:ava/src/ui/widgets/steam_notifications_button.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,6 +59,29 @@ class _PreviewSettings extends SettingsStore {
   Future<bool> loadTutorialSeen() async => true;
   @override
   Future<List<String>?> loadDashboardSections() async => null;
+}
+
+class _HomeCountsApi extends _PreviewApi {
+  final requests = <bool>[];
+
+  @override
+  Future<ProtoReader> callProtobuf(
+    String iface,
+    String method, {
+    required ProtoWriter request,
+    String? accessToken,
+    bool useGet = false,
+    int version = 1,
+  }) async {
+    if (iface == 'ISteamNotificationService' && method == 'GetSteamNotifications') {
+      requests.add(ProtoReader(request.toBytes()).parse()[6]?.asBool ?? false);
+      return ProtoReader((ProtoWriter()
+        ..writeVarint(2, 1)
+        ..writeVarint(5, 2)
+        ..writeVarint(6, 3)).toBytes());
+    }
+    return ProtoReader(Uint8List(0));
+  }
 }
 
 class _PreviewController extends AppController {
@@ -149,6 +177,7 @@ Widget dashboardHomePreviewApp({
   List<SteamGuardAccount>? accounts,
   Stream<int>? ticks,
   bool disableAnimations = true,
+  bool notificationCountsEnabled = false,
   AppController Function(StorageProvider, List<SteamGuardAccount>)?
   controllerFactory,
 }) {
@@ -176,9 +205,11 @@ Widget dashboardHomePreviewApp({
       timeAlignerProvider.overrideWithValue(() async {}),
       skinSpecProvider.overrideWith(() => _PreviewSkin(skinSpec)),
       proStatusProvider.overrideWithValue(ProStatus.pro),
+      steamNotificationCountsEnabledProvider.overrideWithValue(notificationCountsEnabled),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [routeObserver],
       theme: buildAvaTheme(variant).copyWith(
         platform:
             platform ??
@@ -213,6 +244,41 @@ Future<void> pumpDashboardHome(WidgetTester tester) async {
 }
 
 void main() {
+  for (final mobile in [false, true]) {
+    testWidgets('home shows pending counts and opens notifications on ${mobile ? 'phone' : 'desktop'}', (tester) async {
+      tester.view.physicalSize = mobile ? const Size(393, 852) : const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = _HomeCountsApi();
+      await tester.pumpWidget(dashboardHomePreviewApp(
+        variant: AvaThemeVariant.dark,
+        mobile: mobile,
+        api: api,
+        accounts: [homePreviewAccounts.first],
+        notificationCountsEnabled: true,
+      ));
+      await pumpDashboardHome(tester);
+      expect(api.requests, [true]);
+      final rowBadge = find.descendant(
+        of: find.byKey(ValueKey('account-pending-${homePreviewAccounts.first.steamId}')),
+        matching: find.text('1'),
+      );
+      expect(rowBadge, findsOneWidget);
+      expect(find.byType(PendingConfirmationBadge), findsNWidgets(mobile ? 1 : 2));
+      expect(find.byType(AccountDashboardScreen), findsNothing);
+      final messageButton = find.byType(SteamNotificationsButton);
+      expect(messageButton, findsOneWidget);
+      expect(find.descendant(of: messageButton, matching: find.byType(Badge)), findsOneWidget);
+      await tester.tap(messageButton);
+      await pumpDashboardHome(tester);
+      expect(find.byType(NotificationsScreen), findsOneWidget);
+      expect(api.requests, [true, false]);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   for (final (platform, size) in [
     (TargetPlatform.windows, const Size(1400, 900)),
     (TargetPlatform.windows, const Size(393, 852)),
@@ -234,6 +300,9 @@ void main() {
           ),
         );
         await pumpDashboardHome(tester);
+        await tester.tap(find.byKey(const ValueKey('selected-account-avatar')));
+        await pumpDashboardHome(tester);
+        expect(find.byType(AccountDashboardScreen), findsNothing);
         final row = find.text('demo_trading');
         final originalCenter = tester.getCenter(row);
         for (final dx in [-120.0, 120.0]) {
@@ -251,7 +320,6 @@ void main() {
         await pumpDashboardHome(tester);
         final menu = find.byType(PopupMenuItem<String>);
         for (final label in [
-          l.dashboardTitle,
           l.actionConfirmations,
           l.commonRefresh,
           l.commonExport,
@@ -262,11 +330,19 @@ void main() {
             findsOneWidget,
           );
         }
-        await tester.tap(
-          find.descendant(of: menu, matching: find.text(l.dashboardTitle)),
-        );
-        await pumpDashboardHome(tester);
-        expect(find.byType(AccountDashboardScreen), findsOneWidget);
+        final overviewEntry =
+            find.descendant(of: menu, matching: find.text(l.dashboardTitle));
+        if (size.width < 640) {
+          // The narrow desktop window has no inline overview, so keep its
+          // explicit menu entry without making the avatar a navigation trap.
+          expect(overviewEntry, findsOneWidget);
+          await tester.tap(overviewEntry);
+          await pumpDashboardHome(tester);
+          expect(find.byType(AccountDashboardScreen), findsOneWidget);
+        } else {
+          expect(overviewEntry, findsNothing);
+          expect(find.byType(AccountDashboardScreen), findsNothing);
+        }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       },
