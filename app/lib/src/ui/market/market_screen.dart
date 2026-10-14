@@ -27,7 +27,15 @@ import '../error_text.dart';
 class MarketScreen extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
   final int initialTab;
-  const MarketScreen({super.key, required this.account, this.initialTab = 0})
+  final int? initialAppId;
+  final String? initialContextId;
+  const MarketScreen({
+    super.key,
+    required this.account,
+    this.initialTab = 0,
+    this.initialAppId,
+    this.initialContextId,
+  })
     : assert(initialTab >= 0 && initialTab < 3);
 
   @override
@@ -122,10 +130,18 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       } else if (_game == null && (_overview?.games.isNotEmpty ?? false)) {
         // An overview that finished while hidden is cached; defer its first
         // inventory page until the user actually returns to this tab.
-        _selectGame(_overview!.games.first);
+        _selectGame(_initialGame(_overview!.games));
       }
     }
   }
+
+  InventoryGame _initialGame(List<InventoryGame> games) => games.firstWhere(
+    (game) =>
+        game.appid == widget.initialAppId &&
+        (widget.initialContextId == null ||
+            game.contextId == widget.initialContextId),
+    orElse: () => games.first,
+  );
 
   void _refreshCurrentTab() {
     switch (_activeTab) {
@@ -183,7 +199,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
       if (!mounted) return;
       setState(() => _overview = ov);
       if (_activeTab == 0 && ov.games.isNotEmpty) {
-        _selectGame(ov.games.first, refresh: true);
+        _selectGame(_initialGame(ov.games), refresh: true);
       }
     } on CommunityAuthException {
       // The session died between the ensureSession pre-check and the fetch —

@@ -5,6 +5,16 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.13] — 2026-10-14 · Fork
+
+### Fixed
+- Inventory notifications now request metadata for the visible notification's exact item and show its name, thumbnail and game instead of only a generic category. Requests are serialized, cached per session/language and cancelled offscreen; unavailable historical items keep an explicit unavailable state without scanning the inventory or loading prices.
+- Notifications show unread items first, newest first, with read history collapsed by default. Comments and account messages use Steam's type-specific body fields. Inventory, trade and friend notifications open the corresponding in-app view; inventory links select the matching game/context.
+
+### 修复
+- 库存通知按可见通知中的确切物品补齐名称、小图和游戏，不再只显示通用分类。请求串行限速、按会话与语言缓存，离屏即取消；旧物品详情无法取得时明确显示不可用，不扫描整个库存或加载市场价格。
+- 通知默认优先显示未读及最新消息，已读历史默认折叠；评论与账户消息按 Steam 对应字段展示正文。库存、报价和好友通知进入应用内对应功能，库存入口选中相应游戏与库存分区。
+
 ## [v1.5.12] — 2026-10-14 · Fork
 
 ### Added

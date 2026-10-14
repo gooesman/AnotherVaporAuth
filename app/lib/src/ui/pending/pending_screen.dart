@@ -10,7 +10,12 @@ import 'trade_offers_tab.dart';
 /// 页签角标 = 各 tab 拉取成功后上报的待处理数。
 class PendingScreen extends StatefulWidget {
   final SteamGuardAccount account;
-  const PendingScreen({super.key, required this.account});
+  final int initialTab;
+  const PendingScreen({
+    super.key,
+    required this.account,
+    this.initialTab = 0,
+  }) : assert(initialTab >= 0 && initialTab < 2);
 
   @override
   State<PendingScreen> createState() => _PendingScreenState();
@@ -18,7 +23,11 @@ class PendingScreen extends StatefulWidget {
 
 class _PendingScreenState extends State<PendingScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs = TabController(
+    length: 2,
+    vsync: this,
+    initialIndex: widget.initialTab,
+  );
   // Lets the AppBar refresh action delegate to the active tab —
   // desktop mouse users can't trigger the drag-only RefreshIndicator.
   final _confTabKey = GlobalKey<ConfirmationsTabState>();

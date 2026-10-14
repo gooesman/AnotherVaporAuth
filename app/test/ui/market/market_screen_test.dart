@@ -202,6 +202,8 @@ MarketListing _listing(String id, String name, MarketListingState state) =>
 Future<(_Market, _Inventory, AppLocalizations)> _show(
   WidgetTester tester, {
   int initialTab = 1,
+  int? initialAppId,
+  String? initialContextId,
   List<InventoryItem> items = const [],
   List<InventoryItem> nextPage = const [],
   WalletInfo wallet = WalletInfo.fallback,
@@ -249,6 +251,8 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
             session: SessionData(steamId: 76561198000000123),
           ),
           initialTab: initialTab,
+          initialAppId: initialAppId,
+          initialContextId: initialContextId,
         ),
       ),
     ),
@@ -290,6 +294,77 @@ Future<void> _filter(WidgetTester tester, String control, String label) async {
 }
 
 void main() {
+  testWidgets('notification inventory target selects matching game and context', (
+    tester,
+  ) async {
+    final (market, inventory, _) = await _show(
+      tester,
+      initialTab: 0,
+      initialAppId: 730,
+      initialContextId: '16',
+    );
+    expect(inventory.selectedInventories, [(730, '16')]);
+    expect(market.listingsCalls, 0);
+    expect(market.priceQueries, isEmpty);
+  });
+
+  testWidgets('notification game without context selects its first inventory', (
+    tester,
+  ) async {
+    final (_, inventory, _) = await _show(
+      tester,
+      initialTab: 0,
+      initialAppId: 440,
+      games: [
+        ..._defaultGames,
+        const InventoryGame(
+          appid: 440,
+          contextId: '2',
+          name: 'Team Fortress 2',
+          iconUrl: '',
+          itemCount: 1,
+        ),
+      ],
+    );
+    expect(inventory.selectedInventories, [(440, '2')]);
+  });
+
+  testWidgets('missing notification context falls back to the usual inventory', (
+    tester,
+  ) async {
+    final (_, inventory, _) = await _show(
+      tester,
+      initialTab: 0,
+      initialAppId: 730,
+      initialContextId: 'missing',
+    );
+    expect(inventory.selectedInventories, [(730, '2')]);
+  });
+
+  testWidgets('notification target survives an overview completed while hidden', (
+    tester,
+  ) async {
+    final pending = Completer<InventoryOverview>();
+    final (_, inventory, l) = await _show(
+      tester,
+      initialTab: 0,
+      initialAppId: 730,
+      initialContextId: '16',
+      pendingOverview: pending.future,
+      settle: false,
+    );
+    await tester.pump();
+    await tester.tap(find.widgetWithText(Tab, l.marketTabSearch));
+    await tester.pumpAndSettle();
+    pending.complete(InventoryOverview(_defaultGames, WalletInfo.fallback));
+    await tester.pumpAndSettle();
+    expect(inventory.selectedInventories, isEmpty);
+    await tester.tap(find.widgetWithText(Tab, l.marketTabInventory));
+    await tester.pumpAndSettle();
+    expect(inventory.selectedInventories, [(730, '16')]);
+    expect(inventory.overviewCalls, 1);
+  });
+
   testWidgets('inventory cooldown is readable at phone width and large text', (
     tester,
   ) async {

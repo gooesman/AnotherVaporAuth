@@ -1,24 +1,34 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../app/responsive.dart';
+import '../../app/route_observer.dart';
 import '../../app/steam_notifications_provider.dart';
 import '../../app/theme.dart';
 import '../../core/models/steam_friend.dart';
 import '../../core/models/steam_guard_account.dart';
 import '../../core/models/steam_notification.dart';
 import '../../services/session_manager.dart';
+import '../../services/steam_request_scope.dart';
 import '../friends/friends_screen.dart' show friendsClientProvider;
+import '../market/market_screen.dart';
+import '../pending/pending_screen.dart';
 import '../pending/session_retry.dart';
 import '../widgets/ava_panel.dart';
+import '../widgets/steam_image_provider.dart';
 
 final notificationsLauncherProvider = Provider<Future<bool> Function(Uri)>(
   (ref) =>
       (uri) => launchUrl(uri, mode: LaunchMode.externalApplication),
+);
+
+final notificationDetailsClockProvider = Provider<DateTime Function()>(
+  (ref) => DateTime.now,
 );
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -32,7 +42,11 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
-    with SingleTickerProviderStateMixin, SessionRetryState {
+    with
+        SingleTickerProviderStateMixin,
+        SessionRetryState,
+        WidgetsBindingObserver,
+        RouteAware {
   late final TabController _tabs;
   SteamNotificationInbox? _inbox;
   List<SteamFriendRequest>? _requests;
@@ -42,6 +56,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   final _writeNeedsRefresh = [false, false];
   final List<(int, String?, String?)?> _listSessions = [null, null];
   bool _busy = false;
+  bool _showHistory = false;
+  bool _foreground = true;
+  bool _covered = false;
+  PageRoute<void>? _route;
+  int _detailsGeneration = 0;
+  final _itemDetails = <String, SteamNotificationItem?>{};
+  Future<void> _detailsQueue = Future.value();
+  DateTime? _lastDetailRequest;
+  final _detailReads = <SteamRequestScope>{};
 
   (int, String?, String?) get _session => (
     widget.account.steamId,
@@ -54,16 +77,59 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     super.initState();
     _tabs = TabController(length: 2, vsync: this)
       ..addListener(_ensureTabLoaded);
+    WidgetsBinding.instance.addObserver(this);
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _foreground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
     _load(0);
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<void> && !identical(_route, route)) {
+      routeObserver.unsubscribe(this);
+      _route = route;
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _cancelDetails();
+    if (mounted) {
+      setState(() => _foreground = state == AppLifecycleState.resumed);
+    }
+  }
+
+  @override
+  void didPushNext() {
+    _cancelDetails();
+    setState(() => _covered = true);
+  }
+
+  @override
+  void didPopNext() => setState(() => _covered = false);
+
+  @override
   void dispose() {
+    _cancelDetails();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _tabs.dispose();
     super.dispose();
   }
 
+  void _cancelDetails() {
+    _detailsGeneration++;
+    for (final scope in _detailReads) {
+      scope.cancel();
+    }
+    _detailReads.clear();
+  }
+
   void _ensureTabLoaded() {
+    if (mounted) setState(() {});
     if (_busy) return;
     final index = _tabs.index;
     if (_errors[index] == null &&
@@ -97,6 +163,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           return;
         }
         setState(() {
+          if (_listSessions[index] != readSession) {
+            _itemDetails.clear();
+          } else {
+            _itemDetails.removeWhere((_, detail) => detail == null);
+          }
+          _detailsGeneration++;
           _inbox = inbox;
           _listSessions[index] = readSession;
           _writeNeedsRefresh[index] = false;
@@ -244,9 +316,70 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   bool get _actionsEnabled => !_busy && !_loading.any((value) => value);
   bool _canWrite(int index) => _actionsEnabled && !_writeNeedsRefresh[index];
 
+  bool get _detailsActive =>
+      mounted &&
+      _foreground &&
+      !_covered &&
+      _tabs.index == 0 &&
+      ref.read(steamNotificationCountsEnabledProvider) &&
+      _listSessions[0] == _session;
+
+  Future<SteamNotificationItem?> _loadItemDetails(
+    SteamNotification item,
+    SteamRequestScope scope,
+    bool Function() visible,
+  ) async {
+    final session = _session;
+    final generation = _detailsGeneration;
+    final language = ref
+        .read(steamNotificationsClientProvider)
+        .api
+        .steamLanguage;
+    final key =
+        '${item.inventoryAppId}/${item.contextId}/${item.assetId}/$language';
+    bool current() =>
+        visible() &&
+        _detailsActive &&
+        _session == session &&
+        generation == _detailsGeneration;
+    final previous = _detailsQueue;
+    final done = Completer<void>();
+    _detailsQueue = done.future;
+    try {
+      await previous;
+      if (!current()) return null;
+      if (_itemDetails.containsKey(key)) return _itemDetails[key];
+      if (_lastDetailRequest != null) {
+        final wait =
+            const Duration(seconds: 1) -
+            ref
+                .read(notificationDetailsClockProvider)()
+                .difference(_lastDetailRequest!);
+        if (wait > Duration.zero) await Future<void>.delayed(wait);
+      }
+      if (!current()) return null;
+      _lastDetailRequest = ref.read(notificationDetailsClockProvider)();
+      _detailReads.add(scope);
+      final detail = await scope.run(
+        () => ref
+            .read(steamNotificationsClientProvider)
+            .fetchInventoryNotificationItem(widget.account, item),
+      );
+      if (current()) _itemDetails[key] = detail;
+      return current() ? detail : null;
+    } finally {
+      _detailReads.remove(scope);
+      done.complete();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    ref.watch(steamNotificationCountsEnabledProvider);
+    ref.listen(steamNotificationCountsEnabledProvider, (_, enabled) {
+      if (!enabled) _cancelDetails();
+    });
     return Scaffold(
       appBar: AppBar(
         title: Text(l.notificationsTitle),
@@ -317,29 +450,52 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   Widget _notificationList(AppLocalizations l) {
     final status = _status(0, l);
     if (status != null) return status;
-    final items =
+    final all =
         _inbox?.notifications.where((item) => !item.hidden).toList() ??
         const <SteamNotification>[];
-    if (items.isEmpty) return Center(child: Text(l.notificationsEmpty));
-    final unread = items
+    if (all.isEmpty) return Center(child: Text(l.notificationsEmpty));
+    final unread = all
         .where((item) => !item.read)
         .map((item) => item.id)
         .toList();
+    final historyCount = all.length - unread.length;
+    final items = all.where((item) => _showHistory || !item.read).toList()
+      ..sort((a, b) {
+        final readOrder = (a.read ? 1 : 0).compareTo(b.read ? 1 : 0);
+        return readOrder != 0 ? readOrder : b.timestamp.compareTo(a.timestamp);
+      });
     return ListView.separated(
+      scrollCacheExtent: const ScrollCacheExtent.pixels(0),
       padding: context.rSafeInsets(all: 16),
       itemCount: items.length + 1,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         if (index == 0) {
-          return Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _canWrite(0) && unread.isNotEmpty
-                  ? () => _updateNotifications(unread)
-                  : null,
-              icon: const Icon(Icons.done_all),
-              label: Text(l.notificationsMarkAllRead),
-            ),
+          return Wrap(
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (unread.isEmpty) Text(l.notificationsNoUnread),
+              if (unread.isNotEmpty)
+                TextButton.icon(
+                  onPressed: _canWrite(0)
+                      ? () => _updateNotifications(unread)
+                      : null,
+                  icon: const Icon(Icons.done_all),
+                  label: Text(l.notificationsMarkAllRead),
+                ),
+              if (historyCount > 0)
+                TextButton.icon(
+                  key: const ValueKey('notification-history-toggle'),
+                  onPressed: () => setState(() => _showHistory = !_showHistory),
+                  icon: Icon(_showHistory ? Icons.expand_less : Icons.history),
+                  label: Text(
+                    _showHistory
+                        ? l.notificationsCollapseHistory
+                        : l.notificationsHistory(historyCount),
+                  ),
+                ),
+            ],
           );
         }
         return _notificationCard(items[index - 1], l);
@@ -348,11 +504,36 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   }
 
   Widget _notificationCard(SteamNotification item, AppLocalizations l) {
-    String? text(String key) {
-      final value = item.body[key];
-      return value is String && value.trim().isNotEmpty ? value : null;
+    if (item.type == 4 &&
+        item.inventoryAppId != null &&
+        item.contextId != null &&
+        item.assetId != null &&
+        _detailsActive) {
+      return _InventoryNotificationDetails(
+        key: ValueKey('notification-details-${item.id}-$_detailsGeneration'),
+        load: (scope, visible) => _loadItemDetails(item, scope, visible),
+        builder: (detail, loading) =>
+            _notificationContent(item, l, detail: detail, loading: loading),
+      );
     }
+    return _notificationContent(item, l);
+  }
 
+  String _gameName(int? appId) => switch (appId) {
+    730 => 'Counter-Strike 2',
+    570 => 'Dota 2',
+    440 => 'Team Fortress 2',
+    753 => 'Steam',
+    null => 'Steam',
+    _ => 'App $appId',
+  };
+
+  Widget _notificationContent(
+    SteamNotification item,
+    AppLocalizations l, {
+    SteamNotificationItem? detail,
+    bool loading = false,
+  }) {
     final category = switch (item.type) {
       2 => l.notificationsTypeGift,
       3 => l.notificationsTypeComment,
@@ -370,25 +551,80 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       30 => l.notificationsTypeReport,
       _ => l.notificationsItemTitle,
     };
-
+    final game = detail?.gameName.isNotEmpty == true
+        ? detail!.gameName
+        : _gameName(item.inventoryAppId);
+    final body =
+        item.displayBody ??
+        switch (item.type) {
+          4 => l.notificationsInventoryReceived(game),
+          5 => l.notificationsFriendSummary,
+          9 => l.notificationsTradeSummary,
+          _ => l.notificationsItemFallback,
+        };
+    final title = detail?.name ?? item.displayTitle ?? category;
     final t = Theme.of(context).extension<AvaTokens>()!;
     return AvaPanel(
       key: ValueKey('notification-${item.id}'),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            text('title') ?? category,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (!item.read)
-            Text(l.notificationsUnread, style: TextStyle(color: t.accent)),
-          const SizedBox(height: 8),
-          Text(
-            text('body') ??
-                text('message') ??
-                (item.type == 3 ? text('text') : null) ??
-                l.notificationsItemFallback,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (item.type == 4) ...[
+                SizedBox.square(
+                  dimension: 56,
+                  child: detail?.iconUrl.isNotEmpty == true
+                      ? Image(
+                          image: steamThumbnailProvider(
+                            detail!.iconUrl,
+                            logicalSize: const Size.square(56),
+                            devicePixelRatio: MediaQuery.devicePixelRatioOf(
+                              context,
+                            ),
+                          ),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.inventory_2_outlined),
+                        )
+                      : Icon(Icons.inventory_2_outlined, color: t.muted),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(body),
+                    if (item.partnerSteamId != null)
+                      Text(
+                        'SteamID ${item.partnerSteamId}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    if (item.type == 4 && detail == null)
+                      Text(
+                        loading
+                            ? l.notificationsItemLoading
+                            : l.notificationsItemUnavailable,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: t.muted),
+                      ),
+                  ],
+                ),
+              ),
+              if (!item.read) ...[
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: l.notificationsUnread,
+                  child: Icon(Icons.circle, size: 8, color: t.accent),
+                ),
+              ],
+            ],
           ),
           if (item.timestamp > 0) ...[
             const SizedBox(height: 8),
@@ -418,7 +654,35 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                     : null,
                 child: Text(l.notificationsHide),
               ),
-              if (isIndividualSteamId('${widget.account.steamId}'))
+              if (item.type == 4)
+                TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => MarketScreen(
+                        account: widget.account,
+                        initialAppId: item.inventoryAppId,
+                        initialContextId: item.contextId,
+                      ),
+                    ),
+                  ),
+                  child: Text(l.notificationsOpenInventory),
+                )
+              else if (item.type == 9)
+                TextButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          PendingScreen(account: widget.account, initialTab: 1),
+                    ),
+                  ),
+                  child: Text(l.pendingTabOffers),
+                )
+              else if (item.type == 5)
+                TextButton(
+                  onPressed: () => _tabs.animateTo(1),
+                  child: Text(l.notificationsRequestsTab),
+                )
+              else if (isIndividualSteamId('${widget.account.steamId}'))
                 TextButton(
                   onPressed: () => _openSteam(
                     Uri.https(
@@ -512,4 +776,61 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       },
     );
   }
+}
+
+/// Mounted only for visible inventory rows. A disposed/hidden row cancels its
+/// read; the parent serializes and caches requests for this account session.
+class _InventoryNotificationDetails extends StatefulWidget {
+  const _InventoryNotificationDetails({
+    super.key,
+    required this.load,
+    required this.builder,
+  });
+  final Future<SteamNotificationItem?> Function(
+    SteamRequestScope,
+    bool Function(),
+  )
+  load;
+  final Widget Function(SteamNotificationItem?, bool) builder;
+
+  @override
+  State<_InventoryNotificationDetails> createState() =>
+      _InventoryNotificationDetailsState();
+}
+
+class _InventoryNotificationDetailsState
+    extends State<_InventoryNotificationDetails> {
+  final _scope = SteamRequestScope(timeout: const Duration(seconds: 8));
+  SteamNotificationItem? _detail;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    SteamNotificationItem? detail;
+    try {
+      detail = await widget.load(_scope, () => mounted);
+    } catch (_) {
+      // Keep the specific game/event and inventory action if details expired.
+    }
+    if (mounted) {
+      setState(() {
+        _detail = detail;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scope.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_detail, _loading);
 }

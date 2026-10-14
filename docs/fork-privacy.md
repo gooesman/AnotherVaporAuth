@@ -24,8 +24,13 @@ logs or WebDAV.
 While the home screen is visible and the account library is unlocked, existing
 sessions query Valve for pending-confirmation, unread-notification and friend-request
 counts. Reads are infrequent and reuse an in-memory cache. Notifications
-and friend requests load when opened; these contents are not included in sync.
-Supported text is displayed in-app; other types can be viewed in Steam's notification center.
+and friend requests load when opened, with unread messages first and read history
+collapsed by default. Notification text and item-detail responses stay in page
+memory and are not included in sync. Visible inventory notifications request
+only the referenced item's details from Valve, including its name and image key;
+they do not load the whole inventory. Public thumbnails use the existing Steam
+CDN image cache on the device. Inventory, trade-offer and friend-request actions
+open their relevant in-app pages; other types can be viewed in Steam's notification center.
 Marking read, ignoring notifications, responding to friend requests and revoking
 other device authorizations require your explicit action. This does not automatically
 handle trades or remove the authenticator. Copying a name or SteamID writes only

@@ -1,9 +1,11 @@
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
+import 'package:ava/src/core/models/steam_notification.dart';
 import 'package:ava/src/core/proto/protobuf_wire.dart';
 import 'package:ava/src/core/protocol/community_session.dart';
 import 'package:ava/src/core/protocol/steam_notifications_client.dart';
 import 'package:ava/src/services/steam_api_client.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Api extends SteamApiClient {
@@ -59,6 +61,40 @@ ProtoWriter _notification({
   ..writeVarint(8, 1700000000)
   ..writeBool(9, hidden)
   ..writeVarint(10, 1800000000);
+
+const _inventoryNotification = SteamNotification(
+  id: '123',
+  type: 4,
+  body: {'app_id': 730, 'context_id': '2', 'asset_id': '900'},
+);
+
+ProtoWriter _asset({
+  int appId = 730,
+  int contextId = 2,
+  int assetId = 900,
+  int classId = 300,
+  int instanceId = 0,
+  bool missing = false,
+}) => ProtoWriter()
+  ..writeVarint(1, appId)
+  ..writeUint64(2, contextId)
+  ..writeUint64(3, assetId)
+  ..writeUint64(4, classId)
+  ..writeUint64(5, instanceId)
+  ..writeBool(8, missing);
+
+ProtoWriter _description({
+  int appId = 730,
+  int classId = 300,
+  int instanceId = 0,
+  String name = 'Fixture music kit',
+  String icon = 'fixture_icon-key',
+}) => ProtoWriter()
+  ..writeVarint(1, appId)
+  ..writeUint64(2, classId)
+  ..writeUint64(3, instanceId)
+  ..writeString(6, icon)
+  ..writeString(14, name);
 
 void main() {
   test(
@@ -227,6 +263,248 @@ void main() {
       final inbox = await SteamNotificationsClient(api).fetch(_account());
       expect(inbox.notifications.single.id, '123');
       expect(inbox.notifications.single.body, isEmpty);
+    },
+  );
+
+  test(
+    'inventory metadata requests exactly one asset via authenticated GET',
+    () async {
+      final api = _Api()
+        ..steamLanguage = 'schinese'
+        ..response = (ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description())
+          // More items must never trigger an inventory scan or pagination.
+          ..writeBool(4, true)
+          ..writeUint64(5, 900));
+      final item = await SteamNotificationsClient(
+        api,
+      ).fetchInventoryNotificationItem(_account(), _inventoryNotification);
+      expect(item!.name, 'Fixture music kit');
+      expect(item.appId, 730);
+      expect(item.contextId, '2');
+      expect(item.assetId, '900');
+      expect(item.gameName, isEmpty);
+      expect(
+        item.iconUrl,
+        'https://community.fastly.steamstatic.com/economy/image/fixture_icon-key/128fx128f',
+      );
+      final call = api.calls.single;
+      expect(call.service, 'IEconService');
+      expect(call.method, 'GetInventoryItemsWithDescriptions');
+      expect(call.get, isTrue);
+      expect(call.token, 'fixture-access');
+      final fields = {for (final field in call.fields) field.number: field};
+      expect(fields.keys, [1, 2, 3, 4, 5, 6]);
+      expect(fields[1]!.wireType, 1);
+      expect(fields[1]!.asFixed64, 76561198000000001);
+      expect(fields[2]!.asInt, 730);
+      expect(fields[3]!.asInt, 2);
+      expect(fields[4]!.asBool, isTrue);
+      expect(fields[5]!.asString, 'schinese');
+      final filter = ProtoReader(fields[6]!.bytes!).parseAll();
+      expect(filter, hasLength(1));
+      expect(filter.single.number, 1);
+      expect(filter.single.asInt, 900);
+    },
+  );
+
+  test(
+    'inventory lookup preserves unsigned 64-bit context and asset IDs',
+    () async {
+      final api = _Api()
+        ..response = (ProtoWriter()
+          ..writeMessage(1, _asset(contextId: -1, assetId: -1, classId: -1))
+          ..writeMessage(2, _description(classId: -1)));
+      final item = await SteamNotificationsClient(api)
+          .fetchInventoryNotificationItem(
+            _account(),
+            const SteamNotification(
+              id: '123',
+              type: 4,
+              body: {
+                'app_id': '730',
+                'context_id': '18446744073709551615',
+                'asset_id': '18446744073709551615',
+              },
+            ),
+          );
+      expect(item!.assetId, '18446744073709551615');
+      expect(item.contextId, '18446744073709551615');
+      final fields = {
+        for (final field in api.calls.single.fields) field.number: field,
+      };
+      expect(fields[3]!.asInt, -1);
+      expect(ProtoReader(fields[6]!.bytes!).parseAll().single.asInt, -1);
+    },
+  );
+
+  test('missing or invalid inventory identifiers cause no request', () async {
+    final api = _Api();
+    final client = SteamNotificationsClient(api);
+    final invalid = <SteamNotification>[
+      const SteamNotification(
+        id: '123',
+        type: 3,
+        body: {'app_id': 730, 'context_id': '2', 'asset_id': '900'},
+      ),
+      const SteamNotification(id: '123', type: 4),
+      for (final field in ['app_id', 'context_id', 'asset_id'])
+        for (final value in [
+          0,
+          -1,
+          1.5,
+          true,
+          ' 2',
+          '1x',
+          '18446744073709551616',
+        ])
+          SteamNotification(
+            id: '123',
+            type: 4,
+            body: {..._inventoryNotification.body, field: value},
+          ),
+      const SteamNotification(
+        id: '123',
+        type: 4,
+        body: {'app_id': '4294967296', 'context_id': '2', 'asset_id': '900'},
+      ),
+    ];
+    for (final notification in invalid) {
+      expect(
+        await client.fetchInventoryNotificationItem(_account(), notification),
+        isNull,
+      );
+    }
+    expect(api.calls, isEmpty);
+    await expectLater(
+      client.fetchInventoryNotificationItem(
+        _account(token: null),
+        _inventoryNotification,
+      ),
+      throwsA(isA<MissingAccessTokenException>()),
+    );
+    await expectLater(
+      client.fetchInventoryNotificationItem(
+        SteamGuardAccount(),
+        _inventoryNotification,
+      ),
+      throwsArgumentError,
+    );
+    expect(api.calls, isEmpty);
+  });
+
+  test(
+    'missing, mismatched and ambiguous item metadata safely returns null',
+    () async {
+      final responses = [
+        ProtoWriter(),
+        ProtoWriter()..writeMessage(2, _description()),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description(appId: 570)),
+        ProtoWriter()
+          ..writeMessage(1, _asset(assetId: 901))
+          ..writeMessage(2, _description()),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description(classId: 301)),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description(instanceId: 1)),
+        ProtoWriter()
+          ..writeMessage(1, _asset(missing: true))
+          ..writeMessage(2, _description()),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description())
+          ..writeMessage(3, _asset()),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description()),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description())
+          ..writeMessage(2, _description()),
+        ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description(name: '  ')),
+      ];
+      for (final response in responses) {
+        final api = _Api()..response = response;
+        expect(
+          await SteamNotificationsClient(
+            api,
+          ).fetchInventoryNotificationItem(_account(), _inventoryNotification),
+          isNull,
+        );
+        expect(api.calls, hasLength(1));
+      }
+    },
+  );
+
+  test(
+    'asset identity picks matching description rather than the first one',
+    () async {
+      final api = _Api()
+        ..response = (ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description(classId: 301, name: 'Other item'))
+          ..writeMessage(2, _description()));
+      final item = await SteamNotificationsClient(
+        api,
+      ).fetchInventoryNotificationItem(_account(), _inventoryNotification);
+      expect(item!.name, 'Fixture music kit');
+    },
+  );
+
+  test('notification icons cannot select arbitrary URL or path', () async {
+    for (final icon in [
+      'https://evil.example/image',
+      '//evil.example',
+      '../escape',
+      'key?q=secret',
+      'key/other',
+      'x' * 4097,
+    ]) {
+      final api = _Api()
+        ..response = (ProtoWriter()
+          ..writeMessage(1, _asset())
+          ..writeMessage(2, _description(icon: icon)));
+      final item = await SteamNotificationsClient(
+        api,
+      ).fetchInventoryNotificationItem(_account(), _inventoryNotification);
+      expect(item!.iconUrl, isEmpty);
+      expect(item.name, 'Fixture music kit');
+    }
+  });
+
+  test(
+    'inventory auth, transport and cancellation errors propagate without retry',
+    () async {
+      final errors = [
+        SteamApiException(
+          15,
+          'fixture access denied',
+          'GetInventoryItemsWithDescriptions',
+        ),
+        const FormatException('fixture malformed response'),
+        DioException.requestCancelled(
+          requestOptions: RequestOptions(path: 'fixture'),
+          reason: 'fixture canceled',
+        ),
+      ];
+      for (final error in errors) {
+        final api = _Api()..error = error;
+        await expectLater(
+          SteamNotificationsClient(
+            api,
+          ).fetchInventoryNotificationItem(_account(), _inventoryNotification),
+          throwsA(same(error)),
+        );
+        expect(api.calls, hasLength(1));
+      }
     },
   );
 }

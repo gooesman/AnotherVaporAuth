@@ -3327,7 +3327,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsItemFallback =>
-      'Open Steam to view this notification.';
+      'No displayable details are available for this notification type.';
 
   @override
   String get notificationsOpenSteam => 'View in Steam';
@@ -3414,6 +3414,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsTypeReport => 'Report result';
+
+  @override
+  String get notificationsNoUnread => 'No unread notifications.';
+
+  @override
+  String notificationsHistory(int count) {
+    return 'Read notifications ($count)';
+  }
+
+  @override
+  String get notificationsCollapseHistory => 'Hide read notifications';
+
+  @override
+  String notificationsInventoryReceived(String game) {
+    return 'New inventory item in $game.';
+  }
+
+  @override
+  String get notificationsItemLoading => 'Loading item details…';
+
+  @override
+  String get notificationsItemUnavailable =>
+      'Item details are currently unavailable.';
+
+  @override
+  String get notificationsOpenInventory => 'View inventory';
+
+  @override
+  String get notificationsFriendSummary =>
+      'Open friend requests to check and respond to current invitations.';
+
+  @override
+  String get notificationsTradeSummary =>
+      'Open trade offers to view the items and current status.';
 
   @override
   String get deviceRevokeOthersVerifyPending =>

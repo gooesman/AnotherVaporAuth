@@ -46,7 +46,7 @@ lib/src/
 l10n/                   # ARB localizations (en, zh, zh_Hant, de, fr, es, ru)
 ```
 
-## Status (1.5.10)
+## Status (1.5.13)
 
 Implemented features, covered by automated checks where applicable. Live Steam
 account flows and device-specific behavior have separate validation limits noted
@@ -159,7 +159,7 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Last recorded verification: `flutter analyze` clean, **1705 tests pass** (crypto RFC vectors,
+Last recorded verification: `flutter analyze` clean, **1733 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -198,7 +198,7 @@ Do not uninstall the old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1705 tests
+flutter test                       # 1733 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

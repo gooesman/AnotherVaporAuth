@@ -72,23 +72,19 @@ class _Notifications extends SteamNotificationsClient {
   var items = [
     const SteamNotification(
       id: '1',
-      type: 100,
-      body: {'title': 'First notice', 'message': 'Fixture message'},
+      type: 10,
+      body: {'title': 'First notice', 'body': 'Fixture message'},
     ),
-    const SteamNotification(
-      id: '2',
-      type: 101,
-      body: {'title': 'Second notice'},
-    ),
+    const SteamNotification(id: '2', type: 6, body: {'title': 'Second notice'}),
     const SteamNotification(
       id: '3',
-      type: 102,
+      type: 10,
       read: true,
       body: {'title': 'Read notice'},
     ),
     const SteamNotification(
       id: '4',
-      type: 103,
+      type: 10,
       hidden: true,
       body: {'title': 'Hidden notice'},
     ),
@@ -265,7 +261,7 @@ void main() {
       notifications.beforeWrite = () => notifications.items.add(
         const SteamNotification(
           id: '5',
-          type: 100,
+          type: 10,
           body: {'title': 'New arrival'},
         ),
       );
@@ -304,8 +300,11 @@ void main() {
     expect(notifications.hideWrites, [
       ['2'],
     ]);
-    expect(find.text('First notice'), findsOneWidget);
+    expect(find.text('First notice'), findsNothing);
     expect(find.text('Second notice'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('notification-history-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.text('First notice'), findsOneWidget);
   });
 
   testWidgets(

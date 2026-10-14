@@ -3133,7 +3133,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsMarkRead => '标为已读';
 
   @override
-  String get notificationsMarkAllRead => '当前列表全部已读';
+  String get notificationsMarkAllRead => '当前列表全部标为已读';
 
   @override
   String get notificationsHide => '忽略通知';
@@ -3142,7 +3142,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsItemTitle => 'Steam 通知';
 
   @override
-  String get notificationsItemFallback => '请在 Steam 中查看此通知。';
+  String get notificationsItemFallback => '这类通知暂未提供可显示的正文。';
 
   @override
   String get notificationsOpenSteam => '在 Steam 中查看';
@@ -3225,6 +3225,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notificationsTypeReport => '举报结果';
+
+  @override
+  String get notificationsNoUnread => '暂无未读通知。';
+
+  @override
+  String notificationsHistory(int count) {
+    return '已读通知（$count）';
+  }
+
+  @override
+  String get notificationsCollapseHistory => '收起已读通知';
+
+  @override
+  String notificationsInventoryReceived(String game) {
+    return '$game 有新的库存物品。';
+  }
+
+  @override
+  String get notificationsItemLoading => '正在获取物品详情…';
+
+  @override
+  String get notificationsItemUnavailable => '物品详情暂不可用。';
+
+  @override
+  String get notificationsOpenInventory => '查看库存';
+
+  @override
+  String get notificationsFriendSummary => '进入好友申请，查看并处理当前邀请。';
+
+  @override
+  String get notificationsTradeSummary => '进入报价，查看物品与当前交易状态。';
 
   @override
   String get deviceRevokeOthersVerifyPending => '无法从刷新后的设备列表核实撤销结果，请刷新核对后再操作。';
@@ -6374,7 +6405,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get notificationsItemTitle => 'Steam 通知';
 
   @override
-  String get notificationsItemFallback => '請在 Steam 中查看此通知。';
+  String get notificationsItemFallback => '這類通知暫未提供可顯示的內文。';
 
   @override
   String get notificationsOpenSteam => '在 Steam 中查看';
@@ -6457,6 +6488,37 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get notificationsTypeReport => '檢舉結果';
+
+  @override
+  String get notificationsNoUnread => '暫無未讀通知。';
+
+  @override
+  String notificationsHistory(int count) {
+    return '已讀通知（$count）';
+  }
+
+  @override
+  String get notificationsCollapseHistory => '收起已讀通知';
+
+  @override
+  String notificationsInventoryReceived(String game) {
+    return '$game 有新的庫存物品。';
+  }
+
+  @override
+  String get notificationsItemLoading => '正在取得物品詳情…';
+
+  @override
+  String get notificationsItemUnavailable => '物品詳情暫時無法取得。';
+
+  @override
+  String get notificationsOpenInventory => '查看庫存';
+
+  @override
+  String get notificationsFriendSummary => '進入好友申請，查看並處理目前邀請。';
+
+  @override
+  String get notificationsTradeSummary => '進入報價，查看物品與目前交易狀態。';
 
   @override
   String get deviceRevokeOthersVerifyPending =>

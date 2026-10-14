@@ -5816,7 +5816,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsItemFallback.
   ///
   /// In en, this message translates to:
-  /// **'Open Steam to view this notification.'**
+  /// **'No displayable details are available for this notification type.'**
   String get notificationsItemFallback;
 
   /// No description provided for @notificationsOpenSteam.
@@ -5974,6 +5974,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report result'**
   String get notificationsTypeReport;
+
+  /// No description provided for @notificationsNoUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'No unread notifications.'**
+  String get notificationsNoUnread;
+
+  /// No description provided for @notificationsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Read notifications ({count})'**
+  String notificationsHistory(int count);
+
+  /// No description provided for @notificationsCollapseHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide read notifications'**
+  String get notificationsCollapseHistory;
+
+  /// No description provided for @notificationsInventoryReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'New inventory item in {game}.'**
+  String notificationsInventoryReceived(String game);
+
+  /// No description provided for @notificationsItemLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading item details…'**
+  String get notificationsItemLoading;
+
+  /// No description provided for @notificationsItemUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Item details are currently unavailable.'**
+  String get notificationsItemUnavailable;
+
+  /// No description provided for @notificationsOpenInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'View inventory'**
+  String get notificationsOpenInventory;
+
+  /// No description provided for @notificationsFriendSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Open friend requests to check and respond to current invitations.'**
+  String get notificationsFriendSummary;
+
+  /// No description provided for @notificationsTradeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Open trade offers to view the items and current status.'**
+  String get notificationsTradeSummary;
 
   /// No description provided for @deviceRevokeOthersVerifyPending.
   ///
