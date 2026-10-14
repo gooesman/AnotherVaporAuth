@@ -17,6 +17,7 @@ import '../../services/steam_api_client.dart' show CommunityAuthException;
 import '../pending/session_retry.dart';
 import '../widgets/inventory_item_icon.dart';
 import '../widgets/inventory_filter_bar.dart';
+import '../widgets/inventory_cooldown_info.dart';
 import 'item_market_actions.dart';
 import 'market_search_tab.dart';
 import 'sell_sheet.dart';
@@ -648,7 +649,7 @@ class _MarketScreenState extends ConsumerState<MarketScreen>
           // shown together with the user's larger text setting.
           mainAxisExtent:
               context.r(90) +
-              MediaQuery.textScalerOf(context).scale(context.r(70)),
+              MediaQuery.textScalerOf(context).scale(context.r(94)),
         ),
         itemCount: visible.length + (footer ? 1 : 0),
         itemBuilder: (context, i) {
@@ -794,6 +795,7 @@ class _ItemTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: t.muted, fontSize: context.r(9)),
                 ),
+              InventoryCooldownInfo(item: item),
             ],
           ),
         ),

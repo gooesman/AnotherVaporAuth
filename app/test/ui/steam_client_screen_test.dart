@@ -284,6 +284,213 @@ void main() {
     },
   );
 
+  for (final remembered in [false, true]) {
+    testWidgets(
+      'bottom switch uses automatic login for imported account (remembered: $remembered)',
+      (tester) async {
+        final local = _Service([_account(remembered: remembered)]);
+        final flow = _DesktopLogin();
+        final account = _avaAccount(accessToken: 'synthetic');
+        await _show(tester, local, avaAccounts: [account], desktopLogin: flow);
+        await tester.tap(await _switchButton(tester));
+        await tester.pumpAndSettle();
+        expect(flow.calls, 1);
+        expect(flow.selected, same(account));
+        expect(local.switches, 0);
+        expect(find.byType(AlertDialog), findsNothing);
+        final l = AppLocalizations.of(
+          tester.element(find.byType(SteamClientScreen)),
+        );
+        expect(find.text(l.steamDesktopLoginComplete), findsOneWidget);
+      },
+    );
+  }
+
+  testWidgets('imported account absent from Steam can use the switch button', (
+    tester,
+  ) async {
+    final local = _Service([]);
+    final flow = _DesktopLogin();
+    final account = _avaAccount(accessToken: 'synthetic');
+    await _show(tester, local, avaAccounts: [account], desktopLogin: flow);
+    await tester.tap(await _switchButton(tester));
+    await tester.pumpAndSettle();
+    expect(flow.selected, same(account));
+    expect(flow.calls, 1);
+    expect(local.switches, 0);
+    final l = AppLocalizations.of(
+      tester.element(find.byType(SteamClientScreen)),
+    );
+    expect(find.text(l.steamSwitchNoMatch), findsNothing);
+  });
+
+  testWidgets(
+    'dropdown and local list share exactly the same selected SteamID',
+    (tester) async {
+      final first = _avaAccount(accessToken: 'first');
+      final second = _avaAccount(
+        steamId: '76561198000000002',
+        name: 'second-account',
+        accessToken: 'second',
+      );
+      final local = _Service([
+        _account(),
+        const SteamClientAccount(
+          steamId: '76561198000000002',
+          accountName: 'second-account',
+          personaName: 'Second player',
+          rememberPassword: true,
+          isMostRecent: false,
+        ),
+      ]);
+      final flow = _DesktopLogin();
+      await _show(
+        tester,
+        local,
+        avaAccounts: [first, second],
+        desktopLogin: flow,
+      );
+      await tester.tap(find.byType(DropdownButtonFormField<int>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('second-account').last);
+      await tester.pumpAndSettle();
+      final button = await _switchButton(tester);
+      final secondTile = find.widgetWithText(ListTile, 'Second player');
+      expect(tester.widget<ListTile>(secondTile).selected, isTrue);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(flow.selected, same(second));
+      await tester.scrollUntilVisible(
+        find.text('Test player'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Test player'));
+      await tester.pumpAndSettle();
+      await tester.tap(await _switchButton(tester));
+      await tester.pumpAndSettle();
+      expect(flow.selected, same(first));
+      expect(
+        tester
+            .widget<DropdownButtonFormField<int>>(
+              find.byType(DropdownButtonFormField<int>),
+            )
+            .initialValue,
+        first.steamId,
+      );
+      expect(flow.calls, 2);
+      expect(local.switches, 0);
+    },
+  );
+
+  testWidgets('selecting unimported account clears unrelated QR account', (
+    tester,
+  ) async {
+    final account = _avaAccount(
+      steamId: '76561198000000002',
+      name: 'imported-only',
+      accessToken: 'synthetic',
+    );
+    final local = _Service([_account()]);
+    final flow = _DesktopLogin();
+    await _show(
+      tester,
+      local,
+      steamId: '${account.steamId}',
+      avaAccounts: [account],
+      desktopLogin: flow,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Test player'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Test player'));
+    await tester.pumpAndSettle();
+    await tester.tap(await _switchButton(tester));
+    await tester.pumpAndSettle();
+    expect(local.switches, 1);
+    expect(flow.calls, 0);
+    await tester.drag(find.byType(ListView), const Offset(0, 2000));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DropdownButtonFormField<int>>(
+            find.byType(DropdownButtonFormField<int>),
+          )
+          .initialValue,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<ButtonStyleButton>(
+            find.byKey(const ValueKey('steam-client-qr-login')),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('removed selected account never silently signs in another', (
+    tester,
+  ) async {
+    final first = _avaAccount(accessToken: 'first');
+    final second = _avaAccount(
+      steamId: '76561198000000002',
+      name: 'second-account',
+      accessToken: 'second',
+    );
+    final controller = _Controller([first, second]);
+    final flow = _DesktopLogin();
+    await _show(
+      tester,
+      _Service([]),
+      controller: controller,
+      desktopLogin: flow,
+    );
+    controller.replaceAccounts([second]);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<ButtonStyleButton>(
+            find.byKey(const ValueKey('steam-client-login')),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester.widget<ButtonStyleButton>(await _switchButton(tester)).onPressed,
+      isNull,
+    );
+    expect(flow.calls, 0);
+  });
+
+  testWidgets(
+    'bottom switch exposes progress and cancellation without scrolling',
+    (tester) async {
+      final account = _avaAccount(accessToken: 'synthetic');
+      final flow = _DesktopLogin();
+      final gate = Completer<DesktopLoginResult>();
+      flow.handler = () => gate.future;
+      await _show(
+        tester,
+        _Service([_account(remembered: false)]),
+        avaAccounts: [account],
+        desktopLogin: flow,
+      );
+      await tester.tap(await _switchButton(tester));
+      await tester.pump();
+      final cancel = find.byKey(const ValueKey('steam-client-login-cancel'));
+      expect(cancel.hitTestable(), findsOneWidget);
+      await tester.tap(cancel);
+      await tester.pump();
+      expect(flow.current!(), isFalse);
+      gate.complete(const DesktopLoginResult(DesktopLoginOutcome.cancelled));
+      await tester.pumpAndSettle();
+      expect(flow.calls, 1);
+    },
+  );
+
   for (final lock in [false, true]) {
     testWidgets(
       lock
@@ -498,15 +705,8 @@ void main() {
           activeSteamId: '76561198000000001',
         )
         ..statusAfterSwitch = const SteamClientStatus(running: true);
-      await _show(tester, service);
+      await _show(tester, service, avaAccounts: []);
       await tester.tap(await _switchButton(tester));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(FilledButton),
-        ),
-      );
       await tester.pumpAndSettle();
       expect(service.switches, 1);
       expect(service.statusReads, 2);
@@ -567,14 +767,16 @@ void main() {
     );
   });
 
-  testWidgets('opening and cancelling do not switch Steam', (tester) async {
+  testWidgets('opening and selecting do not switch Steam', (tester) async {
     final service = _Service([_account()]);
     await _show(tester, service);
     expect(service.switches, 0);
-    final switchButton = await _switchButton(tester);
-    await tester.tap(switchButton);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel'));
+    await tester.scrollUntilVisible(
+      find.text('Test player'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Test player'));
     await tester.pumpAndSettle();
     expect(service.switches, 0);
   });
@@ -583,16 +785,20 @@ void main() {
     tester,
   ) async {
     final service = _Service([_account()]);
-    await _show(tester, service, steamId: '76561198000000002');
+    await _show(tester, service, steamId: '76561198000000002', avaAccounts: []);
     final switchButton = await _switchButton(tester);
     expect(tester.widget<ButtonStyleButton>(switchButton).onPressed, isNull);
     expect(service.switches, 0);
   });
 
-  testWidgets('a remembered-account record is required for switching', (
+  testWidgets('unimported accounts require remembered Steam credentials', (
     tester,
   ) async {
-    await _show(tester, _Service([_account(remembered: false)]));
+    await _show(
+      tester,
+      _Service([_account(remembered: false)]),
+      avaAccounts: [],
+    );
     final switchButton = await _switchButton(tester);
     expect(tester.widget<ButtonStyleButton>(switchButton).onPressed, isNull);
   });
@@ -601,18 +807,12 @@ void main() {
     tester,
   ) async {
     final service = _Service([_account()]);
-    await _show(tester, service);
+    await _show(tester, service, avaAccounts: []);
     final switchButton = await _switchButton(tester);
     await tester.tap(switchButton);
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(FilledButton),
-      ),
-    );
-    await tester.pumpAndSettle();
     expect(service.switches, 1);
+    expect(find.byType(AlertDialog), findsNothing);
     final context = tester.element(find.byType(SteamClientScreen));
     expect(
       find.text(AppLocalizations.of(context).steamSwitchLaunched),

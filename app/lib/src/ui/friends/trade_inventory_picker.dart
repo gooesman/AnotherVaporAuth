@@ -14,6 +14,7 @@ import '../market/item_market_actions.dart';
 import '../pending/session_retry.dart';
 import '../widgets/inventory_item_icon.dart';
 import '../widgets/inventory_filter_bar.dart';
+import '../widgets/inventory_cooldown_info.dart';
 
 class TradeInventoryPicker extends ConsumerStatefulWidget {
   final SteamGuardAccount account;
@@ -139,10 +140,10 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
         throw const FormatException('Inventory cursor did not advance');
       }
       setState(() {
-        for (final item in page.items.where(
-          (item) => item.tradable && item.amount > 0,
-        )) {
-          _items['${item.appid}/${item.contextId}/${item.assetId}'] = item;
+        for (final item in page.items.where((item) => item.amount > 0)) {
+          final key = '${item.appid}/${item.contextId}/${item.assetId}';
+          _items[key] = item;
+          if (!item.tradable) _selected.remove(key);
         }
         _cursor = page.lastAssetId;
         _more = page.more;
@@ -285,8 +286,11 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
                                     key: ValueKey('asset-${entry.key}'),
                                     value: _selected.containsKey(entry.key),
                                     onChanged:
-                                        !_selected.containsKey(entry.key) &&
-                                            _selected.length >= 256
+                                        !entry.value.tradable ||
+                                            (!_selected.containsKey(
+                                                  entry.key,
+                                                ) &&
+                                                _selected.length >= 256)
                                         ? null
                                         : (selected) => _quantity(
                                             entry.key,
@@ -300,6 +304,9 @@ class _TradeInventoryPickerState extends ConsumerState<TradeInventoryPicker>
                                       children: [
                                         Text(
                                           '${entry.value.type}\n${entry.value.assetId}',
+                                        ),
+                                        InventoryCooldownInfo(
+                                          item: entry.value,
                                         ),
                                         if (priceLabel != null)
                                           Padding(

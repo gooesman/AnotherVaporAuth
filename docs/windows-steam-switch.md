@@ -19,7 +19,10 @@ published through the [fork release process](fork-releases.md).
 
 Open an account's overview and choose **Switch Steam account**, or use the
 account menu / Settings entry. Select the intended GooeSteamKit account and
-choose **Open Steam and sign in**. Exit running games first. The app first
+choose **Open Steam and sign in** or **Switch account**. The imported-account
+picker and remembered-account list share one SteamID selection. For an imported
+account, both buttons use the same launch and automatic-approval flow, even when
+Steam has not remembered that account on this PC. Exit running games first. The app first
 requests a local Steam start or normal restart, backing up settings before
 changing them. It then renews the account session for QR approval. A missing
 session, unavailable network or failed capture initialization does not block
@@ -218,8 +221,10 @@ it does not download nodes or start a new connection.
 Older clients do not support these fields. Missing fields in an older document
 preserve the newer client's local subscription without repeated uploads, but an
 older writer can omit them from the remote settings. Update both devices for
-complete subscription synchronization. Settings retain whole-document last-writer
-merging; account conflicts still require an explicit choice.
+complete subscription synchronization. Settings, including favorites and the
+subscription, remain one document. When both devices changed it since their last
+shared version, synchronization waits for an explicit upload/pull choice instead
+of automatically preferring this device. Account conflicts also require a choice.
 Steam's normal TLS certificate checks remain enabled. See the
 [privacy notice](fork-privacy.md) and [component notices](../third_party/mihomo/NOTICE).
 
@@ -246,6 +251,31 @@ This branch adds **Switch Steam account** to the Windows account-row context
 menu and to Settings. It opens a list of accounts remembered by the local Steam installation,
 preselecting the matching GooeSteamKit account by SteamID. The local account list
 can include accounts that have no authenticator in this app.
+
+## Compare local and remote data
+
+Open **Settings → Sync → Compare local and remote** to inspect accounts and the
+enabled settings document. Each row shows whether data exists only on one side,
+matches, or changed since the last shared version. Sync times are shown for
+reference; wall-clock time does not decide which content wins. Expand a row for
+field differences. Public account names and SteamIDs may be displayed; account
+secrets, authenticator URIs, subscription URLs and node credentials show only
+that a private value differs.
+
+Choose **Pull remote → local** or **Upload local → remote** for the selected row.
+The settings row is a whole-document choice: it includes ordinary synchronized
+preferences, market favorites/currency and the acceleration subscription. These
+groups cannot be independently picked within that row. First-contact automatic
+settings synchronization still adopts the remote document; later edits on both
+sides require your direction choice.
+
+The app checks that the comparison still matches local and remote data before
+applying it. A stale comparison is rejected and must be refreshed. Market
+favorites and the selected currency synchronize only with **Sync app settings**
+enabled; cached prices and runtime acceleration state are excluded. Older
+documents that omit favorite/subscription fields retain the corresponding local
+values; an explicit empty favorite list or cleared subscription propagates the
+removal. Keep both devices updated to preserve those fields on later uploads.
 
 ## Performance and presentation
 
@@ -345,16 +375,20 @@ bringing GooeSteamKit back to the foreground while this page is open.
    same page is available from Settings without importing an authenticator.
 3. Check the Steam installation path. **Choose steam.exe** can select another
    installation; this path is stored only on this computer and is not synced.
-4. Select a local account, choose **Switch account**, and confirm. Finish any game
-   and let cloud saves complete before restarting Steam.
-5. Check the resulting account in Steam. GooeSteamKit reports that Steam was started;
-   it does not claim that the Steam servers accepted the login.
+4. Select the intended account and choose **Switch account**. Finish any game and
+   let cloud saves complete before restarting Steam. For an imported account,
+   this also runs the automatic-approval flow and brings its progress and stop
+   control into view. Changing the selection alone does not restart Steam.
+5. Check the resulting account in Steam. The imported-account flow verifies the
+   client's current local SteamID. Remembered-only switching reports the local
+   launch; neither result proves that Steam's servers accepted an online session.
 
-An account must first have been logged into the Steam client on this computer
-with **Remember me** enabled. Importing a maFile into GooeSteamKit does not establish that
-desktop login. If Steam has forgotten or revoked the credentials, log in through
-Steam normally, then refresh this page. The app's existing login approval feature can
-assist with that normal login.
+For a local account that is **not imported into GooeSteamKit**, switching relies
+on a prior Steam client login with **Remember me** enabled. GooeSteamKit cannot
+approve that account's QR without its authenticator and usable session. If Steam
+has forgotten or revoked the remembered credentials, complete a normal Steam
+login and refresh this page. Imported accounts can instead use the automatic
+approval flow above; importing a maFile alone does not establish a desktop login.
 
 ## In-app software updates
 
@@ -437,6 +471,15 @@ its localized labels, so CS weapon types, graffiti, music kits and other item
 types can be selected separately. Items with missing metadata remain accessible.
 Changing a filter does not discard already selected trade items or quantities.
 
+Market inventory cards and both sides of the trade picker also expose Steam's
+trade/market restriction notes. Recognized expiry dates appear in local time;
+opening the details computes the remaining duration and shows the full notes.
+If Steam supplies no recognizable expiry, the app says it is unknown rather
+than assuming a fixed number of days. The feature reuses inventory responses,
+with no extra per-item network calls or countdown timers. An elapsed date is
+not treated as permission to trade or list an item; refresh the inventory for
+Steam's current eligibility flags.
+
 On phones, a compact game/context menu remains visible in portrait and landscape,
 including screens with large corner insets or enlarged text. Desktop retains
 horizontal game tabs and an all-context menu. The interior selector does not
@@ -465,9 +508,14 @@ are not continuously polled. Queries are keyed by game, exact market name,
 currency and language. These actions do not select items, submit offers or list
 items for sale.
 
-The separate **Market** search tab loads one item page after an explicit search.
+The separate **Market** tab offers **Search** and **Favorites**. Search loads one
+item page after an explicit query. Use a result's star to add or remove a favorite.
+With saved favorites, opening the tab shows them directly without another search;
+the selected currency is remembered. Favorites save public product identities
+and display metadata, not quotes or availability counts.
+
 Steam's search endpoints can ignore their requested currency, so their formatted
-prices are not used as selected-currency quotes. Visible search rows instead
+prices are not used as selected-currency quotes. Visible search or favorite rows instead
 request `priceoverview` in the selected currency, sharing a bounded five-minute
 currency/language cache with the search details. The automatic list queue makes
 one request at a time with a one-second gap; a failed read pauses that queue for
@@ -475,6 +523,7 @@ thirty seconds and offers explicit retry. Switching currency clears old labels
 and cancels stale reads; hiding the page cancels queued work. There is no local
 exchange-rate conversion or periodic price polling. A missing or failed quote
 never falls back to a dollar value marked as another currency.
+Favorites outside the visible list do not request prices in the background.
 Opening details uses the available quote or loads one automatically; its refresh
 button requests a fresh quote. The list uses the lowest current asking price,
 while the recent-sale median remains a separately labelled detail.

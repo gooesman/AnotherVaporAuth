@@ -31,14 +31,16 @@ import '../debug_log.dart';
 import 'sync_config_store.dart';
 import 'sync_trash.dart';
 
+part 'sync_comparison.dart';
+
 /// The engine's window into the local account store.
 abstract class SyncAccountsPort {
   /// The decrypted account list, or null while locked / not bootstrapped.
   List<SteamGuardAccount>? snapshot();
 
   /// Imports/overwrites one account from a pulled payload (standard maFile
-  /// JSON). Must merge like a file import: keep the local session and local
-  /// enrichment when the payload carries none.
+  /// JSON). Keep the local session and omitted fields, but apply explicit
+  /// null/empty values from the synchronized document.
   Future<void> applyRemote(Map<String, dynamic> payload);
 
   /// Removes one account locally (the engine has already trashed it).
@@ -47,7 +49,7 @@ abstract class SyncAccountsPort {
 
 /// The engine's window into the curated app-settings document.
 ///
-/// Settings merge by last-writer-wins on Lamport revision — no conflict UI.
+/// Concurrent settings edits wait for an explicit comparison decision.
 /// Optional subscription credentials share this encrypted document, while
 /// account secrets retain their explicit conflict handling. A device that
 /// has never synced settings ADOPTS the remote document rather than pushing
@@ -111,6 +113,7 @@ class SyncEngineStatus {
   final bool needsPassphrase;
   final bool conditionalUnsupported;
   final List<SyncConflictItem> conflicts;
+  final bool settingsConflict;
   final int lastPushed;
   final int lastPulled;
 
@@ -123,6 +126,7 @@ class SyncEngineStatus {
     this.needsPassphrase = false,
     this.conditionalUnsupported = false,
     this.conflicts = const [],
+    this.settingsConflict = false,
     this.lastPushed = 0,
     this.lastPulled = 0,
   });
@@ -138,6 +142,7 @@ class SyncEngineStatus {
     bool? needsPassphrase,
     bool? conditionalUnsupported,
     List<SyncConflictItem>? conflicts,
+    bool? settingsConflict,
     int? lastPushed,
     int? lastPulled,
   }) =>
@@ -153,6 +158,7 @@ class SyncEngineStatus {
         conditionalUnsupported:
             conditionalUnsupported ?? this.conditionalUnsupported,
         conflicts: conflicts ?? this.conflicts,
+        settingsConflict: settingsConflict ?? this.settingsConflict,
         lastPushed: lastPushed ?? this.lastPushed,
         lastPulled: lastPulled ?? this.lastPulled,
       );
@@ -215,6 +221,11 @@ class SyncEngine {
   /// so `await syncNow()` always means "a round that saw my state ran" —
   /// even when another round was in flight when it was called.
   Future<void> _rounds = Future<void>.value();
+
+  Future<SyncComparison> compareWithRemote() => _compareWithRemote();
+
+  Future<void> applyComparison(SyncComparison preview, SyncComparisonItem item,
+      {required bool upload}) => _applyComparison(preview, item, upload: upload);
 
   /// Max commit-race retries before giving up the round (the next trigger
   /// tries again anyway).
@@ -524,11 +535,10 @@ class SyncEngine {
       ));
     }
 
-    // 8. App settings: LWW by revision, no conflict UI. The rules that matter:
+    // 8. App settings: compare against the last shared revision.
     //  - first contact (no base) ADOPTS the remote document — a new device
     //    must never clobber everyone's choices with its fresh defaults;
-    //  - both-changed → the local edit wins: it is the most recent user
-    //    action this device knows of;
+    //  - both-changed waits for an explicit upload/pull decision;
     //  - forcePushPending re-pushes regardless (ciphertext must change on a
     //    passphrase rotation).
     // Keep a separate local hash after pulls: older documents can omit newer
@@ -537,6 +547,7 @@ class SyncEngine {
     var newSettingsLocalHash = state.settingsLocalHash;
     Map<String, dynamic>? settingsPushPayload;
     var settingsPushRev = 0;
+    var settingsConflict = false;
     if (effectiveConfig.syncSettings && settings != null) {
       final localSettings = await settings!.snapshot();
       if (localSettings != null) {
@@ -583,6 +594,10 @@ class SyncEngine {
               newSettingsLocalHash = payloadHash(applied);
             }
           }
+        } else if (remoteChanged &&
+            localChanged &&
+            !effectiveConfig.forcePushPending) {
+          settingsConflict = true;
         } else if (localChanged || effectiveConfig.forcePushPending) {
           settingsPushPayload = localSettings;
           settingsPushRev = r.rev + 1;
@@ -755,6 +770,7 @@ class SyncEngine {
       errorKind: SyncErrorKind.none,
       needsPassphrase: false,
       conflicts: conflicts,
+      settingsConflict: settingsConflict,
       lastPushed: pushed,
       lastPulled: pulled,
     ));

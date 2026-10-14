@@ -1007,7 +1007,7 @@ void main() {
       expect(doc!['skin'], 'pixel');
     });
 
-    test('both-changed resolves by last writer, whole document', () async {
+    test('both-changed waits for explicit settings comparison', () async {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
@@ -1018,11 +1018,16 @@ void main() {
       a.settingsPort.values['skin'] = 'neon';
       await a.engine.syncNow();
       b.settingsPort.values['hold_confirm'] = false;
-      await b.engine.syncNow(); // B is the later writer: its document wins
+      await b.engine.syncNow();
+      expect(b.engine.status.settingsConflict, isTrue);
+      expect(b.settingsPort.values['skin'], 'none');
+      final preview = await b.engine.compareWithRemote();
+      await b.engine.applyComparison(preview,
+          preview.items.firstWhere((item) => item.steamId == null), upload: true);
 
       await a.engine.syncNow();
       expect(a.settingsPort.values['hold_confirm'], false);
-      // Whole-document LWW: B's document still carried the old skin.
+      // The user explicitly chose B's complete settings document.
       expect(a.settingsPort.values['skin'], 'none');
     });
 

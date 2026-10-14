@@ -102,6 +102,18 @@ class InventoryTag {
   String get key => '${category.toLowerCase()}/$internalName';
 }
 
+/// Owner-specific restriction text returned by Steam.
+class InventoryRestriction {
+  final String text;
+
+  /// An explicit date in Steam's owner description, never inferred from the
+  /// generic market/trade restriction duration or current tradable flag.
+  final DateTime? until;
+  final String? dateText;
+
+  const InventoryRestriction(this.text, {this.until, this.dateText});
+}
+
 /// One inventory item (asset merged with its description).
 class InventoryItem {
   final int appid;
@@ -124,6 +136,7 @@ class InventoryItem {
   final String rarityName;
 
   final List<InventoryTag> tags;
+  final List<InventoryRestriction> restrictions;
 
   const InventoryItem({
     required this.appid,
@@ -142,6 +155,7 @@ class InventoryItem {
     this.rarityColor = '',
     this.rarityName = '',
     this.tags = const [],
+    this.restrictions = const [],
   });
 }
 

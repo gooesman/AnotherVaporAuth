@@ -5,6 +5,26 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.11] — 2026-10-14 · Fork
+
+### Added
+- Inventory and trade selection show Steam's cooldown notices, with local unlock times and remaining duration when Steam supplies a definite date. Restricted items remain visible but cannot be selected for trading.
+- Market favorites reopen without searching and load visible-item quotes in the saved currency. Favorites and the currency join encrypted app-settings sync alongside acceleration subscriptions; cached prices are not synchronized.
+- Sync comparison shows local/remote field differences and version relationships, with per-account or settings-document upload/pull actions. Concurrent settings edits wait for a choice, changed previews must be refreshed, and private values stay hidden.
+
+### Fixed
+- Both Windows account selectors now share the selected SteamID. Switching an imported account uses the same Steam launch, verified local QR approval and final account check as the one-action login button.
+- Explicitly cleared synchronized account fields replace old local values while device sessions and fields omitted by older clients are retained. Failed comparison commits do not overwrite the remote SDA manifest.
+
+### 新增
+- 库存与交易选物显示 Steam 提供的冷却说明；有明确截止日期时显示本机时间与剩余时长。受限物品仍可查看，但不能选入交易。
+- 市场收藏无需重新搜索，打开后按保存的币种加载可见商品报价。收藏与币种和加速订阅一同加入加密设置同步，不同步缓存价格。
+- 同步页显示两端字段差异和版本关系，可按账户或设置文档选择上传／拉取；设置双端改动等待选择，过期对比须刷新，敏感值隐藏。
+
+### 修复
+- Windows 两处账户选择共用同一 SteamID；已导入账户的切换按钮接入启动 Steam、批准核验后的本机二维码及最终账号确认流程。
+- 拉取时远程明确清空的账户字段覆盖旧值，同时保留本机会话与旧版本未携带的字段；对比上传提交失败时不覆盖远端 SDA 清单。
+
 ## [v1.5.10] — 2026-10-13 · Fork
 
 ### Fixed

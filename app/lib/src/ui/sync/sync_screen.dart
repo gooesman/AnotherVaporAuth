@@ -17,6 +17,7 @@ import '../widgets/ava_panel.dart';
 import '../widgets/hold_button.dart';
 import '../widgets/scanline_overlay.dart';
 import 'sync_setup_screen.dart';
+import 'sync_compare_screen.dart';
 
 /// Sync detail page: status, the options table, conflicts, trash, and the
 /// destructive actions — everything after setup. Spec §UX rule: sync is the
@@ -78,6 +79,12 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
               children: [
                 _statusCard(l, status, config),
                 if (status.conflicts.isNotEmpty) _conflictsCard(l, status),
+                if (status.settingsConflict) _card(child: Material(
+                  type: MaterialType.transparency, child: ListTile(
+                  title: Text(l.syncCompareSettingsConflict),
+                  trailing: const Icon(Icons.compare_arrows),
+                  onTap: _compare,
+                ))),
                 _optionsCard(l, status, config),
                 _dataCard(l, status),
                 _dangerCard(l, status),
@@ -111,6 +118,11 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
           Icons.error_outline,
           t.bad,
           _errorLine(l, status)
+        ),
+      SyncEngineStatus(settingsConflict: true) => (
+          Icons.compare_arrows,
+          t.warn,
+          l.syncCompareSettingsConflict
         ),
       SyncEngineStatus(conflicts: final c) when c.isNotEmpty => (
           Icons.call_split,
@@ -453,6 +465,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _actionRow(t, Icons.compare_arrows, l.syncCompareTitle, _compare),
           _actionRow(t, Icons.cloud_outlined, l.syncViewRemote, _viewRemote),
           _actionRow(
               t, Icons.delete_outline, l.syncTrashTitle, _viewTrash),
@@ -460,6 +473,9 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
       ),
     );
   }
+
+  void _compare() => Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => const SyncCompareScreen()));
 
   Widget _actionRow(
       AvaTokens t, IconData icon, String label, VoidCallback onTap) {

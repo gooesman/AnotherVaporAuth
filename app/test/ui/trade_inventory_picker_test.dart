@@ -182,6 +182,55 @@ Future<void> _filter(WidgetTester tester, String control, String label) async {
 
 void main() {
   testWidgets(
+    'locked items remain visible with cooldown and cannot be selected',
+    (tester) async {
+      final market = _Market();
+      await _show(
+        tester,
+        _Inventory(
+          inventoryItems: [
+            InventoryItem(
+              appid: 730,
+              contextId: '2',
+              assetId: 'locked',
+              classId: '100',
+              instanceId: '0',
+              amount: 1,
+              marketHashName: 'Locked rifle',
+              name: 'Locked rifle',
+              type: 'Rifle',
+              iconUrl: '',
+              marketable: false,
+              tradable: false,
+              restrictions: [
+                InventoryRestriction(
+                  'Tradable After [date]1893484800[/date]',
+                  until: DateTime.utc(2030, 1, 1, 8),
+                  dateText: '[date]1893484800[/date]',
+                ),
+              ],
+            ),
+          ],
+        ),
+        market,
+        size: const Size(320, 740),
+      );
+      final checkbox = tester.widget<CheckboxListTile>(
+        find.byType(CheckboxListTile),
+      );
+      expect(checkbox.onChanged, isNull);
+      expect(checkbox.value, isFalse);
+      expect(find.text('Locked rifle'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('inventory-cooldown-locked')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Tradable After 2030-01-01'), findsOneWidget);
+      expect(find.text(_l(tester).inventoryCooldownLocalTime), findsOneWidget);
+      expect(market.requests, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'type and rarity filters cooperate with search without discarding selected quantities',
     (tester) async {
       await _show(

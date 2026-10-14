@@ -1471,6 +1471,7 @@ class AppController extends AsyncNotifier<AppData> {
     String contents, {
     String? sourceName,
     bool localOnly = false,
+    bool syncPayload = false,
   }) async {
     final data = state.value;
     if (data == null) {
@@ -1509,9 +1510,10 @@ class AppController extends AsyncNotifier<AppData> {
       data.passKey,
       sourceName: sourceName,
       mergeExisting: existing,
+      syncPayload: syncPayload,
     );
     await reload();
-    unawaited(refreshAvatars());
+    if (!syncPayload) unawaited(refreshAvatars());
     return account;
   }
 

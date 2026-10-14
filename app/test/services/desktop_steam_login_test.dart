@@ -242,6 +242,37 @@ void main() {
     },
   );
   test(
+    'running other account is prepared before session check and selected local login is approved',
+    () async {
+      steam.value = const SteamClientStatus(
+        running: true,
+        activeSteamId: '76561198000000002',
+      );
+      service = DesktopSteamLogin(
+        steam: steam,
+        capture: capture,
+        approval: approval,
+        ensureSession: (selected) async {
+          expect(selected, same(account));
+          expect(steam.calls, ['status', 'prepare:$_id', 'status']);
+          return true;
+        },
+        pollInterval: Duration.zero,
+      );
+      approval.onRespond = () async {
+        steam.value = const SteamClientStatus(
+          running: true,
+          activeSteamId: '$_id',
+        );
+        return true;
+      };
+      expect((await run()).outcome, DesktopLoginOutcome.loggedIn);
+      expect(approval.responses, 1);
+      expect(capture.calls, ['begin', 'read:7', 'read:7', 'end:7']);
+      expect(steam.calls.where((call) => call == 'open'), isEmpty);
+    },
+  );
+  test(
     'failed session renewal still launches Steam before offering login',
     () async {
       session = false;

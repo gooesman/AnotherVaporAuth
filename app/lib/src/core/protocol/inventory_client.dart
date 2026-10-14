@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:intl/intl.dart';
+
 import '../../services/debug_log.dart';
 import '../../services/steam_api_client.dart';
 import '../json_coerce.dart';
@@ -187,6 +189,7 @@ class InventoryClient {
           rarityColor: rarity.color,
           rarityName: rarity.name,
           tags: _tags(d),
+          restrictions: _restrictions(d),
         ),
       );
     }
@@ -195,6 +198,58 @@ class InventoryClient {
       json['last_assetid'] as String?,
       json['more_items'] == 1 || json['more_items'] == true,
     );
+  }
+
+  static List<InventoryRestriction> _restrictions(Map<String, dynamic> item) {
+    final raw = item['owner_descriptions'];
+    if (raw is! List) return const [];
+    final result = <InventoryRestriction>[];
+    for (final entry in raw.whereType<Map>()) {
+      final value = entry['value'];
+      if (value is! String) continue;
+      // Render Steam's owner notes as plain text, not executable HTML.
+      final text = value
+          .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .replaceAll('&nbsp;', ' ')
+          .replaceAll('&lt;', '<')
+          .replaceAll('&gt;', '>')
+          .replaceAll('&quot;', '"')
+          .replaceAll('&#39;', "'")
+          .replaceAll('&amp;', '&')
+          .trim();
+      if (text.isEmpty) continue;
+      DateTime? until;
+      String? dateText;
+      // Steam's own economy.js PopulateDescriptions uses Unix seconds in
+      // [date] tags. Legacy CS descriptions instead carry an explicit GMT date.
+      final marker = RegExp(r'\[date\](\d+)\[/date\]').firstMatch(text);
+      final legacy = RegExp(
+        r'([A-Za-z]{3} \d{1,2}, \d{4} \(\d{1,2}:\d{2}:\d{2}\)) (?:GMT|UTC)',
+      ).firstMatch(text);
+      if (marker != null) {
+        final seconds = int.tryParse(marker.group(1)!);
+        if (seconds != null && seconds > 0 && seconds <= 253402300799) {
+          until = DateTime.fromMillisecondsSinceEpoch(
+            seconds * 1000,
+            isUtc: true,
+          );
+          dateText = marker.group(0);
+        }
+      } else if (legacy != null) {
+        try {
+          until = DateFormat(
+            'MMM d, yyyy (H:mm:ss)',
+            'en_US',
+          ).parseStrict(legacy.group(1)!, true);
+          dateText = legacy.group(0);
+        } on FormatException {
+          // Keep an unknown/malformed date visible exactly as Steam sent it.
+        }
+      }
+      result.add(InventoryRestriction(text, until: until, dateText: dateText));
+    }
+    return List.unmodifiable(result);
   }
 
   static List<InventoryTag> _tags(Map<String, dynamic> item) {

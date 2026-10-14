@@ -113,6 +113,12 @@ abstract class AppLocalizations {
   /// **'Switch Steam account'**
   String get steamSwitchTitle;
 
+  /// No description provided for @steamSwitchUnifiedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an account and switch to open Steam and sign in. Imported accounts use remembered Steam sign-in details first, then automatically approve the new local login QR code when an online session is available. Accounts not imported here can use their remembered Steam sign-in. Please exit running games first.'**
+  String get steamSwitchUnifiedHelp;
+
   /// No description provided for @steamSwitchHelp.
   ///
   /// In en, this message translates to:
@@ -5458,6 +5464,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not capture the screen. Try again. Error details: {detail}.'**
   String approveScreenFailedDetail(String detail);
+
+  /// No description provided for @marketFavoriteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get marketFavoriteTitle;
+
+  /// No description provided for @marketFavoriteAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get marketFavoriteAdd;
+
+  /// No description provided for @marketFavoriteRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get marketFavoriteRemove;
+
+  /// No description provided for @marketFavoriteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Save items from market search to see their prices here without searching again.'**
+  String get marketFavoriteEmpty;
+
+  /// No description provided for @marketFavoriteSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load or save market favorites. Please try again.'**
+  String get marketFavoriteSaveFailed;
+
+  /// No description provided for @syncCompareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare local and remote'**
+  String get syncCompareTitle;
+
+  /// No description provided for @syncCompareRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh comparison'**
+  String get syncCompareRefresh;
+
+  /// No description provided for @syncCompareHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.'**
+  String get syncCompareHelp;
+
+  /// No description provided for @syncCompareStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Local or remote data changed. Refresh the comparison before trying again.'**
+  String get syncCompareStale;
+
+  /// No description provided for @syncCompareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison or transfer failed. Check the connection and sync passphrase, then refresh. No successful transfer has been confirmed.'**
+  String get syncCompareFailed;
+
+  /// No description provided for @syncCompareSame.
+  ///
+  /// In en, this message translates to:
+  /// **'Same content'**
+  String get syncCompareSame;
+
+  /// No description provided for @syncCompareLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on this device'**
+  String get syncCompareLocalOnly;
+
+  /// No description provided for @syncCompareRemoteOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on remote'**
+  String get syncCompareRemoteOnly;
+
+  /// No description provided for @syncCompareLocalNewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Local has newer changes'**
+  String get syncCompareLocalNewer;
+
+  /// No description provided for @syncCompareRemoteNewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote has newer changes'**
+  String get syncCompareRemoteNewer;
+
+  /// No description provided for @syncCompareBothChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Different on both sides — choose a direction'**
+  String get syncCompareBothChanged;
+
+  /// No description provided for @syncCompareRemoteDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted on remote; upload restores this account'**
+  String get syncCompareRemoteDeleted;
+
+  /// No description provided for @syncCompareSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings, favorites and acceleration subscription'**
+  String get syncCompareSettings;
+
+  /// No description provided for @syncCompareSettingsConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings changed on both devices. Compare before choosing upload or pull.'**
+  String get syncCompareSettingsConflict;
+
+  /// No description provided for @syncComparePull.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull remote → local'**
+  String get syncComparePull;
+
+  /// No description provided for @syncCompareUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload local → remote'**
+  String get syncCompareUpload;
+
+  /// No description provided for @syncCompareHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed private value (hidden)'**
+  String get syncCompareHidden;
+
+  /// No description provided for @syncCompareCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Market currency'**
+  String get syncCompareCurrency;
+
+  /// No description provided for @syncCompareFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Market favorites'**
+  String get syncCompareFavorites;
+
+  /// No description provided for @syncCompareSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration subscription URL'**
+  String get syncCompareSubscription;
+
+  /// No description provided for @syncCompareNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration node configuration'**
+  String get syncCompareNodes;
+
+  /// No description provided for @syncCompareSelectedNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected acceleration node'**
+  String get syncCompareSelectedNode;
+
+  /// No description provided for @marketFavoriteSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get marketFavoriteSearch;
+
+  /// No description provided for @inventoryCooldownDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Trade and market restrictions'**
+  String get inventoryCooldownDetails;
+
+  /// No description provided for @inventoryCooldownUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooldown until {time}'**
+  String inventoryCooldownUntil(String time);
+
+  /// No description provided for @inventoryCooldownTradable.
+  ///
+  /// In en, this message translates to:
+  /// **'Tradable'**
+  String get inventoryCooldownTradable;
+
+  /// No description provided for @inventoryCooldownNotTradable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not tradable'**
+  String get inventoryCooldownNotTradable;
+
+  /// No description provided for @inventoryCooldownMarketable.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketable'**
+  String get inventoryCooldownMarketable;
+
+  /// No description provided for @inventoryCooldownLocalTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time shown in your device’s local time zone.'**
+  String get inventoryCooldownLocalTime;
+
+  /// No description provided for @inventoryCooldownUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam has not provided a readable unlock time. No date is estimated.'**
+  String get inventoryCooldownUnknown;
+
+  /// No description provided for @inventoryCooldownElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'This date has passed. Refresh the inventory to check Steam’s current restrictions.'**
+  String get inventoryCooldownElapsed;
+
+  /// No description provided for @inventoryCooldownRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining: {days}d {hours}h {minutes}m'**
+  String inventoryCooldownRemaining(int days, int hours, int minutes);
 }
 
 class _AppLocalizationsDelegate

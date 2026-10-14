@@ -12,6 +12,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamSwitchTitle => '切换 Steam 账号';
 
   @override
+  String get steamSwitchUnifiedHelp =>
+      '选中账号后点击切换，即可打开 Steam 并登录。已导入的账号优先使用 Steam 记住的登录信息，需要验证时，有在线会话即可自动批准本次本机登录二维码。未导入的账号仍可使用 Steam 已记住的登录信息。请先退出正在运行的游戏。';
+
+  @override
   String get steamSwitchHelp =>
       '可切换已在本机 Steam 登录过并记住登录信息的账号。将令牌导入 GooeSteamKit 不代表该账号已在 Steam 客户端登录。';
 
@@ -2950,6 +2954,122 @@ class AppLocalizationsZh extends AppLocalizations {
   String approveScreenFailedDetail(String detail) {
     return '无法截取屏幕，请重试。错误信息：$detail。';
   }
+
+  @override
+  String get marketFavoriteTitle => '收藏';
+
+  @override
+  String get marketFavoriteAdd => '收藏商品';
+
+  @override
+  String get marketFavoriteRemove => '取消收藏';
+
+  @override
+  String get marketFavoriteEmpty => '在市场搜索结果中收藏商品，下次可在这里直接查看价格。';
+
+  @override
+  String get marketFavoriteSaveFailed => '无法读取或保存市场收藏，请重试。';
+
+  @override
+  String get syncCompareTitle => '对比本地与远程';
+
+  @override
+  String get syncCompareRefresh => '刷新对比';
+
+  @override
+  String get syncCompareHelp =>
+      '先查看每项差异，再选择方向。“较新”根据上次共同版本后的改动判断；下方时间为最近同步时间，仅供参考。拉取或上传只处理选中的这一项。';
+
+  @override
+  String get syncCompareStale => '本地或远程内容已发生变化，请刷新对比后重试。';
+
+  @override
+  String get syncCompareFailed => '对比或传输失败，请检查连接与同步密码后刷新；尚未确认传输成功。';
+
+  @override
+  String get syncCompareSame => '内容一致';
+
+  @override
+  String get syncCompareLocalOnly => '仅本地有';
+
+  @override
+  String get syncCompareRemoteOnly => '仅远程有';
+
+  @override
+  String get syncCompareLocalNewer => '本地有较新改动';
+
+  @override
+  String get syncCompareRemoteNewer => '远程有较新改动';
+
+  @override
+  String get syncCompareBothChanged => '两端内容不同，请选择保留哪一端';
+
+  @override
+  String get syncCompareRemoteDeleted => '远程已删除；上传将恢复此账户';
+
+  @override
+  String get syncCompareSettings => '设置、市场收藏与加速订阅';
+
+  @override
+  String get syncCompareSettingsConflict => '两端设置均有改动，请先对比再选择上传或拉取。';
+
+  @override
+  String get syncComparePull => '拉取远程 → 本地';
+
+  @override
+  String get syncCompareUpload => '上传本地 → 远程';
+
+  @override
+  String get syncCompareHidden => '敏感内容不同（已隐藏）';
+
+  @override
+  String get syncCompareCurrency => '市场币种';
+
+  @override
+  String get syncCompareFavorites => '市场收藏';
+
+  @override
+  String get syncCompareSubscription => '加速订阅地址';
+
+  @override
+  String get syncCompareNodes => '加速节点配置';
+
+  @override
+  String get syncCompareSelectedNode => '选中的加速节点';
+
+  @override
+  String get marketFavoriteSearch => '搜索';
+
+  @override
+  String get inventoryCooldownDetails => '交易与市场限制';
+
+  @override
+  String inventoryCooldownUntil(String time) {
+    return '冷却至 $time';
+  }
+
+  @override
+  String get inventoryCooldownTradable => '可交易';
+
+  @override
+  String get inventoryCooldownNotTradable => '不可交易';
+
+  @override
+  String get inventoryCooldownMarketable => '可上架';
+
+  @override
+  String get inventoryCooldownLocalTime => '时间已转换为本机时区。';
+
+  @override
+  String get inventoryCooldownUnknown => 'Steam 未提供可识别的解锁时间，不估算日期。';
+
+  @override
+  String get inventoryCooldownElapsed => '该日期已到，请刷新库存，以 Steam 返回的最新限制状态为准。';
+
+  @override
+  String inventoryCooldownRemaining(int days, int hours, int minutes) {
+    return '剩余：$days 天 $hours 小时 $minutes 分钟';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2958,6 +3078,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamSwitchTitle => '切換 Steam 帳號';
+
+  @override
+  String get steamSwitchUnifiedHelp =>
+      '選取帳號後點擊切換，即可開啟 Steam 並登入。已匯入的帳號優先使用 Steam 記住的登入資訊，需要驗證時，有線上工作階段即可自動批准本次本機登入 QR 碼。未匯入的帳號仍可使用 Steam 已記住的登入資訊。請先退出正在執行的遊戲。';
 
   @override
   String get steamSwitchHelp =>
@@ -5903,5 +6027,121 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String approveScreenFailedDetail(String detail) {
     return '無法擷取螢幕，請重試。錯誤資訊：$detail。';
+  }
+
+  @override
+  String get marketFavoriteTitle => '收藏';
+
+  @override
+  String get marketFavoriteAdd => '收藏商品';
+
+  @override
+  String get marketFavoriteRemove => '取消收藏';
+
+  @override
+  String get marketFavoriteEmpty => '在市場搜尋結果中收藏商品，下次可在這裡直接查看價格。';
+
+  @override
+  String get marketFavoriteSaveFailed => '無法讀取或儲存市場收藏，請重試。';
+
+  @override
+  String get syncCompareTitle => '比較本機與遠端';
+
+  @override
+  String get syncCompareRefresh => '重新整理比較';
+
+  @override
+  String get syncCompareHelp =>
+      '先查看每項差異，再選擇方向。「較新」根據上次共同版本後的改動判斷；下方時間為最近同步時間，僅供參考。拉取或上傳只處理選中的這一項。';
+
+  @override
+  String get syncCompareStale => '本機或遠端內容已發生變化，請重新整理比較後再試。';
+
+  @override
+  String get syncCompareFailed => '比較或傳輸失敗，請檢查連線與同步密碼後重新整理；尚未確認傳輸成功。';
+
+  @override
+  String get syncCompareSame => '內容一致';
+
+  @override
+  String get syncCompareLocalOnly => '僅本機有';
+
+  @override
+  String get syncCompareRemoteOnly => '僅遠端有';
+
+  @override
+  String get syncCompareLocalNewer => '本機有較新改動';
+
+  @override
+  String get syncCompareRemoteNewer => '遠端有較新改動';
+
+  @override
+  String get syncCompareBothChanged => '兩端內容不同，請選擇保留哪一端';
+
+  @override
+  String get syncCompareRemoteDeleted => '遠端已刪除；上傳將還原此帳戶';
+
+  @override
+  String get syncCompareSettings => '設定、市集收藏與加速訂閱';
+
+  @override
+  String get syncCompareSettingsConflict => '兩端設定均有改動，請先比較再選擇上傳或拉取。';
+
+  @override
+  String get syncComparePull => '拉取遠端 → 本機';
+
+  @override
+  String get syncCompareUpload => '上傳本機 → 遠端';
+
+  @override
+  String get syncCompareHidden => '敏感內容不同（已隱藏）';
+
+  @override
+  String get syncCompareCurrency => '市集幣別';
+
+  @override
+  String get syncCompareFavorites => '市集收藏';
+
+  @override
+  String get syncCompareSubscription => '加速訂閱網址';
+
+  @override
+  String get syncCompareNodes => '加速節點設定';
+
+  @override
+  String get syncCompareSelectedNode => '選取的加速節點';
+
+  @override
+  String get marketFavoriteSearch => '搜尋';
+
+  @override
+  String get inventoryCooldownDetails => '交易與市場限制';
+
+  @override
+  String inventoryCooldownUntil(String time) {
+    return '冷卻至 $time';
+  }
+
+  @override
+  String get inventoryCooldownTradable => '可交易';
+
+  @override
+  String get inventoryCooldownNotTradable => '不可交易';
+
+  @override
+  String get inventoryCooldownMarketable => '可上架';
+
+  @override
+  String get inventoryCooldownLocalTime => '時間已轉換為本機時區。';
+
+  @override
+  String get inventoryCooldownUnknown => 'Steam 未提供可識別的解鎖時間，不估算日期。';
+
+  @override
+  String get inventoryCooldownElapsed => '該日期已到，請重新整理庫存，以 Steam 傳回的最新限制狀態為準。';
+
+  @override
+  String inventoryCooldownRemaining(int days, int hours, int minutes) {
+    return '剩餘：$days 天 $hours 小時 $minutes 分鐘';
   }
 }

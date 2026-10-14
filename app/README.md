@@ -87,12 +87,23 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   from the incoming invites it now hosts: pre-join checks, then hold-to-join
   (`IFamilyGroupsService`)
 - Desktop window geometry persisted and refitted to the displays present
-- Inventory browse + Community Market list/cancel with live fees
-- A read-only Market search tab with explicit searches, currency/game filters,
-  paged items and details. Visible rows load selected-currency quotes one at a
+- Inventory browse + Community Market list/cancel with live fees. Inventory and
+  trade selections expose Steam's cooldown/restriction notes, recognizable expiry
+  dates in local time and remaining time on opening details. Missing expiry dates
+  stay unknown; the display adds no per-item requests or running countdowns.
+- A read-only Market tab with explicit searches, currency/game filters,
+  paged items, details and favorites. Saved favorites open without another search;
+  the selected currency is remembered. Only visible rows load quotes, one at a
   time with a one-second gap. No startup requests or periodic price polling;
   five-minute bounded page/quote caching and cancellation when hidden. Inventory and
   personal listings load only on their active tabs.
+- Encrypted WebDAV settings sync includes market favorite identities/metadata,
+  the selected currency and acceleration subscription, excluding cached prices
+  and runtime state. Compare local/remote fields before uploading or pulling one
+  row: each account is separate, while settings/favorites/subscription remain one
+  document. Sensitive account values and subscription credentials are hidden.
+  Settings changed on both sides wait for an explicit choice; stale comparisons
+  are rejected. Older documents missing the new fields retain local values.
 - Login (username/password + **QR login**), Steam Guard code, session refresh
 - Add authenticator (phone → SMS → revocation confirm)
 - **Move an existing authenticator to this device** (`RemoveAuthenticatorViaChallenge*`;
@@ -101,6 +112,11 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   selection or paste on desktop), with locally decoded in-memory images.
 - **Windows Steam launch** independent of an online session; one-click account
   login opens Steam first, then approves a verified local login-window challenge.
+  The imported-account picker and remembered-account list share one SteamID
+  selection. Either sign-in or switch action uses that flow for an imported
+  account, including one not remembered by Steam; local-only accounts still need
+  remembered credentials. The final check verifies the client's local SteamID,
+  not server-side session availability. Validation uses synthetic fixtures.
 - **Device sessions** — list every signed-in device/browser and remotely sign one
   out (`IAuthenticationService/EnumerateTokens` + `RevokeRefreshToken`)
 - **Redeem Steam product keys** — the store's own `/account/ajaxregisterkey/`
@@ -143,7 +159,7 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Last recorded verification: `flutter analyze` clean, **1554 tests pass** (crypto RFC vectors,
+Last recorded verification: `flutter analyze` clean, **1601 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -181,7 +197,7 @@ Do not uninstall the old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1554 tests
+flutter test                       # 1601 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

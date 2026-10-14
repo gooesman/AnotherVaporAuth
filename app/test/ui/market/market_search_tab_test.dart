@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:ava/l10n/app_localizations.dart';
+import 'package:ava/src/app/market_favorites.dart';
 import 'package:ava/src/app/providers.dart';
 import 'package:ava/src/app/screen_corners.dart';
 import 'package:ava/src/app/theme.dart';
@@ -12,6 +13,7 @@ import 'package:ava/src/core/models/steam_item.dart';
 import 'package:ava/src/core/protocol/market_client.dart';
 import 'package:ava/src/services/steam_api_client.dart';
 import 'package:ava/src/services/steam_request_scope.dart';
+import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/market/item_market_actions.dart';
 import 'package:ava/src/ui/market/market_search_tab.dart';
 import 'package:dio/dio.dart';
@@ -117,11 +119,13 @@ class _Harness {
   AvaThemeVariant variant = AvaThemeVariant.light;
   double textScale = 1;
   final opened = <Uri>[];
+  final favorites = _FavoritesStore();
 
   Future<void> show({bool settle = true}) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          marketFavoritesStoreProvider.overrideWithValue(favorites),
           marketClientProvider.overrideWithValue(market),
           clockProvider.overrideWithValue(() => now),
           itemMarketLauncherProvider.overrideWithValue((uri) async {
@@ -193,7 +197,178 @@ class _Harness {
   }
 }
 
+class _FavoritesStore extends MarketFavoritesStore {
+  _FavoritesStore() : super(MemoryStorageProvider());
+  MarketFavorites value = const MarketFavorites();
+  @override
+  Future<MarketFavorites> load() async => value;
+  @override
+  Future<void> save(MarketFavorites next) async => value = next;
+}
+
 void main() {
+  testWidgets(
+    'remote favorites replace visible identities and cancel their old quote',
+    (tester) async {
+      final oldPrice = Completer<MarketPrice?>();
+      final market = _Market()
+        ..onPrice = (hash, _) => hash == 'Old favorite'
+            ? oldPrice.future
+            : Future.value(const MarketPrice(lowest: '¥ 12.34'));
+      final h = _Harness(tester, market);
+      h.favorites.value = MarketFavorites(
+        items: [_item('Old favorite')],
+        currency: 23,
+      );
+      await h.show(settle: false);
+      await tester.pump();
+      await tester.pump();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MarketSearchTab)),
+      );
+      await container
+          .read(marketFavoritesProvider.notifier)
+          .applySynced(
+            MarketFavorites(
+              items: [_item('New favorite')],
+              currency: 23,
+            ).toJson(),
+          );
+      await tester.pumpAndSettle();
+      expect(market.priceTokens.first!.isCancelled, isTrue);
+      expect(find.text('New favorite'), findsOneWidget);
+      expect(find.text('¥ 12.34'), findsOneWidget);
+      expect(find.text('Old favorite'), findsNothing);
+      oldPrice.complete(const MarketPrice(lowest: 'old quote'));
+      await tester.pumpAndSettle();
+      expect(find.text('old quote'), findsNothing);
+      expect(market.requests, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'saved favorites open without search and quote persisted currency',
+    (tester) async {
+      final market = _Market();
+      final h = _Harness(tester, market);
+      h.favorites.value = MarketFavorites.fromJson(
+        MarketFavorites(items: [_item('Saved rifle')], currency: 23).toJson(),
+      );
+      await h.show();
+      expect(find.text('Saved rifle'), findsOneWidget);
+      expect(find.text('¥ 8.76'), findsOneWidget);
+      expect(market.requests, isEmpty);
+      expect(market.prices, [(730, 'Saved rifle', 23)]);
+      expect(find.byKey(const ValueKey('market-search-query')), findsNothing);
+      final currency = tester.widget<DropdownButtonFormField<int>>(
+        find.byKey(const ValueKey('market-search-currency')),
+      );
+      expect(currency.initialValue, 23);
+      await tester.tap(find.text('Saved rifle'));
+      await tester.pumpAndSettle();
+      expect(find.text('${h.l.marketLowest}: ¥ 8.76'), findsOneWidget);
+      expect(find.text(h.l.marketSearchListings(0)), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'favorite from search persists and removal updates the saved list',
+    (tester) async {
+      final h = _Harness(tester, _Market());
+      await h.show();
+      await h.submit('Saved rifle');
+      await tester.tap(
+        find.byKey(const ValueKey('market-favorite-730-Saved rifle')),
+      );
+      await tester.pumpAndSettle();
+      expect(h.favorites.value.items.single.name, 'Saved rifle');
+      expect(h.favorites.value.items.single.priceText, isNull);
+      expect(h.favorites.value.currency, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await h.show();
+      expect(find.text('Saved rifle'), findsOneWidget);
+      expect(find.byKey(const ValueKey('market-search-query')), findsNothing);
+      expect(h.market.requests, hasLength(1));
+      await tester.tap(
+        find.byKey(const ValueKey('market-favorite-730-Saved rifle')),
+      );
+      await tester.pumpAndSettle();
+      expect(h.favorites.value.items, isEmpty);
+      expect(find.text(h.l.marketFavoriteEmpty), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'favorite currency changes discard late prices and hiding cancels reads',
+    (tester) async {
+      final oldUsd = Completer<MarketPrice?>();
+      final market = _Market()
+        ..onPrice = (_, currency) => currency == 1
+            ? oldUsd.future
+            : Future.value(const MarketPrice(lowest: '¥ 15.36'));
+      final h = _Harness(tester, market);
+      h.favorites.value = MarketFavorites(
+        items: [_item('Favorite')],
+        currency: 1,
+      );
+      await h.show(settle: false);
+      await tester.pump();
+      await tester.pump();
+      final dropdown = tester.widget<DropdownButtonFormField<int>>(
+        find.byKey(const ValueKey('market-search-currency')),
+      );
+      dropdown.onChanged!(23);
+      await tester.pumpAndSettle();
+      expect(market.priceTokens.first!.isCancelled, isTrue);
+      expect(find.text('¥ 15.36'), findsOneWidget);
+      expect(h.favorites.value.currency, 23);
+      oldUsd.complete(const MarketPrice(lowest: r'$999.99'));
+      await tester.pumpAndSettle();
+      expect(find.text(r'$999.99'), findsNothing);
+      market.onPrice = null;
+      market.pricePending = Completer();
+      h.reload++;
+      await h.show(settle: false);
+      await tester.pump();
+      h.active = false;
+      await h.show();
+      expect(market.priceTokens.last!.isCancelled, isTrue);
+      market.pricePending!.complete(const MarketPrice(lowest: 'obsolete'));
+      await tester.pumpAndSettle();
+      expect(find.text('obsolete'), findsNothing);
+      expect(market.requests, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'hidden favorites do not fetch and remote currency applies on next view',
+    (tester) async {
+      final market = _Market();
+      final h = _Harness(tester, market)..active = false;
+      h.favorites.value = MarketFavorites(items: [_item('Saved')], currency: 1);
+      await h.show();
+      expect(market.prices, isEmpty);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MarketSearchTab)),
+      );
+      await container
+          .read(marketFavoritesProvider.notifier)
+          .applySynced(
+            MarketFavorites(
+              items: [_item('Remote favorite')],
+              currency: 23,
+            ).toJson(),
+          );
+      await tester.pumpAndSettle();
+      expect(market.prices, isEmpty);
+      h.active = true;
+      await h.show();
+      expect(market.prices, [(730, 'Remote favorite', 23)]);
+      expect(find.text('¥ 8.76'), findsOneWidget);
+      expect(find.text('Saved'), findsNothing);
+    },
+  );
+
   testWidgets(
     'currency changes requote the visible list, discard late dollars, and reuse CNY cache',
     (tester) async {

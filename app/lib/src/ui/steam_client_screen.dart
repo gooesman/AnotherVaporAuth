@@ -52,7 +52,6 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
   String? _path;
   List<SteamClientAccount> _accounts = [];
   String? _selected;
-  int? _selectedAvaSteamId;
   bool _loading = true;
   bool _switching = false;
   bool _launched = false;
@@ -69,10 +68,22 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
   bool _statusLoading = true;
   int _statusGeneration = 0;
   int _loadGeneration = 0;
+  final _loginCardKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+    final initial = widget.initialAccount;
+    final first = ref
+        .read(appControllerProvider)
+        .value
+        ?.visibleAccounts
+        .firstOrNull;
+    _selected = initial != null
+        ? '${initial.steamId}'
+        : first == null
+        ? null
+        : '${first.steamId}';
     WidgetsBinding.instance.addObserver(this);
     _load();
   }
@@ -156,8 +167,19 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
       if (selectedPath != null) await settings.saveSteamClientPath(path);
       if (!mounted || generation != _loadGeneration) return;
       final initial = widget.initialAccount;
+      final avaAccounts =
+          ref.read(appControllerProvider).value?.visibleAccounts ??
+          const <SteamGuardAccount>[];
       String? selected = _selected;
-      if (!accounts.any((a) => a.steamId == selected)) selected = null;
+      if (!accounts.any((a) => a.steamId == selected) &&
+          !avaAccounts.any((a) => '${a.steamId}' == selected)) {
+        selected = null;
+      }
+      if (selected == null &&
+          initial != null &&
+          avaAccounts.any((a) => a.steamId == initial.steamId)) {
+        selected = '${initial.steamId}';
+      }
       if (selected == null && initial != null) {
         for (final account in accounts) {
           // An existing SteamID is authoritative. Never fall back to a name
@@ -172,6 +194,9 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
             break;
           }
         }
+      }
+      if (selected == null && initial == null && avaAccounts.isNotEmpty) {
+        selected = '${avaAccounts.first.steamId}';
       }
       setState(() {
         _accounts = accounts;
@@ -212,25 +237,6 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
 
   Future<void> _switch(SteamClientAccount account) async {
     if (_loading || _switching || _path == null) return;
-    final l = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l.steamSwitchTitle),
-        content: Text(l.steamSwitchConfirm(account.accountName)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l.steamSwitchButton),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted || _switching || _loading) return;
     ++_statusGeneration;
     setState(() {
       _switching = true;
@@ -316,6 +322,10 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
       _statusLoading = true;
     });
     try {
+      // The remembered-account button shares this flow. Bring its progress and
+      // cancel action into view instead of leaving them above the viewport.
+      final loginContext = _loginCardKey.currentContext;
+      if (loginContext != null) await Scrollable.ensureVisible(loginContext);
       final result = await ref
           .read(desktopSteamLoginProvider)
           .login(
@@ -506,6 +516,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
     List<SteamGuardAccount> accounts,
     SteamGuardAccount? selected,
   ) => Card(
+    key: _loginCardKey,
     child: Padding(
       padding: context.rInsets(all: 16),
       child: Column(
@@ -544,7 +555,10 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
               onChanged: _switching
                   ? null
                   : (value) => setState(() {
-                      _selectedAvaSteamId = value;
+                      _selected = value == null ? null : '$value';
+                      _missingInitial = false;
+                      _error = null;
+                      _launched = false;
                       _desktopOutcome = null;
                     }),
             ),
@@ -688,10 +702,9 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
     final avaAccounts =
         ref.watch(appControllerProvider).value?.visibleAccounts ??
         const <SteamGuardAccount>[];
-    final selectedAvaId = _selectedAvaSteamId ?? widget.initialAccount?.steamId;
-    final selectedAva =
-        avaAccounts.where((a) => a.steamId == selectedAvaId).firstOrNull ??
-        avaAccounts.firstOrNull;
+    final selectedAva = avaAccounts
+        .where((a) => '${a.steamId}' == _selected)
+        .firstOrNull;
     SteamClientAccount? selected;
     for (final account in _accounts) {
       if (account.steamId == _selected) selected = account;
@@ -699,8 +712,9 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
     final canSwitch =
         !_loading &&
         !_switching &&
-        selected != null &&
-        selected.rememberPassword;
+        _path != null &&
+        ((selectedAva != null && selectedAva.steamId > 0) ||
+            selected?.rememberPassword == true);
     return PopScope(
       canPop: !_switching,
       child: Scaffold(
@@ -729,7 +743,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(l.steamSwitchHelp),
+            Text(l.steamSwitchUnifiedHelp),
             const SizedBox(height: 20),
             Text(
               l.steamSwitchPath,
@@ -759,7 +773,8 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
             if (!_loading &&
                 _error == null &&
                 _path != null &&
-                _accounts.isEmpty)
+                _accounts.isEmpty &&
+                avaAccounts.isEmpty)
               Text(l.steamSwitchNoAccounts),
             if (_missingInitial) ...[
               Text(l.steamSwitchNoMatch),
@@ -782,7 +797,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
                   ),
                   subtitle: Text(
                     '${account.accountName}\n${account.steamId}'
-                    '${account.rememberPassword ? '' : '\n${l.steamSwitchNeedsLogin}'}',
+                    '${account.rememberPassword || avaAccounts.any((a) => '${a.steamId}' == account.steamId) ? '' : '\n${l.steamSwitchNeedsLogin}'}',
                   ),
                   isThreeLine: true,
                   trailing: _isCurrentAccount(account)
@@ -801,12 +816,7 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
                       ? null
                       : () => setState(() {
                           _selected = account.steamId;
-                          final matchingAva = avaAccounts
-                              .where((a) => '${a.steamId}' == account.steamId)
-                              .firstOrNull;
-                          if (matchingAva != null) {
-                            _selectedAvaSteamId = matchingAva.steamId;
-                          }
+                          _missingInitial = false;
                           _error = null;
                           _launched = false;
                           _desktopOutcome = null;
@@ -822,7 +832,11 @@ class _SteamClientScreenState extends ConsumerState<SteamClientScreen>
             ],
             FilledButton.icon(
               key: const ValueKey('steam-client-switch'),
-              onPressed: canSwitch ? () => _switch(selected!) : null,
+              onPressed: canSwitch
+                  ? () => selectedAva != null
+                        ? _loginDesktop(selectedAva.steamId)
+                        : _switch(selected!)
+                  : null,
               icon: const Icon(Icons.switch_account),
               label: Text(l.steamSwitchButton),
             ),

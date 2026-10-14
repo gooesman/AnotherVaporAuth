@@ -69,6 +69,54 @@ Future<InventoryItem> _item(Map<String, dynamic> description) async {
 
 void main() {
   test(
+    'keeps Steam owner cooldown dates and strips presentation markup',
+    () async {
+      final item = await _item({
+        'owner_descriptions': [
+          {'type': 'html', 'value': ' '},
+          {'type': 'html', 'value': '<b>可交易时间：</b>[date]1792393200[/date]'},
+          {
+            'type': 'html',
+            'value': 'Tradable After Oct 19, 2026 (7:00:00) GMT',
+          },
+        ],
+      });
+      expect(item.restrictions, hasLength(2));
+      expect(item.restrictions.first.text, '可交易时间：[date]1792393200[/date]');
+      expect(item.restrictions.first.until, DateTime.utc(2026, 10, 19, 7));
+      expect(item.restrictions.last.until, DateTime.utc(2026, 10, 19, 7));
+    },
+  );
+
+  test('keeps unknown cooldown text without inventing unlock dates', () async {
+    final item = await _item({
+      'tradable': 0,
+      'market_tradable_restriction': 7,
+      'market_marketable_restriction': 7,
+      'owner_descriptions': [
+        null,
+        {'value': 5},
+        {'value': 'Tradable After Feb 30, 2026 (7:00:00) GMT'},
+        {'value': '交易受限，结束时间未提供'},
+        {'value': 'Trade ends [date]999999999999999999999[/date]'},
+      ],
+    });
+    expect(item.restrictions, hasLength(3));
+    expect(item.restrictions.every((note) => note.until == null), isTrue);
+    final unavailable = await _item({'tradable': 0, 'marketable': 0});
+    expect(unavailable.restrictions, isEmpty);
+  });
+
+  test('does not mistake an unzoned description date for UTC', () async {
+    final item = await _item({
+      'owner_descriptions': [
+        {'value': 'Tradable After Oct 19, 2026 (7:00:00)'},
+      ],
+    });
+    expect(item.restrictions.single.until, isNull);
+  });
+
+  test(
     'category fixtures retain genuine localized tags across CS2, Dota and Steam',
     () async {
       final cases =

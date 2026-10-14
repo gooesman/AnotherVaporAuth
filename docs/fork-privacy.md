@@ -61,15 +61,28 @@ changes, on foreground return when the last result is stale, or when you choose
 to check, rather than continuously polling Steam.
 Results describe reachability, not account authentication or trading permission.
 
+Market favorites store public product identities, display metadata and your
+selected quote currency in a local `market_favorites.json` file. With **Sync app
+settings** enabled, these fields are also included in the encrypted settings
+document; cached prices and availability counts are not synchronized. Only
+visible market rows request quotes from Steam, with no background price polling.
+
 Optional WebDAV synchronization sends encrypted account payloads and, when
 enabled, the curated settings document to the server you choose. It is disabled
 until you configure it. Server-visible synchronization metadata includes SteamIDs,
 revisions and payload hashes, not plaintext subscription credentials.
+The local/remote comparison decrypts payloads locally. It can show public account
+names, SteamIDs, favorite products and ordinary preference differences. Account
+secrets, authenticator URIs, subscription URLs and node credentials are hidden;
+the page only indicates that private values differ. Each explicit upload/pull
+handles one account or the whole settings document, including favorites and the
+subscription. Settings changed on both sides wait for this choice.
 Local debug logs may include
 account names and SteamIDs; the app does not automatically upload those logs.
 Screen selections for Steam QR login are decoded locally in memory, and are
 not saved or uploaded as screenshots. After an explicit **Open Steam and sign
-in** action, the app can also read the visible client area of the verified local
+in** or **Switch account** action for an imported account, the app can also read
+the visible client area of the verified local
 Steam sign-in window created for that attempt. It verifies the same window and
 QR challenge twice, then sends one approval to Valve using the selected account.
 It does not automatically approve unrelated pending login requests. Cancellation,

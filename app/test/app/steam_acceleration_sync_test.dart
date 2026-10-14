@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:ava/src/app/providers.dart';
+import 'package:ava/src/app/market_favorites.dart';
 import 'package:ava/src/app/steam_acceleration_providers.dart';
 import 'package:ava/src/app/sync_providers.dart';
 import 'package:ava/src/app/theme.dart';
@@ -35,6 +36,13 @@ proxies:
 ''';
 
 final _portProvider = Provider<AppSettingsPort>(AppSettingsPort.new);
+const _favoriteDoc = {
+  'currency': 23,
+  'items': [
+    {'appid': 440, 'market_hash_name': 'Key', 'name': 'Key',
+      'icon_url': '', 'type': 'Tool', 'rarity_color': 'ffd700'},
+  ],
+};
 
 class _Controller extends AppController {
   _Controller(this.initiallyLocked);
@@ -200,6 +208,40 @@ class _DebounceTimer implements Timer {
 }
 
 void main() {
+  test('settings snapshot and pull retain favorites and selected currency', () async {
+    final fixture = await _Fixture.create();
+    await fixture.port.apply({'market_favorites': _favoriteDoc});
+    expect((await fixture.port.snapshot())!['market_favorites'], _favoriteDoc);
+    await fixture.port.apply({'skin': AvaSkin.pixel.name});
+    expect((await fixture.port.snapshot())!['market_favorites'], _favoriteDoc);
+    expect(fixture.fetches, 0);
+    expect(fixture.runtime.starts, 0);
+  });
+
+  test('malformed or unsavable subscription does not overwrite favorites', () async {
+    final fixture = await _Fixture.create();
+    await fixture.container.read(marketFavoritesProvider.notifier).applySynced(_favoriteDoc);
+    final empty = {'currency': 1, 'items': <Object>[]};
+    await expectLater(fixture.port.apply({
+      'market_favorites': empty, 'steam_acceleration': {'v': 1, 'configured': true},
+    }), throwsA(anything));
+    expect((await fixture.port.snapshot())!['market_favorites'], _favoriteDoc);
+    fixture.store.failWrite = true;
+    await expectLater(fixture.port.apply({
+      'market_favorites': empty,
+      'steam_acceleration': {'v': 1, 'configured': true, 'url': _otherUrl},
+    }), throwsA(anything));
+    expect((await fixture.port.snapshot())!['market_favorites'], _favoriteDoc);
+  });
+
+  test('invalid favorites fails before changing the subscription', () async {
+    final fixture = await _Fixture.create();
+    await expectLater(fixture.port.apply({
+      'market_favorites': {'currency': 23, 'items': 'invalid'},
+      'steam_acceleration': {'v': 1, 'configured': false},
+    }), throwsFormatException);
+    expect(fixture.store.writes, 0);
+  });
   test(
     'an explicit preference change wins over a delayed cold-start read',
     () async {

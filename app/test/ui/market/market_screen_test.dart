@@ -290,6 +290,52 @@ Future<void> _filter(WidgetTester tester, String control, String label) async {
 }
 
 void main() {
+  testWidgets('inventory cooldown is readable at phone width and large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final (market, _, l) = await _show(
+      tester,
+      initialTab: 0,
+      textScale: 1.5,
+      items: [
+        InventoryItem(
+          appid: 730,
+          contextId: '2',
+          assetId: 'cooldown',
+          classId: '100',
+          instanceId: '0',
+          amount: 1,
+          marketHashName: 'Locked rifle',
+          name: 'A rifle with a longer name and cooldown',
+          type: 'Rifle',
+          iconUrl: '',
+          marketable: false,
+          tradable: false,
+          restrictions: [
+            InventoryRestriction(
+              'Tradable After [date]1893484800[/date]',
+              until: DateTime.utc(2030, 1, 1, 8),
+              dateText: '[date]1893484800[/date]',
+            ),
+          ],
+        ),
+      ],
+    );
+    expect(find.textContaining('Cooldown until'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey('inventory-cooldown-cooldown')));
+    await tester.pumpAndSettle();
+    expect(find.text(l.inventoryCooldownDetails), findsOneWidget);
+    expect(find.textContaining('Tradable After 2030-01-01'), findsOneWidget);
+    expect(market.priceQueries, isEmpty);
+    expect(find.byType(SellSheet), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opening public market reads no private account data', (
     tester,
   ) async {

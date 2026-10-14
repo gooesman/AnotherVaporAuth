@@ -58,13 +58,13 @@ depend on your network. See the [update and release guide][releases-guide].
 |---|---|
 | **Accounts and Steam Guard** | Multiple accounts, offline codes, countdowns, copy, maFile import/export and a remembered username/nickname/Steam ID display choice. |
 | **Account overview** | Wallet balance, pending funds and market activity. Desktop has room for overview cards; the phone home screen stays focused on codes and accounts. |
-| **Windows Steam sign-in** | Open Steam, switch accounts and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
+| **Windows Steam sign-in** | Select an imported account and use either sign-in button to open/switch Steam and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
 | **Friends and trades** | Friends list, received/sent offers, both sides' inventories, offer review and trade confirmations. |
-| **Inventory and listings** | Game/context selection, name search, type/rarity filters, subtle rarity borders, batch listing, and active/held/pending listings. |
-| **Market prices** | Search by item, game and currency; view reference prices and item details, or open the Steam market page. |
+| **Inventory and listings** | Game/context selection, name search, type/rarity filters, subtle rarity borders, Steam-provided cooldown details, batch listing, and active/held/pending listings. |
+| **Market prices** | Search by item, game and currency; save favorites for direct price viewing in your selected currency, view item details, or open the Steam market page. |
 | **Backup login codes** | Request and verify Steam's SMS code inside the app, then display the one-time backup login codes. |
 | **Optional connectivity** | Follow detected external proxy routes first, with a built-in fallback using your Clash subscription and a visible current-route status. |
-| **App lock and sync** | Optional startup PIN verification and system unlock; encrypted account and settings sync to your own WebDAV server, including optional subscription sync. |
+| **App lock and sync** | Optional startup PIN verification and system unlock; encrypted WebDAV account/settings sync, including market favorites, currency and acceleration subscriptions, with local/remote comparison and explicit upload/pull. |
 | **Appearance and other tools** | Light/dark/system appearance, skins, compact refresh indicators, device sessions, Steam key redemption and seven languages. |
 
 ### Everyday controls
@@ -80,11 +80,33 @@ Visible results automatically request the **lowest asking price in that currency
 you do not need to refresh each item. Changing currency updates visible quotes.
 Item details show recent median sale prices separately from asking prices.
 
+Use the star beside a result to save it. **Favorites** opens your saved products
+without another search and remembers the selected currency. Only visible rows
+load quotes; hidden favorites do not make background price requests.
+
 Searches are explicit, results are paged, and recent quotes are cached. The app
 does not continuously poll prices or convert an unverified USD search result into
 a CNY label. If Steam limits requests or a quote is unavailable, it shows the
 unavailable state and lets you retry. Prices are references, not a promise of a
 trade at that price.
+
+Inventory and trade selections also show Steam's restriction notes. When Steam
+provides a recognizable expiry time, details show local time and the remaining
+duration when opened. An unavailable expiry is not guessed from the item type.
+
+### Compare and synchronize devices
+
+In **Settings → Sync → Compare local and remote**, expand a row to inspect its
+differences, then choose **Pull remote → local** or **Upload local → remote**.
+Each action handles that row only: an account is one row; enabled app settings,
+market favorites/currency and acceleration subscription form one settings row.
+Account secrets and subscription credentials are hidden in the comparison.
+
+Changes are compared with the last shared version; displayed sync times are
+for reference. When settings changed on both devices, synchronization waits for
+your choice. An outdated comparison must be refreshed before applying it.
+Favorites and currency sync when **Sync app settings** is enabled; cached prices
+are not synchronized. See the [sync design and behavior][sync-guide].
 
 ### Optional Steam connectivity
 
@@ -162,6 +184,7 @@ to the original project's paid online services.
 [build-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/app/README.md
 [releases-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-releases.md
 [switch-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md
+[sync-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/specs/2026-08-12-config-sync-design.md
 [connectivity]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#optional-steam-connectivity
 [migration]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#android-installation-and-migration
 [privacy]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy.md

@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../app/market_favorites.dart';
 import '../../app/providers.dart';
 import '../../app/responsive.dart';
 import '../../app/theme.dart';
@@ -31,8 +32,7 @@ _AccountKey _accountKey(SteamGuardAccount account) => (
   account.steamId == 0 ? account : null,
 );
 
-/// Explicit, read-only market discovery. Mounting, typing and selecting filters
-/// never start requests. The page owns its bounded cache and request lifetimes.
+/// Searches are explicit; saved favorites quote only their visible rows.
 class MarketSearchTab extends ConsumerStatefulWidget {
   const MarketSearchTab({
     super.key,
@@ -63,6 +63,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
   String? _language;
   int? _currency;
   int? _appid;
+  bool? _favoritesMode;
   _Query? _submitted;
   List<MarketSearchItem> _items = const [];
   SteamRequestScope? _scope;
@@ -126,8 +127,13 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
       _reset(clearCache: true);
     } else if (!widget.active) {
       _cancel();
-    } else if (widget.reload != oldWidget.reload && _submitted != null) {
-      _load(_submitted!, 0, force: true);
+    } else if (widget.reload != oldWidget.reload) {
+      if (_favoritesMode == true) {
+        _cancel();
+        _prices.cache.clear();
+      } else if (_submitted != null) {
+        _load(_submitted!, 0, force: true);
+      }
     }
   }
 
@@ -309,7 +315,12 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
   Future<void> _showDetails(MarketSearchItem item) async {
     if (!widget.active || _details != null) return;
     final generation = _generation;
-    final query = _submitted!;
+    final query = (
+      text: _submitted?.text ?? '',
+      appid: _appid,
+      currency: _currency!,
+      language: _client.api.steamLanguage,
+    );
     final client = _client;
     final initialPrice = _prices.quote((
       item.appid,
@@ -331,6 +342,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
         lifetime: lifetime,
         cache: _prices.cache,
         initialPrice: initialPrice,
+        showListingCount: _favoritesMode != true,
       ),
     );
     _details = lifetime;
@@ -360,6 +372,29 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
         _prices = _newPrices(client);
       });
     });
+    ref.listen(marketFavoritesProvider, (previous, next) {
+      final saved = next.asData?.value;
+      if (saved == null) return;
+      setState(() {
+        _favoritesMode ??= saved.items.isNotEmpty;
+        if (_favoritesMode == true &&
+            previous?.asData?.value.items != saved.items) {
+          _cancel();
+        }
+        if (saved.currency != null && saved.currency != _currency) {
+          _changeCurrency(saved.currency!);
+        }
+      });
+    });
+    final favorites = ref.watch(marketFavoritesProvider);
+    final saved = favorites.asData?.value;
+    // A provider can already be loaded when entering this page.
+    if (_favoritesMode == null && saved != null) {
+      _favoritesMode = saved.items.isNotEmpty;
+      _currency = saved.currency ?? _currency;
+    }
+    final showingFavorites = _favoritesMode == true;
+    final items = showingFavorites ? saved?.items ?? const [] : _items;
     final l = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AvaTokens>()!;
     return CustomScrollView(
@@ -371,9 +406,12 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
           padding: context.rSafeInsets(all: 16).copyWith(bottom: 8),
           sliver: SliverToBoxAdapter(child: _form(l)),
         ),
-        if (_submitted == null)
+        if (showingFavorites && items.isEmpty)
+          SliverToBoxAdapter(child: _message(l.marketFavoriteEmpty))
+        else if (!showingFavorites && _submitted == null)
           SliverToBoxAdapter(child: _message(l.marketSearchEmpty))
-        else if (!_loading &&
+        else if (!showingFavorites &&
+            !_loading &&
             _error == null &&
             _retryStart == null &&
             _items.isEmpty)
@@ -381,9 +419,9 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
         SliverPadding(
           padding: context.rSafeInsets(h: 16).copyWith(top: 0, bottom: 0),
           sliver: SliverList.builder(
-            itemCount: _items.length,
+            itemCount: items.length,
             itemBuilder: (context, index) {
-              final item = _items[index];
+              final item = items[index];
               return Card(
                 key: ValueKey(
                   'market-result-${item.appid}-${item.marketHashName}',
@@ -409,15 +447,31 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
                       _VisibleMarketPrice(
                         item: item,
                         prices: _prices,
-                        currency: _submitted!.currency,
-                        language: _submitted!.language,
+                        currency: _currency!,
+                        language: _client.api.steamLanguage,
+                        quoteWithoutListingCount: showingFavorites,
                         active:
                             widget.active && _foreground && _details == null,
                       ),
-                      Text(l.marketSearchListings(item.listingCount)),
+                      if (!showingFavorites)
+                        Text(l.marketSearchListings(item.listingCount)),
                     ],
                   ),
                   onTap: () => _showDetails(item),
+                  trailing: IconButton(
+                    key: ValueKey(
+                      'market-favorite-${item.appid}-${item.marketHashName}',
+                    ),
+                    tooltip: saved?.contains(item) == true
+                        ? l.marketFavoriteRemove
+                        : l.marketFavoriteAdd,
+                    onPressed: saved == null ? null : () => _saveFavorite(item),
+                    icon: Icon(
+                      saved?.contains(item) == true
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                    ),
+                  ),
                 ),
               );
             },
@@ -428,7 +482,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
           sliver: SliverToBoxAdapter(
             child: Column(
               children: [
-                if (_loading)
+                if (_loading || (showingFavorites && favorites.isLoading))
                   const Padding(
                     padding: EdgeInsets.all(12),
                     child: SizedBox(
@@ -438,8 +492,17 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
-                if (_error != null) _message(_searchError(l, _error!)),
-                if (!_loading &&
+                if (favorites.hasError) ...[
+                  _message(l.marketFavoriteSaveFailed),
+                  TextButton(
+                    onPressed: () => ref.invalidate(marketFavoritesProvider),
+                    child: Text(l.commonRetry),
+                  ),
+                ],
+                if (!showingFavorites && _error != null)
+                  _message(_searchError(l, _error!)),
+                if (!showingFavorites &&
+                    !_loading &&
                     _submitted != null &&
                     (_hasMore || _retryStart != null))
                   TextButton(
@@ -451,7 +514,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
                       _retryStart != null ? l.commonRetry : l.marketSearchMore,
                     ),
                   ),
-                if (_submitted != null)
+                if (showingFavorites || _submitted != null)
                   Text(
                     l.marketSearchPriceNote,
                     style: TextStyle(color: tokens.muted),
@@ -469,6 +532,57 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
     padding: context.rInsets(all: 16),
     child: Text(text, textAlign: TextAlign.center),
   );
+
+  Future<void> _saveFavorite(MarketSearchItem item) async {
+    try {
+      await ref
+          .read(marketFavoritesProvider.notifier)
+          .toggle(item, currency: _currency);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).marketFavoriteSaveFailed,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _changeCurrency(int value) {
+    _currency = value;
+    final submitted = _submitted;
+    if (submitted != null && _items.isNotEmpty) {
+      _cancel();
+      _submitted = (
+        text: submitted.text,
+        appid: submitted.appid,
+        currency: value,
+        language: submitted.language,
+      );
+    } else {
+      _reset();
+    }
+  }
+
+  Future<void> _saveCurrency(int value) async {
+    setState(() => _changeCurrency(value));
+    try {
+      await ref.read(marketFavoritesProvider.notifier).setCurrency(value);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).marketFavoriteSaveFailed,
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   Widget _form(AppLocalizations l) {
     final game = DropdownButtonFormField<int>(
@@ -503,63 +617,81 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
             child: Text(steamCurrencyCode(currency)),
           ),
       ],
-      onChanged: (value) => setState(() {
-        _currency = value!;
-        final submitted = _submitted;
-        if (submitted != null && _items.isNotEmpty) {
-          // Search identities do not depend on currency. Keep the list and
-          // immediately quote its visible rows again, without another search.
-          _cancel();
-          _submitted = (
-            text: submitted.text,
-            appid: submitted.appid,
-            currency: value,
-            language: submitted.language,
-          );
-        } else {
-          _reset();
-        }
-      }),
+      onChanged: (value) => _saveCurrency(value!),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        LayoutBuilder(
-          builder: (context, constraints) => constraints.maxWidth < 500
-              ? Column(children: [game, const SizedBox(height: 12), currency])
-              : Row(
-                  children: [
-                    Expanded(child: game),
-                    const SizedBox(width: 12),
-                    SizedBox(width: 180, child: currency),
-                  ],
+        SegmentedButton<bool>(
+          segments: [
+            ButtonSegment(
+              value: true,
+              label: Text(l.marketFavoriteTitle),
+              icon: const Icon(Icons.star_border_rounded),
+            ),
+            ButtonSegment(
+              value: false,
+              label: Text(l.marketFavoriteSearch),
+              icon: const Icon(Icons.search),
+            ),
+          ],
+          selected: {_favoritesMode == true},
+          onSelectionChanged: (value) => setState(() {
+            _cancel();
+            _favoritesMode = value.single;
+            if (_scroll.hasClients) _scroll.jumpTo(0);
+          }),
+        ),
+        const SizedBox(height: 12),
+        KeyedSubtree(
+          key: ValueKey('market-currency-$_currency'),
+          child: _favoritesMode == true
+              ? currency
+              : LayoutBuilder(
+                  builder: (context, constraints) => constraints.maxWidth < 500
+                      ? Column(
+                          children: [
+                            game,
+                            const SizedBox(height: 12),
+                            currency,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(child: game),
+                            const SizedBox(width: 12),
+                            SizedBox(width: 180, child: currency),
+                          ],
+                        ),
                 ),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          key: const ValueKey('market-search-query'),
-          controller: _text,
-          decoration: InputDecoration(
-            labelText: l.marketSearchHint,
-            prefixIcon: const Icon(Icons.search),
+        if (_favoritesMode != true) ...[
+          const SizedBox(height: 12),
+          TextField(
+            key: const ValueKey('market-search-query'),
+            controller: _text,
+            decoration: InputDecoration(
+              labelText: l.marketSearchHint,
+              prefixIcon: const Icon(Icons.search),
+            ),
+            textInputAction: TextInputAction.search,
+            onChanged: (_) => setState(_reset),
+            onSubmitted: (_) => _submit(),
           ),
-          textInputAction: TextInputAction.search,
-          onChanged: (_) => setState(_reset),
-          onSubmitted: (_) => _submit(),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.icon(
-            key: const ValueKey('market-search-submit'),
-            onPressed:
-                widget.active && !_loading && _text.text.trim().isNotEmpty
-                ? _submit
-                : null,
-            icon: const Icon(Icons.search),
-            label: Text(l.marketSearchButton),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              key: const ValueKey('market-search-submit'),
+              onPressed:
+                  widget.active && !_loading && _text.text.trim().isNotEmpty
+                  ? _submit
+                  : null,
+              icon: const Icon(Icons.search),
+              label: Text(l.marketSearchButton),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -584,12 +716,14 @@ class _VisibleMarketPrice extends StatefulWidget {
     required this.currency,
     required this.language,
     required this.active,
+    this.quoteWithoutListingCount = false,
   });
   final MarketSearchItem item;
   final MarketSearchPrices prices;
   final int currency;
   final String language;
   final bool active;
+  final bool quoteWithoutListingCount;
 
   @override
   State<_VisibleMarketPrice> createState() => _VisibleMarketPriceState();
@@ -638,7 +772,7 @@ class _VisibleMarketPriceState extends State<_VisibleMarketPrice> {
       final box = context.findRenderObject();
       var visible = false;
       if (widget.active &&
-          widget.item.listingCount > 0 &&
+          (widget.quoteWithoutListingCount || widget.item.listingCount > 0) &&
           box is RenderBox &&
           box.hasSize &&
           box.attached) {
@@ -675,7 +809,7 @@ class _VisibleMarketPriceState extends State<_VisibleMarketPrice> {
       if (quote.loading &&
           widget.active &&
           _inViewport &&
-          widget.item.listingCount > 0) {
+          (widget.quoteWithoutListingCount || widget.item.listingCount > 0)) {
         return Row(
           children: [
             const SizedBox(
@@ -788,6 +922,7 @@ class _MarketItemDetails extends ConsumerStatefulWidget {
     required this.lifetime,
     required this.cache,
     this.initialPrice,
+    this.showListingCount = true,
   });
   final MarketSearchItem item;
   final int currency;
@@ -795,6 +930,7 @@ class _MarketItemDetails extends ConsumerStatefulWidget {
   final _DetailLifetime lifetime;
   final ItemMarketPriceCache cache;
   final MarketPrice? initialPrice;
+  final bool showListingCount;
 
   @override
   ConsumerState<_MarketItemDetails> createState() => _MarketItemDetailsState();
@@ -919,7 +1055,8 @@ class _MarketItemDetailsState extends ConsumerState<_MarketItemDetails> {
                   steamCurrencyCode(widget.currency),
                 ),
               ),
-              Text(l.marketSearchListings(widget.item.listingCount)),
+              if (widget.showListingCount)
+                Text(l.marketSearchListings(widget.item.listingCount)),
               const SizedBox(height: 12),
               if (_loading) const LinearProgressIndicator(),
               if (lowest?.isNotEmpty == true)

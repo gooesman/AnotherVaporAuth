@@ -1,6 +1,7 @@
 {
   "@@locale": "en",
   "steamSwitchTitle": "Switch Steam account",
+  "steamSwitchUnifiedHelp": "Select an account and switch to open Steam and sign in. Imported accounts use remembered Steam sign-in details first, then automatically approve the new local login QR code when an online session is available. Accounts not imported here can use their remembered Steam sign-in. Please exit running games first.",
   "steamSwitchHelp": "Switch between Steam accounts that have already signed in on this PC with their sign-in details remembered. Importing an authenticator into GooeSteamKit does not sign that account in to the Steam client.",
   "steamSwitchPath": "Steam installation folder",
   "steamSwitchNotFound": "Steam was not found. Choose steam.exe to locate your installation.",
@@ -1528,9 +1529,15 @@
   "@steamSwitchErrorDetails": {
     "description": "Safe diagnostics only: an allowlisted stage and error code, plus a Win32 error number or a placeholder when unavailable. Never pass raw exception text, paths or account data.",
     "placeholders": {
-      "stage": { "type": "String" },
-      "code": { "type": "String" },
-      "systemError": { "type": "String" }
+      "stage": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "systemError": {
+        "type": "String"
+      }
     }
   },
   "approveScreenBusy": "Another screen capture is in progress. Finish or cancel it first.",
@@ -1540,7 +1547,48 @@
   "@approveScreenFailedDetail": {
     "description": "Screen capture failure with safe diagnostics containing only allowlisted error codes, stages and Win32 error numbers. Never pass raw exception text, paths or account data.",
     "placeholders": {
-      "detail": { "type": "String" }
+      "detail": {
+        "type": "String"
+      }
     }
-  }
+  },
+  "marketFavoriteTitle": "Favorites",
+  "marketFavoriteAdd": "Add to favorites",
+  "marketFavoriteRemove": "Remove from favorites",
+  "marketFavoriteEmpty": "Save items from market search to see their prices here without searching again.",
+  "marketFavoriteSaveFailed": "Could not load or save market favorites. Please try again.",
+  "syncCompareTitle": "Compare local and remote",
+  "syncCompareRefresh": "Refresh comparison",
+  "syncCompareHelp": "Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.",
+  "syncCompareStale": "Local or remote data changed. Refresh the comparison before trying again.",
+  "syncCompareFailed": "Comparison or transfer failed. Check the connection and sync passphrase, then refresh. No successful transfer has been confirmed.",
+  "syncCompareSame": "Same content",
+  "syncCompareLocalOnly": "Only on this device",
+  "syncCompareRemoteOnly": "Only on remote",
+  "syncCompareLocalNewer": "Local has newer changes",
+  "syncCompareRemoteNewer": "Remote has newer changes",
+  "syncCompareBothChanged": "Different on both sides — choose a direction",
+  "syncCompareRemoteDeleted": "Deleted on remote; upload restores this account",
+  "syncCompareSettings": "Settings, favorites and acceleration subscription",
+  "syncCompareSettingsConflict": "Settings changed on both devices. Compare before choosing upload or pull.",
+  "syncComparePull": "Pull remote → local",
+  "syncCompareUpload": "Upload local → remote",
+  "syncCompareHidden": "Changed private value (hidden)",
+  "syncCompareCurrency": "Market currency",
+  "syncCompareFavorites": "Market favorites",
+  "syncCompareSubscription": "Acceleration subscription URL",
+  "syncCompareNodes": "Acceleration node configuration",
+  "syncCompareSelectedNode": "Selected acceleration node",
+  "marketFavoriteSearch": "Search",
+  "inventoryCooldownDetails": "Trade and market restrictions",
+  "inventoryCooldownUntil": "Cooldown until {time}",
+  "@inventoryCooldownUntil": { "placeholders": { "time": { "type": "String" } } },
+  "inventoryCooldownTradable": "Tradable",
+  "inventoryCooldownNotTradable": "Not tradable",
+  "inventoryCooldownMarketable": "Marketable",
+  "inventoryCooldownLocalTime": "Time shown in your device’s local time zone.",
+  "inventoryCooldownUnknown": "Steam has not provided a readable unlock time. No date is estimated.",
+  "inventoryCooldownElapsed": "This date has passed. Refresh the inventory to check Steam’s current restrictions.",
+  "inventoryCooldownRemaining": "Remaining: {days}d {hours}h {minutes}m",
+  "@inventoryCooldownRemaining": { "placeholders": { "days": { "type": "int" }, "hours": { "type": "int" }, "minutes": { "type": "int" } } }
 }
