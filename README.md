@@ -57,7 +57,7 @@ depend on your network. See the [update and release guide][releases-guide].
 | Feature | What it provides |
 |---|---|
 | **Accounts and Steam Guard** | Multiple accounts, offline codes, countdowns, copy, maFile import/export and a remembered username/nickname/Steam ID display choice. |
-| **Account overview** | Wallet balance, pending funds and market activity. Desktop has room for overview cards; the phone home screen stays focused on codes and accounts. |
+| **Account overview** | Wallet balance, pending funds, market activity, and optional friends, inventory and market-favorite previews. Enable each card in Settings or the overview's tune menu; the phone home screen stays focused on codes and accounts. |
 | **Windows Steam sign-in** | Select an imported account and use either sign-in button to open/switch Steam and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
 | **Friends and trades** | Friends list, friend-request acceptance/decline, received/sent offers, both sides' inventories, offer review and trade confirmations. |
 | **Notifications and pending counts** | Home account rows show pending confirmations. Notifications and friend requests load when opened; unread messages appear first and read history is collapsed by default. Visible inventory notifications fetch individual item names and thumbnails on demand. Inventory, trade-offer and friend-request actions open the relevant in-app page; other types link to Steam's notification center. Notifications can be marked read or ignored. |
@@ -86,6 +86,8 @@ Item details show recent median sale prices separately from asking prices.
 Use the star beside a result to save it. **Favorites** opens your saved products
 without another search and remembers the selected currency. Only visible rows
 load quotes; hidden favorites do not make background price requests.
+The optional overview card previews up to four favorites in the same currency,
+with a shortcut to the complete list. New preview cards are off by default.
 
 Searches are explicit, results are paged, and recent quotes are cached. The app
 does not continuously poll prices or convert an unverified USD search result into

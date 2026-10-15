@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/models/steam_friend.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/models/steam_item.dart';
+import '../core/protocol/friends_client.dart';
 import '../core/protocol/inventory_client.dart';
 import '../core/protocol/market_client.dart';
 import '../core/protocol/community_session.dart';
@@ -21,13 +23,16 @@ class AccountDashboardLoader {
     required this.market,
     required this.api,
     required this.persistSession,
+    FriendsClient? friends,
     DateTime Function()? now,
     this.timeout = const Duration(seconds: 12),
     this.cacheLifetime = const Duration(seconds: 30),
     this.maxEntries = 16,
-  }) : now = now ?? DateTime.now;
+  }) : friends = friends ?? FriendsClient(api),
+       now = now ?? DateTime.now;
 
   final InventoryClient inventory;
+  final FriendsClient friends;
   final MarketClient market;
   final SteamApiClient api;
   final Future<void> Function(SteamGuardAccount) persistSession;
@@ -54,6 +59,8 @@ class AccountDashboardLoader {
     SteamGuardAccount account, {
     required bool wallet,
     required bool listings,
+    bool friends = false,
+    bool inventory = false,
   }) {
     final key = _identity(account);
     // Startup session maintenance can update the same live account instance.
@@ -73,9 +80,14 @@ class AccountDashboardLoader {
         (previousKey == null ? null : _entries.remove(previousKey)) ??
         DashboardData._(this, account);
     _entries[key] = data;
-    data._retain(wallet: wallet, listings: listings);
+    data._retain(
+      wallet: wallet,
+      listings: listings,
+      friends: friends,
+      inventory: inventory,
+    );
     _trim();
-    return DashboardLease._(data, wallet, listings);
+    return DashboardLease._(data, wallet, listings, friends, inventory);
   }
 
   void _trim() {
@@ -156,25 +168,45 @@ class DashboardData extends ChangeNotifier {
   final (int, bool, String?, Object?) _source;
   final wallet = DashboardValue<WalletInfo>();
   final listings = DashboardValue<List<MarketListing>>();
+  final friends = DashboardValue<List<SteamFriend>>();
+  final inventory = DashboardValue<InventoryOverview>();
   int _walletReaders = 0, _listingReaders = 0;
-  int get _readers => _walletReaders + _listingReaders;
+  int _friendReaders = 0, _inventoryReaders = 0;
+  int get _readers =>
+      _walletReaders + _listingReaders + _friendReaders + _inventoryReaders;
   Future<SessionRefreshOutcome>? _refreshingSession;
   SteamRequestScope? _sessionScope;
   bool _cleared = false;
 
-  void _retain({required bool wallet, required bool listings}) {
+  void _retain({
+    required bool wallet,
+    required bool listings,
+    required bool friends,
+    required bool inventory,
+  }) {
     if (wallet) _walletReaders++;
     if (listings) _listingReaders++;
+    if (friends) _friendReaders++;
+    if (inventory) _inventoryReaders++;
     // Attaching an overview during route construction must not synchronously
     // rebuild another overview that is already listening to this entry.
     scheduleMicrotask(load);
   }
 
-  void _release({required bool wallet, required bool listings}) {
+  void _release({
+    required bool wallet,
+    required bool listings,
+    required bool friends,
+    required bool inventory,
+  }) {
     if (wallet) _walletReaders--;
     if (listings) _listingReaders--;
+    if (friends) _friendReaders--;
+    if (inventory) _inventoryReaders--;
     if (_walletReaders == 0) _cancel(this.wallet);
     if (_listingReaders == 0) _cancel(this.listings);
+    if (_friendReaders == 0) _cancel(this.friends);
+    if (_inventoryReaders == 0) _cancel(this.inventory);
     if (_readers == 0) _sessionScope?.cancel();
     _loader._trim();
   }
@@ -189,17 +221,26 @@ class DashboardData extends ChangeNotifier {
     _cleared = true;
     _cancel(wallet);
     _cancel(listings);
+    _cancel(friends);
+    _cancel(inventory);
     _sessionScope?.cancel();
     wallet.value = null;
     listings.value = null;
-    wallet.checkedAt = listings.checkedAt = null;
+    friends.value = null;
+    inventory.value = null;
+    wallet.checkedAt = listings.checkedAt = friends.checkedAt =
+        inventory.checkedAt = null;
     notifyListeners();
   }
 
   /// Manual refresh bypasses the short cache; an in-flight card is coalesced.
   void load({bool force = false}) {
     if (_cleared) return;
-    if (!wallet.loading && !listings.loading && _sessionScope == null) {
+    if (!wallet.loading &&
+        !listings.loading &&
+        !friends.loading &&
+        !inventory.loading &&
+        _sessionScope == null) {
       _refreshingSession = null;
     }
     if (_walletReaders > 0) {
@@ -207,6 +248,12 @@ class DashboardData extends ChangeNotifier {
     }
     if (_listingReaders > 0) {
       _load(listings, () => _loader.market.myListings(account), force: force);
+    }
+    if (_friendReaders > 0) {
+      _load(friends, () => _loader.friends.fetch(account), force: force);
+    }
+    if (_inventoryReaders > 0) {
+      _load(inventory, () => _loader.inventory.overview(account), force: force);
     }
   }
 
@@ -269,7 +316,10 @@ class DashboardData extends ChangeNotifier {
         if (!_cleared && section._scope == scope) {
           section._scope = null;
           section.loading = false;
-          if (wallet._scope == null && listings._scope == null) {
+          if (wallet._scope == null &&
+              listings._scope == null &&
+              friends._scope == null &&
+              inventory._scope == null) {
             _sessionScope?.cancel();
           }
           notifyListeners();
@@ -309,9 +359,15 @@ class DashboardConnectionException implements Exception {
 }
 
 class DashboardLease {
-  DashboardLease._(this.data, this.wallet, this.listings);
+  DashboardLease._(
+    this.data,
+    this.wallet,
+    this.listings,
+    this.friends,
+    this.inventory,
+  );
   final DashboardData data;
-  final bool wallet, listings;
+  final bool wallet, listings, friends, inventory;
   bool _released = false;
 
   void refresh() {
@@ -321,6 +377,11 @@ class DashboardLease {
   void release() {
     if (_released) return;
     _released = true;
-    data._release(wallet: wallet, listings: listings);
+    data._release(
+      wallet: wallet,
+      listings: listings,
+      friends: friends,
+      inventory: inventory,
+    );
   }
 }

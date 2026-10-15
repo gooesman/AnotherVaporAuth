@@ -6034,6 +6034,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Removal could not be verified in the refreshed device list. Refresh and check before trying again.'**
   String get deviceRevokeOthersVerifyPending;
+
+  /// No description provided for @dashboardFriends.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get dashboardFriends;
+
+  /// No description provided for @dashboardInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get dashboardInventory;
+
+  /// No description provided for @dashboardFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Market favorites'**
+  String get dashboardFavorites;
+
+  /// No description provided for @dashboardCardsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the cards shown in the overview. Disabled cards do not load. The mobile home stays compact.'**
+  String get dashboardCardsDescription;
+
+  /// No description provided for @dashboardFriendsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} friends · {online} online'**
+  String dashboardFriendsSummary(int total, int online);
+
+  /// No description provided for @dashboardInventorySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{games} inventories · {items} items'**
+  String dashboardInventorySummary(int games, int items);
+
+  /// No description provided for @dashboardFavoritesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No market favorites yet.'**
+  String get dashboardFavoritesEmpty;
+
+  /// No description provided for @dashboardInventoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventories to display.'**
+  String get dashboardInventoryEmpty;
+
+  /// No description provided for @dashboardFriendsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet.'**
+  String get dashboardFriendsEmpty;
+
+  /// No description provided for @dashboardFavoritesMore.
+  ///
+  /// In en, this message translates to:
+  /// **'View all favorites'**
+  String get dashboardFavoritesMore;
+
+  /// No description provided for @dashboardFavoritesPriceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency: {currency} · Lowest listing'**
+  String dashboardFavoritesPriceNote(String currency);
+
+  /// No description provided for @dashboardCardsLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Previewing the first {count} items'**
+  String dashboardCardsLimited(int count);
 }
 
 class _AppLocalizationsDelegate

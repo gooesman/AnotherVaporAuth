@@ -3259,6 +3259,50 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deviceRevokeOthersVerifyPending => '无法从刷新后的设备列表核实撤销结果，请刷新核对后再操作。';
+
+  @override
+  String get dashboardFriends => '好友';
+
+  @override
+  String get dashboardInventory => '库存';
+
+  @override
+  String get dashboardFavorites => '市场收藏';
+
+  @override
+  String get dashboardCardsDescription => '选择概览显示的卡片；关闭后不加载。手机首页保持简洁。';
+
+  @override
+  String dashboardFriendsSummary(int total, int online) {
+    return '共 $total 位好友 · $online 位在线';
+  }
+
+  @override
+  String dashboardInventorySummary(int games, int items) {
+    return '$games 个库存 · $items 件物品';
+  }
+
+  @override
+  String get dashboardFavoritesEmpty => '还没有收藏的市场物品。';
+
+  @override
+  String get dashboardInventoryEmpty => '暂无可显示的库存。';
+
+  @override
+  String get dashboardFriendsEmpty => '暂无好友。';
+
+  @override
+  String get dashboardFavoritesMore => '查看全部收藏';
+
+  @override
+  String dashboardFavoritesPriceNote(String currency) {
+    return '价格币种：$currency · 最低在售';
+  }
+
+  @override
+  String dashboardCardsLimited(int count) {
+    return '仅预览前 $count 项';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6523,4 +6567,48 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get deviceRevokeOthersVerifyPending =>
       '無法從重新整理後的裝置清單確認撤銷結果，請重新整理核對後再操作。';
+
+  @override
+  String get dashboardFriends => '好友';
+
+  @override
+  String get dashboardInventory => '物品庫';
+
+  @override
+  String get dashboardFavorites => '市場收藏';
+
+  @override
+  String get dashboardCardsDescription => '選擇概覽顯示的卡片；關閉後不載入。手機首頁保持簡潔。';
+
+  @override
+  String dashboardFriendsSummary(int total, int online) {
+    return '共 $total 位好友 · $online 位在線';
+  }
+
+  @override
+  String dashboardInventorySummary(int games, int items) {
+    return '$games 個物品庫 · $items 件物品';
+  }
+
+  @override
+  String get dashboardFavoritesEmpty => '還沒有收藏的市場物品。';
+
+  @override
+  String get dashboardInventoryEmpty => '暫無可顯示的物品庫。';
+
+  @override
+  String get dashboardFriendsEmpty => '暫無好友。';
+
+  @override
+  String get dashboardFavoritesMore => '查看全部收藏';
+
+  @override
+  String dashboardFavoritesPriceNote(String currency) {
+    return '價格幣別：$currency · 最低在售';
+  }
+
+  @override
+  String dashboardCardsLimited(int count) {
+    return '僅預覽前 $count 項';
+  }
 }

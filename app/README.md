@@ -46,7 +46,7 @@ lib/src/
 l10n/                   # ARB localizations (en, zh, zh_Hant, de, fr, es, ru)
 ```
 
-## Status (1.5.13)
+## Status (1.5.14)
 
 Implemented features, covered by automated checks where applicable. Live Steam
 account flows and device-specific behavior have separate validation limits noted
@@ -131,7 +131,12 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
 - **Phone home** — token and account list in both orientations; select an account
   without opening its overview. Long-press for overview, market, friends or backup
   login codes. Wallet and market requests begin when those tools are opened.
-  Desktop keeps the overview beside the account list.
+  Desktop keeps the overview beside the account list. Optional friends, inventory
+  and market-favorites cards preview up to four entries each; enable them in
+  Settings or the overview's tune menu (off by default, device-local). Inventory
+  summaries do not fetch item pages, and favorite prices use the saved currency
+  and visible-row queue. Hidden/locked/background overviews cancel their reads;
+  successful summary reads reuse a 30-second cache and quotes a five-minute cache.
 - **Android back gestures** — no page movement during the gesture; a short fade
   after a committed back action, with the current page retained on cancellation.
   Xiaomi 15 Pro behavior still needs a device check.
@@ -159,7 +164,7 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Last recorded verification: `flutter analyze` clean, **1733 tests pass** (crypto RFC vectors,
+Last recorded verification: `flutter analyze` clean, **1772 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -198,7 +203,7 @@ Do not uninstall the old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1733 tests
+flutter test                       # 1772 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

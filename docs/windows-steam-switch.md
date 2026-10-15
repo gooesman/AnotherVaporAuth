@@ -99,14 +99,21 @@ in both portrait and landscape, with a compact acceleration status beside Settin
 tapping an account selects its code. Long-press the account to open its overview
 directly, without an intermediate menu. Market, friends, backup codes, family,
 devices and key redemption are reached from that overview. Long-pressing the
-large selected-account avatar also opens the overview on phones (desktop keeps
-its avatar click). Wallet and market data are not fetched just to show
+large selected-account avatar also opens the overview on phones. Desktop uses
+the inline overview, with a menu entry in narrow windows. Wallet and market data are not fetched just to show
 the phone home. Swipe actions are phone-only; desktop account cards do not
 slide and retain their right-click context menu, including in narrow windows.
 Tapping the selected account's name cycles username, persona and Steam ID for
 both the panel and account list. This display preference is saved locally on
 each device and restored after restarting either the desktop or phone app.
-Wallet, market listings and account-tool cards can be hidden using the tune menu.
+Wallet, market listings, account tools, friends, inventory and market favorites
+can be individually selected in Settings or the overview's tune menu. These
+switches are device-local. The three new preview cards are off by default;
+previously saved choices are preserved. Friends show counts and up to four names,
+online friends first. Inventory shows context counts and up to four game/context
+entries, each opening the matching inventory without first fetching its items.
+Favorites preview up to four saved products in the selected market currency.
+The complete lists remain available through each card's View all action.
 Unavailable balances are never presented as zero. Market records include active,
 held and awaiting-confirmation listings, with separate inventory-context labels.
 
@@ -298,12 +305,17 @@ images use a bounded decoded-frame cache; visible widgets retain independent
 image handles when cached entries are evicted. Avatar playback pauses when
 hidden, backgrounded or system animation reduction is enabled.
 
-Account overview cards load independently with a 12-second total deadline,
+Account overview wallet, listings, friends and inventory load independently with a 12-second total deadline,
 including redirects, pagination and an authentication retry. Closing the last
 view cancels its reads. Successful results can be reused from a bounded,
 30-second memory cache for the same account source, session and language;
 failed reads are not cached and manual refresh bypasses cached results.
-Network failures do not trigger password login attempts.
+Network failures do not trigger password login attempts. Disabled cards make no
+requests. Covering the overview, backgrounding or locking it releases its reads;
+reopening can reuse successful cache entries. Inventory summaries fetch only the
+game/context overview, and friends summaries fetch one friends page without
+individual profile queries. Favorite quotes use the separate five-minute cache
+and visible-row queue described below, with no periodic polling.
 
 Home refresh uses a small circular indicator with theme colors and borders,
 instead of full-screen grids, scanlines or checkerboard effects. Avatar and
@@ -524,6 +536,8 @@ and cancels stale reads; hiding the page cancels queued work. There is no local
 exchange-rate conversion or periodic price polling. A missing or failed quote
 never falls back to a dollar value marked as another currency.
 Favorites outside the visible list do not request prices in the background.
+This also applies to the optional overview preview: only its visible rows load
+prices, and leaving the overview or disabling the card cancels pending work.
 Opening details uses the available quote or loads one automatically; its refresh
 button requests a fresh quote. The list uses the lowest current asking price,
 while the recent-sale median remains a separately labelled detail.

@@ -5,6 +5,22 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.14] — 2026-10-15 · Fork
+
+### Added
+- Optional account-overview cards for friends, inventory contexts and market favorites. Preview up to four entries, see online counts, open the matching inventory, and view favorites' lowest asking prices in the saved currency.
+- Choose overview cards in Settings or the existing tune menu. New cards are off by default; previous selections are preserved and phone home remains compact.
+
+### Changed
+- Summary reads use bounded session caches; inventory previews fetch no item pages. Favorite quotes load only for visible rows, serially with a short cache. Covering, locking or backgrounding the overview cancels its reads.
+
+### 新增
+- 账户概览可开启好友、库存分区与市场收藏卡片，最多预览四项；查看在线人数、进入对应库存，并按已选币种显示收藏商品最低在售价。
+- 设置及概览右上角均可分别选择卡片；新增卡片默认关闭，保留原有选择，手机首页仍保持简洁。
+
+### 调整
+- 摘要复用有界会话缓存，库存预览不加载物品页；收藏只为可见商品串行查价并使用短缓存。离开概览、锁定或进入后台时取消相应请求。
+
 ## [v1.5.13] — 2026-10-14 · Fork
 
 ### Fixed

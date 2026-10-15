@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../app/dashboard_sections.dart';
 import '../app/providers.dart';
 import '../app/responsive.dart';
 import '../app/theme.dart';
@@ -275,6 +276,7 @@ class SettingsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                const DashboardCardsSettingsCard(),
                 // Text size (small = the pre-0.84 baseline)
                 _Card(
                   title: l.settingsTextSize,
@@ -1241,6 +1243,55 @@ class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
                 : _toggle,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class DashboardCardsSettingsCard extends ConsumerWidget {
+  const DashboardCardsSettingsCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final sections = ref.watch(dashboardSectionsProvider);
+    final notifier = ref.read(dashboardSectionsProvider.notifier);
+    return _Card(
+      title: l.dashboardCustomize,
+      description: l.dashboardCardsDescription,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            for (final (section, label) in [
+              ('wallet', l.dashboardWallet),
+              ('listings', l.marketTabListings),
+              ('tools', l.dashboardTools),
+              ('friends', l.dashboardFriends),
+              ('inventory', l.dashboardInventory),
+              ('favorites', l.dashboardFavorites),
+            ])
+              SwitchListTile(
+                key: ValueKey('dashboard-section-$section'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(label),
+                value: sections.contains(section),
+                onChanged: !notifier.ready
+                    ? null
+                    : (_) async {
+                        try {
+                          await notifier.toggle(section);
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l.dashboardSaveFailed)),
+                            );
+                          }
+                        }
+                      },
+              ),
+          ],
+        ),
       ),
     );
   }

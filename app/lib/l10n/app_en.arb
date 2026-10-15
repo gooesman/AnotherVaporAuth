@@ -1676,5 +1676,51 @@
         "type": "int"
       }
     }
+  },
+  "dashboardFriends": "Friends",
+  "dashboardInventory": "Inventory",
+  "dashboardFavorites": "Market favorites",
+  "dashboardCardsDescription": "Choose the cards shown in the overview. Disabled cards do not load. The mobile home stays compact.",
+  "dashboardFriendsSummary": "{total} friends · {online} online",
+  "dashboardInventorySummary": "{games} inventories · {items} items",
+  "dashboardFavoritesEmpty": "No market favorites yet.",
+  "dashboardInventoryEmpty": "No inventories to display.",
+  "dashboardFriendsEmpty": "No friends yet.",
+  "dashboardFavoritesMore": "View all favorites",
+  "dashboardFavoritesPriceNote": "Currency: {currency} · Lowest listing",
+  "dashboardCardsLimited": "Previewing the first {count} items",
+  "@dashboardFriendsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "online": {
+        "type": "int"
+      }
+    }
+  },
+  "@dashboardInventorySummary": {
+    "placeholders": {
+      "games": {
+        "type": "int"
+      },
+      "items": {
+        "type": "int"
+      }
+    }
+  },
+  "@dashboardFavoritesPriceNote": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardCardsLimited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

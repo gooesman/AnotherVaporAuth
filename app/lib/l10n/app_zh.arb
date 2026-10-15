@@ -1481,5 +1481,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "dashboardFriends": "好友",
+  "dashboardInventory": "库存",
+  "dashboardFavorites": "市场收藏",
+  "dashboardCardsDescription": "选择概览显示的卡片；关闭后不加载。手机首页保持简洁。",
+  "dashboardFriendsSummary": "共 {total} 位好友 · {online} 位在线",
+  "dashboardInventorySummary": "{games} 个库存 · {items} 件物品",
+  "dashboardFavoritesEmpty": "还没有收藏的市场物品。",
+  "dashboardInventoryEmpty": "暂无可显示的库存。",
+  "dashboardFriendsEmpty": "暂无好友。",
+  "dashboardFavoritesMore": "查看全部收藏",
+  "dashboardFavoritesPriceNote": "价格币种：{currency} · 最低在售",
+  "dashboardCardsLimited": "仅预览前 {count} 项"
 }

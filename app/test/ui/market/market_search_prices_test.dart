@@ -34,6 +34,37 @@ MarketSearchPriceKey _key(String name, [int currency = 23]) =>
     (440, name, currency, 'english');
 
 void main() {
+  testWidgets(
+    'last visible reader leaving cancels its quote without caching failure',
+    (tester) async {
+      final pending = Completer<MarketPrice?>();
+      final market = _Market()..onPrice = (_, _) => pending.future;
+      final now = tester.binding.clock.now;
+      final cache = ItemMarketPriceCache(market, checked: true, now: now);
+      final prices = MarketSearchPrices(cache, now: now);
+      addTearDown(prices.dispose);
+      prices.visible('row1', _key('same'));
+      prices.visible('row2', _key('same'));
+      prices.visible('row1', null);
+      expect(market.tokens.single!.isCancelled, isFalse);
+      prices.visible('row2', null);
+      expect(market.tokens.single!.isCancelled, isTrue);
+      await tester.pump();
+      expect(prices.quote(_key('same')).error, isNull);
+      expect(cache.peek(440, 'same', 23), isNull);
+      market.onPrice = null;
+      prices.visible('row1', _key('same'));
+      await tester.pump(const Duration(milliseconds: 999));
+      expect(market.calls, hasLength(1));
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(market.calls, hasLength(2));
+      expect(prices.quote(_key('same')).price!.lowest, '¥ 15.36');
+      pending.complete(const MarketPrice(lowest: 'stale'));
+      await tester.pump();
+      expect(prices.quote(_key('same')).price!.lowest, '¥ 15.36');
+    },
+  );
+
   testWidgets('only visible rows read, serially with a one-second gap', (
     tester,
   ) async {

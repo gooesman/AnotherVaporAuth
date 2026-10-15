@@ -429,7 +429,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
                 margin: EdgeInsets.only(bottom: context.r(8)),
                 child: ListTile(
                   contentPadding: context.rInsets(all: 12),
-                  leading: _MarketThumbnail(item: item, size: context.r(48)),
+                  leading: MarketThumbnail(item: item, size: context.r(48)),
                   title: Text(
                     item.name,
                     maxLines: 2,
@@ -444,7 +444,7 @@ class _MarketSearchTabState extends ConsumerState<MarketSearchTab>
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      _VisibleMarketPrice(
+                      VisibleMarketPrice(
                         item: item,
                         prices: _prices,
                         currency: _currency!,
@@ -709,8 +709,9 @@ String _searchError(AppLocalizations l, Object error) {
 
 /// Sliver builders also create offscreen cache children. Check actual viewport
 /// intersection after layout, so these children never prefetch market quotes.
-class _VisibleMarketPrice extends StatefulWidget {
-  const _VisibleMarketPrice({
+class VisibleMarketPrice extends StatefulWidget {
+  const VisibleMarketPrice({
+    super.key,
     required this.item,
     required this.prices,
     required this.currency,
@@ -726,10 +727,10 @@ class _VisibleMarketPrice extends StatefulWidget {
   final bool quoteWithoutListingCount;
 
   @override
-  State<_VisibleMarketPrice> createState() => _VisibleMarketPriceState();
+  State<VisibleMarketPrice> createState() => _VisibleMarketPriceState();
 }
 
-class _VisibleMarketPriceState extends State<_VisibleMarketPrice> {
+class _VisibleMarketPriceState extends State<VisibleMarketPrice> {
   final _owner = Object();
   ScrollPosition? _position;
   bool _scheduled = false;
@@ -755,7 +756,7 @@ class _VisibleMarketPriceState extends State<_VisibleMarketPrice> {
   }
 
   @override
-  void didUpdateWidget(_VisibleMarketPrice oldWidget) {
+  void didUpdateWidget(VisibleMarketPrice oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.prices != widget.prices) {
       oldWidget.prices.visible(_owner, null);
@@ -850,8 +851,8 @@ class _VisibleMarketPriceState extends State<_VisibleMarketPrice> {
   );
 }
 
-class _MarketThumbnail extends StatelessWidget {
-  const _MarketThumbnail({required this.item, required this.size});
+class MarketThumbnail extends StatelessWidget {
+  const MarketThumbnail({super.key, required this.item, required this.size});
   final MarketSearchItem item;
   final double size;
 
@@ -1047,7 +1048,7 @@ class _MarketItemDetailsState extends ConsumerState<_MarketItemDetails> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _MarketThumbnail(item: widget.item, size: context.r(96)),
+              MarketThumbnail(item: widget.item, size: context.r(96)),
               const SizedBox(height: 12),
               if (widget.item.type.isNotEmpty) Text(widget.item.type),
               Text(

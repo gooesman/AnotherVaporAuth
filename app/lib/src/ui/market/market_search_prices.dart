@@ -27,6 +27,7 @@ class MarketSearchPrices extends ChangeNotifier {
   final _visible = <Object, MarketSearchPriceKey>{};
   final _values = <MarketSearchPriceKey, MarketSearchQuote>{};
   SteamRequestScope? _scope;
+  MarketSearchPriceKey? _reading;
   Timer? _timer;
   DateTime? _nextRead;
   DateTime? _pausedUntil;
@@ -49,6 +50,10 @@ class MarketSearchPrices extends ChangeNotifier {
     } else {
       if (_visible[owner] == key) return;
       _visible[owner] = key;
+    }
+    if (_reading != null && !_visible.containsValue(_reading)) {
+      _reading = null;
+      _scope?.cancel();
     }
     _pump();
   }
@@ -108,18 +113,20 @@ class MarketSearchPrices extends ChangeNotifier {
     final generation = _generation;
     final scope = SteamRequestScope();
     _scope = scope;
+    _reading = key;
     try {
       final price = await scope.run(() => cache.lookup(key.$1, key.$2, key.$3));
-      if (_disposed || generation != _generation) return;
+      if (_disposed || generation != _generation || _reading != key) return;
       _values[key] = MarketSearchQuote(price: price);
     } catch (error) {
-      if (_disposed || generation != _generation) return;
+      if (_disposed || generation != _generation || _reading != key) return;
       _values[key] = MarketSearchQuote(error: error);
       _pauseError = error;
       _pausedUntil = _now().add(const Duration(seconds: 30));
     } finally {
       if (!_disposed && generation == _generation) {
         _scope = null;
+        _reading = null;
         _nextRead = _now().add(const Duration(seconds: 1));
         notifyListeners();
         _pump();
@@ -132,6 +139,7 @@ class MarketSearchPrices extends ChangeNotifier {
     _generation++;
     _scope?.cancel();
     _scope = null;
+    _reading = null;
     _timer?.cancel();
     _timer = null;
     _visible.clear();

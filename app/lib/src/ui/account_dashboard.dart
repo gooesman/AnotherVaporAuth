@@ -4,27 +4,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../app/dashboard_sections.dart';
 import '../app/providers.dart';
 import '../app/responsive.dart';
+import '../core/models/steam_friend.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/models/steam_item.dart';
 import '../core/steam_currency.dart';
 import '../services/account_dashboard_loader.dart';
-import 'market/market_screen.dart' show marketListingStateLabel;
+import 'market/market_screen.dart';
+import 'friends/friends_screen.dart' show friendsClientProvider;
 import 'pending/session_retry.dart';
 import 'widgets/ava_panel.dart';
 import 'widgets/account_identity_menu.dart';
 import 'widgets/pending_confirmation_badge.dart';
 import 'widgets/steam_notifications_button.dart';
+import 'widgets/dashboard_favorites_card.dart';
 
-final dashboardSectionsProvider =
-    NotifierProvider<DashboardSections, Set<String>>(DashboardSections.new);
+export '../app/dashboard_sections.dart';
 
 final accountDashboardLoaderProvider = Provider<AccountDashboardLoader>((ref) {
   final controller = ref.read(appControllerProvider.notifier);
   final loader = AccountDashboardLoader(
     inventory: ref.read(inventoryClientProvider),
     market: ref.read(marketClientProvider),
+    friends: ref.read(friendsClientProvider),
     api: ref.read(apiClientProvider),
     persistSession: (account) async {
       await controller.persistSession(account);
@@ -41,43 +45,6 @@ final accountDashboardLoaderProvider = Provider<AccountDashboardLoader>((ref) {
   ref.onDispose(loader.clear);
   return loader;
 });
-
-class DashboardSections extends Notifier<Set<String>> {
-  static const defaults = {'wallet', 'listings', 'tools'};
-  int _revision = 0;
-  bool ready = false;
-  @override
-  Set<String> build() {
-    ready = false;
-    final generation = _revision;
-    ref
-        .read(settingsStoreProvider)
-        .loadDashboardSections()
-        .then((saved) {
-          if (ref.mounted && generation == _revision) {
-            ready = true;
-            state = saved?.where(defaults.contains).toSet() ?? {...defaults};
-          }
-        })
-        .catchError((Object _) {
-          if (ref.mounted && generation == _revision) {
-            ready = true;
-            state = {...state};
-          }
-        });
-    return {...defaults};
-  }
-
-  Future<void> toggle(String section) async {
-    if (!defaults.contains(section)) return;
-    ready = true;
-    _revision++;
-    final next = {...state};
-    if (!next.remove(section)) next.add(section);
-    await ref.read(settingsStoreProvider).saveDashboardSections(next.toList());
-    if (ref.mounted) state = next;
-  }
-}
 
 /// Local actions render immediately. Each visible card owns an independent,
 /// bounded read, shared with other overview instances for this same session.
@@ -99,8 +66,12 @@ class AccountDashboard extends ConsumerStatefulWidget {
 }
 
 class _AccountDashboardState extends ConsumerState<AccountDashboard>
-    with SessionRetryState {
+    with SessionRetryState, WidgetsBindingObserver {
   late final AccountDashboardLoader _loader;
+  bool _foreground = true;
+  bool _routeVisible = false;
+  int _favoritesReload = 0;
+  bool get _active => _foreground && _routeVisible;
   DashboardLease? _lease;
   DashboardData get _data => _lease!.data;
   WalletInfo? get _wallet => _data.wallet.value;
@@ -109,14 +80,21 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
   bool get _listingsFailed => _data.listings.failed;
   bool get _needsLogin =>
       (_lease!.wallet && _data.wallet.needsLogin) ||
-      (_lease!.listings && _data.listings.needsLogin);
+      (_lease!.listings && _data.listings.needsLogin) ||
+      (_lease!.friends && _data.friends.needsLogin) ||
+      (_lease!.inventory && _data.inventory.needsLogin);
   bool get _busy =>
       (_lease!.wallet && _data.wallet.loading) ||
-      (_lease!.listings && _data.listings.loading);
+      (_lease!.listings && _data.listings.loading) ||
+      (_lease!.friends && _data.friends.loading) ||
+      (_lease!.inventory && _data.inventory.loading);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _foreground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
     _loader = ref.read(accountDashboardLoaderProvider);
     _bind(ref.read(dashboardSectionsProvider));
   }
@@ -130,29 +108,53 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _routeVisible =
+        (ModalRoute.isCurrentOf(context) ?? true) &&
+        TickerMode.valuesOf(context).enabled;
     _bind(ref.read(dashboardSectionsProvider));
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
+    setState(() {
+      _foreground = state == AppLifecycleState.resumed;
+      _bind(ref.read(dashboardSectionsProvider));
+    });
+  }
+
+  bool _accountAvailable(AppData? app) =>
+      app != null &&
+      !app.locked &&
+      app.visibleAccounts.any(
+        (account) =>
+            account.steamId == widget.account.steamId &&
+            account.fromPortable == widget.account.fromPortable &&
+            account.accountName == widget.account.accountName &&
+            account.session.accessToken == widget.account.session.accessToken &&
+            account.session.refreshToken ==
+                widget.account.session.refreshToken &&
+            (account.steamId != 0 || identical(account, widget.account)),
+      );
+
   void _bind(Set<String> sections) {
-    final app = ref.read(appControllerProvider).value;
-    final available =
-        app != null &&
-        !app.locked &&
-        app.visibleAccounts.any(
-          (account) =>
-              account.steamId == widget.account.steamId &&
-              account.fromPortable == widget.account.fromPortable &&
-              account.accountName == widget.account.accountName,
-        );
+    final available = _accountAvailable(ref.read(appControllerProvider).value);
     final ready =
-        ref.read(dashboardSectionsProvider.notifier).ready && available;
+        ref.read(dashboardSectionsProvider.notifier).ready &&
+        available &&
+        _active;
     final wallet = ready && sections.contains('wallet');
     final listings = ready && !widget.compact && sections.contains('listings');
+    final friends = ready && !widget.compact && sections.contains('friends');
+    final inventory =
+        ready && !widget.compact && sections.contains('inventory');
     final previous = _lease;
     if (previous != null &&
         _loader.matches(previous, widget.account) &&
         previous.wallet == wallet &&
-        previous.listings == listings) {
+        previous.listings == listings &&
+        previous.friends == friends &&
+        previous.inventory == inventory) {
       return;
     }
     previous?.data.removeListener(_changed);
@@ -162,6 +164,8 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
       widget.account,
       wallet: wallet,
       listings: listings,
+      friends: friends,
+      inventory: inventory,
     );
     previous?.release();
     _data.addListener(_changed);
@@ -171,10 +175,14 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
     if (mounted) setState(() {});
   }
 
-  void _load() => _lease?.refresh();
+  void _load() {
+    _lease?.refresh();
+    setState(() => _favoritesReload++);
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lease?.data.removeListener(_changed);
     _lease?.release();
     super.dispose();
@@ -189,7 +197,9 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final sections = ref.watch(dashboardSectionsProvider);
-    ref.watch(appControllerProvider.select((state) => state.value?.locked));
+    final available = ref.watch(
+      appControllerProvider.select((state) => _accountAvailable(state.value)),
+    );
     _bind(sections);
     ref.listen(dashboardSectionsProvider, (_, next) {
       _bind(next);
@@ -274,10 +284,14 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                   ('wallet', l.dashboardWallet),
                   ('listings', l.marketTabListings),
                   ('tools', l.dashboardTools),
+                  ('friends', l.dashboardFriends),
+                  ('inventory', l.dashboardInventory),
+                  ('favorites', l.dashboardFavorites),
                 ])
                   CheckedPopupMenuItem(
                     value: pair.$1,
                     checked: sections.contains(pair.$1),
+                    enabled: ref.read(dashboardSectionsProvider.notifier).ready,
                     child: Text(pair.$2),
                   ),
               ],
@@ -443,6 +457,39 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
             ),
           ),
         ],
+        if (sections.any(
+          const {'favorites', 'friends', 'inventory'}.contains,
+        )) ...[
+          const SizedBox(height: 20),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = <Widget>[
+                if (sections.contains('favorites'))
+                  DashboardFavoritesCard(
+                    account: widget.account,
+                    active: _active && available,
+                    reload: _favoritesReload,
+                    onViewAll: () => widget.onAction('favorites'),
+                  ),
+                if (sections.contains('friends')) _friendsCard(l),
+                if (sections.contains('inventory')) _inventoryCard(l),
+              ];
+              final columns = (constraints.maxWidth / 340).floor().clamp(
+                1,
+                cards.length,
+              );
+              final width =
+                  (constraints.maxWidth - 16 * (columns - 1)) / columns;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  for (final card in cards) SizedBox(width: width, child: card),
+                ],
+              );
+            },
+          ),
+        ],
         if (sections.contains('tools')) ...[
           const SizedBox(height: 20),
           AvaPanel(
@@ -476,6 +523,138 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
           ),
         ],
       ],
+    );
+  }
+
+  Widget _cardHeader(String title, VoidCallback onViewAll) => Wrap(
+    alignment: WrapAlignment.spaceBetween,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: 8,
+    children: [
+      Text(title, style: Theme.of(context).textTheme.titleMedium),
+      TextButton(
+        onPressed: onViewAll,
+        child: Text(AppLocalizations.of(context).dashboardViewAll),
+      ),
+    ],
+  );
+
+  Widget _friendsCard(AppLocalizations l) {
+    final friends = _data.friends.value;
+    final online = friends?.where(
+      (friend) => friend.state != SteamFriendState.offline,
+    );
+    final preview = friends == null
+        ? const <SteamFriend>[]
+        : [
+            ...online!.take(4),
+            ...friends
+                .where((friend) => friend.state == SteamFriendState.offline)
+                .take(4),
+          ].take(4);
+    return AvaPanel(
+      key: const ValueKey('dashboard-friends'),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _cardHeader(l.dashboardFriends, () => widget.onAction('friends')),
+            if (_data.friends.loading) _progress('friends'),
+            if (friends != null) ...[
+              Text(l.dashboardFriendsSummary(friends.length, online!.length)),
+              if (friends.isEmpty) Text(l.dashboardFriendsEmpty),
+              for (final friend in preview)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    friend.state == SteamFriendState.playing
+                        ? Icons.sports_esports_outlined
+                        : Icons.person_outline,
+                    color: friend.state == SteamFriendState.offline
+                        ? Theme.of(context).disabledColor
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(
+                    friend.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    friend.game.isNotEmpty
+                        ? friend.game
+                        : switch (friend.state) {
+                            SteamFriendState.offline => l.friendsOffline,
+                            SteamFriendState.online => l.friendsOnline,
+                            SteamFriendState.playing => l.friendsPlaying,
+                          },
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () => widget.onAction('friends'),
+                ),
+              if (friends.length > 4) Text(l.dashboardCardsLimited(4)),
+            ] else if (!_data.friends.loading)
+              Text(
+                _data.friends.failed
+                    ? l.dashboardFetchFailed
+                    : l.dashboardUnavailable,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _inventoryCard(AppLocalizations l) {
+    final games = _data.inventory.value?.games;
+    return AvaPanel(
+      key: const ValueKey('dashboard-inventory'),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _cardHeader(l.dashboardInventory, () => widget.onAction('market')),
+            if (_data.inventory.loading) _progress('inventory'),
+            if (games != null) ...[
+              Text(
+                l.dashboardInventorySummary(
+                  games.length,
+                  games.fold<int>(0, (sum, game) => sum + game.itemCount),
+                ),
+              ),
+              if (games.isEmpty) Text(l.dashboardInventoryEmpty),
+              for (final game in games.take(4))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.inventory_2_outlined),
+                  title: Text(
+                    game.displayName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Text('${game.itemCount}'),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MarketScreen(
+                        account: widget.account,
+                        initialAppId: game.appid,
+                        initialContextId: game.contextId,
+                      ),
+                    ),
+                  ),
+                ),
+              if (games.length > 4) Text(l.dashboardCardsLimited(4)),
+            ] else if (!_data.inventory.loading)
+              Text(
+                _data.inventory.failed
+                    ? l.dashboardFetchFailed
+                    : l.dashboardUnavailable,
+              ),
+          ],
+        ),
+      ),
     );
   }
 

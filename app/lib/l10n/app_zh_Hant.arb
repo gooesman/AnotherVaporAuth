@@ -1120,5 +1120,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "dashboardFriends": "好友",
+  "dashboardInventory": "物品庫",
+  "dashboardFavorites": "市場收藏",
+  "dashboardCardsDescription": "選擇概覽顯示的卡片；關閉後不載入。手機首頁保持簡潔。",
+  "dashboardFriendsSummary": "共 {total} 位好友 · {online} 位在線",
+  "dashboardInventorySummary": "{games} 個物品庫 · {items} 件物品",
+  "dashboardFavoritesEmpty": "還沒有收藏的市場物品。",
+  "dashboardInventoryEmpty": "暫無可顯示的物品庫。",
+  "dashboardFriendsEmpty": "暫無好友。",
+  "dashboardFavoritesMore": "查看全部收藏",
+  "dashboardFavoritesPriceNote": "價格幣別：{currency} · 最低在售",
+  "dashboardCardsLimited": "僅預覽前 {count} 項"
 }

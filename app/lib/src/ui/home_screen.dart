@@ -713,6 +713,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       case 'listings':
         await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MarketScreen(account: account, initialTab: 1)));
         break;
+      case 'favorites':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MarketScreen(account: account, initialTab: 2)));
+        break;
       case 'steam-client':
         if (Platform.isWindows) {
           await Navigator.of(context).push(MaterialPageRoute(

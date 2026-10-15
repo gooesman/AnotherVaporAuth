@@ -926,5 +926,17 @@
   "approveScreenBusy": "Другой захват экрана уже выполняется. Сначала завершите или отмените его.",
   "approveScreenDisplayChanged": "Расположение экранов изменилось. Выберите область QR-кода заново.",
   "approveScreenRegionTooLarge": "Выбранная область слишком велика. Выберите только область QR-кода.",
-  "approveScreenFailedDetail": "Не удалось захватить экран. Повторите попытку. Сведения об ошибке: {detail}."
+  "approveScreenFailedDetail": "Не удалось захватить экран. Повторите попытку. Сведения об ошибке: {detail}.",
+  "dashboardFriends": "Друзья",
+  "dashboardInventory": "Инвентарь",
+  "dashboardFavorites": "Избранное на площадке",
+  "dashboardCardsDescription": "Выберите карточки для обзора. Отключённые карточки не загружаются. Главный экран телефона остаётся компактным.",
+  "dashboardFriendsSummary": "Друзей: {total} · В сети: {online}",
+  "dashboardInventorySummary": "Инвентарей: {games} · Предметов: {items}",
+  "dashboardFavoritesEmpty": "В избранном пока нет предметов.",
+  "dashboardInventoryEmpty": "Нет инвентарей для отображения.",
+  "dashboardFriendsEmpty": "Пока нет друзей.",
+  "dashboardFavoritesMore": "Всё избранное",
+  "dashboardFavoritesPriceNote": "Валюта: {currency} · Минимальная цена продажи",
+  "dashboardCardsLimited": "Показаны первые {count} элементов"
 }

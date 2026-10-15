@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ava/src/core/models/session_data.dart';
+import 'package:ava/src/core/models/steam_friend.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
 import 'package:ava/src/core/proto/protobuf_wire.dart';
 import 'package:ava/src/core/protocol/inventory_client.dart';
@@ -49,6 +50,27 @@ ResponseBody _success(RequestOptions request) => request.uri.path == '/market/'
         200,
       )
     : _json({'success': true, 'listings': [], 'total_count': 0});
+ResponseBody _summaries(RequestOptions request) {
+  if (request.uri.path.endsWith('/friends/')) {
+    return ResponseBody.fromString('''
+      <div class="profile_friends">
+        <div class="friend_block_v2 online" data-steamid="76561198000000002">
+          <div class="friend_block_content">Synthetic friend<br></div>
+        </div>
+      </div>
+    ''', 200);
+  }
+  if (request.uri.path.endsWith('/inventory/')) {
+    return ResponseBody.fromString('''
+      var g_rgAppContextData = {"730":{"name":"Counter-Strike 2","rgContexts":{
+        "2":{"name":"Inventory","asset_count":12},
+        "16":{"name":"Trade-protected Items","asset_count":3}
+      }}};
+    ''', 200);
+  }
+  return _success(request);
+}
+
 SteamGuardAccount _account([int id = 1]) => SteamGuardAccount(
   accountName: 'demo_$id',
   session: SessionData(
@@ -92,6 +114,161 @@ void _flush(FakeAsync clock) {
 }
 
 void main() {
+  test('optional summaries stay idle until a reader enables each card', () {
+    fakeAsync((clock) {
+      final (adapter, loader, _) = _loader(clock);
+      adapter.respond = _summaries;
+      final account = _account(76561198000000001);
+      final disabled = loader.acquire(account, wallet: false, listings: false);
+      _flush(clock);
+      disabled.refresh();
+      _flush(clock);
+      expect(adapter.requests, isEmpty);
+      final enabled = loader.acquire(
+        account,
+        wallet: false,
+        listings: false,
+        friends: true,
+        inventory: true,
+      );
+      _flush(clock);
+      expect(adapter.requests.map((r) => r.uri.path), [
+        '/profiles/76561198000000001/friends/',
+        '/profiles/76561198000000001/inventory/',
+      ]);
+      expect(enabled.data.friends.value?.single.name, 'Synthetic friend');
+      expect(enabled.data.friends.value?.single.state, SteamFriendState.online);
+      expect(enabled.data.inventory.value?.games.map((g) => g.itemCount), [
+        12,
+        3,
+      ]);
+      expect(enabled.data.inventory.value?.games.map((g) => g.contextId), [
+        '2',
+        '16',
+      ]);
+      expect(enabled.friends, isTrue);
+      expect(enabled.inventory, isTrue);
+      expect(enabled.data.friends.failed, isFalse);
+      expect(enabled.data.inventory.failed, isFalse);
+      disabled.release();
+      enabled.release();
+      loader.clear();
+    });
+  });
+
+  test(
+    'summary readers share fetches and cancel each disabled card separately',
+    () {
+      fakeAsync((clock) {
+        final (adapter, loader, _) = _loader(clock);
+        final pending = Completer<ResponseBody>();
+        adapter.respond = (_) => pending.future;
+        final account = _account(76561198000000001);
+        final both = loader.acquire(
+          account,
+          wallet: false,
+          listings: false,
+          friends: true,
+          inventory: true,
+        );
+        final inventoryOnly = loader.acquire(
+          account,
+          wallet: false,
+          listings: false,
+          inventory: true,
+        );
+        _flush(clock);
+        expect(adapter.requests, hasLength(2));
+        expect(identical(both.data, inventoryOnly.data), isTrue);
+        both.release();
+        _flush(clock);
+        expect(adapter.cancelled, ['/profiles/76561198000000001/friends/']);
+        expect(inventoryOnly.data.friends.loading, isFalse);
+        expect(inventoryOnly.data.inventory.loading, isTrue);
+        inventoryOnly.release();
+        _flush(clock);
+        expect(
+          adapter.cancelled,
+          contains('/profiles/76561198000000001/inventory/'),
+        );
+        pending.complete(_summaries(adapter.requests.last));
+        _flush(clock);
+        expect(inventoryOnly.data.inventory.value, isNull);
+        loader.clear();
+      });
+    },
+  );
+
+  test(
+    'a stalled friends card does not block inventory or trigger item requests',
+    () {
+      fakeAsync((clock) {
+        final (adapter, loader, _) = _loader(clock);
+        adapter.respond = (request) => request.uri.path.endsWith('/friends/')
+            ? Completer<ResponseBody>().future
+            : _summaries(request);
+        final lease = loader.acquire(
+          _account(76561198000000001),
+          wallet: false,
+          listings: false,
+          friends: true,
+          inventory: true,
+        );
+        _flush(clock);
+        expect(lease.data.friends.loading, isTrue);
+        expect(lease.data.inventory.value?.games, hasLength(2));
+        clock.elapse(const Duration(seconds: 12));
+        _flush(clock);
+        expect(lease.data.friends.failed, isTrue);
+        expect(lease.data.friends.needsLogin, isFalse);
+        expect(adapter.requests, hasLength(2));
+        expect(
+          adapter.requests.any((r) => r.uri.path.startsWith('/inventory/')),
+          isFalse,
+        );
+        lease.release();
+        loader.clear();
+      });
+    },
+  );
+
+  test('summary cache expires, refreshes and is cleared with the account', () {
+    fakeAsync((clock) {
+      final (adapter, loader, _) = _loader(clock);
+      adapter.respond = _summaries;
+      final account = _account(76561198000000001);
+      DashboardLease acquire() => loader.acquire(
+        account,
+        wallet: false,
+        listings: false,
+        friends: true,
+        inventory: true,
+      );
+      var lease = acquire();
+      _flush(clock);
+      lease.release();
+      lease = acquire();
+      _flush(clock);
+      expect(adapter.requests, hasLength(2));
+      lease.refresh();
+      lease.refresh();
+      _flush(clock);
+      expect(adapter.requests, hasLength(4));
+      lease.release();
+      clock.elapse(const Duration(seconds: 31));
+      lease = acquire();
+      _flush(clock);
+      expect(adapter.requests, hasLength(6));
+      loader.retainAccounts([]);
+      expect(lease.data.friends.value, isNull);
+      expect(lease.data.inventory.value, isNull);
+      expect(lease.data.friends.checkedAt, isNull);
+      expect(lease.data.inventory.checkedAt, isNull);
+      lease.release();
+      loader.clear();
+    });
+  });
+
   test(
     'moving the same account object to another source discards its old cache',
     () {

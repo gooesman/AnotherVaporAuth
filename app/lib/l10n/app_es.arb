@@ -926,5 +926,17 @@
   "approveScreenBusy": "Hay otra captura de pantalla en curso. Complétala o cancélala primero.",
   "approveScreenDisplayChanged": "La disposición de las pantallas ha cambiado. Vuelve a seleccionar el área del código QR.",
   "approveScreenRegionTooLarge": "El área seleccionada es demasiado grande. Selecciona solo el área del código QR.",
-  "approveScreenFailedDetail": "No se pudo capturar la pantalla. Inténtalo de nuevo. Detalles del error: {detail}."
+  "approveScreenFailedDetail": "No se pudo capturar la pantalla. Inténtalo de nuevo. Detalles del error: {detail}.",
+  "dashboardFriends": "Amigos",
+  "dashboardInventory": "Inventario",
+  "dashboardFavorites": "Favoritos del mercado",
+  "dashboardCardsDescription": "Elige las tarjetas del resumen. Las tarjetas desactivadas no se cargan. La pantalla de inicio móvil se mantiene compacta.",
+  "dashboardFriendsSummary": "{total} amigos · {online} en línea",
+  "dashboardInventorySummary": "{games} inventarios · {items} objetos",
+  "dashboardFavoritesEmpty": "Aún no hay favoritos del mercado.",
+  "dashboardInventoryEmpty": "No hay inventarios para mostrar.",
+  "dashboardFriendsEmpty": "Aún no hay amigos.",
+  "dashboardFavoritesMore": "Ver todos los favoritos",
+  "dashboardFavoritesPriceNote": "Moneda: {currency} · Oferta más baja",
+  "dashboardCardsLimited": "Vista previa de los primeros {count} elementos"
 }

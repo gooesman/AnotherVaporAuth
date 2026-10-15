@@ -80,7 +80,9 @@ Market favorites store public product identities, display metadata and your
 selected quote currency in a local `market_favorites.json` file. With **Sync app
 settings** enabled, these fields are also included in the encrypted settings
 document; cached prices and availability counts are not synchronized. Only
-visible market rows request quotes from Steam, with no background price polling.
+visible market rows, including rows in an enabled overview favorites card,
+request quotes from Steam, with no background price polling. Overview card
+visibility is a device-local preference and is not synchronized.
 
 Optional WebDAV synchronization sends encrypted account payloads and, when
 enabled, the curated settings document to the server you choose. It is disabled

@@ -6,13 +6,17 @@ import 'package:ava/src/app/settings_store.dart';
 import 'package:ava/src/app/theme.dart';
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
+import 'package:ava/src/core/models/steam_friend.dart';
 import 'package:ava/src/core/models/steam_item.dart';
 import 'package:ava/src/core/protocol/inventory_client.dart';
 import 'package:ava/src/core/protocol/market_client.dart';
+import 'package:ava/src/core/protocol/friends_client.dart';
 import 'package:ava/src/services/account_store.dart';
 import 'package:ava/src/services/steam_api_client.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/account_dashboard.dart';
+import 'package:ava/src/ui/friends/friends_screen.dart'
+    show friendsClientProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,16 +45,69 @@ class _Controller extends AppController {
 
   void removeForTest() =>
       state = AsyncData(state.requireValue.copyWith(accounts: []));
+
+  void replaceSessionForTest() => state = AsyncData(
+    state.requireValue.copyWith(
+      accounts: [_account(1)..session.accessToken = 'replacement'],
+    ),
+  );
 }
 
 class _Inventory extends InventoryClient {
   final Map<int, Future<WalletInfo>> wallets;
   int calls = 0;
+  int overviewCalls = 0;
   _Inventory(this.wallets) : super(SteamApiClient());
   @override
   Future<WalletInfo> wallet(SteamGuardAccount account) {
     calls++;
     return wallets[account.steamId]!;
+  }
+
+  @override
+  Future<InventoryOverview> overview(
+    SteamGuardAccount account, {
+    String? ownerSteamId,
+  }) async {
+    overviewCalls++;
+    return InventoryOverview([
+      const InventoryGame(
+        appid: 730,
+        contextId: '2',
+        name: 'CS2',
+        iconUrl: '',
+        itemCount: 7,
+        showContext: true,
+        contextName: 'Inventory',
+      ),
+      const InventoryGame(
+        appid: 730,
+        contextId: '16',
+        name: 'CS2',
+        iconUrl: '',
+        itemCount: 4,
+        showContext: true,
+        contextName: 'Trade-protected Items',
+      ),
+    ], _wallet(0));
+  }
+}
+
+class _Friends extends FriendsClient {
+  int calls = 0;
+  _Friends() : super(SteamApiClient());
+  @override
+  Future<List<SteamFriend>> fetch(SteamGuardAccount account) async {
+    calls++;
+    return [
+      for (var i = 0; i < 8; i++)
+        SteamFriend(
+          steamId: '$i',
+          name: 'Friend $i',
+          state: i == 7 ? SteamFriendState.playing : SteamFriendState.offline,
+          game: i == 7 ? 'CS2' : '',
+        ),
+    ];
   }
 }
 
@@ -89,11 +146,13 @@ Widget _app(
   Widget child,
   _Inventory inventory,
   _Market market,
-  _Settings settings,
-) => ProviderScope(
+  _Settings settings, {
+  _Friends? friends,
+}) => ProviderScope(
   overrides: [
     inventoryClientProvider.overrideWithValue(inventory),
     marketClientProvider.overrideWithValue(market),
+    friendsClientProvider.overrideWithValue(friends ?? _Friends()),
     settingsStoreProvider.overrideWithValue(settings),
     appControllerProvider.overrideWith(_Controller.new),
   ],
@@ -109,6 +168,146 @@ Widget _app(
 );
 
 void main() {
+  testWidgets(
+    'optional summaries preview bounded rows and preserve inventory contexts',
+    (tester) async {
+      final inventory = _Inventory({});
+      final friends = _Friends();
+      final actions = <String>[];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: actions.add),
+          inventory,
+          _Market(),
+          _Settings()..sections = ['friends', 'inventory'],
+          friends: friends,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 0);
+      expect(inventory.overviewCalls, 1);
+      expect(friends.calls, 1);
+      expect(find.text('Friend 7'), findsOneWidget);
+      expect(find.text('Friend 3'), findsNothing);
+      expect(find.text('CS2 · Inventory'), findsOneWidget);
+      expect(find.text('CS2 · Trade-protected Items'), findsOneWidget);
+      await tester.ensureVisible(find.text('Friend 7'));
+      await tester.tap(find.text('Friend 7'));
+      expect(actions, ['friends']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('new cards are opt-in and compact home never fetches summaries', (
+    tester,
+  ) async {
+    final inventory = _Inventory({1: Future.value(_wallet(123))});
+    final friends = _Friends();
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        inventory,
+        _Market(),
+        _Settings(),
+        friends: friends,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(inventory.overviewCalls, 0);
+    expect(friends.calls, 0);
+    expect(find.byKey(const ValueKey('dashboard-friends')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), compact: true, onAction: (_) {}),
+        inventory,
+        _Market(),
+        _Settings()..sections = ['friends', 'inventory', 'favorites'],
+        friends: friends,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(inventory.overviewCalls, 0);
+    expect(friends.calls, 0);
+    expect(find.byKey(const ValueKey('dashboard-inventory')), findsNothing);
+  });
+
+  testWidgets('covered overview and background do not restart summary reads', (
+    tester,
+  ) async {
+    final inventory = _Inventory({});
+    final friends = _Friends();
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        inventory,
+        _Market(),
+        _Settings()..sections = ['friends', 'inventory'],
+        friends: friends,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(AccountDashboard));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Covered')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 31));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(friends.calls, 1);
+    expect(inventory.overviewCalls, 1);
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
+    expect(friends.calls, 1, reason: 'Reopening reuses the still-fresh cache');
+    expect(inventory.overviewCalls, 1);
+  });
+
+  testWidgets(
+    'mounting while paused waits and replaced account sessions cannot reload old data',
+    (tester) async {
+      final inventory = _Inventory({});
+      final friends = _Friends();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      addTearDown(
+        () => tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        ),
+      );
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          inventory,
+          _Market(),
+          _Settings()..sections = ['friends', 'inventory'],
+          friends: friends,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(friends.calls, 0);
+      expect(inventory.overviewCalls, 0);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(friends.calls, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AccountDashboard)),
+      );
+      (container.read(appControllerProvider.notifier) as _Controller)
+          .replaceSessionForTest();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Refresh').first);
+      await tester.pumpAndSettle();
+      expect(friends.calls, 1);
+      expect(inventory.overviewCalls, 1);
+      expect(find.text('Friend 7'), findsNothing);
+      expect(find.text('CS2 · Inventory'), findsNothing);
+    },
+  );
+
   testWidgets(
     'local account and completed listings render while wallet waits',
     (tester) async {

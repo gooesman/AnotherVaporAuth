@@ -3493,4 +3493,50 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deviceRevokeOthersVerifyPending =>
       'Removal could not be verified in the refreshed device list. Refresh and check before trying again.';
+
+  @override
+  String get dashboardFriends => 'Amis';
+
+  @override
+  String get dashboardInventory => 'Inventaire';
+
+  @override
+  String get dashboardFavorites => 'Favoris du marché';
+
+  @override
+  String get dashboardCardsDescription =>
+      'Choisissez les cartes du résumé. Les cartes désactivées ne sont pas chargées. L’accueil mobile reste compact.';
+
+  @override
+  String dashboardFriendsSummary(int total, int online) {
+    return '$total amis · $online en ligne';
+  }
+
+  @override
+  String dashboardInventorySummary(int games, int items) {
+    return '$games inventaires · $items objets';
+  }
+
+  @override
+  String get dashboardFavoritesEmpty =>
+      'Aucun favori du marché pour le moment.';
+
+  @override
+  String get dashboardInventoryEmpty => 'Aucun inventaire à afficher.';
+
+  @override
+  String get dashboardFriendsEmpty => 'Aucun ami pour le moment.';
+
+  @override
+  String get dashboardFavoritesMore => 'Voir tous les favoris';
+
+  @override
+  String dashboardFavoritesPriceNote(String currency) {
+    return 'Devise : $currency · Offre la moins chère';
+  }
+
+  @override
+  String dashboardCardsLimited(int count) {
+    return 'Aperçu des $count premiers éléments';
+  }
 }
