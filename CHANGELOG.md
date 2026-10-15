@@ -5,6 +5,16 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.15] — 2026-10-15 · Fork
+
+### Added
+- Arrange all overview cards with drag handles in Edit layout. Desktop card widths snap to columns; heights follow content. Phone overviews remain a single column with reorder support.
+- Keep card order and widths locally across restarts and visibility changes. Settings also support reordering, desktop width choices and resetting the layout without changing enabled cards.
+
+### 新增
+- 概览进入“编辑布局”后可拖动所有卡片排序，电脑端可拖动卡片宽度并自动对齐；高度随内容变化，手机概览保持单列并支持排序。
+- 卡片顺序和宽度在本机记忆，重启或关闭后重新开启均保留。设置中也可排序、选择电脑端宽度，重置布局不改变已开启的卡片。
+
 ## [v1.5.14] — 2026-10-15 · Fork
 
 ### Added

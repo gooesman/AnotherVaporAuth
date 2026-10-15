@@ -6106,6 +6106,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previewing the first {count} items'**
   String dashboardCardsLimited(int count);
+
+  /// No description provided for @dashboardEditLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit layout'**
+  String get dashboardEditLayout;
+
+  /// No description provided for @dashboardFinishLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dashboardFinishLayout;
+
+  /// No description provided for @dashboardLayoutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the handle to reorder cards; drag the bottom-right corner to adjust their width.'**
+  String get dashboardLayoutHelp;
+
+  /// No description provided for @dashboardLayoutHelpMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the handle to reorder cards.'**
+  String get dashboardLayoutHelpMobile;
+
+  /// No description provided for @dashboardResetLayout.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset layout'**
+  String get dashboardResetLayout;
+
+  /// No description provided for @dashboardDragCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder card'**
+  String get dashboardDragCard;
+
+  /// No description provided for @dashboardResizeCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust width'**
+  String get dashboardResizeCard;
+
+  /// No description provided for @dashboardCardWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Card width'**
+  String get dashboardCardWidth;
+
+  /// No description provided for @dashboardWidthCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Narrow'**
+  String get dashboardWidthCompact;
+
+  /// No description provided for @dashboardWidthMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get dashboardWidthMedium;
+
+  /// No description provided for @dashboardWidthFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full row'**
+  String get dashboardWidthFull;
+
+  /// No description provided for @dashboardMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get dashboardMoveUp;
+
+  /// No description provided for @dashboardMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get dashboardMoveDown;
 }
 
 class _AppLocalizationsDelegate

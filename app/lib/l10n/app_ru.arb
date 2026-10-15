@@ -938,5 +938,18 @@
   "dashboardFriendsEmpty": "Пока нет друзей.",
   "dashboardFavoritesMore": "Всё избранное",
   "dashboardFavoritesPriceNote": "Валюта: {currency} · Минимальная цена продажи",
-  "dashboardCardsLimited": "Показаны первые {count} элементов"
+  "dashboardCardsLimited": "Показаны первые {count} элементов",
+  "dashboardEditLayout": "Изменить раскладку",
+  "dashboardFinishLayout": "Готово",
+  "dashboardLayoutHelp": "Перетаскивайте ручку, чтобы менять порядок карточек, или правый нижний угол, чтобы менять их ширину.",
+  "dashboardLayoutHelpMobile": "Перетаскивайте ручку, чтобы менять порядок карточек.",
+  "dashboardResetLayout": "Сбросить раскладку",
+  "dashboardDragCard": "Изменить порядок",
+  "dashboardResizeCard": "Изменить ширину",
+  "dashboardCardWidth": "Ширина карточки",
+  "dashboardWidthCompact": "Узкая",
+  "dashboardWidthMedium": "Средняя",
+  "dashboardWidthFull": "Вся строка",
+  "dashboardMoveUp": "Выше",
+  "dashboardMoveDown": "Ниже"
 }

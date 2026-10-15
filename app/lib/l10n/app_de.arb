@@ -1008,5 +1008,18 @@
   "dashboardFriendsEmpty": "Noch keine Freunde.",
   "dashboardFavoritesMore": "Alle Favoriten anzeigen",
   "dashboardFavoritesPriceNote": "Währung: {currency} · Günstigstes Angebot",
-  "dashboardCardsLimited": "Vorschau der ersten {count} Einträge"
+  "dashboardCardsLimited": "Vorschau der ersten {count} Einträge",
+  "dashboardEditLayout": "Layout bearbeiten",
+  "dashboardFinishLayout": "Fertig",
+  "dashboardLayoutHelp": "Ziehe den Griff, um Karten neu anzuordnen, oder die untere rechte Ecke, um ihre Breite anzupassen.",
+  "dashboardLayoutHelpMobile": "Ziehe den Griff, um die Karten neu anzuordnen.",
+  "dashboardResetLayout": "Layout zurücksetzen",
+  "dashboardDragCard": "Reihenfolge ändern",
+  "dashboardResizeCard": "Breite ändern",
+  "dashboardCardWidth": "Kartenbreite",
+  "dashboardWidthCompact": "Schmal",
+  "dashboardWidthMedium": "Mittel",
+  "dashboardWidthFull": "Ganze Zeile",
+  "dashboardMoveUp": "Nach oben",
+  "dashboardMoveDown": "Nach unten"
 }

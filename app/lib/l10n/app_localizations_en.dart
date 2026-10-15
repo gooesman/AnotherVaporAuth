@@ -3497,4 +3497,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String dashboardCardsLimited(int count) {
     return 'Previewing the first $count items';
   }
+
+  @override
+  String get dashboardEditLayout => 'Edit layout';
+
+  @override
+  String get dashboardFinishLayout => 'Done';
+
+  @override
+  String get dashboardLayoutHelp =>
+      'Drag the handle to reorder cards; drag the bottom-right corner to adjust their width.';
+
+  @override
+  String get dashboardLayoutHelpMobile => 'Drag the handle to reorder cards.';
+
+  @override
+  String get dashboardResetLayout => 'Reset layout';
+
+  @override
+  String get dashboardDragCard => 'Reorder card';
+
+  @override
+  String get dashboardResizeCard => 'Adjust width';
+
+  @override
+  String get dashboardCardWidth => 'Card width';
+
+  @override
+  String get dashboardWidthCompact => 'Narrow';
+
+  @override
+  String get dashboardWidthMedium => 'Medium';
+
+  @override
+  String get dashboardWidthFull => 'Full row';
+
+  @override
+  String get dashboardMoveUp => 'Move up';
+
+  @override
+  String get dashboardMoveDown => 'Move down';
 }

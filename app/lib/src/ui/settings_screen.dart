@@ -1251,45 +1251,122 @@ class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
 class DashboardCardsSettingsCard extends ConsumerWidget {
   const DashboardCardsSettingsCard({super.key});
 
+  Future<void> _save(BuildContext context, Future<void> save) async {
+    try {
+      await save;
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).dashboardSaveFailed),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final sections = ref.watch(dashboardSectionsProvider);
     final notifier = ref.read(dashboardSectionsProvider.notifier);
+    final layout = ref.watch(dashboardLayoutProvider);
+    final layoutController = ref.read(dashboardLayoutProvider.notifier);
+    final labels = {
+      'wallet': l.dashboardWallet,
+      'listings': l.marketTabListings,
+      'tools': l.dashboardTools,
+      'friends': l.dashboardFriends,
+      'inventory': l.dashboardInventory,
+      'favorites': l.dashboardFavorites,
+    };
+    final widths = {
+      1: l.dashboardWidthCompact,
+      2: l.dashboardWidthMedium,
+      3: l.dashboardWidthFull,
+    };
     return _Card(
       title: l.dashboardCustomize,
       description: l.dashboardCardsDescription,
       child: Material(
         type: MaterialType.transparency,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final (section, label) in [
-              ('wallet', l.dashboardWallet),
-              ('listings', l.marketTabListings),
-              ('tools', l.dashboardTools),
-              ('friends', l.dashboardFriends),
-              ('inventory', l.dashboardInventory),
-              ('favorites', l.dashboardFavorites),
-            ])
-              SwitchListTile(
-                key: ValueKey('dashboard-section-$section'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(label),
-                value: sections.contains(section),
-                onChanged: !notifier.ready
-                    ? null
-                    : (_) async {
-                        try {
-                          await notifier.toggle(section);
-                        } catch (_) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l.dashboardSaveFailed)),
-                            );
-                          }
-                        }
-                      },
+            for (final (index, section) in layout.order.indexed)
+              Row(
+                key: ValueKey('dashboard-settings-row-$section'),
+                children: [
+                  Expanded(
+                    child: SwitchListTile(
+                      key: ValueKey('dashboard-section-$section'),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(labels[section]!),
+                      value: sections.contains(section),
+                      onChanged: !notifier.ready
+                          ? null
+                          : (_) => _save(context, notifier.toggle(section)),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    key: ValueKey('dashboard-layout-menu-$section'),
+                    tooltip: l.dashboardEditLayout,
+                    enabled: layoutController.ready,
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (action) {
+                      if (action == 'up' || action == 'down') {
+                        final order = ref.read(dashboardLayoutProvider).order;
+                        final next =
+                            order.indexOf(section) + (action == 'up' ? -1 : 1);
+                        if (next < 0 || next >= order.length) return;
+                        _save(
+                          context,
+                          layoutController.move(section, order[next]),
+                        );
+                      } else {
+                        _save(
+                          context,
+                          layoutController.setSpan(section, int.parse(action)),
+                        );
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'up',
+                        enabled: index > 0,
+                        child: Text(l.dashboardMoveUp),
+                      ),
+                      PopupMenuItem(
+                        value: 'down',
+                        enabled: index < layout.order.length - 1,
+                        child: Text(l.dashboardMoveDown),
+                      ),
+                      if (!Platform.isAndroid && !Platform.isIOS) ...[
+                        const PopupMenuDivider(),
+                        for (final width in widths.entries)
+                          CheckedPopupMenuItem(
+                            value: '${width.key}',
+                            checked: layout.spans[section] == width.key,
+                            child: Text(
+                              '${l.dashboardCardWidth}: ${width.value}',
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                ],
               ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                key: const ValueKey('dashboard-settings-reset-layout'),
+                onPressed: layoutController.ready
+                    ? () => _save(context, layoutController.reset())
+                    : null,
+                icon: const Icon(Icons.restart_alt),
+                label: Text(l.dashboardResetLayout),
+              ),
+            ),
           ],
         ),
       ),

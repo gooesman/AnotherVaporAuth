@@ -1132,5 +1132,18 @@
   "dashboardFriendsEmpty": "暫無好友。",
   "dashboardFavoritesMore": "查看全部收藏",
   "dashboardFavoritesPriceNote": "價格幣別：{currency} · 最低在售",
-  "dashboardCardsLimited": "僅預覽前 {count} 項"
+  "dashboardCardsLimited": "僅預覽前 {count} 項",
+  "dashboardEditLayout": "編輯配置",
+  "dashboardFinishLayout": "完成配置",
+  "dashboardLayoutHelp": "拖曳把手調整順序；拖曳右下角調整卡片寬度。",
+  "dashboardLayoutHelpMobile": "拖曳把手調整卡片順序。",
+  "dashboardResetLayout": "重設配置",
+  "dashboardDragCard": "調整順序",
+  "dashboardResizeCard": "調整寬度",
+  "dashboardCardWidth": "卡片寬度",
+  "dashboardWidthCompact": "窄",
+  "dashboardWidthMedium": "中",
+  "dashboardWidthFull": "整行",
+  "dashboardMoveUp": "上移",
+  "dashboardMoveDown": "下移"
 }

@@ -15,6 +15,7 @@ import 'package:ava/src/services/account_store.dart';
 import 'package:ava/src/services/steam_api_client.dart';
 import 'package:ava/src/services/storage_provider.dart';
 import 'package:ava/src/ui/account_dashboard.dart';
+import 'package:ava/src/ui/widgets/dashboard_card_layout.dart';
 import 'package:ava/src/ui/friends/friends_screen.dart'
     show friendsClientProvider;
 import 'package:flutter/material.dart';
@@ -23,12 +24,29 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _Settings extends SettingsStore {
   List<String>? sections;
+  Object? layout;
+  bool failLayout = false;
   _Settings() : super(MemoryStorageProvider());
   @override
   Future<List<String>?> loadDashboardSections() async => sections;
   @override
   Future<void> saveDashboardSections(List<String> value) async {
     sections = value;
+  }
+
+  @override
+  Future<Object?> loadDashboardLayout() async => layout;
+
+  @override
+  Future<void> saveDashboardLayout(
+    List<String> order,
+    Map<String, int> spans,
+  ) async {
+    if (failLayout) throw StateError('Synthetic layout failure');
+    layout = {
+      'order': [...order],
+      'spans': {...spans},
+    };
   }
 }
 
@@ -168,6 +186,102 @@ Widget _app(
 );
 
 void main() {
+  testWidgets(
+    'overview edits all card positions and widths without new reads',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final inventory = _Inventory({1: Future.value(_wallet(12345))});
+      final market = _Market();
+      final settings = _Settings();
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          inventory,
+          market,
+          settings,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
+            .editing,
+        isFalse,
+      );
+      await tester.tap(find.byKey(const ValueKey('dashboard-edit-layout')));
+      await tester.pumpAndSettle();
+      var grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.editing, isTrue);
+      await grid.onMove('tools', 'wallet');
+      await tester.pumpAndSettle();
+      grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.order.first, 'tools');
+      await grid.onResize('wallet', 1);
+      await tester.pumpAndSettle();
+      grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.spans['wallet'], 1);
+      expect(DashboardLayout.fromJson(settings.layout).order.first, 'tools');
+      expect(DashboardLayout.fromJson(settings.layout).spans['wallet'], 1);
+      expect(inventory.calls, 1);
+      expect(market.calls, 1);
+      await tester.tap(find.byKey(const ValueKey('dashboard-reset-layout')));
+      await tester.pumpAndSettle();
+      grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.order, DashboardLayout.defaultOrder);
+      expect(grid.spans, DashboardLayout.defaultSpans);
+      expect(grid.cards.keys.toSet(), DashboardSections.defaults);
+      await tester.tap(find.byKey(const ValueKey('dashboard-edit-layout')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
+            .editing,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('failed overview layout save keeps the previous arrangement', (
+    tester,
+  ) async {
+    final settings = _Settings()..failLayout = true;
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        _Inventory({1: Future.value(_wallet(12345))}),
+        _Market(),
+        settings,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final grid = tester.widget<DashboardCardLayout>(
+      find.byType(DashboardCardLayout),
+    );
+    await grid.onMove('tools', 'wallet');
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
+          .order,
+      DashboardLayout.defaultOrder,
+    );
+    expect(find.text('Could not save the display preference.'), findsOneWidget);
+    expect(settings.layout, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'optional summaries preview bounded rows and preserve inventory contexts',
     (tester) async {

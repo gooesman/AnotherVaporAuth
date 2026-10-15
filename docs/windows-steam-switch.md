@@ -114,6 +114,15 @@ online friends first. Inventory shows context counts and up to four game/context
 entries, each opening the matching inventory without first fetching its items.
 Favorites preview up to four saved products in the selected market currency.
 The complete lists remain available through each card's View all action.
+Choose **Edit layout** in the overview to reorder enabled cards with their drag handles. On
+desktop, dragging a card's bottom-right corner adjusts its width, snapping to
+column spans in a layout of up to three columns according to the available space.
+Cards keep their content's height. Phones always use one column and support
+reordering. In Settings, use each card's more menu for **Move up**, **Move down**
+and desktop width choices. Card order and desktop widths are saved on this device, independently
+of visibility: hiding and re-enabling a card retains its position and width.
+**Reset layout** restores the default arrangement. These layout preferences are
+not part of encrypted settings synchronization, and do not add cards to the phone home.
 Unavailable balances are never presented as zero. Market records include active,
 held and awaiting-confirmation listings, with separate inventory-context labels.
 

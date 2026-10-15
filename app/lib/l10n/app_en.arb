@@ -1722,5 +1722,18 @@
         "type": "int"
       }
     }
-  }
+  },
+  "dashboardEditLayout": "Edit layout",
+  "dashboardFinishLayout": "Done",
+  "dashboardLayoutHelp": "Drag the handle to reorder cards; drag the bottom-right corner to adjust their width.",
+  "dashboardLayoutHelpMobile": "Drag the handle to reorder cards.",
+  "dashboardResetLayout": "Reset layout",
+  "dashboardDragCard": "Reorder card",
+  "dashboardResizeCard": "Adjust width",
+  "dashboardCardWidth": "Card width",
+  "dashboardWidthCompact": "Narrow",
+  "dashboardWidthMedium": "Medium",
+  "dashboardWidthFull": "Full row",
+  "dashboardMoveUp": "Move up",
+  "dashboardMoveDown": "Move down"
 }

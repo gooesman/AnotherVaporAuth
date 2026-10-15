@@ -102,7 +102,10 @@ class SettingsStore {
   // drops the first one's value.
   Future<void> _chain = Future.value();
 
-  Future<void> _update(void Function(Map<String, dynamic> data) mutate) {
+  Future<void> _update(
+    void Function(Map<String, dynamic> data) mutate, {
+    bool requireWrite = false,
+  }) {
     final task = _chain.then((_) async {
       // Establish the current file contents strictly: if the read failed we
       // must NOT write, or a single-key mutation over a fabricated {} would
@@ -112,6 +115,7 @@ class SettingsStore {
       try {
         base = await _readStrict();
       } on SettingsReadException {
+        if (requireWrite) rethrow;
         return;
       }
       // Mutate a copy and publish it to the cache only after the write, so
@@ -125,6 +129,9 @@ class SettingsStore {
         // to the still-intact file instead of serving (and later persisting)
         // a mutation that only ever existed in memory.
         _cache = null;
+        if (requireWrite) {
+          throw const FileSystemException('Could not save app settings');
+        }
       }
     });
     // Keep the chain alive even if this update fails.
@@ -151,6 +158,24 @@ class SettingsStore {
 
   Future<void> saveDashboardSections(List<String> sections) =>
       _update((data) => data['dashboard_sections'] = List<String>.of(sections));
+
+  /// Card order and widths are local to this device, separate from visibility.
+  Future<Object?> loadDashboardLayout() async =>
+      (await _read())['dashboard_layout'];
+
+  Future<void> saveDashboardLayout(
+    List<String> order,
+    Map<String, int> spans,
+  ) {
+    final layout = {
+      'order': List<String>.of(order),
+      'spans': Map<String, int>.of(spans),
+    };
+    return _update(
+      (data) => data['dashboard_layout'] = layout,
+      requireWrite: true,
+    );
+  }
 
   Future<void> saveLocale(String? code) => _update((data) {
         if (code == null) {

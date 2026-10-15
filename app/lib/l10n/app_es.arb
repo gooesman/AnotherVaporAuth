@@ -938,5 +938,18 @@
   "dashboardFriendsEmpty": "Aún no hay amigos.",
   "dashboardFavoritesMore": "Ver todos los favoritos",
   "dashboardFavoritesPriceNote": "Moneda: {currency} · Oferta más baja",
-  "dashboardCardsLimited": "Vista previa de los primeros {count} elementos"
+  "dashboardCardsLimited": "Vista previa de los primeros {count} elementos",
+  "dashboardEditLayout": "Editar distribución",
+  "dashboardFinishLayout": "Listo",
+  "dashboardLayoutHelp": "Arrastra el control para cambiar el orden de las tarjetas, o la esquina inferior derecha para ajustar su anchura.",
+  "dashboardLayoutHelpMobile": "Arrastra el control para cambiar el orden de las tarjetas.",
+  "dashboardResetLayout": "Restablecer distribución",
+  "dashboardDragCard": "Cambiar orden",
+  "dashboardResizeCard": "Ajustar anchura",
+  "dashboardCardWidth": "Anchura de la tarjeta",
+  "dashboardWidthCompact": "Estrecha",
+  "dashboardWidthMedium": "Media",
+  "dashboardWidthFull": "Fila completa",
+  "dashboardMoveUp": "Subir",
+  "dashboardMoveDown": "Bajar"
 }

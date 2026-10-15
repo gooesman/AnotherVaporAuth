@@ -20,6 +20,7 @@ import 'widgets/account_identity_menu.dart';
 import 'widgets/pending_confirmation_badge.dart';
 import 'widgets/steam_notifications_button.dart';
 import 'widgets/dashboard_favorites_card.dart';
+import 'widgets/dashboard_card_layout.dart';
 
 export '../app/dashboard_sections.dart';
 
@@ -71,6 +72,7 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
   bool _foreground = true;
   bool _routeVisible = false;
   int _favoritesReload = 0;
+  bool _editingLayout = false;
   bool get _active => _foreground && _routeVisible;
   DashboardLease? _lease;
   DashboardData get _data => _lease!.data;
@@ -197,6 +199,8 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final sections = ref.watch(dashboardSectionsProvider);
+    final layout = ref.watch(dashboardLayoutProvider);
+    final layoutController = ref.read(dashboardLayoutProvider.notifier);
     final available = ref.watch(
       appControllerProvider.select((state) => _accountAvailable(state.value)),
     );
@@ -262,6 +266,20 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
               tooltip: l.commonRefresh,
               onPressed: _busy ? null : _load,
               icon: const Icon(Icons.refresh),
+            ),
+            IconButton(
+              key: const ValueKey('dashboard-edit-layout'),
+              tooltip: _editingLayout
+                  ? l.dashboardFinishLayout
+                  : l.dashboardEditLayout,
+              onPressed: layoutController.ready
+                  ? () => setState(() => _editingLayout = !_editingLayout)
+                  : null,
+              icon: Icon(
+                _editingLayout
+                    ? Icons.check
+                    : Icons.dashboard_customize_outlined,
+              ),
             ),
             PopupMenuButton<String>(
               tooltip: l.dashboardCustomize,
@@ -332,199 +350,213 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
               ],
             ),
           ),
-        if (sections.contains('wallet')) ...[
-          const SizedBox(height: 20),
-          AvaPanel(
-            emphasized: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.account_balance_wallet_outlined),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(l.dashboardWallet)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (_data.wallet.loading) _progress('wallet'),
-                Text(
-                  balanceText,
-                  key: const ValueKey('wallet-balance'),
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                if ((_wallet?.delayedBalance ?? 0) > 0) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    '${l.dashboardPendingBalance}: ${formatSteamMoney(_wallet!.delayedBalance!, _wallet!.currency)}',
-                  ),
-                ],
-                if (_walletFailed && !_needsLogin) Text(l.dashboardFetchFailed),
-              ],
-            ),
+        if (_editingLayout) ...[
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            children: [
+              Text(
+                Platform.isAndroid || Platform.isIOS
+                    ? l.dashboardLayoutHelpMobile
+                    : l.dashboardLayoutHelp,
+              ),
+              TextButton.icon(
+                key: const ValueKey('dashboard-reset-layout'),
+                onPressed: layoutController.ready
+                    ? () => _saveLayout(layoutController.reset())
+                    : null,
+                icon: const Icon(Icons.restart_alt),
+                label: Text(l.dashboardResetLayout),
+              ),
+            ],
           ),
         ],
-        if (sections.contains('listings')) ...[
-          const SizedBox(height: 20),
-          AvaPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  children: [
-                    Text(
-                      l.marketTabListings,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    TextButton(
-                      onPressed: () => widget.onAction('listings'),
-                      child: Text(l.dashboardViewAll),
-                    ),
-                  ],
-                ),
-                if (_data.listings.loading) _progress('listings'),
-                if (_listings != null) ...[
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final state in [
-                        MarketListingState.active,
-                        MarketListingState.onHold,
-                        MarketListingState.pendingConfirmation,
-                      ])
-                        Chip(
-                          label: Text(
-                            '${marketListingStateLabel(l, state)} ${_listings!.where((entry) => entry.state == state).length}',
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (_listings!.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text(l.dashboardNoListings),
-                    ),
-                  for (final listing in _listings!.take(6))
-                    Material(
-                      type: MaterialType.transparency,
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: listing.iconUrl.isEmpty
-                              ? const Icon(Icons.inventory_2_outlined)
-                              : Image.network(
-                                  listing.iconUrl,
-                                  fit: BoxFit.contain,
-                                  cacheWidth: context.rCache(44),
-                                  cacheHeight: context.rCache(44),
-                                  errorBuilder: (_, _, _) =>
-                                      const Icon(Icons.inventory_2_outlined),
-                                ),
-                        ),
-                        title: Text(
-                          listing.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          marketListingStateLabel(l, listing.state),
-                        ),
-                        trailing:
-                            !listing.priceAvailable || listing.currency == null
-                            ? null
-                            : Text(
-                                formatSteamMoney(
-                                  listing.buyerPrice,
-                                  listing.currency!,
-                                ),
-                              ),
-                        onTap: () => widget.onAction('listings'),
-                      ),
-                    ),
-                ] else if (!_data.listings.loading)
-                  Text(
-                    _listingsFailed
-                        ? l.dashboardFetchFailed
-                        : l.dashboardUnavailable,
-                  ),
-              ],
-            ),
-          ),
-        ],
-        if (sections.any(
-          const {'favorites', 'friends', 'inventory'}.contains,
-        )) ...[
-          const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final cards = <Widget>[
-                if (sections.contains('favorites'))
-                  DashboardFavoritesCard(
-                    account: widget.account,
-                    active: _active && available,
-                    reload: _favoritesReload,
-                    onViewAll: () => widget.onAction('favorites'),
-                  ),
-                if (sections.contains('friends')) _friendsCard(l),
-                if (sections.contains('inventory')) _inventoryCard(l),
-              ];
-              final columns = (constraints.maxWidth / 340).floor().clamp(
-                1,
-                cards.length,
-              );
-              final width =
-                  (constraints.maxWidth - 16 * (columns - 1)) / columns;
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  for (final card in cards) SizedBox(width: width, child: card),
-                ],
-              );
-            },
-          ),
-        ],
-        if (sections.contains('tools')) ...[
-          const SizedBox(height: 20),
-          AvaPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l.dashboardTools,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _action(
-                      l.deviceSessionsAction,
-                      Icons.devices_outlined,
-                      'devices',
-                    ),
-                    _action(
-                      l.famAccountAction,
-                      Icons.family_restroom,
-                      'family',
-                    ),
-                    _action(l.keyRedeemAction, Icons.redeem_outlined, 'redeem'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        const SizedBox(height: 20),
+        DashboardCardLayout(
+          order: layout.order,
+          spans: layout.spans,
+          editing: _editingLayout && layoutController.ready,
+          dragLabel: l.dashboardDragCard,
+          resizeLabel: l.dashboardResizeCard,
+          onMove: (moving, target) =>
+              _saveLayout(layoutController.move(moving, target)),
+          onResize: (section, span) =>
+              _saveLayout(layoutController.setSpan(section, span)),
+          titles: {
+            'wallet': l.dashboardWallet,
+            'listings': l.marketTabListings,
+            'tools': l.dashboardTools,
+            'friends': l.dashboardFriends,
+            'inventory': l.dashboardInventory,
+            'favorites': l.dashboardFavorites,
+          },
+          cards: {
+            if (sections.contains('wallet'))
+              'wallet': _walletCard(l, balanceText),
+            if (sections.contains('listings')) 'listings': _listingsCard(l),
+            if (sections.contains('tools')) 'tools': _toolsCard(l),
+            if (sections.contains('friends')) 'friends': _friendsCard(l),
+            if (sections.contains('inventory')) 'inventory': _inventoryCard(l),
+            if (sections.contains('favorites'))
+              'favorites': DashboardFavoritesCard(
+                account: widget.account,
+                active: _active && available,
+                reload: _favoritesReload,
+                onViewAll: () => widget.onAction('favorites'),
+              ),
+          },
+        ),
       ],
     );
   }
+
+  Future<void> _saveLayout(Future<void> save) async {
+    try {
+      await save;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).dashboardSaveFailed),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _walletCard(AppLocalizations l, String balanceText) => AvaPanel(
+    emphasized: true,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.account_balance_wallet_outlined),
+            const SizedBox(width: 10),
+            Expanded(child: Text(l.dashboardWallet)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_data.wallet.loading) _progress('wallet'),
+        Text(
+          balanceText,
+          key: const ValueKey('wallet-balance'),
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        if ((_wallet?.delayedBalance ?? 0) > 0) ...[
+          const SizedBox(height: 6),
+          Text(
+            '${l.dashboardPendingBalance}: ${formatSteamMoney(_wallet!.delayedBalance!, _wallet!.currency)}',
+          ),
+        ],
+        if (_walletFailed && !_needsLogin) Text(l.dashboardFetchFailed),
+      ],
+    ),
+  );
+
+  Widget _listingsCard(AppLocalizations l) => AvaPanel(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            Text(
+              l.marketTabListings,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            TextButton(
+              onPressed: () => widget.onAction('listings'),
+              child: Text(l.dashboardViewAll),
+            ),
+          ],
+        ),
+        if (_data.listings.loading) _progress('listings'),
+        if (_listings != null) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final state in [
+                MarketListingState.active,
+                MarketListingState.onHold,
+                MarketListingState.pendingConfirmation,
+              ])
+                Chip(
+                  label: Text(
+                    '${marketListingStateLabel(l, state)} ${_listings!.where((entry) => entry.state == state).length}',
+                  ),
+                ),
+            ],
+          ),
+          if (_listings!.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(l.dashboardNoListings),
+            ),
+          for (final listing in _listings!.take(6))
+            Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: listing.iconUrl.isEmpty
+                      ? const Icon(Icons.inventory_2_outlined)
+                      : Image.network(
+                          listing.iconUrl,
+                          fit: BoxFit.contain,
+                          cacheWidth: context.rCache(44),
+                          cacheHeight: context.rCache(44),
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.inventory_2_outlined),
+                        ),
+                ),
+                title: Text(
+                  listing.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(marketListingStateLabel(l, listing.state)),
+                trailing: !listing.priceAvailable || listing.currency == null
+                    ? null
+                    : Text(
+                        formatSteamMoney(listing.buyerPrice, listing.currency!),
+                      ),
+                onTap: () => widget.onAction('listings'),
+              ),
+            ),
+        ] else if (!_data.listings.loading)
+          Text(
+            _listingsFailed ? l.dashboardFetchFailed : l.dashboardUnavailable,
+          ),
+      ],
+    ),
+  );
+
+  Widget _toolsCard(AppLocalizations l) => AvaPanel(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.dashboardTools, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _action(l.deviceSessionsAction, Icons.devices_outlined, 'devices'),
+            _action(l.famAccountAction, Icons.family_restroom, 'family'),
+            _action(l.keyRedeemAction, Icons.redeem_outlined, 'redeem'),
+          ],
+        ),
+      ],
+    ),
+  );
 
   Widget _cardHeader(String title, VoidCallback onViewAll) => Wrap(
     alignment: WrapAlignment.spaceBetween,

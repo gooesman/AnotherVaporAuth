@@ -3303,6 +3303,45 @@ class AppLocalizationsZh extends AppLocalizations {
   String dashboardCardsLimited(int count) {
     return '仅预览前 $count 项';
   }
+
+  @override
+  String get dashboardEditLayout => '编辑布局';
+
+  @override
+  String get dashboardFinishLayout => '完成布局';
+
+  @override
+  String get dashboardLayoutHelp => '拖动手柄调整顺序；拖动右下角调整卡片宽度。';
+
+  @override
+  String get dashboardLayoutHelpMobile => '拖动手柄调整卡片顺序。';
+
+  @override
+  String get dashboardResetLayout => '重置布局';
+
+  @override
+  String get dashboardDragCard => '调整顺序';
+
+  @override
+  String get dashboardResizeCard => '调整宽度';
+
+  @override
+  String get dashboardCardWidth => '卡片宽度';
+
+  @override
+  String get dashboardWidthCompact => '窄';
+
+  @override
+  String get dashboardWidthMedium => '中';
+
+  @override
+  String get dashboardWidthFull => '整行';
+
+  @override
+  String get dashboardMoveUp => '上移';
+
+  @override
+  String get dashboardMoveDown => '下移';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -6611,4 +6650,43 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String dashboardCardsLimited(int count) {
     return '僅預覽前 $count 項';
   }
+
+  @override
+  String get dashboardEditLayout => '編輯配置';
+
+  @override
+  String get dashboardFinishLayout => '完成配置';
+
+  @override
+  String get dashboardLayoutHelp => '拖曳把手調整順序；拖曳右下角調整卡片寬度。';
+
+  @override
+  String get dashboardLayoutHelpMobile => '拖曳把手調整卡片順序。';
+
+  @override
+  String get dashboardResetLayout => '重設配置';
+
+  @override
+  String get dashboardDragCard => '調整順序';
+
+  @override
+  String get dashboardResizeCard => '調整寬度';
+
+  @override
+  String get dashboardCardWidth => '卡片寬度';
+
+  @override
+  String get dashboardWidthCompact => '窄';
+
+  @override
+  String get dashboardWidthMedium => '中';
+
+  @override
+  String get dashboardWidthFull => '整行';
+
+  @override
+  String get dashboardMoveUp => '上移';
+
+  @override
+  String get dashboardMoveDown => '下移';
 }

@@ -3585,4 +3585,45 @@ class AppLocalizationsRu extends AppLocalizations {
   String dashboardCardsLimited(int count) {
     return 'Показаны первые $count элементов';
   }
+
+  @override
+  String get dashboardEditLayout => 'Изменить раскладку';
+
+  @override
+  String get dashboardFinishLayout => 'Готово';
+
+  @override
+  String get dashboardLayoutHelp =>
+      'Перетаскивайте ручку, чтобы менять порядок карточек, или правый нижний угол, чтобы менять их ширину.';
+
+  @override
+  String get dashboardLayoutHelpMobile =>
+      'Перетаскивайте ручку, чтобы менять порядок карточек.';
+
+  @override
+  String get dashboardResetLayout => 'Сбросить раскладку';
+
+  @override
+  String get dashboardDragCard => 'Изменить порядок';
+
+  @override
+  String get dashboardResizeCard => 'Изменить ширину';
+
+  @override
+  String get dashboardCardWidth => 'Ширина карточки';
+
+  @override
+  String get dashboardWidthCompact => 'Узкая';
+
+  @override
+  String get dashboardWidthMedium => 'Средняя';
+
+  @override
+  String get dashboardWidthFull => 'Вся строка';
+
+  @override
+  String get dashboardMoveUp => 'Выше';
+
+  @override
+  String get dashboardMoveDown => 'Ниже';
 }
