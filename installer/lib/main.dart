@@ -23,7 +23,7 @@ void main(List<String> args) async {
   const options = WindowOptions(
     size: Size(760, 460),
     center: true,
-    title: 'AVA Setup',
+    title: '$appDisplayName Setup',
     titleBarStyle: TitleBarStyle.hidden,
   );
   windowManager.waitUntilReadyToShow(options, () async {
@@ -89,7 +89,7 @@ class _InstallerScreenState extends State<InstallerScreen>
   var _desktopShortcut = true;
   String _error = '';
 
-  static const _greetz = ' *** AVA // ANOTHERVAPORAUTH *** OPEN SOURCE (MIT)'
+  static const _greetz = ' *** $appDisplayName // ANOTHERVAPORAUTH *** OPEN SOURCE (MIT)'
       ' *** STEAM AUTH ON YOUR OWN TERMS *** NO TELEMETRY - NO BACKEND'
       ' *** GITHUB.COM/FREEFRANK/ANOTHERVAPORAUTH *** GREETZ TO THE BETA CREW'
       ' *** ';
@@ -215,7 +215,7 @@ class _InstallerScreenState extends State<InstallerScreen>
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                    widget.uninstall ? 'AVA.UNINSTALL.EXE' : 'AVA.SETUP.EXE',
+                    widget.uninstall ? '$appDisplayName UNINSTALL' : '$appDisplayName SETUP',
                     style: Fx.text(11, color: Fx.dim)),
               ),
             ),
@@ -244,10 +244,21 @@ class _InstallerScreenState extends State<InstallerScreen>
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        GlitchTitle('AVA', t: _fx.value),
-        const SizedBox(width: 6),
-        BlinkCursor(t: _fx.value),
-        const Spacer(),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GlitchTitle(appDisplayName, t: _fx.value),
+                const SizedBox(width: 6),
+                BlinkCursor(t: _fx.value),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
@@ -330,7 +341,7 @@ class _InstallerScreenState extends State<InstallerScreen>
 
   Widget _readyUninstall() {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('REMOVE AVA FROM THIS MACHINE?',
+      Text('REMOVE $appDisplayName FROM THIS MACHINE?',
           style: Fx.text(16, color: Fx.magenta)),
       const SizedBox(height: 10),
       Text(InstallEngine.selfDir, style: Fx.text(12, color: Fx.dim)),
@@ -399,7 +410,7 @@ class _InstallerScreenState extends State<InstallerScreen>
         PixelButton('EXIT', color: Fx.dim, onTap: () => exit(0)),
         if (!uninstall && !InstallEngine.isDryRun) ...[
           const SizedBox(width: 12),
-          PixelButton('LAUNCH AVA', color: Fx.green, onTap: _launchAndExit),
+          PixelButton('LAUNCH $appDisplayName', color: Fx.green, onTap: _launchAndExit),
         ],
       ]),
     ]);

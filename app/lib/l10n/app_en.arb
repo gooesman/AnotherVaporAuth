@@ -1,6 +1,38 @@
 {
   "@@locale": "en",
-  "appTitle": "AVA",
+  "steamSwitchTitle": "Switch Steam account",
+  "steamSwitchUnifiedHelp": "Select an account and switch to open Steam and sign in. Imported accounts use remembered Steam sign-in details first, then automatically approve the new local login QR code when an online session is available. Accounts not imported here can use their remembered Steam sign-in. Please exit running games first.",
+  "steamSwitchHelp": "Switch between Steam accounts that have already signed in on this PC with their sign-in details remembered. Importing an authenticator into GooeSteamKit does not sign that account in to the Steam client.",
+  "steamSwitchPath": "Steam installation folder",
+  "steamSwitchNotFound": "Steam was not found. Choose steam.exe to locate your installation.",
+  "steamSwitchBrowse": "Choose steam.exe",
+  "steamSwitchNoAccounts": "No saved Steam accounts were found on this PC. Sign in to Steam, enable remembering your sign-in details, then refresh.",
+  "steamSwitchNoMatch": "The selected account has no sign-in record on this PC. Use the one-click sign-in above, then refresh after Steam remembers the account to switch from the list below.",
+  "steamSwitchNeedsLogin": "Sign in to this account in Steam and enable remembering your sign-in details, then refresh.",
+  "steamSwitchButton": "Switch account",
+  "steamSwitchConfirm": "Steam will close and restart to sign in as {account}. First close your games and wait for Steam Cloud saves to finish syncing. Continue?",
+  "@steamSwitchConfirm": {
+    "description": "Confirmation before restarting the local Steam client to select a remembered account.",
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "steamSwitchStopping": "Waiting for Steam to exit…",
+  "steamSwitchBackingUp": "Backing up Steam settings…",
+  "steamSwitchConfiguring": "Selecting the Steam account…",
+  "steamSwitchStarting": "Starting Steam…",
+  "steamSwitchRestoring": "Restoring Steam settings…",
+  "steamSwitchLaunched": "Steam has started. Check the signed-in account in the client. Sign in again if prompted.",
+  "steamSwitchBackup": "Settings backup location",
+  "steamSwitchInvalidPath": "This Steam installation or its settings could not be read. Choose the correct steam.exe and try again.",
+  "steamSwitchCloseFailed": "Steam could not exit normally. Exit Steam manually, then try again.",
+  "steamSwitchBusy": "Another account switch is in progress. Try again shortly.",
+  "steamSwitchChanged": "Steam settings changed during the switch. Exit Steam, refresh the list, then try again.",
+  "steamSwitchFailed": "The account switch could not finish. Check Steam and try again.",
+  "steamSwitchRecoveryNeeded": "The account switch failed and some settings could not be restored. Keep the backup below and restore the settings before trying again.",
+  "appTitle": "GooeSteamKit",
   "navAccounts": "Accounts",
   "navSettings": "Settings",
   "unlockTitle": "Unlock",
@@ -14,7 +46,7 @@
   "resetVaultBody": "This deletes every account entry and encryption key stored on this device; afterwards you re-import your maFile backups. Your Steam accounts and their authenticators are not affected.\n\nUse this when the correct PIN keeps being rejected — typically after a backup restore or phone migration, since the hardware key never leaves the original device, restored data can never be decrypted.\n\nThis cannot be undone.",
   "resetVaultConfirm": "Delete & reset",
   "storeErrorTitle": "Stored data can't be read",
-  "storeErrorBody": "AVA's local account database (manifest.json) is missing or corrupt. This can happen after an interrupted write or a partial restore. Retry first; if it keeps failing, reset and re-import your maFile backups.",
+  "storeErrorBody": "GooeSteamKit's local account database (manifest.json) is missing or corrupt. This can happen after an interrupted write or a partial restore. Retry first; if it keeps failing, reset and re-import your maFile backups.",
   "storeRepair": "Attempt repair",
   "storeActionFailed": "Action failed: {error}",
   "@storeActionFailed": {
@@ -25,7 +57,7 @@
     }
   },
   "pinSetupTitle": "Set unlock PIN",
-  "pinSetupPrompt": "Protect AVA with a 6-digit PIN. You'll enter it (or your fingerprint) to unlock.",
+  "pinSetupPrompt": "Protect GooeSteamKit with a 6-digit PIN. You'll enter it (or your fingerprint) to unlock.",
   "pinLabel": "6-digit PIN",
   "pinConfirmLabel": "Confirm PIN",
   "pinSetButton": "Set PIN",
@@ -35,12 +67,12 @@
   "pinNewLabel": "New PIN",
   "pinSixDigits": "Enter a 6-digit PIN.",
   "pinMismatch": "The PINs don't match.",
-  "unlockBiometricReason": "Unlock AVA",
-  "settingsBiometric": "Biometric unlock",
-  "settingsBiometricDesc": "Unlock with your fingerprint or device PIN; the passkey is stored in the device keystore.",
+  "unlockBiometricReason": "Unlock GooeSteamKit",
+  "settingsBiometric": "Use device unlock",
+  "settingsBiometricDesc": "Use fingerprint, Windows Hello or your device credential instead of the GooeSteamKit PIN when startup verification is on. Turning startup verification off disables this option; enable it separately after turning verification back on.",
   "settingsBiometricNeedPasskey": "Set an encryption passkey first.",
   "settingsBiometricUnavailable": "No biometrics or device lock set up on this device.",
-  "settingsBiometricEnabled": "Biometric unlock enabled.",
+  "settingsBiometricEnabled": "Device unlock enabled",
   "settingsHoldConfirm": "Hold to confirm",
   "settingsHoldConfirmDesc": "Irreversible accepts (trades, confirmations) require press-and-hold. When off, a single tap acts immediately; batch actions still ask first.",
   "settingsDeleteHold": "Hold to delete",
@@ -49,7 +81,7 @@
   "settingsHaptics": "Haptic feedback",
   "settingsHapticsDesc": "Vibration ticks while holding to confirm and on completion.",
   "settingsBlockScreenshots": "Block screenshots",
-  "settingsBlockScreenshotsDesc": "Hides AVA from screenshots, screen recording and the recent-apps preview. Also blanks the window during screen sharing, and stops you attaching screenshots to feedback.",
+  "settingsBlockScreenshotsDesc": "Hides GooeSteamKit from screenshots, screen recording and the recent-apps preview. Also blanks the window during screen sharing, and stops you attaching screenshots to feedback.",
   "passkeyLabel": "Passkey",
   "accountsEmpty": "No accounts yet. Import a maFile or log in to add one.",
   "emptyAddAccount": "Add account",
@@ -70,7 +102,7 @@
   "settingsTutorial": "Gesture tutorial",
   "settingsTutorialDesc": "Replay the home-screen walkthrough (swipes, long-press, pull-to-refresh).",
   "settingsTutorialReplay": "Replay",
-  "welcomeTitle": "Welcome to AVA",
+  "welcomeTitle": "Welcome to GooeSteamKit",
   "welcomeSubtitle": "Your authenticator is stored encrypted on this device. Choose how to begin.",
   "welcomeLoginCta": "Log in to Steam",
   "welcomeLoginSub": "Set up a new authenticator",
@@ -441,7 +473,7 @@
   "feedbackLogConsentBody": "The debug log contains recent network-trace lines from this session. It may include your account names and SteamIDs — never your secrets, tokens or passwords. It is sent only together with this report, as described in the Privacy Policy.",
   "feedbackLogConsentAgree": "Agree",
   "backupReminderTitle": "Back up your secrets",
-  "backupReminderBody": "AVA keeps your authenticator data on this device only. Back up your maFiles somewhere safe. Your revocation code (R-code) is shown only once, when you first add an authenticator — write it down and keep it then; it is your last resort for removing the authenticator if this device is ever lost.",
+  "backupReminderBody": "GooeSteamKit keeps your authenticator data on this device only. Back up your maFiles somewhere safe. Your revocation code (R-code) is shown only once, when you first add an authenticator — write it down and keep it then; it is your last resort for removing the authenticator if this device is ever lost.",
   "backupReminderOk": "Got it",
   "debugCopyAll": "Copy all",
   "debugCopied": "Log copied",
@@ -641,7 +673,7 @@
   "addMoveInDone": "Authenticator moved to this device.",
   "addMoveInPopBlocked": "Moving the authenticator — please wait.",
   "addErrBadChallengeCode": "That code isn't right. Check the email and try again.",
-  "addMoveInSaveFailed": "The authenticator moved to this account, but AVA could NOT save it to this device. Your old authenticator is already dead, so these are the only copies — write them down NOW before closing this screen.\n\nRevocation code: {code}\n\nSecret: {secret}",
+  "addMoveInSaveFailed": "The authenticator moved to this account, but GooeSteamKit could NOT save it to this device. Your old authenticator is already dead, so these are the only copies — write them down NOW before closing this screen.\n\nRevocation code: {code}\n\nSecret: {secret}",
   "@addMoveInSaveFailed": {
     "placeholders": {
       "code": {
@@ -656,7 +688,7 @@
   "addMoveInCopied": "Copied",
   "moveInRescueDismiss": "I saved them — dismiss",
   "moveInRescueDismissTitle": "Discard these secrets?",
-  "moveInRescueDismissBody": "AVA holds no other copy. If you haven't written down the revocation code and secret, you will permanently lose access to this authenticator.",
+  "moveInRescueDismissBody": "GooeSteamKit holds no other copy. If you haven't written down the revocation code and secret, you will permanently lose access to this authenticator.",
   "moveInRescueDismissConfirm": "I saved them",
   "commonRetry": "Retry",
   "commonCopy": "Copy link",
@@ -697,7 +729,7 @@
   "privacyConsentTitle": "Your privacy",
   "privacyConsentBody": "AVA keeps your Steam accounts and secrets on this device — they are never uploaded, unless you set up the optional sync to a server you choose, where everything is encrypted on this device first. There is no account to create. Steam requests go straight to Valve. Two of the developer's own services are contacted only when they are needed: Pro entitlement checks, and feedback (only when you press send). The Play version also shows ads on the free tier. There is no tracking or analytics. All of it is spelled out in the Privacy Policy — by continuing, you accept it.",
   "privacyUpdateTitle": "Privacy Policy updated",
-  "privacyUpdateBody": "The privacy notice has changed since you accepted it. New: AVA can now sync your account library between your devices, through a server you choose — off by default, everything encrypted on this device before upload, and the developer runs no sync server. Please read the current notice below.",
+  "privacyUpdateBody": "The privacy notice has changed since you accepted it. New: GooeSteamKit can now sync your account library between your devices, through a server you choose — off by default, everything encrypted on this device before upload, and the developer runs no sync server. Please read the current notice below.",
   "privacyConsentScrollHint": "Scroll to the end to continue",
   "privacyConsentRead": "Read the full Privacy Policy",
   "privacyConsentAgree": "Agree & continue",
@@ -1026,7 +1058,7 @@
   "syncPasswordsTitle": "Sync account passwords",
   "syncPasswordsDesc": "Passwords let a new device sign in by itself. Changing this re-uploads every account.",
   "syncAppSettingsTitle": "Sync app settings",
-  "syncAppSettingsDesc": "Appearance and behavior preferences (skin, theme, hold-to-confirm…) follow you to every device. Language and text size stay per-device.",
+  "syncAppSettingsDesc": "Sync appearance and behavior preferences plus encrypted Steam acceleration subscriptions, nodes and the selected node. Language, text size and acceleration auto-start stay per-device.",
   "syncNowButton": "Sync now",
   "syncViewRemote": "View remote library",
   "syncRemoteEmpty": "The remote library is empty.",
@@ -1064,7 +1096,7 @@
   "@netErrTimeout": {
     "description": "Shown when Steam did not answer within the client timeout."
   },
-  "netErrCert": "Steam's certificate wasn't trusted, so AVA closed the connection. Something on this network may be inspecting traffic.",
+  "netErrCert": "Steam's certificate wasn't trusted, so GooeSteamKit closed the connection. Something on this network may be inspecting traffic.",
   "@netErrCert": {
     "description": "Shown when Steam's TLS certificate failed verification."
   },
@@ -1109,5 +1141,594 @@
   "portableFailed": "The operation could not finish. The source library was kept.",
   "portableDone": "Mode updated. Source accounts were kept.",
   "portableSkipped": "Existing accounts skipped",
-  "portableUnreadable": "This library is damaged or still depends on another Windows installation’s key. Restore a maFile export; the source files have not been changed."
+  "portableUnreadable": "This library is damaged or still depends on another Windows installation’s key. Restore a maFile export; the source files have not been changed.",
+  "friendsTitle": "Friends & trades",
+  "friendsSearch": "Search name or SteamID",
+  "friendsEmpty": "No friends to show",
+  "friendsProfile": "View Steam profile",
+  "friendsTrade": "Create trade offer",
+  "friendsOnline": "Online",
+  "friendsOffline": "Offline",
+  "friendsPlaying": "In game",
+  "tradeNewTitle": "New trade offer",
+  "tradeYourItems": "Items you give",
+  "tradeTheirItems": "Items you receive",
+  "tradeSelectItems": "Select items",
+  "tradeNote": "Message (optional)",
+  "tradeReview": "Review offer",
+  "tradeSend": "Send offer",
+  "tradeReviewBody": "Check the partner SteamID, items and quantities on both sides. Steam may require confirmation or place items on hold.",
+  "tradeGiftWarning": "You are giving these items away and will receive nothing.",
+  "tradeNoItems": "No tradable items available here.",
+  "tradeMore": "Load more",
+  "tradeSent": "Offer sent.",
+  "tradeNeedsMobile": "Offer created. Complete its mobile confirmation in Pending.",
+  "tradeNeedsEmail": "Offer created. Follow Steam’s email to confirm it.",
+  "tradeOpenPending": "View pending & offers",
+  "tradeUnknownResult": "The send result is unknown. Check your sent offers before trying again to avoid duplicates.",
+  "tradeChooseGame": "Choose inventory",
+  "tradeQuantity": "Quantity",
+  "tradeLoadFailed": "Unable to read Steam friends or inventory. Refresh to try again.",
+  "tradeSendFailed": "Steam did not confirm the offer was sent. Check your offers before trying again.",
+  "marketListingActive": "For sale",
+  "marketListingOnHold": "On hold",
+  "marketListingPending": "Awaiting confirmation",
+  "marketListingInactive": "Inactive",
+  "marketHoldUntil": "On hold until {date}",
+  "marketListingsAll": "All",
+  "marketCancelConfirm": "Cancel this market listing?",
+  "settingsStartupVerification": "Verify identity at startup",
+  "settingsStartupVerificationDesc": "When enabled, opening GooeSteamKit requires your PIN or system authentication. When disabled, anyone using this device can open GooeSteamKit; local account files remain encrypted.",
+  "settingsStartupVerificationError": "Could not save the startup verification setting. Check device secure storage and try again.",
+  "settingsLockNow": "Lock now",
+  "settingsStartupVerificationPinChanged": "Changing your PIN turns startup verification back on.",
+  "settingsStartupVerificationDisable": "Turn off startup verification?",
+  "dashboardTitle": "Account overview",
+  "dashboardWallet": "Wallet balance",
+  "dashboardPendingBalance": "Pending funds",
+  "dashboardUnavailable": "Unavailable",
+  "dashboardMarket": "Inventory & market",
+  "dashboardTools": "Account tools",
+  "dashboardCustomize": "Overview layout",
+  "dashboardViewAll": "View all",
+  "dashboardNoListings": "No market listings.",
+  "dashboardFetchFailed": "Could not load this information. Refresh to try again.",
+  "dashboardSaveFailed": "Could not save the display preference.",
+  "backupCodesTitle": "Backup login codes",
+  "backupCodesAccountCheck": "Your browser may be signed in to a different Steam account. Check that its account name matches the one above before generating codes.",
+  "backupCodesHow": "Get codes from Steam",
+  "backupCodesSteps": "1. Open Steam Guard settings with the button below.\n2. Sign in to the account shown above.\n3. Choose “Get Backup Steam Guard Codes”.\n4. Complete the verification requested by Steam and keep the generated codes in a safe place.",
+  "backupCodesExplanation": "These are one-use login codes, separate from the authenticator removal code. Steam issues and manages them. GooeSteamKit opens the official flow and does not generate or store these codes.",
+  "backupCodesOpenSteam": "Open Steam to get codes",
+  "backupCodesCopyLink": "Copy official link",
+  "backupCodesOpenFailed": "Could not open the browser. Copy the link and open it manually.",
+  "@marketHoldUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "loginAccountMismatch": "This is a different Steam account. Sign in to the selected account; the original account has not been changed.",
+  "tradeFromAccount": "Sending account",
+  "tradeToAccount": "Trading partner",
+  "tradeValidationFailed": "The offer has not been sent. Check the selected items and quantities; each side allows up to 256 items.",
+  "friendsProfileOpenFailed": "Unable to open a browser. Copy the official Steam link below.",
+  "steamSwitchQrTitle": "Sign in with a GooeSteamKit account",
+  "steamSwitchQrHelp": "Choose a GooeSteamKit account, show Steam’s sign-in QR code, then scan it and review the login request.",
+  "steamSwitchQrAccount": "GooeSteamKit account",
+  "steamSwitchQrNeedsSession": "Sign in to this account again in GooeSteamKit first. An offline Steam Guard code alone cannot approve a QR login.",
+  "steamSwitchQrNoAccounts": "Add an account to GooeSteamKit to use QR sign-in.",
+  "approveScreenSelect": "Select a QR code on screen",
+  "approveScreenHelp": "GooeSteamKit will briefly hide. Drag around the Steam sign-in QR code, then review the account and device before approving.",
+  "approveScreenInstruction": "Drag around one Steam sign-in QR code · Esc / right-click to cancel",
+  "approveScreenNoCode": "No QR code found. Select the complete code with a little space around it and try again.",
+  "approveScreenFailed": "Could not capture the screen. Try again or paste the QR code link.",
+  "approveSessionUnavailable": "This QR code has expired or its login details could not be verified. Refresh the code in Steam and try again.",
+  "itemMarketActions": "Item market options",
+  "itemMarketViewPrice": "View market price",
+  "itemMarketOpen": "Open Steam Market",
+  "itemMarketVolume": "Recent volume",
+  "itemMarketReferenceNote": "Steam Community Market reference price per item; not seller proceeds. Prices may change.",
+  "itemMarketCurrency": "Currency: {currency}",
+  "itemMarketNoIdentity": "This item has no market listing name.",
+  "itemMarketOpenFailed": "Could not open the Steam Market page.",
+  "@itemMarketCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "steamClientRunning": "Steam is running",
+  "steamClientStopped": "Steam is not running",
+  "steamClientStatusLoading": "Reading Steam status…",
+  "steamClientStatusUnavailable": "Steam status is temporarily unavailable",
+  "steamClientCurrentAccount": "Currently signed in: {account}",
+  "steamClientAccountUnknown": "Current account not yet identified",
+  "steamClientCurrentBadge": "Currently signed in",
+  "@steamClientCurrentAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "forkLocalFeaturesTitle": "Local features unlocked",
+  "forkLocalFeaturesBody": "All local features in this independent fork are available without Pro verification. The original author’s online services and subscriptions are not included.",
+  "forkPrivacyConsentBody": "This independent AVA fork stores your Steam accounts and authenticator secrets on this device. Steam requests go directly to Valve. Optional synchronization is off until you configure your own server; account data is encrypted locally before synchronization. Local features require no Pro verification. This build uses no advertising, payment service or upstream update check. Feedback only opens this fork’s GitHub issue page; reports and logs are not sent automatically. There is no tracking or analytics. Read this fork’s privacy notice below. By continuing, you accept it.",
+  "forkUpdateTitle": "Software updates",
+  "forkUpdateCurrentVersion": "Current version {version}",
+  "forkUpdateCheck": "Check for updates",
+  "forkUpdateChecking": "Checking for updates…",
+  "forkUpdateNoRelease": "No published release is available yet",
+  "forkUpdateUpToDate": "You are up to date",
+  "forkUpdateAvailable": "New version {version}",
+  "forkUpdateReleaseNotes": "Release notes",
+  "forkUpdateNoNotes": "No release notes were provided",
+  "forkUpdateDownload": "Download update",
+  "forkUpdateDownloading": "Downloading {progress}",
+  "forkUpdateCancelDownload": "Cancel download",
+  "forkUpdateReady": "The installer is downloaded and verified",
+  "forkUpdateInstall": "Install update",
+  "forkUpdateInstallTitle": "Install this update?",
+  "forkUpdateInstallAndroid": "The system installer will open. If prompted, allow GooeSteamKit to install apps, then follow the system instructions.",
+  "forkUpdateInstallWindows": "The installer will open and GooeSteamKit will close. Finish your current work first, then follow the installer instructions.",
+  "forkUpdateInstallConfirm": "Continue installation",
+  "forkUpdateInstallStarted": "The system installer is open; follow its instructions",
+  "forkUpdateCheckFailed": "Could not check for updates. Try again later.",
+  "forkUpdateDownloadFailed": "Download failed. Please retry.",
+  "forkUpdateHashFailed": "The installer failed verification and was blocked. Download it again.",
+  "forkUpdateInstallFailed": "Could not open the installer. Please retry.",
+  "forkUpdateNoCompatibleAsset": "This release has no installer for this device",
+  "forkUpdateUnverifiable": "This installer has no trusted checksum and cannot be downloaded or installed",
+  "forkUpdateInvalidMetadata": "Release information is incomplete or invalid. Try again later.",
+  "forkUpdateUnsupported": "In-app updates are not supported on this device",
+  "forkUpdateCancelled": "Download cancelled",
+  "forkUpdatePermissionRequired": "Allow GooeSteamKit to install apps, then return here to install",
+  "forkUpdateOpenPermissionSettings": "Allow app installs",
+  "forkUpdateWrongPackage": "This installer belongs to another app and was blocked",
+  "forkUpdateSignatureMismatch": "The installer signature does not match this app and was blocked",
+  "@forkUpdateCurrentVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateDownloading": {
+    "placeholders": {
+      "progress": {
+        "type": "String"
+      }
+    }
+  },
+  "backupCodesNativeIntro": "Generate one-time Steam login codes here. Steam requires SMS verification of the phone linked to this account. Generating a new set may replace existing codes.",
+  "backupCodesSendSms": "Send verification SMS",
+  "backupCodesSmsPrompt": "Enter the verification code from Steam's SMS.",
+  "backupCodesSmsLabel": "SMS verification code",
+  "backupCodesGenerate": "Verify and generate codes",
+  "backupCodesReady": "Your one-time login codes",
+  "backupCodesKeepSafe": "Each code can be used once. Keep a printed copy somewhere safe. GooeSteamKit does not save these codes; leaving this page or switching apps clears them. Steam emails you when codes are generated or used.",
+  "backupCodesClear": "Clear codes",
+  "backupCodesRequestFailed": "Steam could not complete this request. No request was retried automatically. Check your connection and try again when ready.",
+  "backupCodesUnexpectedResponse": "Steam returned an unrecognized response. The result could not be confirmed; the request was not retried.",
+  "backupCodesInvalidSms": "Steam rejected the verification code. Check the SMS and try again.",
+  "backupCodesRateLimited": "Steam is limiting requests. Please wait before trying again.",
+  "backupCodesPhoneRequired": "Steam requires a verified phone number on this account.",
+  "backupCodesManualHelp": "Official Steam page (optional)",
+  "steamAccelerationTitle": "Steam acceleration",
+  "steamAccelerationDesc": "Use an external proxy first, then built-in acceleration when it closes. Only Steam requests in GooeSteamKit use the built-in route.",
+  "steamAccelerationOff": "Off",
+  "steamAccelerationLoading": "Syncing subscription…",
+  "steamAccelerationStarting": "Starting…",
+  "steamAccelerationRunning": "Running",
+  "steamAccelerationPaused": "Built-in acceleration is on standby",
+  "steamAccelerationFailed": "Acceleration unavailable",
+  "steamAccelerationUnsupported": "Currently supported on Windows and Android only.",
+  "steamAccelerationConfigured": "Subscription saved on this device",
+  "steamAccelerationUnconfigured": "No subscription configured",
+  "steamAccelerationConfigure": "Add subscription",
+  "steamAccelerationReplace": "Replace subscription",
+  "steamAccelerationSubscription": "Subscription URL",
+  "steamAccelerationSubscriptionHelp": "This link may contain private credentials and is stored securely on your device. With Sync app settings enabled, subscriptions and nodes are also encrypted with your sync passphrase and synced. After saving, select Refresh nodes.",
+  "steamAccelerationClear": "Clear subscription",
+  "steamAccelerationClearConfirm": "Stop built-in acceleration and delete the saved subscription and nodes? With settings sync enabled, this deletion also syncs to your other devices.",
+  "steamAccelerationSync": "Refresh nodes",
+  "steamAccelerationDownloadingCore": "Downloading acceleration component…",
+  "steamAccelerationCoreDownload": "Could not download the acceleration component after trying mirrors and the official source. Try again later.",
+  "steamAccelerationExternalActiveHelp": "Using the external connection. With automatic switching enabled, the built-in route takes over when it closes. No manual switching is needed.",
+  "steamAccelerationNodes": "Nodes",
+  "steamAccelerationNoNodes": "Sync the subscription to load available nodes.",
+  "steamAccelerationNode": "Selected node",
+  "steamAccelerationStart": "Enable automatic switching",
+  "steamAccelerationStop": "Pause automatic switching",
+  "steamAccelerationAuto": "Enable on launch",
+  "steamAccelerationAutoDesc": "Prefer an external proxy or VPN; resume the built-in route when it closes. Pausing applies until the next launch.",
+  "steamAccelerationEnvironment": "External proxy detection",
+  "steamAccelerationExternalProxy": "System proxy or PAC detected",
+  "steamAccelerationExternalVpn": "VPN or tunnel detected",
+  "steamAccelerationNoExternal": "No external proxy detected",
+  "steamAccelerationDetectionUnavailable": "External proxy status is unknown, so the built-in route will not start. Check the system proxy settings, then check again.",
+  "steamAccelerationEnvironmentHelp": "Checks the local connection settings while the app is visible. System proxy and VPN settings are never changed.",
+  "steamAccelerationSkipped": "Skipped {count} unsupported nodes.",
+  "@steamAccelerationSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "steamAccelerationInvalidSubscription": "Enter a valid HTTP or HTTPS subscription URL.",
+  "steamAccelerationNetworkError": "Could not fetch the subscription. Check your connection and try again.",
+  "steamAccelerationUnsupportedSubscription": "The subscription has no supported nodes. Use a compatible Clash subscription.",
+  "steamAccelerationStorageError": "Secure storage is unavailable. The setting could not be saved.",
+  "steamAccelerationCoreUnavailable": "The acceleration component is missing. Install an updated app package.",
+  "steamAccelerationCoreIntegrity": "The acceleration component failed verification and was blocked.",
+  "steamAccelerationStartFailed": "Could not start acceleration. Refresh the environment check and try again.",
+  "inventorySearch": "Search items",
+  "inventoryFilterType": "Type",
+  "inventoryFilterRarity": "Rarity / quality",
+  "inventoryFilterOther": "Other / unclassified",
+  "inventoryFilterNoMatches": "No items match these filters",
+  "inventoryFilterLoaded": "Filters apply to loaded items. Load more to include the rest.",
+  "steamConnectionTitle": "Connection check",
+  "steamConnectionNotChecked": "Not checked",
+  "steamConnectionChecking": "Checking connection…",
+  "steamConnectionAvailable": "Connection available",
+  "steamConnectionPartial": "Some Steam services are unavailable",
+  "steamConnectionUnavailable": "Steam connection unavailable",
+  "steamConnectionCheck": "Check connection",
+  "steamConnectionApi": "Steam sign-in API",
+  "steamConnectionCommunity": "Steam Community and Market",
+  "steamConnectionReachable": "Reachable",
+  "steamConnectionFailed": "Connection failed",
+  "steamConnectionInternal": "Built-in route",
+  "steamConnectionExternal": "External HTTP proxy",
+  "steamConnectionSystem": "External VPN / tunnel",
+  "steamConnectionDirect": "Direct connection",
+  "steamConnectionCheckedAt": "Last checked: {time}",
+  "@steamConnectionCheckedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionNoVpnIcon": "This only routes Steam requests inside GooeSteamKit, so Android does not show a system VPN icon. It does not accelerate the Steam app or other apps.",
+  "steamConnectionScope": "Checks Steam API and Community over GooeSteamKit’s current route without account credentials. Results describe this check, not continuous availability.",
+  "tradeSendNotSent": "Offer was not sent. {reason}",
+  "@tradeSendNotSent": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeCheckSendResult": "Check send result",
+  "tradeSendNotFound": "No matching new offer is visible yet. Steam may take time to update. Check Pending and sent offers before sending again.",
+  "tradeSendCheckFailed": "Could not verify the send result. {reason}",
+  "@tradeSendCheckFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "tradeSendRejected": "Steam rejected this offer without a detailed reason. Check the selected items and trading restrictions.",
+  "tradeSendUnreadableResponse": "Steam did not return a complete send receipt.",
+  "steamConnectionPacHelp": "A system proxy setting was found, but no usable HTTP endpoint or VPN route is available. PAC scripts are not evaluated. Enable the external app’s HTTP proxy or VPN mode.",
+  "forkUpdateTransferSize": "{received} / {total} MiB",
+  "forkUpdateTransferSpeed": "{speed} {unit}/s",
+  "forkUpdateRemainingSeconds": "About {seconds}s left",
+  "forkUpdateRemainingMinutes": "About {minutes}min left",
+  "forkUpdateWaitingForData": "Waiting for data…",
+  "forkUpdateVerifying": "Verifying installer…",
+  "forkUpdateConnectionHint": "Automatic mode downloads through GH-Proxy without starting a proxy, then falls back to GitHub if needed. Files are checked against GitHub’s SHA-256.",
+  "@forkUpdateTransferSize": {
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateTransferSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "@forkUpdateRemainingSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "@forkUpdateRemainingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "forkUpdateSourceLabel": "Download source",
+  "forkUpdateSourceAutomatic": "Automatic acceleration",
+  "forkUpdateSourceOfficial": "GitHub official",
+  "forkUpdateSourceAccelerated": "Direct acceleration · {provider}",
+  "@forkUpdateSourceAccelerated": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "marketTabSearch": "Market",
+  "marketSearchHint": "Search items, e.g. AK-47",
+  "marketSearchEmpty": "Choose a game and currency, then search for an item. Data loads only when you search.",
+  "marketSearchButton": "Search market",
+  "marketSearchAllGames": "All games",
+  "marketSearchGame": "Game",
+  "marketSearchCurrency": "Currency",
+  "marketSearchNoResults": "No matching items. Try another search.",
+  "marketSearchMore": "Load more",
+  "marketSearchListings": "Listings: {count}",
+  "marketSearchPriceUnavailable": "Price unavailable",
+  "marketSearchPriceNote": "Reference prices load in the selected currency only for visible items and may change.",
+  "marketSearchRefreshPrice": "Refresh price",
+  "marketSearchRateLimited": "Steam is receiving too many requests. Please try again later.",
+  "marketSearchUnavailable": "Market items are unavailable right now. Please try again later.",
+  "@marketSearchListings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "marketSearchRequestedCurrency": "Requested currency: {currency}",
+  "@marketSearchRequestedCurrency": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "steamConnectionUnresolvedProxy": "System proxy unavailable",
+  "steamDesktopLoginButton": "Open Steam and sign in",
+  "steamDesktopLoginHelp": "Open or switch Steam to the selected account and automatically approve the QR code in this computer's Steam sign-in window. Please exit any running games first.",
+  "steamDesktopLoginPreparing": "Preparing the selected account…",
+  "steamDesktopLoginWaitingQr": "Waiting for this computer's Steam sign-in QR code…",
+  "steamDesktopLoginApproving": "Approving this computer's sign-in…",
+  "steamDesktopLoginWaitingAccount": "Confirming Steam sign-in status…",
+  "steamDesktopLoginComplete": "Verified that the Steam client's current account matches the selected account.",
+  "steamDesktopLoginManual": "Steam is open, but its local sign-in QR code could not be verified. Use the QR scanning option below to continue.",
+  "steamDesktopLoginUnconfirmed": "A sign-in approval request was submitted, but Steam sign-in has not been confirmed. Check the Steam window, then refresh the status.",
+  "steamDesktopLoginCancelled": "Automatic sign-in stopped",
+  "steamDesktopLoginCancel": "Stop automatic approval",
+  "steamDesktopLoginWrongAccount": "Steam is signed in to a different account. Automatic approval has stopped.",
+  "steamClientOpen": "Open Steam",
+  "steamSwitchLaunchFailed": "Steam could not start. Check the installation path and make sure Steam can run normally.",
+  "steamSwitchFileAccessFailed": "Could not back up or change Steam settings. Check read and write permissions for the installation folder.",
+  "steamDesktopLoginSession": "Steam is open. Connecting to the selected account…",
+  "steamSwitchInspecting": "Checking Steam on this PC",
+  "steamSwitchErrorDetails": "Stage: {stage}; error code: {code}; Windows: {systemError}.",
+  "@steamSwitchErrorDetails": {
+    "description": "Safe diagnostics only: an allowlisted stage and error code, plus a Win32 error number or a placeholder when unavailable. Never pass raw exception text, paths or account data.",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "systemError": {
+        "type": "String"
+      }
+    }
+  },
+  "approveScreenBusy": "Another screen capture is in progress. Finish or cancel it first.",
+  "approveScreenDisplayChanged": "The display layout has changed. Select the QR code area again.",
+  "approveScreenRegionTooLarge": "The selected area is too large. Select only the QR code area.",
+  "approveScreenFailedDetail": "Could not capture the screen. Try again. Error details: {detail}.",
+  "@approveScreenFailedDetail": {
+    "description": "Screen capture failure with safe diagnostics containing only allowlisted error codes, stages and Win32 error numbers. Never pass raw exception text, paths or account data.",
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "marketFavoriteTitle": "Favorites",
+  "marketFavoriteAdd": "Add to favorites",
+  "marketFavoriteRemove": "Remove from favorites",
+  "marketFavoriteEmpty": "Save items from market search to see their prices here without searching again.",
+  "marketFavoriteSaveFailed": "Could not load or save market favorites. Please try again.",
+  "syncCompareTitle": "Compare local and remote",
+  "syncCompareRefresh": "Refresh comparison",
+  "syncCompareHelp": "Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.",
+  "syncCompareStale": "Local or remote data changed. Refresh the comparison before trying again.",
+  "syncCompareFailed": "Comparison or transfer failed. Check the connection and sync passphrase, then refresh. No successful transfer has been confirmed.",
+  "syncCompareSame": "Same content",
+  "syncCompareLocalOnly": "Only on this device",
+  "syncCompareRemoteOnly": "Only on remote",
+  "syncCompareLocalNewer": "Local has newer changes",
+  "syncCompareRemoteNewer": "Remote has newer changes",
+  "syncCompareBothChanged": "Different on both sides — choose a direction",
+  "syncCompareRemoteDeleted": "Deleted on remote; upload restores this account",
+  "syncCompareSettings": "Settings, favorites and acceleration subscription",
+  "syncCompareSettingsConflict": "Settings changed on both devices. Compare before choosing upload or pull.",
+  "syncComparePull": "Pull remote → local",
+  "syncCompareUpload": "Upload local → remote",
+  "syncCompareHidden": "Changed private value (hidden)",
+  "syncCompareCurrency": "Market currency",
+  "syncCompareFavorites": "Market favorites",
+  "syncCompareSubscription": "Acceleration subscription URL",
+  "syncCompareNodes": "Acceleration node configuration",
+  "syncCompareSelectedNode": "Selected acceleration node",
+  "marketFavoriteSearch": "Search",
+  "inventoryCooldownDetails": "Trade and market restrictions",
+  "inventoryCooldownUntil": "Cooldown until {time}",
+  "@inventoryCooldownUntil": { "placeholders": { "time": { "type": "String" } } },
+  "inventoryCooldownTradable": "Tradable",
+  "inventoryCooldownNotTradable": "Not tradable",
+  "inventoryCooldownMarketable": "Marketable",
+  "inventoryCooldownLocalTime": "Time shown in your device’s local time zone.",
+  "inventoryCooldownUnknown": "Steam has not provided a readable unlock time. No date is estimated.",
+  "inventoryCooldownElapsed": "This date has passed. Refresh the inventory to check Steam’s current restrictions.",
+  "inventoryCooldownRemaining": "Remaining: {days}d {hours}h {minutes}m",
+  "@inventoryCooldownRemaining": { "placeholders": { "days": { "type": "int" }, "hours": { "type": "int" }, "minutes": { "type": "int" } } },
+  "deviceRevokeOthersAction": "Revoke other device authorizations",
+  "deviceRevokeOthersConfirm": "Revoke the {count} other device authorizations listed below? Keep the current GooeSteamKit session. Those devices will need to sign in again. This does not remove your Steam authenticator.",
+  "deviceRevokeOthersCurrentUnknown": "The current GooeSteamKit session could not be identified. Refresh before revoking device authorizations.",
+  "deviceRevokeOthersNone": "No other device authorizations to revoke.",
+  "deviceRevokeOthersBusy": "Revoking other device authorizations…",
+  "deviceRevokeOthersDone": "Confirmed: {count} other device authorizations revoked.",
+  "deviceRevokeOthersPartial": "Confirmed revoked: {done}. Not completed or not confirmed: {failed}. Check the details below and the refreshed device list before trying again.",
+  "@deviceRevokeOthersConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deviceRevokeOthersDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountCopyInfoTitle": "Copy account information",
+  "accountCopyPersonaName": "Copy Steam nickname",
+  "accountCopyLoginName": "Copy login name",
+  "accountCopyUnavailable": "Unavailable",
+  "accountCopyFailed": "Could not copy. Please try again.",
+  "notificationsTitle": "Steam notifications",
+  "notificationsInboxTab": "Notifications",
+  "notificationsRequestsTab": "Friend requests",
+  "notificationsEmpty": "No notifications.",
+  "notificationsRequestsEmpty": "No pending friend requests.",
+  "notificationsMarkRead": "Mark as read",
+  "notificationsMarkAllRead": "Mark this list as read",
+  "notificationsHide": "Ignore notification",
+  "notificationsItemTitle": "Steam notification",
+  "notificationsItemFallback": "No displayable details are available for this notification type.",
+  "notificationsOpenSteam": "View in Steam",
+  "notificationsAcceptRequest": "Accept",
+  "notificationsRejectRequest": "Decline",
+  "notificationsActionUnconfirmed": "The result could not be confirmed. Refresh to check before trying again.",
+  "notificationsActionDone": "Updated.",
+  "notificationsLoadFailed": "Could not load notifications. Please refresh or sign in again.",
+  "notificationsOpenFailed": "Could not open Steam.",
+  "notificationsUnread": "Unread",
+  "notificationsSessionChanged": "The account session changed. Refresh this list before continuing.",
+  "confirmationBadgeCount": "{count} pending confirmations",
+  "confirmationBadgeUnknown": "Pending confirmations have not been checked.",
+  "confirmationBadgeStale": "Last checked: {count} pending confirmations. Refresh to check again.",
+  "@confirmationBadgeCount": {"placeholders": {"count": {"type": "int"}}},
+  "@confirmationBadgeStale": {"placeholders": {"count": {"type": "int"}}},
+  "notificationsTypeGift": "Gift",
+  "notificationsTypeComment": "Comment",
+  "notificationsTypeInventory": "Inventory item",
+  "notificationsTypeFriend": "Friend request",
+  "notificationsTypeSale": "Promotion",
+  "notificationsTypeWishlist": "Wishlist",
+  "notificationsTypeTrade": "Trade offer",
+  "notificationsTypeAccount": "Account notice",
+  "notificationsTypeSupport": "Steam Support",
+  "notificationsTypeModeration": "Moderation notice",
+  "notificationsTypeFamily": "Family invitation",
+  "notificationsTypePlaytest": "Playtest invitation",
+  "notificationsTypeTradeReversal": "Trade reversal",
+  "notificationsTypeReport": "Report result",
+  "notificationsNoUnread": "No unread notifications.",
+  "notificationsHistory": "Read notifications ({count})",
+  "@notificationsHistory": {"placeholders": {"count": {"type": "int"}}},
+  "notificationsCollapseHistory": "Hide read notifications",
+  "notificationsInventoryReceived": "New inventory item in {game}.",
+  "@notificationsInventoryReceived": {"placeholders": {"game": {"type": "String"}}},
+  "notificationsItemLoading": "Loading item details…",
+  "notificationsItemUnavailable": "Item details are currently unavailable.",
+  "notificationsOpenInventory": "View inventory",
+  "notificationsFriendSummary": "Open friend requests to check and respond to current invitations.",
+  "notificationsTradeSummary": "Open trade offers to view the items and current status.",
+  "deviceRevokeOthersVerifyPending": "Removal could not be verified in the refreshed device list. Refresh and check before trying again.",
+  "@deviceRevokeOthersPartial": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardFriends": "Friends",
+  "dashboardInventory": "Inventory",
+  "dashboardFavorites": "Market favorites",
+  "dashboardCardsDescription": "Choose the cards shown in the overview. Disabled cards do not load. The mobile home stays compact.",
+  "dashboardFriendsSummary": "{total} friends · {online} online",
+  "dashboardInventorySummary": "{games} inventories · {items} items",
+  "dashboardFavoritesEmpty": "No market favorites yet.",
+  "dashboardInventoryEmpty": "No inventories to display.",
+  "dashboardFriendsEmpty": "No friends yet.",
+  "dashboardFavoritesMore": "View all favorites",
+  "dashboardFavoritesPriceNote": "Currency: {currency} · Lowest listing",
+  "dashboardCardsLimited": "Previewing the first {count} items",
+  "@dashboardFriendsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "online": {
+        "type": "int"
+      }
+    }
+  },
+  "@dashboardInventorySummary": {
+    "placeholders": {
+      "games": {
+        "type": "int"
+      },
+      "items": {
+        "type": "int"
+      }
+    }
+  },
+  "@dashboardFavoritesPriceNote": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "@dashboardCardsLimited": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardEditLayout": "Adjust position and size",
+  "dashboardFinishLayout": "Done adjusting",
+  "dashboardLayoutHelp": "Drag a handle to move a card; drag its bottom-right corner to adjust width and height. Finish from Overview layout.",
+  "dashboardLayoutHelpMobile": "Drag a handle to move a card up or down; drag its bottom-right corner to adjust height. Finish from Overview layout.",
+  "dashboardResetLayout": "Reset layout",
+  "dashboardDragCard": "Move card",
+  "dashboardResizeCard": "Adjust size",
+  "dashboardLayoutSettingsHint": "To move or resize cards, open Overview layout in the account overview."
 }

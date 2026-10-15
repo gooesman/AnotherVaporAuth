@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import '../../core/fork_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -72,17 +73,17 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
   }
 
   SyncConfig _draftConfig() => SyncConfig(
-        url: _effectiveUrl(),
-        username: _username.text.trim(),
-        deviceName: _defaultDeviceName(),
-        syncPasswords: _remote?.exists == true
-            ? (_remote?.includePasswords ?? true)
-            : true,
-        passphraseEpoch: _remote?.sidecar?.passphraseEpoch ?? 1,
-        httpOverrides: {..._httpOverrides},
-        pinnedCerts: {..._pinnedCerts},
-        conditionalUnsupported: !_conditionalSupported,
-      );
+    url: _effectiveUrl(),
+    username: _username.text.trim(),
+    deviceName: _defaultDeviceName(),
+    syncPasswords: _remote?.exists == true
+        ? (_remote?.includePasswords ?? true)
+        : true,
+    passphraseEpoch: _remote?.sidecar?.passphraseEpoch ?? 1,
+    httpOverrides: {..._httpOverrides},
+    pinnedCerts: {..._pinnedCerts},
+    conditionalUnsupported: !_conditionalSupported,
+  );
 
   String _normalizedUrl() {
     var text = _url.text.trim();
@@ -134,7 +135,10 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
     if (uri.scheme == 'http' && !_httpOverrides.contains(uri.host)) {
       if (isPrivateHost(uri.host)) {
         final ok = await _confirmDialog(
-            l.syncHttpPrivateTitle, l.syncHttpPrivateBody, l.syncContinue);
+          l.syncHttpPrivateTitle,
+          l.syncHttpPrivateBody,
+          l.syncContinue,
+        );
         if (!ok) return;
       } else {
         final allowed = await _confirmPublicHttp(uri.host);
@@ -179,8 +183,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
   }
 
   Future<void> _probeOnce() async {
-    final transport =
-        buildWebDavTransport(_draftConfig(), _password.text);
+    final transport = buildWebDavTransport(_draftConfig(), _password.text);
     try {
       await transport.probe();
       // The folder (when given) is created here, so the conditional-support
@@ -223,8 +226,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
     return false;
   }
 
-  Future<bool> _confirmDialog(
-      String title, String body, String confirm) async {
+  Future<bool> _confirmDialog(String title, String body, String confirm) async {
     final l = AppLocalizations.of(context);
     return await showDialog<bool>(
           context: context,
@@ -281,11 +283,13 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
     });
     try {
       if (existing) {
-        final transport =
-            buildWebDavTransport(_draftConfig(), _password.text);
+        final transport = buildWebDavTransport(_draftConfig(), _password.text);
         try {
           final ok = await verifyRemotePassphrase(
-              transport, _remote!.sidecar!, phrase);
+            transport,
+            _remote!.sidecar!,
+            phrase,
+          );
           if (!ok) {
             setState(() {
               _verifying = false;
@@ -383,12 +387,16 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(color: t.text, fontSize: context.r(16))),
+          Text(
+            title,
+            style: TextStyle(color: t.text, fontSize: context.r(16)),
+          ),
           if (body != null) ...[
             SizedBox(height: context.r(6)),
-            Text(body,
-                style: TextStyle(color: t.muted, fontSize: context.r(12.5))),
+            Text(
+              body,
+              style: TextStyle(color: t.muted, fontSize: context.r(12.5)),
+            ),
           ],
           SizedBox(height: context.r(14)),
           child,
@@ -413,7 +421,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
           ),
           // Google Drive: play-flavor Pro backend, not yet implemented.
           // Hidden entirely on cn (no Google services in that channel).
-          if (avaChannel == AvaChannel.play)
+          if (!kForkLocalFeatures && avaChannel == AvaChannel.play)
             _backendTile(
               t,
               title: l.syncBackendGdrive,
@@ -426,11 +434,13 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
     );
   }
 
-  Widget _backendTile(AvaTokens t,
-      {required String title,
-      required String subtitle,
-      required bool enabled,
-      VoidCallback? onTap}) {
+  Widget _backendTile(
+    AvaTokens t, {
+    required String title,
+    required String subtitle,
+    required bool enabled,
+    VoidCallback? onTap,
+  }) {
     return Padding(
       padding: context.rInsets(bottom: 8),
       child: InkWell(
@@ -449,19 +459,26 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: TextStyle(
-                            color: enabled ? t.text : t.muted,
-                            fontSize: context.r(14.5))),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: enabled ? t.text : t.muted,
+                        fontSize: context.r(14.5),
+                      ),
+                    ),
                     SizedBox(height: context.r(3)),
-                    Text(subtitle,
-                        style: TextStyle(
-                            color: t.muted, fontSize: context.r(12))),
+                    Text(
+                      subtitle,
+                      style: TextStyle(color: t.muted, fontSize: context.r(12)),
+                    ),
                   ],
                 ),
               ),
-              Icon(enabled ? Icons.chevron_right : Icons.lock_outline,
-                  size: context.r(18), color: t.muted),
+              Icon(
+                enabled ? Icons.chevron_right : Icons.lock_outline,
+                size: context.r(18),
+                color: t.muted,
+              ),
             ],
           ),
         ),
@@ -507,14 +524,14 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
           TextField(
             controller: _password,
             obscureText: true,
-            decoration:
-                InputDecoration(labelText: l.syncServerPasswordLabel),
+            decoration: InputDecoration(labelText: l.syncServerPasswordLabel),
           ),
           if (_serverError != null) ...[
             SizedBox(height: context.r(10)),
-            Text(_serverError!,
-                style:
-                    TextStyle(color: t.bad, fontSize: context.r(12.5))),
+            Text(
+              _serverError!,
+              style: TextStyle(color: t.bad, fontSize: context.r(12.5)),
+            ),
           ],
           SizedBox(height: context.r(14)),
           FilledButton(
@@ -523,7 +540,8 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                 ? SizedBox(
                     width: context.r(16),
                     height: context.r(16),
-                    child: const CircularProgressIndicator(strokeWidth: 2))
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : Text(l.syncTestConnection),
           ),
         ],
@@ -560,15 +578,17 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
               controller: _passphraseConfirm,
               obscureText: true,
               autocorrect: false,
-              decoration:
-                  InputDecoration(labelText: l.syncPassphraseConfirmLabel),
+              decoration: InputDecoration(
+                labelText: l.syncPassphraseConfirmLabel,
+              ),
             ),
           ],
           if (_passphraseError != null) ...[
             SizedBox(height: context.r(10)),
-            Text(_passphraseError!,
-                style:
-                    TextStyle(color: t.bad, fontSize: context.r(12.5))),
+            Text(
+              _passphraseError!,
+              style: TextStyle(color: t.bad, fontSize: context.r(12.5)),
+            ),
           ],
           SizedBox(height: context.r(14)),
           FilledButton(
@@ -577,7 +597,8 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                 ? SizedBox(
                     width: context.r(16),
                     height: context.r(16),
-                    child: const CircularProgressIndicator(strokeWidth: 2))
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : Text(l.syncContinue),
           ),
         ],
@@ -603,8 +624,8 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
     final color = score < 0.4
         ? t.bad
         : score < 0.7
-            ? t.warn
-            : t.good;
+        ? t.warn
+        : t.good;
     return ClipRRect(
       borderRadius: BorderRadius.circular(context.r(3)),
       child: LinearProgressIndicator(
@@ -626,18 +647,29 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (empty)
-            Text(l.syncPreviewEmpty,
-                style: TextStyle(color: t.muted, fontSize: context.r(13)))
+            Text(
+              l.syncPreviewEmpty,
+              style: TextStyle(color: t.muted, fontSize: context.r(13)),
+            )
           else ...[
             if (p.pulls > 0)
-              _previewRow(t, Icons.download_outlined,
-                  l.syncPreviewPull(p.pulls)),
+              _previewRow(
+                t,
+                Icons.download_outlined,
+                l.syncPreviewPull(p.pulls),
+              ),
             if (p.pushes > 0)
               _previewRow(
-                  t, Icons.upload_outlined, l.syncPreviewPush(p.pushes)),
+                t,
+                Icons.upload_outlined,
+                l.syncPreviewPush(p.pushes),
+              ),
             if (p.conflicts > 0)
-              _previewRow(t, Icons.call_split,
-                  l.syncPreviewConflict(p.conflicts)),
+              _previewRow(
+                t,
+                Icons.call_split,
+                l.syncPreviewConflict(p.conflicts),
+              ),
           ],
           SizedBox(height: context.r(14)),
           FilledButton(
@@ -646,7 +678,8 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                 ? SizedBox(
                     width: context.r(16),
                     height: context.r(16),
-                    child: const CircularProgressIndicator(strokeWidth: 2))
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : Text(l.syncStart),
           ),
         ],
@@ -662,8 +695,10 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
           Icon(icon, size: context.r(18), color: t.accent),
           SizedBox(width: context.r(10)),
           Expanded(
-            child: Text(text,
-                style: TextStyle(color: t.text, fontSize: context.r(13.5))),
+            child: Text(
+              text,
+              style: TextStyle(color: t.text, fontSize: context.r(13.5)),
+            ),
           ),
         ],
       ),
@@ -684,8 +719,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
               padding: context.rInsets(bottom: 10),
               child: Text(
                 l.syncStatusConflicts(status.conflicts.length),
-                style:
-                    TextStyle(color: t.warn, fontSize: context.r(12.5)),
+                style: TextStyle(color: t.warn, fontSize: context.r(12.5)),
               ),
             ),
           FilledButton(

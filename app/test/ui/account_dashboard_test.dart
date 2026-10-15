@@ -1,0 +1,705 @@
+import 'dart:async';
+
+import 'package:ava/l10n/app_localizations.dart';
+import 'package:ava/src/app/providers.dart';
+import 'package:ava/src/app/settings_store.dart';
+import 'package:ava/src/app/theme.dart';
+import 'package:ava/src/core/models/session_data.dart';
+import 'package:ava/src/core/models/steam_guard_account.dart';
+import 'package:ava/src/core/models/steam_friend.dart';
+import 'package:ava/src/core/models/steam_item.dart';
+import 'package:ava/src/core/protocol/inventory_client.dart';
+import 'package:ava/src/core/protocol/market_client.dart';
+import 'package:ava/src/core/protocol/friends_client.dart';
+import 'package:ava/src/services/account_store.dart';
+import 'package:ava/src/services/steam_api_client.dart';
+import 'package:ava/src/services/storage_provider.dart';
+import 'package:ava/src/ui/account_dashboard.dart';
+import 'package:ava/src/ui/widgets/dashboard_card_layout.dart';
+import 'package:ava/src/ui/friends/friends_screen.dart'
+    show friendsClientProvider;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+class _Settings extends SettingsStore {
+  List<String>? sections;
+  Object? layout;
+  bool failLayout = false;
+  _Settings() : super(MemoryStorageProvider());
+  @override
+  Future<List<String>?> loadDashboardSections() async => sections;
+  @override
+  Future<void> saveDashboardSections(List<String> value) async {
+    sections = value;
+  }
+
+  @override
+  Future<Object?> loadDashboardLayout() async => layout;
+
+  @override
+  Future<void> saveDashboardLayout(
+    List<String> order,
+    Map<String, int> spans, {
+    Map<String, Map<String, int>> rects = const {},
+    Map<int, Map<String, Map<String, int>>> responsiveRects = const {},
+  }) async {
+    if (failLayout) throw StateError('Synthetic layout failure');
+    layout = {
+      'order': [...order],
+      'spans': {...spans},
+      'rects': rects,
+      'responsiveRects': {
+        for (final entry in responsiveRects.entries)
+          '${entry.key}': entry.value,
+      },
+    };
+  }
+}
+
+class _Controller extends AppController {
+  @override
+  Future<AppData> build() async => AppData(
+    store: AccountStore(MemoryStorageProvider()),
+    accounts: [_account(1), _account(2)],
+    locked: false,
+  );
+
+  void lockForTest() =>
+      state = AsyncData(state.requireValue.copyWith(locked: true));
+
+  void removeForTest() =>
+      state = AsyncData(state.requireValue.copyWith(accounts: []));
+
+  void replaceSessionForTest() => state = AsyncData(
+    state.requireValue.copyWith(
+      accounts: [_account(1)..session.accessToken = 'replacement'],
+    ),
+  );
+}
+
+class _Inventory extends InventoryClient {
+  final Map<int, Future<WalletInfo>> wallets;
+  int calls = 0;
+  int overviewCalls = 0;
+  _Inventory(this.wallets) : super(SteamApiClient());
+  @override
+  Future<WalletInfo> wallet(SteamGuardAccount account) {
+    calls++;
+    return wallets[account.steamId]!;
+  }
+
+  @override
+  Future<InventoryOverview> overview(
+    SteamGuardAccount account, {
+    String? ownerSteamId,
+  }) async {
+    overviewCalls++;
+    return InventoryOverview([
+      const InventoryGame(
+        appid: 730,
+        contextId: '2',
+        name: 'CS2',
+        iconUrl: '',
+        itemCount: 7,
+        showContext: true,
+        contextName: 'Inventory',
+      ),
+      const InventoryGame(
+        appid: 730,
+        contextId: '16',
+        name: 'CS2',
+        iconUrl: '',
+        itemCount: 4,
+        showContext: true,
+        contextName: 'Trade-protected Items',
+      ),
+    ], _wallet(0));
+  }
+}
+
+class _Friends extends FriendsClient {
+  int calls = 0;
+  _Friends() : super(SteamApiClient());
+  @override
+  Future<List<SteamFriend>> fetch(SteamGuardAccount account) async {
+    calls++;
+    return [
+      for (var i = 0; i < 8; i++)
+        SteamFriend(
+          steamId: '$i',
+          name: 'Friend $i',
+          state: i == 7 ? SteamFriendState.playing : SteamFriendState.offline,
+          game: i == 7 ? 'CS2' : '',
+        ),
+    ];
+  }
+}
+
+class _Market extends MarketClient {
+  int calls = 0;
+  Future<List<MarketListing>>? pending;
+  _Market() : super(SteamApiClient());
+  @override
+  Future<List<MarketListing>> myListings(
+    SteamGuardAccount account, {
+    int count = 100,
+  }) async {
+    calls++;
+    if (pending != null) return pending!;
+    return [
+      MarketListing.fromJson({
+        'listingid': '17',
+        'price': 200,
+        'fee': 30,
+        'currencyid': 2023,
+        'active': 0,
+        'asset': {'appid': 730, 'name': 'Synthetic held item'},
+      }, state: MarketListingState.onHold),
+    ];
+  }
+}
+
+WalletInfo _wallet(int? amount) =>
+    WalletInfo.fromJson({'wallet_currency': 23, 'wallet_balance': ?amount});
+SteamGuardAccount _account(int id) => SteamGuardAccount(
+  accountName: 'demo_$id',
+  session: SessionData(steamId: id, accessToken: 'synthetic'),
+);
+
+Widget _app(
+  Widget child,
+  _Inventory inventory,
+  _Market market,
+  _Settings settings, {
+  _Friends? friends,
+}) => ProviderScope(
+  overrides: [
+    inventoryClientProvider.overrideWithValue(inventory),
+    marketClientProvider.overrideWithValue(market),
+    friendsClientProvider.overrideWithValue(friends ?? _Friends()),
+    settingsStoreProvider.overrideWithValue(settings),
+    appControllerProvider.overrideWith(_Controller.new),
+  ],
+  child: MaterialApp(
+    theme: buildAvaTheme(AvaThemeVariant.light),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('en'),
+    home: child is AccountDashboardScreen
+        ? child
+        : Scaffold(body: SingleChildScrollView(child: child)),
+  ),
+);
+
+Future<void> _layoutAction(WidgetTester tester, String action) async {
+  final menu = find.byKey(const ValueKey('dashboard-layout-settings'));
+  await tester.ensureVisible(menu);
+  await tester.tap(menu);
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byWidgetPredicate(
+      (widget) => widget is PopupMenuItem<String> && widget.value == action,
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  testWidgets(
+    'existing layout menu edits positions and both dimensions without new reads',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final inventory = _Inventory({1: Future.value(_wallet(12345))});
+      final market = _Market();
+      final settings = _Settings();
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          inventory,
+          market,
+          settings,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
+            .editing,
+        isFalse,
+      );
+      expect(find.byKey(const ValueKey('dashboard-edit-layout')), findsNothing);
+      await _layoutAction(tester, '_layout');
+      var grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.editing, isTrue);
+      const rect = DashboardGridRect(
+        column: 1,
+        row: 2,
+        columnSpan: 2,
+        rowSpan: 5,
+      );
+      await grid.onChanged(3, {'wallet': rect});
+      await tester.pumpAndSettle();
+      grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.layout.rects['wallet'], rect);
+      expect(DashboardLayout.fromJson(settings.layout).rects['wallet'], rect);
+      expect(inventory.calls, 1);
+      expect(market.calls, 1);
+      await _layoutAction(tester, '_reset');
+      grid = tester.widget<DashboardCardLayout>(
+        find.byType(DashboardCardLayout),
+      );
+      expect(grid.layout.order, DashboardLayout.defaultOrder);
+      expect(grid.layout.rects, isEmpty);
+      expect(grid.cards.keys.toSet(), DashboardSections.defaults);
+      await _layoutAction(tester, '_layout');
+      expect(
+        tester
+            .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
+            .editing,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('failed overview layout save keeps the previous arrangement', (
+    tester,
+  ) async {
+    final settings = _Settings()..failLayout = true;
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        _Inventory({1: Future.value(_wallet(12345))}),
+        _Market(),
+        settings,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final grid = tester.widget<DashboardCardLayout>(
+      find.byType(DashboardCardLayout),
+    );
+    await grid.onChanged(3, {
+      'wallet': const DashboardGridRect(
+        column: 1,
+        row: 2,
+        columnSpan: 1,
+        rowSpan: 5,
+      ),
+    });
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
+          .layout
+          .rects,
+      isEmpty,
+    );
+    expect(find.text('Could not save the display preference.'), findsOneWidget);
+    expect(settings.layout, isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'optional summaries preview bounded rows and preserve inventory contexts',
+    (tester) async {
+      final inventory = _Inventory({});
+      final friends = _Friends();
+      final actions = <String>[];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: actions.add),
+          inventory,
+          _Market(),
+          _Settings()..sections = ['friends', 'inventory'],
+          friends: friends,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 0);
+      expect(inventory.overviewCalls, 1);
+      expect(friends.calls, 1);
+      expect(find.text('Friend 7'), findsOneWidget);
+      expect(find.text('Friend 3'), findsNothing);
+      expect(find.text('CS2 · Inventory'), findsOneWidget);
+      expect(find.text('CS2 · Trade-protected Items'), findsOneWidget);
+      await tester.ensureVisible(find.text('Friend 7'));
+      await tester.tap(find.text('Friend 7'));
+      expect(actions, ['friends']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('new cards are opt-in and compact home never fetches summaries', (
+    tester,
+  ) async {
+    final inventory = _Inventory({1: Future.value(_wallet(123))});
+    final friends = _Friends();
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        inventory,
+        _Market(),
+        _Settings(),
+        friends: friends,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(inventory.overviewCalls, 0);
+    expect(friends.calls, 0);
+    expect(find.byKey(const ValueKey('dashboard-friends')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), compact: true, onAction: (_) {}),
+        inventory,
+        _Market(),
+        _Settings()..sections = ['friends', 'inventory', 'favorites'],
+        friends: friends,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(inventory.overviewCalls, 0);
+    expect(friends.calls, 0);
+    expect(find.byKey(const ValueKey('dashboard-inventory')), findsNothing);
+  });
+
+  testWidgets('covered overview and background do not restart summary reads', (
+    tester,
+  ) async {
+    final inventory = _Inventory({});
+    final friends = _Friends();
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        inventory,
+        _Market(),
+        _Settings()..sections = ['friends', 'inventory'],
+        friends: friends,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(AccountDashboard));
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Covered')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 31));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(friends.calls, 1);
+    expect(inventory.overviewCalls, 1);
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
+    expect(friends.calls, 1, reason: 'Reopening reuses the still-fresh cache');
+    expect(inventory.overviewCalls, 1);
+  });
+
+  testWidgets(
+    'mounting while paused waits and replaced account sessions cannot reload old data',
+    (tester) async {
+      final inventory = _Inventory({});
+      final friends = _Friends();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      addTearDown(
+        () => tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        ),
+      );
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          inventory,
+          _Market(),
+          _Settings()..sections = ['friends', 'inventory'],
+          friends: friends,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(friends.calls, 0);
+      expect(inventory.overviewCalls, 0);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(friends.calls, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AccountDashboard)),
+      );
+      (container.read(appControllerProvider.notifier) as _Controller)
+          .replaceSessionForTest();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Refresh').first);
+      await tester.pumpAndSettle();
+      expect(friends.calls, 1);
+      expect(inventory.overviewCalls, 1);
+      expect(find.text('Friend 7'), findsNothing);
+      expect(find.text('CS2 · Inventory'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'local account and completed listings render while wallet waits',
+    (tester) async {
+      final wallet = Completer<WalletInfo>();
+      final actions = <String>[];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboardScreen(account: _account(1), onAction: actions.add),
+          _Inventory({1: wallet.future}),
+          _Market(),
+          _Settings(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('demo_1'), findsOneWidget);
+      expect(find.text('SteamID 1'), findsOneWidget);
+      expect(find.text('Synthetic held item'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dashboard-wallet-loading')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('dashboard-listings-loading')),
+        findsNothing,
+      );
+      await tester.ensureVisible(find.text('Synthetic held item'));
+      await tester.pump();
+      await tester.tap(find.text('Synthetic held item'));
+      expect(actions, ['listings']);
+      await tester.pump(const Duration(seconds: 12));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('dashboard-wallet-loading')),
+        findsNothing,
+      );
+      expect(find.text('Synthetic held item'), findsOneWidget);
+      expect(find.textContaining('0.00'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'wallet renders before slow listings and leaving cancels its wait',
+    (tester) async {
+      final market = _Market()
+        ..pending = Completer<List<MarketListing>>().future;
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          _Inventory({1: Future.value(_wallet(12345))}),
+          market,
+          _Settings(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('CNY 123.45'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('dashboard-wallet-loading')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('dashboard-listings-loading')),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'saved hidden cards do not fetch and toggling starts only that card',
+    (tester) async {
+      final inventory = _Inventory({1: Future.value(_wallet(12345))});
+      final market = _Market();
+      final settings = _Settings()..sections = ['tools'];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: (_) {}),
+          inventory,
+          market,
+          settings,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 0);
+      expect(market.calls, 0);
+      await tester.tap(find.byTooltip('Overview layout'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CheckedPopupMenuItem<String> &&
+              widget.value == 'wallet',
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 1);
+      expect(market.calls, 0);
+      expect(find.text('CNY 123.45'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'equivalent account rebuild reuses reads and lock clears balances',
+    (tester) async {
+      final inventory = _Inventory({1: Future.value(_wallet(12345))});
+      final market = _Market();
+      final selected = ValueNotifier(_account(1));
+      addTearDown(selected.dispose);
+      await tester.pumpWidget(
+        _app(
+          ValueListenableBuilder<SteamGuardAccount>(
+            valueListenable: selected,
+            builder: (_, account, _) =>
+                AccountDashboard(account: account, onAction: (_) {}),
+          ),
+          inventory,
+          market,
+          _Settings(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      selected.value = _account(1);
+      await tester.pumpAndSettle();
+      expect(inventory.calls, 1);
+      expect(market.calls, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AccountDashboard)),
+      );
+      (container.read(appControllerProvider.notifier) as _Controller)
+          .lockForTest();
+      await tester.pumpAndSettle();
+      expect(find.text('CNY 123.45'), findsNothing);
+      expect(inventory.calls, 1);
+      expect(market.calls, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'shows wallet and held listings with explicit currency and opens listings',
+    (tester) async {
+      final actions = <String>[];
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(account: _account(1), onAction: actions.add),
+          _Inventory({1: Future.value(_wallet(12345))}),
+          _Market(),
+          _Settings(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('CNY 123.45'), findsOneWidget);
+      expect(find.text('On hold 1'), findsOneWidget);
+      expect(find.text('CNY 2.30'), findsOneWidget);
+      await tester.ensureVisible(find.text('Synthetic held item'));
+      await tester.tap(find.text('Synthetic held item'));
+      expect(actions, ['listings']);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('late wallet result cannot overwrite the next selected account', (
+    tester,
+  ) async {
+    final lateWallet = Completer<WalletInfo>();
+    final inventory = _Inventory({
+      1: lateWallet.future,
+      2: Future.value(_wallet(8900)),
+    });
+    final market = _Market();
+    final settings = _Settings();
+    final selected = ValueNotifier(_account(1));
+    addTearDown(selected.dispose);
+    await tester.pumpWidget(
+      _app(
+        ValueListenableBuilder<SteamGuardAccount>(
+          valueListenable: selected,
+          builder: (_, account, _) =>
+              AccountDashboard(account: account, onAction: (_) {}),
+        ),
+        inventory,
+        market,
+        settings,
+      ),
+    );
+    await tester.pump();
+    selected.value = _account(2);
+    await tester.pumpAndSettle();
+    lateWallet.complete(_wallet(100));
+    await tester.pumpAndSettle();
+    expect(find.text('CNY 89.00'), findsOneWidget);
+    expect(find.text('CNY 1.00'), findsNothing);
+    expect(
+      market.calls,
+      2,
+      reason: 'Both accounts start their cards in parallel',
+    );
+  });
+
+  testWidgets(
+    'unknown balance is not displayed as zero and compact mode skips listings',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final market = _Market();
+      await tester.pumpWidget(
+        _app(
+          AccountDashboard(
+            account: _account(1),
+            compact: true,
+            onAction: (_) {},
+          ),
+          _Inventory({1: Future.value(_wallet(null))}),
+          market,
+          _Settings(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Unavailable'), findsOneWidget);
+      expect(find.textContaining('0.00'), findsNothing);
+      expect(market.calls, 0);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('display options persist and hide a card', (tester) async {
+    final settings = _Settings();
+    await tester.pumpWidget(
+      _app(
+        AccountDashboard(account: _account(1), onAction: (_) {}),
+        _Inventory({1: Future.value(_wallet(12345))}),
+        _Market(),
+        settings,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Overview layout'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CheckedPopupMenuItem<String> && widget.value == 'wallet',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(settings.sections, isNot(contains('wallet')));
+    expect(find.byKey(const ValueKey('wallet-balance')), findsNothing);
+    expect(find.text('Synthetic held item'), findsOneWidget);
+  });
+}

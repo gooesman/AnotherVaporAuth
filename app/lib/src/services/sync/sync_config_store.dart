@@ -7,8 +7,9 @@
 ///    rev + payload hash per account, tombstones seen). Hashes only — no
 ///    secrets — and losing the file is safe: the next round re-merges from
 ///    scratch, degenerating to first-connect semantics.
-///  - flutter_secure_storage: the WebDAV password and the sync passphrase.
-///    These never touch a JSON file.
+///  - flutter_secure_storage: the WebDAV password, sync passphrase, and the
+///    previous passphrase during a pending explicit rotation. These never
+///    touch a JSON file.
 library;
 
 import 'dart:convert';
@@ -140,13 +141,20 @@ class SyncLocalState {
   /// steamid → tombstone rev this device has already applied or noted.
   final Map<int, int> tombstonesSeen;
 
-  /// Last-synced revision + hash of the app-settings document.
+  /// Last-synced remote revision + hash of the app-settings document.
   final SyncBaseEntry? settingsBase;
+
+  /// Hash of the local settings snapshot after the last successful push or
+  /// pull. It can differ from the remote hash when an older document omits
+  /// newer fields that this device deliberately retains. No settings or
+  /// credentials are stored here. Older state files fall back to settingsBase.
+  final String? settingsLocalHash;
 
   const SyncLocalState({
     this.base = const {},
     this.tombstonesSeen = const {},
     this.settingsBase,
+    this.settingsLocalHash,
   });
 
   factory SyncLocalState.fromJson(Map<String, dynamic> json) {
@@ -176,6 +184,7 @@ class SyncLocalState {
           ? SyncBaseEntry.fromJson(
               (json['settings_base'] as Map).cast<String, dynamic>())
           : null,
+      settingsLocalHash: json['settings_local_hash'] as String?,
     );
   }
 
@@ -185,6 +194,7 @@ class SyncLocalState {
           for (final e in tombstonesSeen.entries) '${e.key}': e.value
         },
         if (settingsBase != null) 'settings_base': settingsBase!.toJson(),
+        if (settingsLocalHash != null) 'settings_local_hash': settingsLocalHash,
       };
 }
 
@@ -200,6 +210,9 @@ class SyncConfigStore {
 
   static const _kWebdavPassword = 'ava.sync.webdav_password';
   static const _kPassphrase = 'ava.sync.passphrase';
+  // Retained only while an explicit passphrase rotation is pending, so a
+  // restart or failed conditional commit can re-encrypt remote-only settings.
+  static const _kPreviousPassphrase = 'ava.sync.previous_passphrase';
 
   Future<String> _path(String name) async =>
       p.join(p.dirname(await storage.maFilesDir()), name);
@@ -267,6 +280,20 @@ class SyncConfigStore {
   Future<void> savePassphrase(String passphrase) =>
       _secure.write(key: _kPassphrase, value: passphrase);
 
+  Future<String?> loadPreviousPassphrase() async {
+    try {
+      return await _secure.read(key: _kPreviousPassphrase);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> savePreviousPassphrase(String passphrase) =>
+      _secure.write(key: _kPreviousPassphrase, value: passphrase);
+
+  Future<void> clearPreviousPassphrase() =>
+      _secure.delete(key: _kPreviousPassphrase);
+
   /// Removes config + local state. Secrets: the WebDAV password goes; the
   /// sync passphrase is KEPT — it is the only thing that can still open the
   /// entries in the local sync trash (and, if the remote was kept, the
@@ -276,6 +303,7 @@ class SyncConfigStore {
     await _deleteFile('sync_state.json');
     try {
       await _secure.delete(key: _kWebdavPassword);
+      await clearPreviousPassphrase();
     } catch (_) {}
   }
 }

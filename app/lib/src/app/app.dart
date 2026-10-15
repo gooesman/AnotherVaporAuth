@@ -76,8 +76,8 @@ class _AvaAppState extends ConsumerState<AvaApp> with WidgetsBindingObserver {
     final locale = ref.watch(localeProvider);
     final textSize = ref.watch(textSizeProvider);
     final variant = resolveThemeVariant(
-      // The effective skin, not the stored selection: neon/pixel fall back
-      // to the plain look for free users (0.90 paywall).
+      // The fork renders every stored local skin without Pro verification.
+      // effectiveSkinProvider retains upstream behavior only in legacy tests.
       ref.watch(effectiveSkinProvider),
       ref.watch(brightnessModeProvider),
       WidgetsBinding.instance.platformDispatcher.platformBrightness,
@@ -95,8 +95,7 @@ class _AvaAppState extends ConsumerState<AvaApp> with WidgetsBindingObserver {
         // User text-size step stacks on the OS scaler (small = untouched).
         final mq = MediaQuery.of(context);
         return MediaQuery(
-          data: mq.copyWith(
-              textScaler: applyTextSize(mq.textScaler, textSize)),
+          data: mq.copyWith(textScaler: applyTextSize(mq.textScaler, textSize)),
           child: _SteamLanguageSync(
             // Publishes the display's corner radius to every screen below —
             // MediaQuery has no field for it, and it decides how far
@@ -120,13 +119,13 @@ class _AvaAppState extends ConsumerState<AvaApp> with WidgetsBindingObserver {
 /// Traditional Chinese must reach `tchinese`: falling through to `schinese`
 /// would put Simplified item names inside an otherwise Traditional UI.
 String steamLanguageFor(Locale locale) => switch (locale.languageCode) {
-      'zh' => locale.scriptCode == 'Hant' ? 'tchinese' : 'schinese',
-      'de' => 'german',
-      'fr' => 'french',
-      'es' => 'spanish',
-      'ru' => 'russian',
-      _ => 'english',
-    };
+  'zh' => locale.scriptCode == 'Hant' ? 'tchinese' : 'schinese',
+  'de' => 'german',
+  'fr' => 'french',
+  'es' => 'spanish',
+  'ru' => 'russian',
+  _ => 'english',
+};
 
 /// Mirrors the resolved app locale onto [SteamApiClient.steamLanguage] so
 /// Steam-served strings (confirmation headlines, item names) match the UI
@@ -137,8 +136,9 @@ class _SteamLanguageSync extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.read(apiClientProvider).steamLanguage =
-        steamLanguageFor(Localizations.localeOf(context));
+    ref.read(apiClientProvider).steamLanguage = steamLanguageFor(
+      Localizations.localeOf(context),
+    );
     return child;
   }
 }
@@ -159,8 +159,9 @@ class _Backdrop extends StatelessWidget {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
         statusBarBrightness: t.brightness,
-        systemNavigationBarIconBrightness:
-            dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: dark
+            ? Brightness.light
+            : Brightness.dark,
       ),
       child: DecoratedBox(
         decoration: BoxDecoration(color: t.bg, gradient: t.bgGradient),
@@ -202,7 +203,9 @@ class _Root extends ConsumerWidget {
         if (data.locked) return const UnlockScreen();
         // A PIN is mandatory: if the store isn't protected yet, set one first.
         if (!data.encrypted) return const SetupPinScreen();
-        if (data.visibleAccounts.isEmpty && data.portable == null) return const WelcomeScreen();
+        if (data.visibleAccounts.isEmpty && data.portable == null) {
+          return const WelcomeScreen();
+        }
         return const HomeScreen();
       },
     );

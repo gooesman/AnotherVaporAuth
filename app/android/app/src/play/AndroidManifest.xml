@@ -3,6 +3,13 @@
     <!-- Play-flavor-only declarations (AdMob APPLICATION_ID meta-data etc.)
          merge in from here; the cn flavor never sees them. -->
     <application>
+        <!-- The fork disables its Play bridge. Also remove the SDK's early
+             startup provider so an accidental play build cannot initialize
+             advertising before MainActivity runs. -->
+        <provider
+            android:name="com.google.android.gms.ads.MobileAdsInitProvider"
+            android:authorities="${applicationId}.mobileadsinitprovider"
+            tools:node="remove" />
         <!-- AdMob application ID (real, "AVA - Another Vapor Auth"). Keeping
              the real app ID in debug builds is fine — test traffic is steered
              by the ad *unit* IDs, which switch on kReleaseMode in Dart. -->

@@ -106,7 +106,8 @@ APK（3.10.9，Hermes HBC v96）得出上文的方案，再用一次性小号在
   （token_id/steamid/revoke_action/signature）→ POST RevokeRefreshToken。token_id
   以无符号十进制字符串存，回写 fixed64 时 `BigInt.toSigned(64)` 复原低 64 位；
   成功 = OK eresult（空 body），不信 `success` bool。
-- 会话过期由 UI 层 `fetchWithAutoRefresh` 续期重试一次（同待办页签 / family）。
+- 读取列表时，会话过期由 UI 层 `fetchWithAutoRefresh` 续期重试一次；撤销是写操作，
+  不会自动续期重发。超时或断线按「未完成或未确认」报告，再刷新列表供用户核对。
 
 ## UI（`ui/device_sessions_screen.dart`）
 
@@ -115,6 +116,15 @@ APK（3.10.9，Hermes HBC v96）得出上文的方案，再用一次性小号在
 → 刷新;本机不给注销钮（自注销会把 App 登出）。入口挂在 home 的按账户动作菜单
 （`item('devices', …)` → `case 'devices'`）。
 
+GooeSteamKit 另提供「撤销其他设备授权」：确认框列出本次目标设备，明确保留当前
+GooeSteamKit 会话，不移除 Steam 验证器。当前 `requesting_token` 必须非空、非 0
+且在列表中唯一匹配；否则所有撤销入口禁用。列表绑定读取时的会话凭据，后台登录
+改变会话时要求重新读取确认，进行中的批次停止剩余操作。确认后的目标按 token_id
+去重、逐个调用 `revoke(permanent: true)`，忙时阻止重复操作；失败项不重试，结束后
+刷新列表并分别显示已确认成功数量及未完成或未确认的设备和原因。只有仍为同一当前
+会话、且新列表中目标 token 已消失，才计为已确认；刷新失败、仍存在或会话变化均不
+报成功。超时后若新列表已证明目标消失，也可计为已核实成功，不重复发送撤销请求。
+
 ## 测试（`test/core/sessions_client_test.dart`，11 项）
 
 enumerate：POST（非 GET，守住 GET/POST 陷阱）+ 带 token；解析 + 降序 + 标本机；
@@ -122,5 +132,9 @@ enumerate：POST（非 GET，守住 GET/POST 陷阱）+ 带 token；解析 + 降
 token 抛 `MissingAccessTokenException`。revoke：HMAC 参考向量（python 独立算）锁死
 签名；请求编码（token_id/steamid/action=1/signature）+ POST；logout action=0；
 无 token 守卫。
+
+`test/ui/device_sessions_screen_test.dart`（16 项）使用内存 protobuf 响应，覆盖确认
+范围、取消零写入、当前会话识别失败、串行执行与防重复、部分失败不重试、刷新失败
+及后台会话变化；不访问真实 Steam 账户或撤销真实设备授权。
 
 [roadmap]: 见 memory `ava-roadmap`。
