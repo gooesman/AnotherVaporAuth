@@ -2436,7 +2436,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get dashboardTools => 'Инструменты аккаунта';
 
   @override
-  String get dashboardCustomize => 'Выбрать карточки обзора';
+  String get dashboardCustomize => 'Макет обзора';
 
   @override
   String get dashboardViewAll => 'Показать всё';
@@ -3587,43 +3587,29 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get dashboardEditLayout => 'Изменить раскладку';
+  String get dashboardEditLayout => 'Изменить положение и размер';
 
   @override
-  String get dashboardFinishLayout => 'Готово';
+  String get dashboardFinishLayout => 'Завершить настройку';
 
   @override
   String get dashboardLayoutHelp =>
-      'Перетаскивайте ручку, чтобы менять порядок карточек, или правый нижний угол, чтобы менять их ширину.';
+      'Перетащите ручку, чтобы переместить карточку, а правый нижний угол — чтобы изменить ширину и высоту. Завершите настройку в меню «Макет обзора».';
 
   @override
   String get dashboardLayoutHelpMobile =>
-      'Перетаскивайте ручку, чтобы менять порядок карточек.';
+      'Перетащите ручку, чтобы переместить карточку вверх или вниз, а правый нижний угол — чтобы изменить высоту. Завершите настройку в меню «Макет обзора».';
 
   @override
   String get dashboardResetLayout => 'Сбросить раскладку';
 
   @override
-  String get dashboardDragCard => 'Изменить порядок';
+  String get dashboardDragCard => 'Переместить карточку';
 
   @override
-  String get dashboardResizeCard => 'Изменить ширину';
+  String get dashboardResizeCard => 'Изменить размер';
 
   @override
-  String get dashboardCardWidth => 'Ширина карточки';
-
-  @override
-  String get dashboardWidthCompact => 'Узкая';
-
-  @override
-  String get dashboardWidthMedium => 'Средняя';
-
-  @override
-  String get dashboardWidthFull => 'Вся строка';
-
-  @override
-  String get dashboardMoveUp => 'Выше';
-
-  @override
-  String get dashboardMoveDown => 'Ниже';
+  String get dashboardLayoutSettingsHint =>
+      'Откройте «Макет обзора» в обзоре аккаунта, чтобы перемещать карточки и менять их размер.';
 }

@@ -3,6 +3,14 @@ import 'package:flutter/material.dart';
 import '../../app/responsive.dart';
 import '../../app/theme.dart';
 
+/// Fixed grid cards draw their own full-height surface around scrollable content.
+class AvaPanelLayoutScope extends InheritedWidget {
+  const AvaPanelLayoutScope({super.key, required super.child});
+
+  @override
+  bool updateShouldNotify(AvaPanelLayoutScope oldWidget) => false;
+}
+
 /// A bordered panel/card in the design's style (neon glow halo or pixel hard
 /// shadow depending on theme). Used across screens for cards and form blocks.
 class AvaPanel extends StatelessWidget {
@@ -20,6 +28,10 @@ class AvaPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.dependOnInheritedWidgetOfExactType<AvaPanelLayoutScope>() !=
+        null) {
+      return Padding(padding: padding, child: child);
+    }
     final t = Theme.of(context).extension<AvaTokens>()!;
     return Container(
       padding: padding,

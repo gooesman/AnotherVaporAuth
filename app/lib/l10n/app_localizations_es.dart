@@ -2381,7 +2381,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardTools => 'Herramientas de la cuenta';
 
   @override
-  String get dashboardCustomize => 'Elegir tarjetas del resumen';
+  String get dashboardCustomize => 'Diseño del resumen';
 
   @override
   String get dashboardViewAll => 'Ver todo';
@@ -3538,43 +3538,29 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dashboardEditLayout => 'Editar distribución';
+  String get dashboardEditLayout => 'Ajustar posición y tamaño';
 
   @override
-  String get dashboardFinishLayout => 'Listo';
+  String get dashboardFinishLayout => 'Terminar ajustes';
 
   @override
   String get dashboardLayoutHelp =>
-      'Arrastra el control para cambiar el orden de las tarjetas, o la esquina inferior derecha para ajustar su anchura.';
+      'Arrastra el control para mover una tarjeta y la esquina inferior derecha para ajustar su anchura y altura. Termina desde Diseño del resumen.';
 
   @override
   String get dashboardLayoutHelpMobile =>
-      'Arrastra el control para cambiar el orden de las tarjetas.';
+      'Arrastra el control para mover una tarjeta hacia arriba o abajo y la esquina inferior derecha para ajustar su altura. Termina desde Diseño del resumen.';
 
   @override
   String get dashboardResetLayout => 'Restablecer distribución';
 
   @override
-  String get dashboardDragCard => 'Cambiar orden';
+  String get dashboardDragCard => 'Mover tarjeta';
 
   @override
-  String get dashboardResizeCard => 'Ajustar anchura';
+  String get dashboardResizeCard => 'Ajustar tamaño';
 
   @override
-  String get dashboardCardWidth => 'Anchura de la tarjeta';
-
-  @override
-  String get dashboardWidthCompact => 'Estrecha';
-
-  @override
-  String get dashboardWidthMedium => 'Media';
-
-  @override
-  String get dashboardWidthFull => 'Fila completa';
-
-  @override
-  String get dashboardMoveUp => 'Subir';
-
-  @override
-  String get dashboardMoveDown => 'Bajar';
+  String get dashboardLayoutSettingsHint =>
+      'Abre Diseño del resumen en el resumen de la cuenta para mover las tarjetas o ajustar su tamaño.';
 }

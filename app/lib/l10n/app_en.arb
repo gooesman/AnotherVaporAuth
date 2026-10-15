@@ -1189,7 +1189,7 @@
   "dashboardUnavailable": "Unavailable",
   "dashboardMarket": "Inventory & market",
   "dashboardTools": "Account tools",
-  "dashboardCustomize": "Choose overview cards",
+  "dashboardCustomize": "Overview layout",
   "dashboardViewAll": "View all",
   "dashboardNoListings": "No market listings.",
   "dashboardFetchFailed": "Could not load this information. Refresh to try again.",
@@ -1723,17 +1723,12 @@
       }
     }
   },
-  "dashboardEditLayout": "Edit layout",
-  "dashboardFinishLayout": "Done",
-  "dashboardLayoutHelp": "Drag the handle to reorder cards; drag the bottom-right corner to adjust their width.",
-  "dashboardLayoutHelpMobile": "Drag the handle to reorder cards.",
+  "dashboardEditLayout": "Adjust position and size",
+  "dashboardFinishLayout": "Done adjusting",
+  "dashboardLayoutHelp": "Drag a handle to move a card; drag its bottom-right corner to adjust width and height. Finish from Overview layout.",
+  "dashboardLayoutHelpMobile": "Drag a handle to move a card up or down; drag its bottom-right corner to adjust height. Finish from Overview layout.",
   "dashboardResetLayout": "Reset layout",
-  "dashboardDragCard": "Reorder card",
-  "dashboardResizeCard": "Adjust width",
-  "dashboardCardWidth": "Card width",
-  "dashboardWidthCompact": "Narrow",
-  "dashboardWidthMedium": "Medium",
-  "dashboardWidthFull": "Full row",
-  "dashboardMoveUp": "Move up",
-  "dashboardMoveDown": "Move down"
+  "dashboardDragCard": "Move card",
+  "dashboardResizeCard": "Adjust size",
+  "dashboardLayoutSettingsHint": "To move or resize cards, open Overview layout in the account overview."
 }

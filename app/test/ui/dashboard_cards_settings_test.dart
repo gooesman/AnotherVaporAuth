@@ -38,14 +38,21 @@ class _Settings extends SettingsStore {
   @override
   Future<void> saveDashboardLayout(
     List<String> order,
-    Map<String, int> spans,
-  ) async {
+    Map<String, int> spans, {
+    Map<String, Map<String, int>> rects = const {},
+    Map<int, Map<String, Map<String, int>>> responsiveRects = const {},
+  }) async {
     if (pendingLayoutSave != null) await pendingLayoutSave!.future;
     if (failLayout) throw StateError('Synthetic layout save failure');
     layoutWrites++;
     layout = {
       'order': [...order],
       'spans': {...spans},
+      'rects': rects,
+      'responsiveRects': {
+        for (final entry in responsiveRects.entries)
+          '${entry.key}': entry.value,
+      },
     };
   }
 }
@@ -85,21 +92,6 @@ Future<void> _pump(
 ProviderContainer _container(WidgetTester tester) => ProviderScope.containerOf(
   tester.element(find.byType(DashboardCardsSettingsCard)),
 );
-
-Finder _row(String section) =>
-    find.byKey(ValueKey('dashboard-settings-row-$section'));
-
-Future<void> _action(WidgetTester tester, String section, String action) async {
-  final menu = find.byKey(ValueKey('dashboard-layout-menu-$section'));
-  await tester.ensureVisible(menu);
-  await tester.tap(menu);
-  await tester.pumpAndSettle();
-  final item = find.byWidgetPredicate(
-    (widget) => widget is PopupMenuItem<String> && widget.value == action,
-  );
-  await tester.tap(item);
-  await tester.pumpAndSettle();
-}
 
 void main() {
   testWidgets('six switches wait for saved choices and persist selections', (
@@ -149,146 +141,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('saved layout gates menus until loading completes', (
-    tester,
-  ) async {
-    final settings = _Settings()..pendingLayoutLoad = Completer<Object?>();
-    settings.loaded.complete(['friends']);
-    await _pump(tester, settings);
-    await tester.pumpAndSettle();
-    expect(find.byType(ReorderableListView), findsNothing);
-    final menu = find.byKey(const ValueKey('dashboard-layout-menu-friends'));
-    expect(tester.widget<PopupMenuButton<String>>(menu).enabled, isFalse);
-    settings.pendingLayoutLoad!.complete({
-      'order': ['friends'],
-      'spans': {'friends': 2},
-    });
-    await tester.pumpAndSettle();
-    expect(tester.widget<PopupMenuButton<String>>(menu).enabled, isTrue);
-    expect(
-      tester.getTopLeft(_row('friends')).dy,
-      lessThan(tester.getTopLeft(_row('wallet')).dy),
-    );
-    expect(settings.layoutWrites, 0);
-    expect(tester.takeException(), isNull);
-  });
-
   testWidgets(
-    'up and down menus move a card between both ends without toggling it',
+    'layout reset waits for saved arrangement and explains editing entry',
     (tester) async {
-      final settings = _Settings();
-      settings.loaded.complete(['wallet', 'friends']);
+      final settings = _Settings()..pendingLayoutLoad = Completer<Object?>();
+      settings.loaded.complete(['friends']);
       await _pump(tester, settings);
       await tester.pumpAndSettle();
-      for (var step = 0; step < 5; step++) {
-        await _action(tester, 'wallet', 'down');
-      }
-      final order = _container(tester).read(dashboardLayoutProvider).order;
-      expect(order, [
-        'listings',
-        'favorites',
+      final reset = find.byKey(
+        const ValueKey('dashboard-settings-reset-layout'),
+      );
+      expect(tester.widget<TextButton>(reset).onPressed, isNull);
+      expect(find.byType(PopupMenuButton<String>), findsNothing);
+      final l = AppLocalizations.of(
+        tester.element(find.byType(DashboardCardsSettingsCard)),
+      );
+      expect(find.text(l.dashboardLayoutSettingsHint), findsOneWidget);
+      settings.pendingLayoutLoad!.complete({
+        'order': ['friends'],
+        'spans': {'friends': 2},
+      });
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextButton>(reset).onPressed, isNotNull);
+      expect(
+        _container(tester).read(dashboardLayoutProvider).order.first,
         'friends',
-        'inventory',
-        'tools',
-        'wallet',
-      ]);
-      expect(
-        tester.getTopLeft(_row('wallet')).dy,
-        greaterThan(tester.getTopLeft(_row('tools')).dy),
       );
-      expect(DashboardLayout.fromJson(settings.layout).order, order);
-      for (var step = 0; step < 5; step++) {
-        await _action(tester, 'wallet', 'up');
-      }
-      final container = _container(tester);
-      expect(
-        container.read(dashboardLayoutProvider).order,
-        DashboardLayout.defaultOrder,
-      );
-      expect(
-        DashboardLayout.fromJson(settings.layout).order,
-        DashboardLayout.defaultOrder,
-      );
-      expect(container.read(dashboardSectionsProvider), {'wallet', 'friends'});
-      expect(
-        tester.getTopLeft(_row('wallet')).dy,
-        lessThan(tester.getTopLeft(_row('listings')).dy),
-      );
-      expect(settings.saved, isNull);
+      expect(settings.layoutWrites, 0);
       expect(tester.takeException(), isNull);
     },
   );
-
-  testWidgets('row menu changes order and desktop width independently', (
-    tester,
-  ) async {
-    final settings = _Settings();
-    settings.loaded.complete(null);
-    await _pump(tester, settings);
-    await tester.pumpAndSettle();
-    await _action(tester, 'wallet', 'down');
-    expect(_container(tester).read(dashboardLayoutProvider).order.take(2), [
-      'listings',
-      'wallet',
-    ]);
-    await _action(tester, 'friends', '2');
-    expect(
-      _container(tester).read(dashboardLayoutProvider).spans['friends'],
-      2,
-    );
-    final saved = DashboardLayout.fromJson(settings.layout);
-    expect(saved.order.take(2), ['listings', 'wallet']);
-    expect(saved.spans['friends'], 2);
-    expect(settings.saved, isNull);
-    expect(tester.takeException(), isNull);
-  });
-
-  for (final (section, direction, target) in [
-    ('listings', 'up', 'wallet'),
-    ('inventory', 'down', 'tools'),
-  ]) {
-    testWidgets('stale $direction menu is safe after a card reaches the edge', (
-      tester,
-    ) async {
-      final settings = _Settings()..pendingLayoutSave = Completer<void>();
-      settings.loaded.complete(['wallet', 'friends']);
-      await _pump(tester, settings);
-      await tester.pumpAndSettle();
-      await _action(tester, section, direction);
-      expect(settings.layoutWrites, 0);
-
-      final menu = find.byKey(ValueKey('dashboard-layout-menu-$section'));
-      await tester.ensureVisible(menu);
-      await tester.tap(menu);
-      await tester.pumpAndSettle();
-      final item = find.byWidgetPredicate(
-        (widget) =>
-            widget is PopupMenuItem<String> && widget.value == direction,
-      );
-      expect(tester.widget<PopupMenuItem<String>>(item).enabled, isTrue);
-
-      settings.pendingLayoutSave!.complete();
-      await tester.pumpAndSettle();
-      final expected = [...DashboardLayout.defaultOrder];
-      final destination = expected.indexOf(target);
-      expected.remove(section);
-      expected.insert(destination, section);
-      expect(_container(tester).read(dashboardLayoutProvider).order, expected);
-      expect(tester.widget<PopupMenuItem<String>>(item).enabled, isTrue);
-      await tester.tap(item);
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-      expect(_container(tester).read(dashboardLayoutProvider).order, expected);
-      expect(DashboardLayout.fromJson(settings.layout).order, expected);
-      expect(settings.layoutWrites, 1);
-      expect(_container(tester).read(dashboardSectionsProvider), {
-        'wallet',
-        'friends',
-      });
-      expect(settings.saved, isNull);
-    });
-  }
 
   testWidgets('reset restores arrangement without changing visibility', (
     tester,
@@ -297,6 +179,14 @@ void main() {
       ..layout = {
         'order': ['friends', 'inventory', 'tools'],
         'spans': {'friends': 3, 'inventory': 2, 'tools': 1},
+        'rects': {
+          'friends': {'column': 0, 'row': 5, 'columnSpan': 3, 'rowSpan': 7},
+        },
+        'responsiveRects': {
+          '1': {
+            'friends': {'column': 0, 'row': 4, 'columnSpan': 1, 'rowSpan': 6},
+          },
+        },
       };
     settings.loaded.complete(['friends']);
     await _pump(tester, settings);
@@ -314,6 +204,8 @@ void main() {
       container.read(dashboardLayoutProvider).spans,
       DashboardLayout.defaultSpans,
     );
+    expect(container.read(dashboardLayoutProvider).rects, isEmpty);
+    expect(container.read(dashboardLayoutProvider).responsiveRects, isEmpty);
     expect(container.read(dashboardSectionsProvider), {'friends'});
     expect(settings.saved, isNull);
     expect(
@@ -323,47 +215,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('layout write failure retains order and shows a save error', (
+  testWidgets('failed reset retains saved grid and explains the error', (
     tester,
   ) async {
-    final settings = _Settings()..failLayout = true;
+    final settings = _Settings()
+      ..failLayout = true
+      ..layout = {
+        'rects': {
+          'wallet': {'column': 1, 'row': 4, 'columnSpan': 2, 'rowSpan': 7},
+        },
+      };
     settings.loaded.complete(null);
     await _pump(tester, settings);
     await tester.pumpAndSettle();
-    await _action(tester, 'wallet', 'down');
-    expect(
-      _container(tester).read(dashboardLayoutProvider).order,
-      DashboardLayout.defaultOrder,
-    );
+    final before = _container(tester).read(dashboardLayoutProvider).rects;
+    final reset = find.byKey(const ValueKey('dashboard-settings-reset-layout'));
+    await tester.ensureVisible(reset);
+    await tester.tap(reset);
+    await tester.pumpAndSettle();
+    expect(_container(tester).read(dashboardLayoutProvider).rects, before);
+    expect(DashboardLayout.fromJson(settings.layout).rects, before);
     expect(find.text('Could not save the display preference.'), findsOneWidget);
-    expect(settings.layout, isNull);
     expect(settings.layoutWrites, 0);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('393 wide settings and width menu fit enlarged Chinese text', (
-    tester,
-  ) async {
+  testWidgets('393 wide settings fit enlarged Chinese text', (tester) async {
     final settings = _Settings();
     settings.loaded.complete(null);
     await _pump(tester, settings, textScale: 1.8, locale: const Locale('zh'));
     await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    final menu = find.byKey(const ValueKey('dashboard-layout-menu-favorites'));
-    await tester.ensureVisible(menu);
-    await tester.tap(menu);
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    final width = find.byWidgetPredicate(
-      (widget) => widget is PopupMenuItem<String> && widget.value == '2',
+    final l = AppLocalizations.of(
+      tester.element(find.byType(DashboardCardsSettingsCard)),
     );
-    await tester.ensureVisible(width);
-    await tester.tap(width);
+    expect(find.text(l.dashboardLayoutSettingsHint), findsOneWidget);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+    final reset = find.byKey(const ValueKey('dashboard-settings-reset-layout'));
+    await tester.ensureVisible(reset);
+    await tester.tap(reset);
     await tester.pumpAndSettle();
-    expect(
-      _container(tester).read(dashboardLayoutProvider).spans['favorites'],
-      2,
-    );
+    expect(settings.layoutWrites, 1);
     expect(tester.takeException(), isNull);
   });
 }

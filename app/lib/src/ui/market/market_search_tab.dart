@@ -732,7 +732,7 @@ class VisibleMarketPrice extends StatefulWidget {
 
 class _VisibleMarketPriceState extends State<VisibleMarketPrice> {
   final _owner = Object();
-  ScrollPosition? _position;
+  final _positions = <ScrollPosition>{};
   bool _scheduled = false;
   bool _inViewport = false;
 
@@ -746,12 +746,24 @@ class _VisibleMarketPriceState extends State<VisibleMarketPrice> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final position = Scrollable.maybeOf(context)?.position;
-    if (position != _position) {
-      _position?.removeListener(_schedule);
-      _position = position;
-      _position?.addListener(_schedule);
+    // A resizable dashboard card adds its own viewport inside the page.
+    Scrollable.maybeOf(context);
+    final positions = <ScrollPosition>{};
+    context.visitAncestorElements((element) {
+      if (element is StatefulElement && element.state is ScrollableState) {
+        positions.add((element.state as ScrollableState).position);
+      }
+      return true;
+    });
+    for (final position in _positions.difference(positions)) {
+      position.removeListener(_schedule);
     }
+    for (final position in positions.difference(_positions)) {
+      position.addListener(_schedule);
+    }
+    _positions
+      ..clear()
+      ..addAll(positions);
     _schedule();
   }
 
@@ -777,15 +789,28 @@ class _VisibleMarketPriceState extends State<VisibleMarketPrice> {
           box is RenderBox &&
           box.hasSize &&
           box.attached) {
-        final viewport = RenderAbstractViewport.maybeOf(box);
-        final viewportBox = viewport is RenderBox
-            ? viewport as RenderBox
-            : null;
-        if (viewportBox != null && viewportBox.hasSize) {
-          final rect =
-              box.localToGlobal(Offset.zero, ancestor: viewportBox) & box.size;
-          visible = rect.overlaps(Offset.zero & viewportBox.size);
+        var visibleRect = MatrixUtils.transformRect(
+          box.getTransformTo(null),
+          Offset.zero & box.size,
+        );
+        var foundViewport = false;
+        RenderObject? ancestor = box.parent;
+        while (ancestor != null) {
+          if (ancestor is RenderAbstractViewport && ancestor is RenderBox) {
+            foundViewport = true;
+            final viewport = ancestor as RenderBox;
+            if (!viewport.hasSize || !viewport.attached) break;
+            visibleRect = visibleRect.intersect(
+              MatrixUtils.transformRect(
+                viewport.getTransformTo(null),
+                Offset.zero & viewport.size,
+              ),
+            );
+            if (visibleRect.isEmpty) break;
+          }
+          ancestor = ancestor.parent;
         }
+        visible = foundViewport && ancestor == null && !visibleRect.isEmpty;
       }
       widget.prices.visible(_owner, visible ? _key : null);
       if (_inViewport != visible) setState(() => _inViewport = visible);
@@ -794,7 +819,9 @@ class _VisibleMarketPriceState extends State<VisibleMarketPrice> {
 
   @override
   void dispose() {
-    _position?.removeListener(_schedule);
+    for (final position in _positions) {
+      position.removeListener(_schedule);
+    }
     widget.prices.visible(_owner, null);
     super.dispose();
   }

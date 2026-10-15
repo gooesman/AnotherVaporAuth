@@ -40,12 +40,19 @@ class _Settings extends SettingsStore {
   @override
   Future<void> saveDashboardLayout(
     List<String> order,
-    Map<String, int> spans,
-  ) async {
+    Map<String, int> spans, {
+    Map<String, Map<String, int>> rects = const {},
+    Map<int, Map<String, Map<String, int>>> responsiveRects = const {},
+  }) async {
     if (failLayout) throw StateError('Synthetic layout failure');
     layout = {
       'order': [...order],
       'spans': {...spans},
+      'rects': rects,
+      'responsiveRects': {
+        for (final entry in responsiveRects.entries)
+          '${entry.key}': entry.value,
+      },
     };
   }
 }
@@ -185,9 +192,22 @@ Widget _app(
   ),
 );
 
+Future<void> _layoutAction(WidgetTester tester, String action) async {
+  final menu = find.byKey(const ValueKey('dashboard-layout-settings'));
+  await tester.ensureVisible(menu);
+  await tester.tap(menu);
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byWidgetPredicate(
+      (widget) => widget is PopupMenuItem<String> && widget.value == action,
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets(
-    'overview edits all card positions and widths without new reads',
+    'existing layout menu edits positions and both dimensions without new reads',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 1000);
       tester.view.devicePixelRatio = 1;
@@ -211,38 +231,35 @@ void main() {
             .editing,
         isFalse,
       );
-      await tester.tap(find.byKey(const ValueKey('dashboard-edit-layout')));
-      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('dashboard-edit-layout')), findsNothing);
+      await _layoutAction(tester, '_layout');
       var grid = tester.widget<DashboardCardLayout>(
         find.byType(DashboardCardLayout),
       );
       expect(grid.editing, isTrue);
-      await grid.onMove('tools', 'wallet');
+      const rect = DashboardGridRect(
+        column: 1,
+        row: 2,
+        columnSpan: 2,
+        rowSpan: 5,
+      );
+      await grid.onChanged(3, {'wallet': rect});
       await tester.pumpAndSettle();
       grid = tester.widget<DashboardCardLayout>(
         find.byType(DashboardCardLayout),
       );
-      expect(grid.order.first, 'tools');
-      await grid.onResize('wallet', 1);
-      await tester.pumpAndSettle();
-      grid = tester.widget<DashboardCardLayout>(
-        find.byType(DashboardCardLayout),
-      );
-      expect(grid.spans['wallet'], 1);
-      expect(DashboardLayout.fromJson(settings.layout).order.first, 'tools');
-      expect(DashboardLayout.fromJson(settings.layout).spans['wallet'], 1);
+      expect(grid.layout.rects['wallet'], rect);
+      expect(DashboardLayout.fromJson(settings.layout).rects['wallet'], rect);
       expect(inventory.calls, 1);
       expect(market.calls, 1);
-      await tester.tap(find.byKey(const ValueKey('dashboard-reset-layout')));
-      await tester.pumpAndSettle();
+      await _layoutAction(tester, '_reset');
       grid = tester.widget<DashboardCardLayout>(
         find.byType(DashboardCardLayout),
       );
-      expect(grid.order, DashboardLayout.defaultOrder);
-      expect(grid.spans, DashboardLayout.defaultSpans);
+      expect(grid.layout.order, DashboardLayout.defaultOrder);
+      expect(grid.layout.rects, isEmpty);
       expect(grid.cards.keys.toSet(), DashboardSections.defaults);
-      await tester.tap(find.byKey(const ValueKey('dashboard-edit-layout')));
-      await tester.pumpAndSettle();
+      await _layoutAction(tester, '_layout');
       expect(
         tester
             .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
@@ -269,13 +286,21 @@ void main() {
     final grid = tester.widget<DashboardCardLayout>(
       find.byType(DashboardCardLayout),
     );
-    await grid.onMove('tools', 'wallet');
+    await grid.onChanged(3, {
+      'wallet': const DashboardGridRect(
+        column: 1,
+        row: 2,
+        columnSpan: 1,
+        rowSpan: 5,
+      ),
+    });
     await tester.pumpAndSettle();
     expect(
       tester
           .widget<DashboardCardLayout>(find.byType(DashboardCardLayout))
-          .order,
-      DashboardLayout.defaultOrder,
+          .layout
+          .rects,
+      isEmpty,
     );
     expect(find.text('Could not save the display preference.'), findsOneWidget);
     expect(settings.layout, isNull);
@@ -511,9 +536,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(inventory.calls, 0);
       expect(market.calls, 0);
-      await tester.tap(find.byTooltip('Choose overview cards'));
+      await tester.tap(find.byTooltip('Overview layout'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(CheckedPopupMenuItem<String>).first);
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CheckedPopupMenuItem<String> &&
+              widget.value == 'wallet',
+        ),
+      );
       await tester.pumpAndSettle();
       expect(inventory.calls, 1);
       expect(market.calls, 0);
@@ -658,9 +689,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Choose overview cards'));
+    await tester.tap(find.byTooltip('Overview layout'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(CheckedPopupMenuItem<String>).first);
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CheckedPopupMenuItem<String> && widget.value == 'wallet',
+      ),
+    );
     await tester.pumpAndSettle();
     expect(settings.sections, isNot(contains('wallet')));
     expect(find.byKey(const ValueKey('wallet-balance')), findsNothing);

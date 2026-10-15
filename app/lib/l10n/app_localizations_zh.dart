@@ -2239,7 +2239,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dashboardTools => '账户工具';
 
   @override
-  String get dashboardCustomize => '选择概览卡片';
+  String get dashboardCustomize => '布局设置';
 
   @override
   String get dashboardViewAll => '查看全部';
@@ -3305,43 +3305,29 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get dashboardEditLayout => '编辑布局';
+  String get dashboardEditLayout => '调整位置与大小';
 
   @override
-  String get dashboardFinishLayout => '完成布局';
+  String get dashboardFinishLayout => '完成调整';
 
   @override
-  String get dashboardLayoutHelp => '拖动手柄调整顺序；拖动右下角调整卡片宽度。';
+  String get dashboardLayoutHelp => '拖动手柄移动卡片；拖动右下角调整宽高。完成后在“布局设置”中退出调整。';
 
   @override
-  String get dashboardLayoutHelpMobile => '拖动手柄调整卡片顺序。';
+  String get dashboardLayoutHelpMobile =>
+      '拖动手柄上下移动卡片；拖动右下角调整高度。完成后在“布局设置”中退出调整。';
 
   @override
   String get dashboardResetLayout => '重置布局';
 
   @override
-  String get dashboardDragCard => '调整顺序';
+  String get dashboardDragCard => '移动卡片';
 
   @override
-  String get dashboardResizeCard => '调整宽度';
+  String get dashboardResizeCard => '调整大小';
 
   @override
-  String get dashboardCardWidth => '卡片宽度';
-
-  @override
-  String get dashboardWidthCompact => '窄';
-
-  @override
-  String get dashboardWidthMedium => '中';
-
-  @override
-  String get dashboardWidthFull => '整行';
-
-  @override
-  String get dashboardMoveUp => '上移';
-
-  @override
-  String get dashboardMoveDown => '下移';
+  String get dashboardLayoutSettingsHint => '在账户概览的“布局设置”中调整卡片位置和大小。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5584,7 +5570,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get dashboardTools => '帳戶工具';
 
   @override
-  String get dashboardCustomize => '選擇總覽卡片';
+  String get dashboardCustomize => '版面設定';
 
   @override
   String get dashboardViewAll => '檢視全部';
@@ -6652,41 +6638,27 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
-  String get dashboardEditLayout => '編輯配置';
+  String get dashboardEditLayout => '調整位置與大小';
 
   @override
-  String get dashboardFinishLayout => '完成配置';
+  String get dashboardFinishLayout => '完成調整';
 
   @override
-  String get dashboardLayoutHelp => '拖曳把手調整順序；拖曳右下角調整卡片寬度。';
+  String get dashboardLayoutHelp => '拖曳把手移動卡片；拖曳右下角調整寬高。完成後在「版面設定」中結束調整。';
 
   @override
-  String get dashboardLayoutHelpMobile => '拖曳把手調整卡片順序。';
+  String get dashboardLayoutHelpMobile =>
+      '拖曳把手上下移動卡片；拖曳右下角調整高度。完成後在「版面設定」中結束調整。';
 
   @override
   String get dashboardResetLayout => '重設配置';
 
   @override
-  String get dashboardDragCard => '調整順序';
+  String get dashboardDragCard => '移動卡片';
 
   @override
-  String get dashboardResizeCard => '調整寬度';
+  String get dashboardResizeCard => '調整大小';
 
   @override
-  String get dashboardCardWidth => '卡片寬度';
-
-  @override
-  String get dashboardWidthCompact => '窄';
-
-  @override
-  String get dashboardWidthMedium => '中';
-
-  @override
-  String get dashboardWidthFull => '整行';
-
-  @override
-  String get dashboardMoveUp => '上移';
-
-  @override
-  String get dashboardMoveDown => '下移';
+  String get dashboardLayoutSettingsHint => '在帳戶概覽的「版面設定」中調整卡片位置和大小。';
 }

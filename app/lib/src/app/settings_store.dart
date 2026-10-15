@@ -159,17 +159,32 @@ class SettingsStore {
   Future<void> saveDashboardSections(List<String> sections) =>
       _update((data) => data['dashboard_sections'] = List<String>.of(sections));
 
-  /// Card order and widths are local to this device, separate from visibility.
+  /// Card geometry is device-local and separate from card visibility.
   Future<Object?> loadDashboardLayout() async =>
       (await _read())['dashboard_layout'];
 
   Future<void> saveDashboardLayout(
     List<String> order,
-    Map<String, int> spans,
-  ) {
+    Map<String, int> spans, {
+    Map<String, Map<String, int>> rects = const {},
+    Map<int, Map<String, Map<String, int>>> responsiveRects = const {},
+  }) {
     final layout = {
       'order': List<String>.of(order),
       'spans': Map<String, int>.of(spans),
+      if (rects.isNotEmpty)
+        'rects': {
+          for (final entry in rects.entries)
+            entry.key: Map<String, int>.of(entry.value),
+        },
+      if (responsiveRects.isNotEmpty)
+        'responsiveRects': {
+          for (final profile in responsiveRects.entries)
+            '${profile.key}': {
+              for (final entry in profile.value.entries)
+                entry.key: Map<String, int>.of(entry.value),
+            },
+        },
     };
     return _update(
       (data) => data['dashboard_layout'] = layout,

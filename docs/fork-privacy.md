@@ -82,8 +82,8 @@ settings** enabled, these fields are also included in the encrypted settings
 document; cached prices and availability counts are not synchronized. Only
 visible market rows, including rows in an enabled overview favorites card,
 request quotes from Steam, with no background price polling. Overview card
-visibility, order and desktop widths are device-local preferences and are not
-synchronized.
+visibility and card positions and sizes for each window-width layout are
+device-local preferences and are not synchronized.
 
 Optional WebDAV synchronization sends encrypted account payloads and, when
 enabled, the curated settings document to the server you choose. It is disabled

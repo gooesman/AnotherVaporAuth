@@ -137,12 +137,17 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   summaries do not fetch item pages, and favorite prices use the saved currency
   and visible-row queue. Hidden/locked/background overviews cancel their reads;
   successful summary reads reuse a 30-second cache and quotes a five-minute cache.
-- **Overview layout** — the overview's edit mode reorders enabled cards by their drag handles.
-  Desktop cards resize from the bottom-right corner and snap to column widths,
-  with at most three columns as space permits. Heights follow card content;
-  phones keep one column and support reordering. Settings uses each card's more
-  menu for Move up, Move down and desktop width choices. Order and widths are device-local,
-  retained when a card is hidden and re-enabled, and can be reset to defaults.
+- **Overview layout** — the existing Overview layout menu enters and finishes
+  position/size adjustment and offers reset. Desktop cards move horizontally and
+  vertically on a grid of up to three columns; the bottom-right handle adjusts
+  width and height. Phones remain single-column with vertical movement and height
+  adjustment. Vertical steps are 48 logical pixels and minimum height is 128;
+  colliding cards move down, and empty gaps are retained. Fixed-height contents
+  scroll internally, while editing reuses each card's existing state. Layouts are
+  device-local and independent for one-, two- and three-column widths. An unsaved
+  width uses a fitted projection until its first edit, without overwriting other
+  layouts. Hidden cards retain their layout. Settings has six visibility switches,
+  a hint to adjust cards in the overview, and reset; reset preserves the switches.
 - **Android back gestures** — no page movement during the gesture; a short fade
   after a committed back action, with the current page retained on cancellation.
   Xiaomi 15 Pro behavior still needs a device check.
@@ -170,7 +175,7 @@ below and in the [fork guide](../docs/windows-steam-switch.md#validation):
   and Steam-served item names stay English); `test/app/locales_test.dart`
   fails if they drift apart
 
-Last recorded verification: `flutter analyze` clean, **1805 tests pass** (crypto RFC vectors,
+Last recorded verification: `flutter analyze` clean, **1823 tests pass** (crypto RFC vectors,
 TOTP/confirmation cross-impl vectors, protobuf round-trip incl. family-groups
 codec, trade-offer/model JSON, hold-button haptics, AccountStore end-to-end,
 entitlement signature/grace/clock-skew, sessions-client revoke HMAC vectors,
@@ -209,7 +214,7 @@ Do not uninstall the old app to bypass a signature mismatch. See the
 
 ```sh
 flutter pub get --enforce-lockfile
-flutter test                       # 1805 tests
+flutter test                       # 1823 tests
 flutter build linux --release      # build/linux/x64/release/bundle (~27MB)
 flutter run -d linux               # or windows / macos
 

@@ -2372,7 +2372,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardTools => 'Kontowerkzeuge';
 
   @override
-  String get dashboardCustomize => 'Übersichtskarten auswählen';
+  String get dashboardCustomize => 'Übersichtslayout';
 
   @override
   String get dashboardViewAll => 'Alle anzeigen';
@@ -3523,43 +3523,29 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dashboardEditLayout => 'Layout bearbeiten';
+  String get dashboardEditLayout => 'Position und Größe anpassen';
 
   @override
-  String get dashboardFinishLayout => 'Fertig';
+  String get dashboardFinishLayout => 'Anpassung beenden';
 
   @override
   String get dashboardLayoutHelp =>
-      'Ziehe den Griff, um Karten neu anzuordnen, oder die untere rechte Ecke, um ihre Breite anzupassen.';
+      'Ziehe den Griff, um eine Karte zu verschieben, und die untere rechte Ecke, um Breite und Höhe anzupassen. Beende die Anpassung im Übersichtslayout.';
 
   @override
   String get dashboardLayoutHelpMobile =>
-      'Ziehe den Griff, um die Karten neu anzuordnen.';
+      'Ziehe den Griff, um eine Karte nach oben oder unten zu verschieben, und die untere rechte Ecke, um die Höhe anzupassen. Beende die Anpassung im Übersichtslayout.';
 
   @override
   String get dashboardResetLayout => 'Layout zurücksetzen';
 
   @override
-  String get dashboardDragCard => 'Reihenfolge ändern';
+  String get dashboardDragCard => 'Karte verschieben';
 
   @override
-  String get dashboardResizeCard => 'Breite ändern';
+  String get dashboardResizeCard => 'Größe anpassen';
 
   @override
-  String get dashboardCardWidth => 'Kartenbreite';
-
-  @override
-  String get dashboardWidthCompact => 'Schmal';
-
-  @override
-  String get dashboardWidthMedium => 'Mittel';
-
-  @override
-  String get dashboardWidthFull => 'Ganze Zeile';
-
-  @override
-  String get dashboardMoveUp => 'Nach oben';
-
-  @override
-  String get dashboardMoveDown => 'Nach unten';
+  String get dashboardLayoutSettingsHint =>
+      'Öffne das Übersichtslayout in der Kontoübersicht, um Position und Größe der Karten anzupassen.';
 }

@@ -76,6 +76,72 @@ void main() {
   );
 
   test(
+    'all grid profiles are one copied snapshot and reset removes them',
+    () async {
+      final store = SettingsStore(storage);
+      final wide = {
+        'wallet': {'column': 1, 'row': 2, 'columnSpan': 2, 'rowSpan': 6},
+      };
+      final phone = {
+        'wallet': {'column': 0, 'row': 3, 'columnSpan': 1, 'rowSpan': 8},
+      };
+      final profiles = {1: phone};
+      final saving = store.saveDashboardLayout(
+        ['wallet'],
+        {'wallet': 2},
+        rects: wide,
+        responsiveRects: profiles,
+      );
+      wide['wallet']!['row'] = 90;
+      phone['wallet']!.clear();
+      profiles.clear();
+      await saving;
+      expect(await SettingsStore(storage).loadDashboardLayout(), {
+        'order': ['wallet'],
+        'spans': {'wallet': 2},
+        'rects': {
+          'wallet': {'column': 1, 'row': 2, 'columnSpan': 2, 'rowSpan': 6},
+        },
+        'responsiveRects': {
+          '1': {
+            'wallet': {'column': 0, 'row': 3, 'columnSpan': 1, 'rowSpan': 8},
+          },
+        },
+      });
+      await store.saveDashboardLayout(['wallet'], {'wallet': 3});
+      expect(await SettingsStore(storage).loadDashboardLayout(), {
+        'order': ['wallet'],
+        'spans': {'wallet': 3},
+      });
+    },
+  );
+
+  test(
+    'failed geometry write cannot partially replace profiles or other settings',
+    () async {
+      final store = SettingsStore(storage);
+      final grid = {
+        'wallet': {'column': 1, 'row': 2, 'columnSpan': 2, 'rowSpan': 6},
+      };
+      await store.saveDashboardLayout(['wallet'], {'wallet': 2}, rects: grid);
+      await store.saveLocale('zh');
+      final before = await store.loadDashboardLayout();
+      storage.failNextAccess = true;
+      await expectLater(
+        store.saveDashboardLayout(
+          ['tools'],
+          {'tools': 1},
+          responsiveRects: {1: grid},
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+      final reopened = SettingsStore(storage);
+      expect(await reopened.loadDashboardLayout(), before);
+      expect(await reopened.loadLocale(), 'zh');
+    },
+  );
+
+  test(
     'failed prerequisite read throws and preserves unrelated settings',
     () async {
       final seed = SettingsStore(storage);

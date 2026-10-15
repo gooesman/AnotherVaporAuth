@@ -100,6 +100,9 @@ class _Harness {
   bool active = true;
   int reload = 0;
   double spacer = 0;
+  double? cardHeight;
+  ScrollController? outerScroll;
+  ScrollController? innerScroll;
   int opened = 0;
   Locale locale = const Locale('en');
   AvaThemeVariant variant = AvaThemeVariant.dark;
@@ -109,6 +112,18 @@ class _Harness {
   );
 
   Future<void> show() async {
+    Widget card = DashboardFavoritesCard(
+      account: account,
+      active: active,
+      reload: reload,
+      onViewAll: () => opened++,
+    );
+    if (cardHeight != null) {
+      card = SizedBox(
+        height: cardHeight,
+        child: SingleChildScrollView(controller: innerScroll, child: card),
+      );
+    }
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -130,15 +145,11 @@ class _Harness {
           ),
           home: Scaffold(
             body: SingleChildScrollView(
+              controller: outerScroll,
               child: Column(
                 children: [
                   SizedBox(height: spacer),
-                  DashboardFavoritesCard(
-                    account: account,
-                    active: active,
-                    reload: reload,
-                    onViewAll: () => opened++,
-                  ),
+                  card,
                   const SizedBox(height: 800),
                 ],
               ),
@@ -153,6 +164,56 @@ class _Harness {
 }
 
 void main() {
+  testWidgets('nested card quotes only when visible in both scroll viewports', (
+    tester,
+  ) async {
+    final pending = Completer<MarketPrice?>();
+    final market = _Market()..onPrice = (_) => pending.future;
+    final outer = ScrollController();
+    final inner = ScrollController();
+    addTearDown(outer.dispose);
+    addTearDown(inner.dispose);
+    final h = _Harness(tester, market)
+      ..spacer = 1000
+      ..cardHeight = 200
+      ..outerScroll = outer
+      ..innerScroll = inner;
+    await h.show();
+    expect(market.calls, isEmpty);
+    outer.jumpTo(1000);
+    await tester.pump();
+    await tester.pump();
+    expect(market.calls, hasLength(1));
+    outer.jumpTo(0);
+    await tester.pump();
+    expect(market.tokens.single!.isCancelled, isTrue);
+    pending.complete(const MarketPrice(lowest: 'stale'));
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('inner clipping defers a quote until the row scrolls into view', (
+    tester,
+  ) async {
+    final pending = Completer<MarketPrice?>();
+    final market = _Market()..onPrice = (_) => pending.future;
+    final inner = ScrollController();
+    addTearDown(inner.dispose);
+    final h = _Harness(tester, market)
+      ..cardHeight = 60
+      ..innerScroll = inner;
+    await h.show();
+    expect(market.calls, isEmpty);
+    inner.jumpTo(inner.position.maxScrollExtent);
+    await tester.pump();
+    await tester.pump();
+    expect(market.calls, hasLength(1));
+    inner.jumpTo(0);
+    await tester.pump();
+    expect(market.tokens.single!.isCancelled, isTrue);
+    pending.complete(const MarketPrice(lowest: 'stale'));
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets(
     'preview quotes only its first four favorites in saved currency',
     (tester) async {

@@ -1280,11 +1280,6 @@ class DashboardCardsSettingsCard extends ConsumerWidget {
       'inventory': l.dashboardInventory,
       'favorites': l.dashboardFavorites,
     };
-    final widths = {
-      1: l.dashboardWidthCompact,
-      2: l.dashboardWidthMedium,
-      3: l.dashboardWidthFull,
-    };
     return _Card(
       title: l.dashboardCustomize,
       description: l.dashboardCardsDescription,
@@ -1293,68 +1288,17 @@ class DashboardCardsSettingsCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final (index, section) in layout.order.indexed)
-              Row(
-                key: ValueKey('dashboard-settings-row-$section'),
-                children: [
-                  Expanded(
-                    child: SwitchListTile(
-                      key: ValueKey('dashboard-section-$section'),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(labels[section]!),
-                      value: sections.contains(section),
-                      onChanged: !notifier.ready
-                          ? null
-                          : (_) => _save(context, notifier.toggle(section)),
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    key: ValueKey('dashboard-layout-menu-$section'),
-                    tooltip: l.dashboardEditLayout,
-                    enabled: layoutController.ready,
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (action) {
-                      if (action == 'up' || action == 'down') {
-                        final order = ref.read(dashboardLayoutProvider).order;
-                        final next =
-                            order.indexOf(section) + (action == 'up' ? -1 : 1);
-                        if (next < 0 || next >= order.length) return;
-                        _save(
-                          context,
-                          layoutController.move(section, order[next]),
-                        );
-                      } else {
-                        _save(
-                          context,
-                          layoutController.setSpan(section, int.parse(action)),
-                        );
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'up',
-                        enabled: index > 0,
-                        child: Text(l.dashboardMoveUp),
-                      ),
-                      PopupMenuItem(
-                        value: 'down',
-                        enabled: index < layout.order.length - 1,
-                        child: Text(l.dashboardMoveDown),
-                      ),
-                      if (!Platform.isAndroid && !Platform.isIOS) ...[
-                        const PopupMenuDivider(),
-                        for (final width in widths.entries)
-                          CheckedPopupMenuItem(
-                            value: '${width.key}',
-                            checked: layout.spans[section] == width.key,
-                            child: Text(
-                              '${l.dashboardCardWidth}: ${width.value}',
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                ],
+            Text(l.dashboardLayoutSettingsHint),
+            const SizedBox(height: 8),
+            for (final section in layout.order)
+              SwitchListTile(
+                key: ValueKey('dashboard-section-$section'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(labels[section]!),
+                value: sections.contains(section),
+                onChanged: !notifier.ready
+                    ? null
+                    : (_) => _save(context, notifier.toggle(section)),
               ),
             Align(
               alignment: AlignmentDirectional.centerEnd,

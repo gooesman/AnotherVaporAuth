@@ -267,24 +267,24 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
               onPressed: _busy ? null : _load,
               icon: const Icon(Icons.refresh),
             ),
-            IconButton(
-              key: const ValueKey('dashboard-edit-layout'),
-              tooltip: _editingLayout
-                  ? l.dashboardFinishLayout
-                  : l.dashboardEditLayout,
-              onPressed: layoutController.ready
-                  ? () => setState(() => _editingLayout = !_editingLayout)
-                  : null,
-              icon: Icon(
-                _editingLayout
-                    ? Icons.check
-                    : Icons.dashboard_customize_outlined,
-              ),
-            ),
             PopupMenuButton<String>(
+              key: const ValueKey('dashboard-layout-settings'),
               tooltip: l.dashboardCustomize,
-              icon: const Icon(Icons.tune),
+              icon: Icon(
+                Icons.tune,
+                color: _editingLayout
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+              ),
               onSelected: (section) async {
+                if (section == '_layout') {
+                  setState(() => _editingLayout = !_editingLayout);
+                  return;
+                }
+                if (section == '_reset') {
+                  await _saveLayout(layoutController.reset());
+                  return;
+                }
                 try {
                   await ref
                       .read(dashboardSectionsProvider.notifier)
@@ -298,6 +298,24 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
                 }
               },
               itemBuilder: (_) => [
+                CheckedPopupMenuItem(
+                  key: const ValueKey('dashboard-layout-edit'),
+                  value: '_layout',
+                  checked: _editingLayout,
+                  enabled: layoutController.ready,
+                  child: Text(
+                    _editingLayout
+                        ? l.dashboardFinishLayout
+                        : l.dashboardEditLayout,
+                  ),
+                ),
+                PopupMenuItem(
+                  key: const ValueKey('dashboard-reset-layout'),
+                  value: '_reset',
+                  enabled: layoutController.ready,
+                  child: Text(l.dashboardResetLayout),
+                ),
+                const PopupMenuDivider(),
                 for (final pair in [
                   ('wallet', l.dashboardWallet),
                   ('listings', l.marketTabListings),
@@ -352,38 +370,20 @@ class _AccountDashboardState extends ConsumerState<AccountDashboard>
           ),
         if (_editingLayout) ...[
           const SizedBox(height: 12),
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            children: [
-              Text(
-                Platform.isAndroid || Platform.isIOS
-                    ? l.dashboardLayoutHelpMobile
-                    : l.dashboardLayoutHelp,
-              ),
-              TextButton.icon(
-                key: const ValueKey('dashboard-reset-layout'),
-                onPressed: layoutController.ready
-                    ? () => _saveLayout(layoutController.reset())
-                    : null,
-                icon: const Icon(Icons.restart_alt),
-                label: Text(l.dashboardResetLayout),
-              ),
-            ],
+          Text(
+            Platform.isAndroid || Platform.isIOS
+                ? l.dashboardLayoutHelpMobile
+                : l.dashboardLayoutHelp,
           ),
         ],
         const SizedBox(height: 20),
         DashboardCardLayout(
-          order: layout.order,
-          spans: layout.spans,
+          layout: layout,
           editing: _editingLayout && layoutController.ready,
           dragLabel: l.dashboardDragCard,
           resizeLabel: l.dashboardResizeCard,
-          onMove: (moving, target) =>
-              _saveLayout(layoutController.move(moving, target)),
-          onResize: (section, span) =>
-              _saveLayout(layoutController.setSpan(section, span)),
+          onChanged: (columns, rects) =>
+              _saveLayout(layoutController.saveGrid(rects, columns: columns)),
           titles: {
             'wallet': l.dashboardWallet,
             'listings': l.marketTabListings,

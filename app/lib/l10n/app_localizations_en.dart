@@ -2355,7 +2355,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTools => 'Account tools';
 
   @override
-  String get dashboardCustomize => 'Choose overview cards';
+  String get dashboardCustomize => 'Overview layout';
 
   @override
   String get dashboardViewAll => 'View all';
@@ -3499,42 +3499,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboardEditLayout => 'Edit layout';
+  String get dashboardEditLayout => 'Adjust position and size';
 
   @override
-  String get dashboardFinishLayout => 'Done';
+  String get dashboardFinishLayout => 'Done adjusting';
 
   @override
   String get dashboardLayoutHelp =>
-      'Drag the handle to reorder cards; drag the bottom-right corner to adjust their width.';
+      'Drag a handle to move a card; drag its bottom-right corner to adjust width and height. Finish from Overview layout.';
 
   @override
-  String get dashboardLayoutHelpMobile => 'Drag the handle to reorder cards.';
+  String get dashboardLayoutHelpMobile =>
+      'Drag a handle to move a card up or down; drag its bottom-right corner to adjust height. Finish from Overview layout.';
 
   @override
   String get dashboardResetLayout => 'Reset layout';
 
   @override
-  String get dashboardDragCard => 'Reorder card';
+  String get dashboardDragCard => 'Move card';
 
   @override
-  String get dashboardResizeCard => 'Adjust width';
+  String get dashboardResizeCard => 'Adjust size';
 
   @override
-  String get dashboardCardWidth => 'Card width';
-
-  @override
-  String get dashboardWidthCompact => 'Narrow';
-
-  @override
-  String get dashboardWidthMedium => 'Medium';
-
-  @override
-  String get dashboardWidthFull => 'Full row';
-
-  @override
-  String get dashboardMoveUp => 'Move up';
-
-  @override
-  String get dashboardMoveDown => 'Move down';
+  String get dashboardLayoutSettingsHint =>
+      'To move or resize cards, open Overview layout in the account overview.';
 }

@@ -5,6 +5,20 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.16] — 2026-10-15 · Fork
+
+### Changed
+- Overview cards move to grid positions and resize in width and height on desktop, with collision avoidance and optional gaps. Phone overviews remain single-column with vertical movement and height adjustment; overflowing content scrolls inside the card.
+- Enter and finish adjustment from the existing Overview layout menu. Settings keeps card visibility and reset controls with a hint to the overview; reset preserves enabled cards.
+- Remember positions and sizes locally for each one-, two- or three-column window width. Narrowing a window preserves wider layouts, hidden cards keep their layout, and editing reuses card state.
+- Request favorite prices only while a row is visible in both the resized card and the surrounding page; stop pending quotes when either viewport hides it.
+
+### 调整
+- 电脑概览卡片可在网格上移动位置并调整宽高，自动避让且可保留空隙；手机概览保持单列，可上下移动并调整高度，超出内容在卡片内滚动。
+- 统一从原有“布局设置”菜单进入和完成调整；设置页保留卡片开关、重置及操作提示，重置不改变已开启的卡片。
+- 一列、两列、三列窗口宽度分别在本机记忆位置和大小；缩窄不覆盖宽窗口布局，隐藏卡片保留布局，调整时复用已有数据状态。
+- 收藏价格仅在商品同时出现在卡片与页面可见区域时获取；卡片缩小或页面滚动遮住商品后，停止等待中的报价请求。
+
 ## [v1.5.15] — 2026-10-15 · Fork
 
 ### Added
