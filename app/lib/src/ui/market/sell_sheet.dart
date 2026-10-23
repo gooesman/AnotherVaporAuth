@@ -483,14 +483,17 @@ class _SellSheetState extends ConsumerState<SellSheet> {
                   ],
                 ),
               ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              value: _autoConfirm,
-              onChanged: (v) => setState(() => _autoConfirm = v),
-              title: Text(
-                l.marketAutoConfirm,
-                style: TextStyle(fontSize: context.r(13)),
+            Material(
+              type: MaterialType.transparency,
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: _autoConfirm,
+                onChanged: (v) => setState(() => _autoConfirm = v),
+                title: Text(
+                  l.marketAutoConfirm,
+                  style: TextStyle(fontSize: context.r(13)),
+                ),
               ),
             ),
             if (_error != null) Text(_error!, style: TextStyle(color: t.bad)),

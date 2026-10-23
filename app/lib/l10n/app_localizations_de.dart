@@ -9,7 +9,95 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
-  String get appTitle => 'AVA';
+  String get steamSwitchTitle => 'Steam-Konto wechseln';
+
+  @override
+  String get steamSwitchUnifiedHelp =>
+      'Select an account and switch to open Steam and sign in. Imported accounts use remembered Steam sign-in details first, then automatically approve the new local login QR code when an online session is available. Accounts not imported here can use their remembered Steam sign-in. Please exit running games first.';
+
+  @override
+  String get steamSwitchHelp =>
+      'Wechsle zwischen Steam-Konten, die auf diesem PC bereits angemeldet waren und deren Anmeldedaten gespeichert sind. Der Import eines Authenticators in GooeSteamKit meldet das Konto nicht im Steam-Client an.';
+
+  @override
+  String get steamSwitchPath => 'Steam-Installationsordner';
+
+  @override
+  String get steamSwitchNotFound =>
+      'Steam wurde nicht gefunden. Wähle steam.exe aus, um die Installation anzugeben.';
+
+  @override
+  String get steamSwitchBrowse => 'steam.exe auswählen';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      'Auf diesem PC wurden keine gespeicherten Steam-Konten gefunden. Melde dich in Steam an, lasse die Anmeldedaten speichern und lade die Liste neu.';
+
+  @override
+  String get steamSwitchNoMatch =>
+      'Für das ausgewählte Konto gibt es auf diesem PC noch keinen Anmeldeeintrag. Nutze die Ein-Klick-Anmeldung oben. Sobald Steam die Anmeldedaten gespeichert hat, aktualisiere die Liste, um unten zwischen Konten zu wechseln.';
+
+  @override
+  String get steamSwitchNeedsLogin =>
+      'Melde dich mit diesem Konto in Steam an, lasse die Anmeldedaten speichern und lade die Liste neu.';
+
+  @override
+  String get steamSwitchButton => 'Konto wechseln';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam wird geschlossen und neu gestartet, um $account anzumelden. Beende zuerst deine Spiele und warte, bis die Spielstände mit Steam Cloud synchronisiert sind. Fortfahren?';
+  }
+
+  @override
+  String get steamSwitchStopping => 'Steam wird beendet…';
+
+  @override
+  String get steamSwitchBackingUp => 'Steam-Einstellungen werden gesichert…';
+
+  @override
+  String get steamSwitchConfiguring => 'Steam-Konto wird ausgewählt…';
+
+  @override
+  String get steamSwitchStarting => 'Steam wird gestartet…';
+
+  @override
+  String get steamSwitchRestoring =>
+      'Steam-Einstellungen werden wiederhergestellt…';
+
+  @override
+  String get steamSwitchLaunched =>
+      'Steam wurde gestartet. Prüfe im Client, welches Konto angemeldet ist. Melde dich erneut an, falls du dazu aufgefordert wirst.';
+
+  @override
+  String get steamSwitchBackup => 'Speicherort der Einstellungssicherung';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      'Diese Steam-Installation oder ihre Einstellungen konnten nicht gelesen werden. Wähle die richtige steam.exe aus und versuche es erneut.';
+
+  @override
+  String get steamSwitchCloseFailed =>
+      'Steam konnte nicht ordnungsgemäß beendet werden. Beende Steam manuell und versuche es erneut.';
+
+  @override
+  String get steamSwitchBusy =>
+      'Ein anderer Kontowechsel läuft bereits. Versuche es gleich noch einmal.';
+
+  @override
+  String get steamSwitchChanged =>
+      'Die Steam-Einstellungen wurden während des Wechsels geändert. Beende Steam, lade die Liste neu und versuche es erneut.';
+
+  @override
+  String get steamSwitchFailed =>
+      'Der Kontowechsel konnte nicht abgeschlossen werden. Prüfe Steam und versuche es erneut.';
+
+  @override
+  String get steamSwitchRecoveryNeeded =>
+      'Der Kontowechsel ist fehlgeschlagen und einige Einstellungen konnten nicht wiederhergestellt werden. Bewahre die unten angegebene Sicherung auf und stelle die Einstellungen wieder her, bevor du es erneut versuchst.';
+
+  @override
+  String get appTitle => 'GooeSteamKit';
 
   @override
   String get navAccounts => 'Konten';
@@ -53,7 +141,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get storeErrorBody =>
-      'Die lokale Kontodatenbank von AVA (manifest.json) fehlt oder ist beschädigt. Das kann nach einem abgebrochenen Schreibvorgang oder einer unvollständigen Wiederherstellung passieren. Versuch es zuerst erneut; scheitert es weiter, setze zurück und importiere deine maFile-Backups neu.';
+      'Die lokale Kontodatenbank von GooeSteamKit (manifest.json) fehlt oder ist beschädigt. Das kann nach einem abgebrochenen Schreibvorgang oder einer unvollständigen Wiederherstellung passieren. Versuch es zuerst erneut; scheitert es weiter, setze zurück und importiere deine maFile-Backups neu.';
 
   @override
   String get storeRepair => 'Reparatur versuchen';
@@ -68,7 +156,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pinSetupPrompt =>
-      'Schütze AVA mit einer 6-stelligen PIN. Zum Entsperren gibst du sie ein (oder nutzt deinen Fingerabdruck).';
+      'Schütze GooeSteamKit mit einer 6-stelligen PIN. Zum Entsperren gibst du sie ein (oder nutzt deinen Fingerabdruck).';
 
   @override
   String get pinLabel => '6-stellige PIN';
@@ -98,14 +186,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pinMismatch => 'Die PINs stimmen nicht überein.';
 
   @override
-  String get unlockBiometricReason => 'AVA entsperren';
+  String get unlockBiometricReason => 'GooeSteamKit entsperren';
 
   @override
-  String get settingsBiometric => 'Biometrisches Entsperren';
+  String get settingsBiometric => 'Geräteentsperrung verwenden';
 
   @override
   String get settingsBiometricDesc =>
-      'Entsperre mit deinem Fingerabdruck oder der Gerätesperre; das Passwort liegt im Keystore des Geräts.';
+      'Bei aktiver Startprüfung können Fingerabdruck, Windows Hello oder der Gerätecode die GooeSteamKit-PIN ersetzen. Das Ausschalten der Startprüfung deaktiviert auch diese Option; danach muss sie separat wieder aktiviert werden.';
 
   @override
   String get settingsBiometricNeedPasskey =>
@@ -116,7 +204,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Auf diesem Gerät sind weder Biometrie noch eine Gerätesperre eingerichtet.';
 
   @override
-  String get settingsBiometricEnabled => 'Biometrisches Entsperren ist aktiv.';
+  String get settingsBiometricEnabled => 'Geräteentsperrung aktiviert';
 
   @override
   String get settingsHoldConfirm => 'Zum Bestätigen halten';
@@ -148,7 +236,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      'Versteckt AVA vor Screenshots, Bildschirmaufnahmen und der Vorschau zuletzt geöffneter Apps. Dafür bleibt das Fenster beim Teilen des Bildschirms schwarz, und du kannst dem Feedback keine Screenshots mehr anhängen.';
+      'Versteckt GooeSteamKit vor Screenshots, Bildschirmaufnahmen und der Vorschau zuletzt geöffneter Apps. Dafür bleibt das Fenster beim Teilen des Bildschirms schwarz, und du kannst dem Feedback keine Screenshots mehr anhängen.';
 
   @override
   String get passkeyLabel => 'Passwort';
@@ -218,7 +306,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTutorialReplay => 'Abspielen';
 
   @override
-  String get welcomeTitle => 'Willkommen bei AVA';
+  String get welcomeTitle => 'Willkommen bei GooeSteamKit';
 
   @override
   String get welcomeSubtitle =>
@@ -786,7 +874,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backupReminderBody =>
-      'AVA hält deine Authentifikator-Daten nur auf diesem Gerät. Sichere deine maFiles an einem sicheren Ort. Dein Widerrufscode (R-Code) wird nur ein einziges Mal angezeigt, nämlich wenn du einen Authentifikator hinzufügst — schreib ihn dann auf und heb ihn auf; er ist dein letztes Mittel, um den Authentifikator zu entfernen, falls dieses Gerät je verloren geht.';
+      'GooeSteamKit hält deine Authentifikator-Daten nur auf diesem Gerät. Sichere deine maFiles an einem sicheren Ort. Dein Widerrufscode (R-Code) wird nur ein einziges Mal angezeigt, nämlich wenn du einen Authentifikator hinzufügst — schreib ihn dann auf und heb ihn auf; er ist dein letztes Mittel, um den Authentifikator zu entfernen, falls dieses Gerät je verloren geht.';
 
   @override
   String get backupReminderOk => 'Verstanden';
@@ -1181,7 +1269,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return 'Der Authentifikator wurde zu diesem Konto umgezogen, aber AVA konnte ihn NICHT auf diesem Gerät speichern. Dein alter Authentifikator ist bereits tot, das hier sind die einzigen Kopien — schreib sie JETZT auf, bevor du diesen Bildschirm schließt.\n\nWiderrufscode: $code\n\nSecret: $secret';
+    return 'Der Authentifikator wurde zu diesem Konto umgezogen, aber GooeSteamKit konnte ihn NICHT auf diesem Gerät speichern. Dein alter Authentifikator ist bereits tot, das hier sind die einzigen Kopien — schreib sie JETZT auf, bevor du diesen Bildschirm schließt.\n\nWiderrufscode: $code\n\nSecret: $secret';
   }
 
   @override
@@ -1198,7 +1286,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get moveInRescueDismissBody =>
-      'AVA hat keine andere Kopie. Wenn du Widerrufscode und Secret nicht aufgeschrieben hast, verlierst du den Zugang zu diesem Authentifikator für immer.';
+      'GooeSteamKit hat keine andere Kopie. Wenn du Widerrufscode und Secret nicht aufgeschrieben hast, verlierst du den Zugang zu diesem Authentifikator für immer.';
 
   @override
   String get moveInRescueDismissConfirm => 'Ich habe sie gesichert';
@@ -1300,7 +1388,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get themeLight => 'Hell';
 
   @override
-  String get settingsAbout => 'Über AVA';
+  String get settingsAbout => 'Über GooeSteamKit';
 
   @override
   String get aboutTagline =>
@@ -1330,7 +1418,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get privacyUpdateBody =>
-      'Der Datenschutzhinweis hat sich geändert, seit du zugestimmt hast. Neu: AVA kann deine Kontobibliothek jetzt über einen Server deiner Wahl zwischen deinen Geräten synchronisieren — standardmäßig aus, alles wird vor dem Upload auf diesem Gerät verschlüsselt, und der Entwickler betreibt keinen Sync-Server. Bitte lies den aktuellen Hinweis unten.';
+      'Der Datenschutzhinweis hat sich geändert, seit du zugestimmt hast. Neu: GooeSteamKit kann deine Kontobibliothek jetzt über einen Server deiner Wahl zwischen deinen Geräten synchronisieren — standardmäßig aus, alles wird vor dem Upload auf diesem Gerät verschlüsselt, und der Entwickler betreibt keinen Sync-Server. Bitte lies den aktuellen Hinweis unten.';
 
   @override
   String get privacyConsentScrollHint => 'Zum Fortfahren bis zum Ende scrollen';
@@ -1708,10 +1796,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncSetUp => 'Sync einrichten…';
 
   @override
-  String get syncStatusOk => 'Auf dem neuesten Stand';
+  String get syncStatusOk => 'Verbunden';
 
   @override
-  String get syncStatusSyncing => 'Synchronisiere…';
+  String get syncStatusSyncing => 'Synchronisierung…';
 
   @override
   String get syncStatusErrorShort =>
@@ -1855,11 +1943,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Passphrase öffnet diese Bibliothek nicht.';
 
   @override
-  String get syncPreviewTitle => 'Erster Sync';
+  String get syncPreviewTitle => 'Synchronisationsbibliothek verbinden';
 
   @override
   String get syncPreviewEmpty =>
-      'Noch nichts zu übertragen — Konten werden ab jetzt automatisch synchronisiert.';
+      'Nach dem Verbinden auf der Synchronisationsseite hochladen oder abrufen. Die Inhalte lassen sich in den erweiterten Einstellungen getrennt auswählen.';
 
   @override
   String syncPreviewPull(int count) {
@@ -1877,14 +1965,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get syncStart => 'Sync starten';
+  String get syncStart => 'Verbinden';
 
   @override
-  String get syncDoneTitle => 'Sync ist aktiv';
+  String get syncDoneTitle => 'Synchronisationsbibliothek verbunden';
 
   @override
   String get syncDoneBody =>
-      'Konten werden jetzt automatisch synchronisiert. Auf einem neuen Gerät meldet sich jedes Konto bei der ersten Nutzung einmal neu an — Konten mit gespeichertem Passwort machen das von selbst, die übrigen fragen einmal nach.';
+      'Auf der Synchronisationsseite hochladen oder abrufen. Beim Abruf werden entfernte Daten zusammengeführt; nur lokal vorhandene Konten und Favoriten bleiben erhalten.';
 
   @override
   String get syncDone => 'Fertig';
@@ -1940,25 +2028,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncConflictNoPassword => 'Kein gespeichertes Passwort';
 
   @override
-  String get syncAutoTitle => 'Automatischer Sync';
+  String get syncAutoTitle => 'Automatischer Upload';
 
   @override
   String get syncAutoDesc =>
-      'Synchronisiert beim Start und nach jeder Änderung. Ist das aus, synchronisiert nur der Button unten.';
+      'Ausgewählte Inhalte beim Start und nach Änderungen hochladen. Downloads erfolgen nur über „Jetzt abrufen“.';
 
   @override
-  String get syncPasswordsTitle => 'Kontopasswörter synchronisieren';
+  String get syncPasswordsTitle => 'Kontopasswörter einschließen';
 
   @override
   String get syncPasswordsDesc =>
-      'Mit Passwörtern kann sich ein neues Gerät von selbst anmelden. Eine Änderung hier lädt alle Konten neu hoch.';
+      'Gilt für Konto-Uploads. Änderungen werden beim nächsten Konto-Upload wirksam.';
 
   @override
   String get syncAppSettingsTitle => 'App-Einstellungen synchronisieren';
 
   @override
   String get syncAppSettingsDesc =>
-      'Darstellungs- und Verhaltenseinstellungen (Skin, Design, Halten zum Bestätigen …) begleiten dich auf jedes Gerät. Sprache und Textgröße bleiben pro Gerät.';
+      'Nur Darstellung und Verhalten. Marktfavoriten und Beschleunigungsabonnements werden separat ausgewählt. Sprache, Textgröße und automatischer Beschleunigungsstart bleiben gerätespezifisch.';
 
   @override
   String get syncNowButton => 'Jetzt synchronisieren';
@@ -2034,7 +2122,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get netErrCert =>
-      'Das Zertifikat von Steam war nicht vertrauenswürdig, deshalb hat AVA die Verbindung beendet. Möglicherweise untersucht etwas in diesem Netzwerk den Datenverkehr.';
+      'Das Zertifikat von Steam war nicht vertrauenswürdig, deshalb hat GooeSteamKit die Verbindung beendet. Möglicherweise untersucht etwas in diesem Netzwerk den Datenverkehr.';
 
   @override
   String netErrServer(int code) {
@@ -2128,4 +2216,1396 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get portableUnreadable =>
       'Die Bibliothek ist beschädigt oder benötigt den Schlüssel der ursprünglichen Windows-Installation. Stelle einen maFile-Export wieder her; die Quelldateien wurden nicht verändert.';
+
+  @override
+  String get friendsTitle => 'Freunde & Handel';
+
+  @override
+  String get friendsSearch => 'Nach Name oder SteamID suchen';
+
+  @override
+  String get friendsEmpty => 'Keine Freunde zum Anzeigen';
+
+  @override
+  String get friendsProfile => 'Steam-Profil ansehen';
+
+  @override
+  String get friendsTrade => 'Handelsangebot erstellen';
+
+  @override
+  String get friendsOnline => 'Online';
+
+  @override
+  String get friendsOffline => 'Offline';
+
+  @override
+  String get friendsPlaying => 'Im Spiel';
+
+  @override
+  String get tradeNewTitle => 'Neues Handelsangebot';
+
+  @override
+  String get tradeYourItems => 'Von dir angebotene Gegenstände';
+
+  @override
+  String get tradeTheirItems => 'Gegenstände, die du erhältst';
+
+  @override
+  String get tradeSelectItems => 'Gegenstände auswählen';
+
+  @override
+  String get tradeNote => 'Nachricht (optional)';
+
+  @override
+  String get tradeReview => 'Angebot prüfen';
+
+  @override
+  String get tradeSend => 'Angebot senden';
+
+  @override
+  String get tradeReviewBody =>
+      'Prüfe die SteamID des Handelspartners sowie Gegenstände und Mengen auf beiden Seiten. Steam kann eine Bestätigung verlangen oder Gegenstände zurückhalten.';
+
+  @override
+  String get tradeGiftWarning =>
+      'Du verschenkst diese Gegenstände und erhältst nichts dafür.';
+
+  @override
+  String get tradeNoItems =>
+      'Hier sind keine handelbaren Gegenstände verfügbar.';
+
+  @override
+  String get tradeMore => 'Mehr laden';
+
+  @override
+  String get tradeSent => 'Angebot gesendet.';
+
+  @override
+  String get tradeNeedsMobile =>
+      'Angebot erstellt. Schließe die mobile Bestätigung unter „Ausstehend“ ab.';
+
+  @override
+  String get tradeNeedsEmail =>
+      'Angebot erstellt. Folge zur Bestätigung der E-Mail von Steam.';
+
+  @override
+  String get tradeOpenPending => 'Ausstehende Aktionen & Angebote ansehen';
+
+  @override
+  String get tradeUnknownResult =>
+      'Das Ergebnis ist unklar. Prüfe deine gesendeten Angebote, bevor du es erneut versuchst, um doppelte Angebote zu vermeiden.';
+
+  @override
+  String get tradeChooseGame => 'Inventar auswählen';
+
+  @override
+  String get tradeQuantity => 'Menge';
+
+  @override
+  String get tradeLoadFailed =>
+      'Steam-Freunde oder Inventar konnten nicht geladen werden. Aktualisiere die Ansicht und versuche es erneut.';
+
+  @override
+  String get tradeSendFailed =>
+      'Steam hat den Versand des Angebots nicht bestätigt. Prüfe deine Angebote, bevor du es erneut versuchst.';
+
+  @override
+  String get marketListingActive => 'Zum Verkauf';
+
+  @override
+  String get marketListingOnHold => 'Zurückgehalten';
+
+  @override
+  String get marketListingPending => 'Bestätigung ausstehend';
+
+  @override
+  String get marketListingInactive => 'Inaktiv';
+
+  @override
+  String marketHoldUntil(String date) {
+    return 'Zurückgehalten bis $date';
+  }
+
+  @override
+  String get marketListingsAll => 'Alle';
+
+  @override
+  String get marketCancelConfirm => 'Dieses Marktangebot zurückziehen?';
+
+  @override
+  String get settingsStartupVerification => 'Identität beim Start prüfen';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      'Wenn aktiviert, erfordert das Öffnen von GooeSteamKit deine PIN oder die Systemauthentifizierung. Wenn deaktiviert, kann jeder Benutzer dieses Geräts GooeSteamKit öffnen; lokale Kontodateien bleiben verschlüsselt.';
+
+  @override
+  String get settingsStartupVerificationError =>
+      'Die Startprüfung konnte nicht gespeichert werden. Prüfe den sicheren Gerätespeicher und versuche es erneut.';
+
+  @override
+  String get settingsLockNow => 'Jetzt sperren';
+
+  @override
+  String get settingsStartupVerificationPinChanged =>
+      'Nach einer PIN-Änderung wird die Startprüfung wieder aktiviert.';
+
+  @override
+  String get settingsStartupVerificationDisable => 'Startprüfung deaktivieren?';
+
+  @override
+  String get dashboardTitle => 'Kontoübersicht';
+
+  @override
+  String get dashboardWallet => 'Guthaben';
+
+  @override
+  String get dashboardPendingBalance => 'Ausstehendes Guthaben';
+
+  @override
+  String get dashboardUnavailable => 'Nicht verfügbar';
+
+  @override
+  String get dashboardMarket => 'Inventar & Markt';
+
+  @override
+  String get dashboardTools => 'Kontowerkzeuge';
+
+  @override
+  String get dashboardCustomize => 'Übersichtslayout';
+
+  @override
+  String get dashboardViewAll => 'Alle anzeigen';
+
+  @override
+  String get dashboardNoListings => 'Keine Marktangebote.';
+
+  @override
+  String get dashboardFetchFailed =>
+      'Diese Informationen konnten nicht geladen werden. Aktualisiere die Ansicht und versuche es erneut.';
+
+  @override
+  String get dashboardSaveFailed =>
+      'Die Anzeigeeinstellung konnte nicht gespeichert werden.';
+
+  @override
+  String get backupCodesTitle => 'Backup-Anmeldecodes';
+
+  @override
+  String get backupCodesAccountCheck =>
+      'Dein Browser ist möglicherweise mit einem anderen Steam-Konto angemeldet. Prüfe vor dem Erstellen der Codes, dass der Kontoname mit dem oben angezeigten übereinstimmt.';
+
+  @override
+  String get backupCodesHow => 'Codes von Steam abrufen';
+
+  @override
+  String get backupCodesSteps =>
+      '1. Öffne über die Schaltfläche unten die Steam-Guard-Einstellungen.\n2. Melde dich mit dem oben angezeigten Konto an.\n3. Wähle die Option zum Abrufen von Steam-Guard-Backupcodes.\n4. Schließe die von Steam verlangte Verifizierung ab und bewahre die erstellten Codes sicher auf.';
+
+  @override
+  String get backupCodesExplanation =>
+      'Dies sind einmalig verwendbare Anmeldecodes, unabhängig vom Code zum Entfernen des Authentifikators. Steam stellt sie aus und verwaltet sie. GooeSteamKit öffnet den offiziellen Ablauf und erstellt oder speichert diese Codes nicht.';
+
+  @override
+  String get backupCodesOpenSteam => 'Steam öffnen und Codes abrufen';
+
+  @override
+  String get backupCodesCopyLink => 'Offiziellen Link kopieren';
+
+  @override
+  String get backupCodesOpenFailed =>
+      'Der Browser konnte nicht geöffnet werden. Kopiere den Link und öffne ihn manuell.';
+
+  @override
+  String get loginAccountMismatch =>
+      'Dies ist ein anderes Steam-Konto. Melde dich mit dem ausgewählten Konto an; das ursprüngliche Konto wurde nicht geändert.';
+
+  @override
+  String get tradeFromAccount => 'Absendendes Konto';
+
+  @override
+  String get tradeToAccount => 'Handelspartner';
+
+  @override
+  String get tradeValidationFailed =>
+      'Das Angebot wurde nicht gesendet. Prüfe die Gegenstände und Mengen; pro Seite sind höchstens 256 Einträge erlaubt.';
+
+  @override
+  String get friendsProfileOpenFailed =>
+      'Der Browser konnte nicht geöffnet werden. Kopiere den offiziellen Steam-Link unten.';
+
+  @override
+  String get steamSwitchQrTitle => 'Mit einem GooeSteamKit-Konto anmelden';
+
+  @override
+  String get steamSwitchQrHelp =>
+      'Wähle ein GooeSteamKit-Konto, zeige den Anmelde-QR-Code in Steam an, scanne ihn und prüfe die Anmeldung.';
+
+  @override
+  String get steamSwitchQrAccount => 'GooeSteamKit-Konto';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      'Melde dich zuerst in GooeSteamKit erneut bei diesem Konto an. Ein Offline-Steam-Guard-Code allein kann keine QR-Anmeldung bestätigen.';
+
+  @override
+  String get steamSwitchQrNoAccounts =>
+      'Füge GooeSteamKit ein Konto hinzu, um die QR-Anmeldung zu nutzen.';
+
+  @override
+  String get approveScreenSelect => 'QR-Code auf dem Bildschirm auswählen';
+
+  @override
+  String get approveScreenHelp =>
+      'GooeSteamKit wird kurz ausgeblendet. Ziehe einen Rahmen um Steams Anmelde-QR-Code und prüfe Konto und Gerät vor dem Bestätigen.';
+
+  @override
+  String get approveScreenInstruction =>
+      'Einen Steam-Anmelde-QR-Code einrahmen · Esc / Rechtsklick zum Abbrechen';
+
+  @override
+  String get approveScreenNoCode =>
+      'Kein QR-Code gefunden. Wähle den vollständigen Code mit etwas Rand aus und versuche es erneut.';
+
+  @override
+  String get approveScreenFailed =>
+      'Bildschirmaufnahme fehlgeschlagen. Versuche es erneut oder füge den QR-Link ein.';
+
+  @override
+  String get approveSessionUnavailable =>
+      'Dieser QR-Code ist abgelaufen oder seine Anmeldedaten konnten nicht geprüft werden. Aktualisiere den Code in Steam und versuche es erneut.';
+
+  @override
+  String get itemMarketActions => 'Marktoptionen des Gegenstands';
+
+  @override
+  String get itemMarketViewPrice => 'Marktpreis ansehen';
+
+  @override
+  String get itemMarketOpen => 'Steam-Markt öffnen';
+
+  @override
+  String get itemMarketVolume => 'Letzte Verkäufe';
+
+  @override
+  String get itemMarketReferenceNote =>
+      'Referenzpreis pro Gegenstand auf dem Steam-Communitymarkt, nicht der Verkäufererlös. Preise können sich ändern.';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return 'Währung: $currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => 'Dieser Gegenstand hat keinen Marktnamen.';
+
+  @override
+  String get itemMarketOpenFailed =>
+      'Die Steam-Marktseite konnte nicht geöffnet werden.';
+
+  @override
+  String get steamClientRunning => 'Steam läuft';
+
+  @override
+  String get steamClientStopped => 'Steam läuft nicht';
+
+  @override
+  String get steamClientStatusLoading => 'Steam-Status wird gelesen…';
+
+  @override
+  String get steamClientStatusUnavailable =>
+      'Steam-Status ist vorübergehend nicht verfügbar';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return 'Aktuell angemeldet: $account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => 'Aktuelles Konto noch nicht erkannt';
+
+  @override
+  String get steamClientCurrentBadge => 'Aktuell angemeldet';
+
+  @override
+  String get forkLocalFeaturesTitle => 'Lokale Funktionen freigeschaltet';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      'Alle lokalen Funktionen dieses unabhängigen Forks sind ohne Pro-Prüfung verfügbar. Online-Dienste und Abonnements des ursprünglichen Autors sind nicht enthalten.';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      'Dieser unabhängige AVA-Fork speichert Steam-Konten und Authentifikator-Geheimnisse auf diesem Gerät. Steam-Anfragen gehen direkt an Valve. Die optionale Synchronisierung wird erst aktiviert, wenn du deinen eigenen Server einrichtest; Kontodaten werden zuvor lokal verschlüsselt. Lokale Funktionen benötigen keine Pro-Prüfung. Diese Version verwendet keine Werbung, Zahlungsdienste oder Update-Prüfung beim Originalprojekt. Feedback öffnet nur die GitHub-Issues dieses Forks; Berichte und Protokolle werden nicht automatisch gesendet. Es gibt kein Tracking und keine Nutzungsanalyse. Lies den Datenschutzhinweis dieses Forks. Mit dem Fortfahren stimmst du ihm zu.';
+
+  @override
+  String get forkUpdateTitle => 'Software-Updates';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return 'Aktuelle Version $version';
+  }
+
+  @override
+  String get forkUpdateCheck => 'Nach Updates suchen';
+
+  @override
+  String get forkUpdateChecking => 'Suche nach Updates…';
+
+  @override
+  String get forkUpdateNoRelease => 'Noch keine Veröffentlichung verfügbar';
+
+  @override
+  String get forkUpdateUpToDate => 'Du bist auf dem neuesten Stand';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return 'Neue Version $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => 'Versionshinweise';
+
+  @override
+  String get forkUpdateNoNotes => 'Keine Versionshinweise vorhanden';
+
+  @override
+  String get forkUpdateDownload => 'Update herunterladen';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return 'Download: $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => 'Download abbrechen';
+
+  @override
+  String get forkUpdateReady =>
+      'Installationsdatei heruntergeladen und geprüft';
+
+  @override
+  String get forkUpdateInstall => 'Update installieren';
+
+  @override
+  String get forkUpdateInstallTitle => 'Dieses Update installieren?';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      'Die Systeminstallation wird geöffnet. Erlaube GooeSteamKit bei Bedarf, Apps zu installieren, und folge den Anweisungen.';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      'Das Installationsprogramm wird geöffnet und GooeSteamKit geschlossen. Beende zuerst deine aktuelle Arbeit und folge dann den Anweisungen.';
+
+  @override
+  String get forkUpdateInstallConfirm => 'Installation fortsetzen';
+
+  @override
+  String get forkUpdateInstallStarted =>
+      'Systeminstallation geöffnet; folge ihren Anweisungen';
+
+  @override
+  String get forkUpdateCheckFailed =>
+      'Updates konnten nicht geprüft werden. Bitte später erneut versuchen.';
+
+  @override
+  String get forkUpdateDownloadFailed =>
+      'Download fehlgeschlagen. Bitte erneut versuchen.';
+
+  @override
+  String get forkUpdateHashFailed =>
+      'Prüfung fehlgeschlagen; Installation blockiert. Bitte erneut herunterladen.';
+
+  @override
+  String get forkUpdateInstallFailed =>
+      'Installationsprogramm konnte nicht geöffnet werden.';
+
+  @override
+  String get forkUpdateNoCompatibleAsset =>
+      'Keine passende Installationsdatei für dieses Gerät';
+
+  @override
+  String get forkUpdateUnverifiable =>
+      'Ohne vertrauenswürdige Prüfsumme sind Download und Installation gesperrt';
+
+  @override
+  String get forkUpdateInvalidMetadata =>
+      'Versionsinformationen unvollständig oder ungültig. Bitte später erneut versuchen.';
+
+  @override
+  String get forkUpdateUnsupported =>
+      'In-App-Updates werden auf diesem Gerät nicht unterstützt';
+
+  @override
+  String get forkUpdateCancelled => 'Download abgebrochen';
+
+  @override
+  String get forkUpdatePermissionRequired =>
+      'Erlaube GooeSteamKit die App-Installation und kehre dann hierher zurück';
+
+  @override
+  String get forkUpdateOpenPermissionSettings => 'App-Installation erlauben';
+
+  @override
+  String get forkUpdateWrongPackage =>
+      'Diese Datei gehört zu einer anderen App; Installation blockiert';
+
+  @override
+  String get forkUpdateSignatureMismatch =>
+      'Die Signatur stimmt nicht mit dieser App überein; Installation blockiert';
+
+  @override
+  String get backupCodesNativeIntro =>
+      'Hier kannst du einmalige Steam-Anmeldecodes erstellen. Steam verlangt eine SMS-Bestätigung der verknüpften Telefonnummer. Neue Codes können die bisherigen ersetzen.';
+
+  @override
+  String get backupCodesSendSms => 'Bestätigungs-SMS senden';
+
+  @override
+  String get backupCodesSmsPrompt => 'Gib den Code aus der Steam-SMS ein.';
+
+  @override
+  String get backupCodesSmsLabel => 'SMS-Bestätigungscode';
+
+  @override
+  String get backupCodesGenerate => 'Bestätigen und Codes erstellen';
+
+  @override
+  String get backupCodesReady => 'Deine einmaligen Anmeldecodes';
+
+  @override
+  String get backupCodesKeepSafe =>
+      'Jeder Code ist einmal nutzbar. Bewahre einen Ausdruck sicher auf. GooeSteamKit speichert diese Codes nicht; beim Verlassen der Seite oder App werden sie ausgeblendet. Steam sendet bei Erstellung und Verwendung eine E-Mail.';
+
+  @override
+  String get backupCodesClear => 'Codes löschen';
+
+  @override
+  String get backupCodesRequestFailed =>
+      'Steam konnte die Anfrage nicht abschließen. Es gab keinen automatischen Wiederholungsversuch. Prüfe die Verbindung und versuche es manuell erneut.';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Unbekannte Steam-Antwort. Das Ergebnis ist unbestätigt; die Anfrage wurde nicht wiederholt.';
+
+  @override
+  String get backupCodesInvalidSms =>
+      'Steam hat den Code abgelehnt. Prüfe die SMS und versuche es erneut.';
+
+  @override
+  String get backupCodesRateLimited =>
+      'Steam begrenzt die Anfragen. Bitte warte vor einem weiteren Versuch.';
+
+  @override
+  String get backupCodesPhoneRequired =>
+      'Für dieses Konto ist eine bestätigte Telefonnummer erforderlich.';
+
+  @override
+  String get backupCodesManualHelp => 'Offizielle Steam-Seite (optional)';
+
+  @override
+  String get steamAccelerationTitle => 'Steam-Beschleunigung';
+
+  @override
+  String get steamAccelerationDesc =>
+      'Externe Proxys haben Vorrang. Nach dem Beenden übernimmt die interne Beschleunigung für Steam-Anfragen in GooeSteamKit.';
+
+  @override
+  String get steamAccelerationOff => 'Aus';
+
+  @override
+  String get steamAccelerationLoading => 'Abonnement wird synchronisiert…';
+
+  @override
+  String get steamAccelerationStarting => 'Wird gestartet…';
+
+  @override
+  String get steamAccelerationRunning => 'Läuft';
+
+  @override
+  String get steamAccelerationPaused => 'Interne Beschleunigung bereit';
+
+  @override
+  String get steamAccelerationFailed => 'Beschleunigung nicht verfügbar';
+
+  @override
+  String get steamAccelerationUnsupported =>
+      'Derzeit nur unter Windows und Android unterstützt.';
+
+  @override
+  String get steamAccelerationConfigured =>
+      'Abonnement auf diesem Gerät gespeichert';
+
+  @override
+  String get steamAccelerationUnconfigured => 'Kein Abonnement eingerichtet';
+
+  @override
+  String get steamAccelerationConfigure => 'Abonnement hinzufügen';
+
+  @override
+  String get steamAccelerationReplace => 'Abonnement ersetzen';
+
+  @override
+  String get steamAccelerationSubscription => 'Abonnement-URL';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      'Dieser Link kann private Zugangsdaten enthalten und wird sicher gespeichert. Unter Synchronisation → Erweiterte Einstellungen Abonnements und Knoten zum verschlüsselten Upload oder Abruf auswählen. Danach die Knoten aktualisieren.';
+
+  @override
+  String get steamAccelerationClear => 'Abonnement löschen';
+
+  @override
+  String get steamAccelerationClearConfirm =>
+      'Interne Beschleunigung stoppen und das gespeicherte Abonnement samt Knoten löschen? Bei aktivierter Einstellungssynchronisierung wird diese Löschung auch auf andere Geräte übertragen.';
+
+  @override
+  String get steamAccelerationSync => 'Knoten aktualisieren';
+
+  @override
+  String get steamAccelerationDownloadingCore =>
+      'Beschleunigungskomponente wird heruntergeladen…';
+
+  @override
+  String get steamAccelerationCoreDownload =>
+      'Download über Spiegelserver und offizielle Quelle fehlgeschlagen. Bitte später erneut versuchen.';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      'Externe Verbindung wird verwendet. Bei aktivierter automatischer Umschaltung übernimmt anschließend die interne Verbindung.';
+
+  @override
+  String get steamAccelerationNodes => 'Knoten';
+
+  @override
+  String get steamAccelerationNoNodes =>
+      'Synchronisiere das Abonnement, um verfügbare Knoten zu laden.';
+
+  @override
+  String get steamAccelerationNode => 'Ausgewählter Knoten';
+
+  @override
+  String get steamAccelerationStart => 'Automatisch umschalten';
+
+  @override
+  String get steamAccelerationStop => 'Umschaltung pausieren';
+
+  @override
+  String get steamAccelerationAuto => 'Beim Start aktivieren';
+
+  @override
+  String get steamAccelerationAutoDesc =>
+      'Externer Proxy oder VPN zuerst, danach die interne Verbindung. Eine manuelle Pause gilt bis zum nächsten App-Start.';
+
+  @override
+  String get steamAccelerationEnvironment => 'Erkennung externer Proxys';
+
+  @override
+  String get steamAccelerationExternalProxy => 'Systemproxy oder PAC erkannt';
+
+  @override
+  String get steamAccelerationExternalVpn => 'VPN oder Tunnel erkannt';
+
+  @override
+  String get steamAccelerationNoExternal => 'Kein externer Proxy erkannt';
+
+  @override
+  String get steamAccelerationDetectionUnavailable =>
+      'Der Status externer Proxys ist unbekannt. Die integrierte Verbindung startet daher nicht. Prüfe die Systemproxy-Einstellungen und überprüfe den Status erneut.';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      'Prüft lokale Verbindungseinstellungen, solange die App sichtbar ist. Systemproxy und VPN werden nicht verändert.';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return '$count nicht unterstützte Knoten übersprungen.';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription =>
+      'Gib eine gültige HTTP- oder HTTPS-Abonnement-URL ein.';
+
+  @override
+  String get steamAccelerationNetworkError =>
+      'Das Abonnement konnte nicht abgerufen werden. Prüfe die Verbindung und versuche es erneut.';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      'Das Abonnement enthält keine unterstützten Knoten. Verwende ein kompatibles Clash-Abonnement.';
+
+  @override
+  String get steamAccelerationStorageError =>
+      'Der sichere Speicher ist nicht verfügbar. Die Einstellung konnte nicht gespeichert werden.';
+
+  @override
+  String get steamAccelerationCoreUnavailable =>
+      'Die Beschleunigungskomponente fehlt. Installiere ein aktualisiertes App-Paket.';
+
+  @override
+  String get steamAccelerationCoreIntegrity =>
+      'Die Beschleunigungskomponente hat die Prüfung nicht bestanden und wurde blockiert.';
+
+  @override
+  String get steamAccelerationStartFailed =>
+      'Die Beschleunigung konnte nicht gestartet werden. Aktualisiere die Umgebungsprüfung und versuche es erneut.';
+
+  @override
+  String get inventorySearch => 'Gegenstände suchen';
+
+  @override
+  String get inventoryFilterType => 'Typ';
+
+  @override
+  String get inventoryFilterRarity => 'Seltenheit / Qualität';
+
+  @override
+  String get inventoryFilterOther => 'Sonstige / nicht klassifiziert';
+
+  @override
+  String get inventoryFilterNoMatches => 'Keine passenden Gegenstände';
+
+  @override
+  String get inventoryFilterLoaded =>
+      'Filter gelten für geladene Gegenstände. Lade weitere, um den Rest einzubeziehen.';
+
+  @override
+  String get steamConnectionTitle => 'Verbindungsprüfung';
+
+  @override
+  String get steamConnectionNotChecked => 'Noch nicht geprüft';
+
+  @override
+  String get steamConnectionChecking => 'Verbindung wird geprüft…';
+
+  @override
+  String get steamConnectionAvailable => 'Verbindung verfügbar';
+
+  @override
+  String get steamConnectionPartial =>
+      'Einige Steam-Dienste sind nicht erreichbar';
+
+  @override
+  String get steamConnectionUnavailable => 'Steam-Verbindung nicht verfügbar';
+
+  @override
+  String get steamConnectionCheck => 'Verbindung prüfen';
+
+  @override
+  String get steamConnectionApi => 'Steam-Anmeldeschnittstelle';
+
+  @override
+  String get steamConnectionCommunity => 'Steam-Community und -Markt';
+
+  @override
+  String get steamConnectionReachable => 'Erreichbar';
+
+  @override
+  String get steamConnectionFailed => 'Verbindung fehlgeschlagen';
+
+  @override
+  String get steamConnectionInternal => 'Interne Verbindung';
+
+  @override
+  String get steamConnectionExternal => 'Externer HTTP-Proxy';
+
+  @override
+  String get steamConnectionSystem => 'Externes VPN / Tunnel';
+
+  @override
+  String get steamConnectionDirect => 'Direkte Verbindung';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return 'Zuletzt geprüft: $time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      'Nur Steam-Anfragen innerhalb von GooeSteamKit werden umgeleitet. Daher zeigt Android kein VPN-Symbol. Die Steam-App und andere Apps werden nicht beschleunigt.';
+
+  @override
+  String get steamConnectionScope =>
+      'Prüft Steam-API und Community über AVAs aktuelle Verbindung ohne Kontozugangsdaten. Das Ergebnis gilt nur für diese Prüfung.';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return 'Angebot wurde nicht gesendet. $reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => 'Sendeergebnis prüfen';
+
+  @override
+  String get tradeSendNotFound =>
+      'Noch kein passendes neues Angebot sichtbar. Steam braucht möglicherweise Zeit. Prüfe ausstehende und gesendete Angebote vor erneutem Senden.';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return 'Sendeergebnis konnte nicht geprüft werden. $reason';
+  }
+
+  @override
+  String get tradeSendRejected =>
+      'Steam hat das Angebot ohne genaue Begründung abgelehnt. Prüfe die ausgewählten Gegenstände und Handelsbeschränkungen.';
+
+  @override
+  String get tradeSendUnreadableResponse =>
+      'Steam hat keine vollständige Sendebestätigung geliefert.';
+
+  @override
+  String get steamConnectionPacHelp =>
+      'Ein Systemproxy wurde erkannt, jedoch kein nutzbarer HTTP-Endpunkt oder VPN-Tunnel. PAC-Skripte werden nicht ausgewertet. Aktivieren Sie HTTP-Proxy oder VPN in der externen App.';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/s';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return 'Noch ca. $seconds s';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return 'Noch ca. $minutes min';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => 'Warten auf Daten…';
+
+  @override
+  String get forkUpdateVerifying => 'Installationsdatei wird geprüft…';
+
+  @override
+  String get forkUpdateConnectionHint =>
+      'Der automatische Modus lädt über GH-Proxy, ohne einen Proxy zu starten, und wechselt bei Bedarf zu GitHub. Dateien werden anhand des SHA-256-Werts von GitHub geprüft.';
+
+  @override
+  String get forkUpdateSourceLabel => 'Downloadquelle';
+
+  @override
+  String get forkUpdateSourceAutomatic => 'Automatische Beschleunigung';
+
+  @override
+  String get forkUpdateSourceOfficial => 'GitHub direkt';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return 'Direkte Beschleunigung · $provider';
+  }
+
+  @override
+  String get marketTabSearch => 'Markt';
+
+  @override
+  String get marketSearchHint => 'Artikel suchen, z. B. AK-47';
+
+  @override
+  String get marketSearchEmpty =>
+      'Spiel und Währung wählen, dann nach einem Artikel suchen. Daten werden erst bei der Suche geladen.';
+
+  @override
+  String get marketSearchButton => 'Markt durchsuchen';
+
+  @override
+  String get marketSearchAllGames => 'Alle Spiele';
+
+  @override
+  String get marketSearchGame => 'Spiel';
+
+  @override
+  String get marketSearchCurrency => 'Währung';
+
+  @override
+  String get marketSearchNoResults =>
+      'Keine passenden Artikel. Versuche einen anderen Suchbegriff.';
+
+  @override
+  String get marketSearchMore => 'Mehr laden';
+
+  @override
+  String marketSearchListings(int count) {
+    return 'Angebote: $count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => 'Preis nicht verfügbar';
+
+  @override
+  String get marketSearchPriceNote =>
+      'Richtpreise werden nur für sichtbare Artikel in der ausgewählten Währung geladen und können sich ändern.';
+
+  @override
+  String get marketSearchRefreshPrice => 'Preis aktualisieren';
+
+  @override
+  String get marketSearchRateLimited =>
+      'Zu viele Anfragen an Steam. Bitte später erneut versuchen.';
+
+  @override
+  String get marketSearchUnavailable =>
+      'Marktartikel sind derzeit nicht verfügbar. Bitte später erneut versuchen.';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return 'Angefragte Währung: $currency';
+  }
+
+  @override
+  String get steamConnectionUnresolvedProxy => 'Systemproxy nicht verfügbar';
+
+  @override
+  String get steamDesktopLoginButton => 'Steam öffnen und anmelden';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      'Steam mit dem ausgewählten Konto öffnen oder zu diesem wechseln und den QR-Code im Steam-Anmeldefenster dieses Computers automatisch bestätigen. Bitte zuerst laufende Spiele beenden.';
+
+  @override
+  String get steamDesktopLoginPreparing =>
+      'Ausgewähltes Konto wird vorbereitet…';
+
+  @override
+  String get steamDesktopLoginWaitingQr =>
+      'Warten auf den Steam-Anmelde-QR-Code dieses Computers…';
+
+  @override
+  String get steamDesktopLoginApproving =>
+      'Anmeldung auf diesem Computer wird bestätigt…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount =>
+      'Steam-Anmeldestatus wird geprüft…';
+
+  @override
+  String get steamDesktopLoginComplete =>
+      'Das aktuelle Konto des Steam-Clients wurde als das ausgewählte Konto verifiziert.';
+
+  @override
+  String get steamDesktopLoginManual =>
+      'Steam ist geöffnet, aber der lokale Anmelde-QR-Code konnte nicht bestätigt werden. Verwende die QR-Scan-Funktion unten, um fortzufahren.';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      'Eine Anfrage zur Genehmigung der Anmeldung wurde gesendet, aber die Steam-Anmeldung ist noch nicht bestätigt. Prüfe das Steam-Fenster und aktualisiere dann den Status.';
+
+  @override
+  String get steamDesktopLoginCancelled => 'Automatische Anmeldung gestoppt';
+
+  @override
+  String get steamDesktopLoginCancel => 'Automatische Bestätigung stoppen';
+
+  @override
+  String get steamDesktopLoginWrongAccount =>
+      'Steam ist mit einem anderen Konto angemeldet. Die automatische Bestätigung wurde gestoppt.';
+
+  @override
+  String get steamClientOpen => 'Steam öffnen';
+
+  @override
+  String get steamSwitchLaunchFailed =>
+      'Steam konnte nicht gestartet werden. Prüfe den Installationspfad und stelle sicher, dass Steam normal gestartet werden kann.';
+
+  @override
+  String get steamSwitchFileAccessFailed =>
+      'Die Steam-Einstellungen konnten nicht gesichert oder geändert werden. Prüfe die Lese- und Schreibberechtigungen für den Installationsordner.';
+
+  @override
+  String get steamDesktopLoginSession =>
+      'Steam ist geöffnet. Verbindung mit dem ausgewählten Konto wird hergestellt…';
+
+  @override
+  String get steamSwitchInspecting => 'Steam auf diesem PC wird geprüft';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return 'Schritt: $stage; Fehlercode: $code; Windows: $systemError.';
+  }
+
+  @override
+  String get approveScreenBusy =>
+      'Eine andere Bildschirmaufnahme läuft bereits. Schließe sie zuerst ab oder brich sie ab.';
+
+  @override
+  String get approveScreenDisplayChanged =>
+      'Die Bildschirmanordnung hat sich geändert. Wähle den QR-Code-Bereich erneut aus.';
+
+  @override
+  String get approveScreenRegionTooLarge =>
+      'Der ausgewählte Bereich ist zu groß. Wähle nur den QR-Code-Bereich aus.';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return 'Der Bildschirm konnte nicht aufgenommen werden. Versuche es erneut. Fehlerdetails: $detail.';
+  }
+
+  @override
+  String get marketFavoriteTitle => 'Favorites';
+
+  @override
+  String get marketFavoriteAdd => 'Add to favorites';
+
+  @override
+  String get marketFavoriteRemove => 'Remove from favorites';
+
+  @override
+  String get marketFavoriteEmpty =>
+      'Save items from market search to see their prices here without searching again.';
+
+  @override
+  String get marketFavoriteSaveFailed =>
+      'Could not load or save market favorites. Please try again.';
+
+  @override
+  String get syncCompareTitle => 'Compare local and remote';
+
+  @override
+  String get syncCompareRefresh => 'Refresh comparison';
+
+  @override
+  String get syncCompareHelp =>
+      'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.';
+
+  @override
+  String get syncComparePasswordChangePending =>
+      'Die Einstellungen zur Passwortsynchronisierung wurden geändert. Kehre zur Synchronisierungsseite zurück, wähle Konten aus und klicke auf Jetzt synchronisieren, um die Änderung anzuwenden. Du kannst weiterhin Unterschiede vergleichen und Daten herunterladen.';
+
+  @override
+  String get syncCompareStale =>
+      'Local or remote data changed. Refresh the comparison before trying again.';
+
+  @override
+  String get syncCompareFailed =>
+      'Comparison or transfer failed. Check the connection and sync passphrase, then refresh. No successful transfer has been confirmed.';
+
+  @override
+  String get syncCompareSame => 'Same content';
+
+  @override
+  String get syncCompareLocalOnly => 'Only on this device';
+
+  @override
+  String get syncCompareRemoteOnly => 'Only on remote';
+
+  @override
+  String get syncCompareLocalNewer => 'Local has newer changes';
+
+  @override
+  String get syncCompareRemoteNewer => 'Remote has newer changes';
+
+  @override
+  String get syncCompareBothChanged =>
+      'Different on both sides — choose a direction';
+
+  @override
+  String get syncCompareRemoteDeleted =>
+      'Deleted on remote; upload restores this account';
+
+  @override
+  String get syncCompareSettings =>
+      'Settings, favorites and acceleration subscription';
+
+  @override
+  String get syncCompareSettingsConflict =>
+      'Settings changed on both devices. Compare before choosing upload or pull.';
+
+  @override
+  String get syncComparePull => 'Pull remote → local';
+
+  @override
+  String get syncCompareUpload => 'Upload local → remote';
+
+  @override
+  String get syncCompareHidden => 'Changed private value (hidden)';
+
+  @override
+  String get syncCompareCurrency => 'Market currency';
+
+  @override
+  String get syncCompareFavorites => 'Market favorites';
+
+  @override
+  String get syncCompareSubscription => 'Acceleration subscription URL';
+
+  @override
+  String get syncCompareNodes => 'Acceleration node configuration';
+
+  @override
+  String get syncCompareSelectedNode => 'Selected acceleration node';
+
+  @override
+  String get marketFavoriteSearch => 'Search';
+
+  @override
+  String get inventoryCooldownDetails => 'Trade and market restrictions';
+
+  @override
+  String inventoryCooldownUntil(String time) {
+    return 'Cooldown until $time';
+  }
+
+  @override
+  String get inventoryCooldownTradable => 'Tradable';
+
+  @override
+  String get inventoryCooldownNotTradable => 'Not tradable';
+
+  @override
+  String get inventoryCooldownMarketable => 'Marketable';
+
+  @override
+  String get inventoryCooldownLocalTime =>
+      'Time shown in your device’s local time zone.';
+
+  @override
+  String get inventoryCooldownUnknown =>
+      'Steam has not provided a readable unlock time. No date is estimated.';
+
+  @override
+  String get inventoryCooldownElapsed =>
+      'This date has passed. Refresh the inventory to check Steam’s current restrictions.';
+
+  @override
+  String inventoryCooldownRemaining(int days, int hours, int minutes) {
+    return 'Remaining: ${days}d ${hours}h ${minutes}m';
+  }
+
+  @override
+  String get deviceRevokeOthersAction => 'Revoke other device authorizations';
+
+  @override
+  String deviceRevokeOthersConfirm(int count) {
+    return 'Revoke the $count other device authorizations listed below? Keep the current GooeSteamKit session. Those devices will need to sign in again. This does not remove your Steam authenticator.';
+  }
+
+  @override
+  String get deviceRevokeOthersCurrentUnknown =>
+      'The current GooeSteamKit session could not be identified. Refresh before revoking device authorizations.';
+
+  @override
+  String get deviceRevokeOthersNone =>
+      'No other device authorizations to revoke.';
+
+  @override
+  String get deviceRevokeOthersBusy => 'Revoking other device authorizations…';
+
+  @override
+  String deviceRevokeOthersDone(int count) {
+    return 'Confirmed: $count other device authorizations revoked.';
+  }
+
+  @override
+  String deviceRevokeOthersPartial(int done, int failed) {
+    return 'Confirmed revoked: $done. Not completed or not confirmed: $failed. Check the details below and the refreshed device list before trying again.';
+  }
+
+  @override
+  String get accountCopyInfoTitle => 'Copy account information';
+
+  @override
+  String get accountCopyPersonaName => 'Copy Steam nickname';
+
+  @override
+  String get accountCopyLoginName => 'Copy login name';
+
+  @override
+  String get accountCopyUnavailable => 'Unavailable';
+
+  @override
+  String get accountCopyFailed => 'Could not copy. Please try again.';
+
+  @override
+  String get notificationsTitle => 'Steam notifications';
+
+  @override
+  String get notificationsInboxTab => 'Notifications';
+
+  @override
+  String get notificationsRequestsTab => 'Friend requests';
+
+  @override
+  String get notificationsEmpty => 'No notifications.';
+
+  @override
+  String get notificationsRequestsEmpty => 'No pending friend requests.';
+
+  @override
+  String get notificationsMarkRead => 'Mark as read';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark this list as read';
+
+  @override
+  String get notificationsHide => 'Ignore notification';
+
+  @override
+  String get notificationsItemTitle => 'Steam notification';
+
+  @override
+  String get notificationsItemFallback =>
+      'No displayable details are available for this notification type.';
+
+  @override
+  String get notificationsOpenSteam => 'View in Steam';
+
+  @override
+  String get notificationsAcceptRequest => 'Accept';
+
+  @override
+  String get notificationsRejectRequest => 'Decline';
+
+  @override
+  String get notificationsActionUnconfirmed =>
+      'The result could not be confirmed. Refresh to check before trying again.';
+
+  @override
+  String get notificationsActionDone => 'Updated.';
+
+  @override
+  String get notificationsLoadFailed =>
+      'Could not load notifications. Please refresh or sign in again.';
+
+  @override
+  String get notificationsOpenFailed => 'Could not open Steam.';
+
+  @override
+  String get notificationsUnread => 'Unread';
+
+  @override
+  String get notificationsSessionChanged =>
+      'The account session changed. Refresh this list before continuing.';
+
+  @override
+  String confirmationBadgeCount(int count) {
+    return '$count pending confirmations';
+  }
+
+  @override
+  String get confirmationBadgeUnknown =>
+      'Pending confirmations have not been checked.';
+
+  @override
+  String confirmationBadgeStale(int count) {
+    return 'Last checked: $count pending confirmations. Refresh to check again.';
+  }
+
+  @override
+  String get notificationsTypeGift => 'Gift';
+
+  @override
+  String get notificationsTypeComment => 'Comment';
+
+  @override
+  String get notificationsTypeInventory => 'Inventory item';
+
+  @override
+  String get notificationsTypeFriend => 'Friend request';
+
+  @override
+  String get notificationsTypeSale => 'Promotion';
+
+  @override
+  String get notificationsTypeWishlist => 'Wishlist';
+
+  @override
+  String get notificationsTypeTrade => 'Trade offer';
+
+  @override
+  String get notificationsTypeAccount => 'Account notice';
+
+  @override
+  String get notificationsTypeSupport => 'Steam Support';
+
+  @override
+  String get notificationsTypeModeration => 'Moderation notice';
+
+  @override
+  String get notificationsTypeFamily => 'Family invitation';
+
+  @override
+  String get notificationsTypePlaytest => 'Playtest invitation';
+
+  @override
+  String get notificationsTypeTradeReversal => 'Trade reversal';
+
+  @override
+  String get notificationsTypeReport => 'Report result';
+
+  @override
+  String get notificationsNoUnread => 'No unread notifications.';
+
+  @override
+  String notificationsHistory(int count) {
+    return 'Read notifications ($count)';
+  }
+
+  @override
+  String get notificationsCollapseHistory => 'Hide read notifications';
+
+  @override
+  String notificationsInventoryReceived(String game) {
+    return 'New inventory item in $game.';
+  }
+
+  @override
+  String get notificationsItemLoading => 'Loading item details…';
+
+  @override
+  String get notificationsItemUnavailable =>
+      'Item details are currently unavailable.';
+
+  @override
+  String get notificationsOpenInventory => 'View inventory';
+
+  @override
+  String get notificationsFriendSummary =>
+      'Open friend requests to check and respond to current invitations.';
+
+  @override
+  String get notificationsTradeSummary =>
+      'Open trade offers to view the items and current status.';
+
+  @override
+  String get deviceRevokeOthersVerifyPending =>
+      'Removal could not be verified in the refreshed device list. Refresh and check before trying again.';
+
+  @override
+  String get dashboardFriends => 'Freunde';
+
+  @override
+  String get dashboardInventory => 'Inventar';
+
+  @override
+  String get dashboardFavorites => 'Marktfavoriten';
+
+  @override
+  String get dashboardCardsDescription =>
+      'Karten für die Übersicht auswählen. Deaktivierte Karten werden nicht geladen. Die mobile Startseite bleibt kompakt.';
+
+  @override
+  String dashboardFriendsSummary(int total, int online) {
+    return '$total Freunde · $online online';
+  }
+
+  @override
+  String dashboardInventorySummary(int games, int items) {
+    return '$games Inventare · $items Gegenstände';
+  }
+
+  @override
+  String get dashboardFavoritesEmpty => 'Noch keine Marktfavoriten.';
+
+  @override
+  String get dashboardInventoryEmpty => 'Keine Inventare zum Anzeigen.';
+
+  @override
+  String get dashboardFriendsEmpty => 'Noch keine Freunde.';
+
+  @override
+  String get dashboardFavoritesMore => 'Alle Favoriten anzeigen';
+
+  @override
+  String dashboardFavoritesPriceNote(String currency) {
+    return 'Währung: $currency · Günstigstes Angebot';
+  }
+
+  @override
+  String dashboardCardsLimited(int count) {
+    return 'Vorschau der ersten $count Einträge';
+  }
+
+  @override
+  String get dashboardEditLayout => 'Position und Größe anpassen';
+
+  @override
+  String get dashboardFinishLayout => 'Anpassung beenden';
+
+  @override
+  String get dashboardLayoutHelp =>
+      'Ziehe den Griff, um eine Karte zu verschieben, und die untere rechte Ecke, um Breite und Höhe anzupassen. Beende die Anpassung im Übersichtslayout.';
+
+  @override
+  String get dashboardLayoutHelpMobile =>
+      'Ziehe den Griff, um eine Karte nach oben oder unten zu verschieben, und die untere rechte Ecke, um die Höhe anzupassen. Beende die Anpassung im Übersichtslayout.';
+
+  @override
+  String get dashboardResetLayout => 'Layout zurücksetzen';
+
+  @override
+  String get dashboardDragCard => 'Karte verschieben';
+
+  @override
+  String get dashboardResizeCard => 'Größe anpassen';
+
+  @override
+  String get dashboardLayoutSettingsHint =>
+      'Öffne das Übersichtslayout in der Kontoübersicht, um Position und Größe der Karten anzupassen.';
+
+  @override
+  String get syncAdvancedOptions => 'Erweiterte Einstellungen';
+
+  @override
+  String get syncUploadItems => 'Synchronisationsinhalte (Upload)';
+
+  @override
+  String get syncPullItems => 'Abrufinhalte (Download)';
+
+  @override
+  String get syncItemAccounts => 'Konten und Authentifikatoren';
+
+  @override
+  String get syncItemSettings => 'App-Einstellungen';
+
+  @override
+  String get syncItemFavorites => 'Marktfavoriten und Währung';
+
+  @override
+  String get syncItemAcceleration => 'Beschleunigungsabonnements und Knoten';
+
+  @override
+  String get syncSelectionEmpty => 'Keine Inhalte ausgewählt';
+
+  @override
+  String get syncSelectionHelp =>
+      'Die Auswahl wird automatisch gespeichert. Änderungen starten keine Übertragung.';
+
+  @override
+  String get syncUploadHelp =>
+      'Ausgewählte Inhalte zum Server hochladen. Lokale Daten bleiben unverändert.';
+
+  @override
+  String get syncPullHelp =>
+      'Ausgewählte Inhalte herunterladen und zusammenführen. Nur lokal vorhandene Konten und Favoriten bleiben erhalten.';
+
+  @override
+  String get syncPullNow => 'Jetzt abrufen';
+
+  @override
+  String get syncPulling => 'Wird heruntergeladen…';
+
+  @override
+  String get syncOptionsSaveFailed =>
+      'Synchronisationsoptionen konnten nicht gespeichert werden. Bitte erneut versuchen.';
+
+  @override
+  String get syncUploaded => 'Hochgeladene Inhalte';
+
+  @override
+  String get syncPulled => 'Heruntergeladene Inhalte';
+
+  @override
+  String get syncPartialRetry =>
+      'Abgeschlossene Inhalte bleiben erhalten. Nicht abgeschlossene Inhalte können erneut versucht werden.';
 }

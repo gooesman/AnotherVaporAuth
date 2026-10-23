@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../core/fork_policy.dart';
 import '../core/update_check.dart';
 import 'debug_log.dart';
 
@@ -8,8 +9,12 @@ import 'debug_log.dart';
 /// inflated version numbers) and light the banner up on a real device without
 /// touching the production endpoint:
 ///   --dart-define=AVA_VERSION_URL=https://dl.dotslash.pro/version_dev.json
-const kUpdateVersionUrl = String.fromEnvironment('AVA_VERSION_URL',
-    defaultValue: 'https://api.ava.dotslash.pro/v1/version');
+const kUpdateVersionUrl = String.fromEnvironment(
+  'AVA_VERSION_URL',
+  defaultValue: kForkLocalFeatures
+      ? ''
+      : 'https://api.ava.dotslash.pro/v1/version',
+);
 
 /// Fetches `/v1/version` and turns it into an [UpdateDecision].
 ///
@@ -24,12 +29,15 @@ const kUpdateVersionUrl = String.fromEnvironment('AVA_VERSION_URL',
 /// seconds is generous for a  <1 KB edge-cached GET.
 class UpdateService {
   UpdateService({Dio? dio, String? url})
-      : _url = url ?? kUpdateVersionUrl,
-        _dio = dio ??
-            Dio(BaseOptions(
+    : _url = url ?? kUpdateVersionUrl,
+      _dio =
+          dio ??
+          Dio(
+            BaseOptions(
               connectTimeout: const Duration(seconds: 5),
               receiveTimeout: const Duration(seconds: 5),
-            ));
+            ),
+          );
 
   final Dio _dio;
   final String _url;
@@ -40,6 +48,10 @@ class UpdateService {
     required String currentVersion,
     required String channelKey,
   }) async {
+    // This fork has no published version table yet. Do not send its users to
+    // an upstream release that would undo their local features and settings.
+    // A maintainer can opt into their own table with AVA_VERSION_URL.
+    if (_url.isEmpty) return UpdateDecision.none;
     try {
       // The outer timeout lives HERE, not only in the Dio options: options
       // belong to whichever Dio was injected, and a guarantee that can be
@@ -58,9 +70,11 @@ class UpdateService {
       // exactly what a device-side debug log needs to distinguish "the check
       // failed" from "the banner failed" — silence here cost a real-device
       // debugging session on 2026-08-14.
-      dlog('update check: $channelKey $currentVersion '
-          'keys=${channels is Map ? channels.keys.join(',') : channels.runtimeType} -> '
-          '${decision.available ? 'update ${decision.latest}' : 'up to date'}');
+      dlog(
+        'update check: $channelKey $currentVersion '
+        'keys=${channels is Map ? channels.keys.join(',') : channels.runtimeType} -> '
+        '${decision.available ? 'update ${decision.latest}' : 'up to date'}',
+      );
       return decision;
     } catch (e) {
       // Expected offline / captive-portal noise. Logged for the debug log

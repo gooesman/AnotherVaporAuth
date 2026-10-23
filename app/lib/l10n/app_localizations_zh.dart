@@ -9,7 +9,86 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'AVA';
+  String get steamSwitchTitle => '切换 Steam 账号';
+
+  @override
+  String get steamSwitchUnifiedHelp =>
+      '选中账号后点击切换，即可打开 Steam 并登录。已导入的账号优先使用 Steam 记住的登录信息，需要验证时，有在线会话即可自动批准本次本机登录二维码。未导入的账号仍可使用 Steam 已记住的登录信息。请先退出正在运行的游戏。';
+
+  @override
+  String get steamSwitchHelp =>
+      '可切换已在本机 Steam 登录过并记住登录信息的账号。将令牌导入 GooeSteamKit 不代表该账号已在 Steam 客户端登录。';
+
+  @override
+  String get steamSwitchPath => 'Steam 安装目录';
+
+  @override
+  String get steamSwitchNotFound => '未找到 Steam，请选择 steam.exe 以定位安装目录。';
+
+  @override
+  String get steamSwitchBrowse => '选择 steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      '本机尚无 Steam 登录记录。请先在 Steam 登录并记住登录信息，再刷新列表。';
+
+  @override
+  String get steamSwitchNoMatch =>
+      '所选账号尚无本机登录记录。可使用上方的一键登录；登录并记住登录信息后，刷新即可从下方列表切换。';
+
+  @override
+  String get steamSwitchNeedsLogin => '请先在 Steam 登录此账号并记住登录信息，再刷新列表。';
+
+  @override
+  String get steamSwitchButton => '切换账号';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam 将关闭并重新启动，以登录 $account。请先结束游戏，并等待 Steam 云存档同步完成。是否继续？';
+  }
+
+  @override
+  String get steamSwitchStopping => '正在等待 Steam 退出…';
+
+  @override
+  String get steamSwitchBackingUp => '正在备份 Steam 设置…';
+
+  @override
+  String get steamSwitchConfiguring => '正在设置 Steam 登录账号…';
+
+  @override
+  String get steamSwitchStarting => '正在启动 Steam…';
+
+  @override
+  String get steamSwitchRestoring => '正在恢复 Steam 设置…';
+
+  @override
+  String get steamSwitchLaunched => '已启动 Steam，请在客户端确认登录账号。若出现提示，请重新登录。';
+
+  @override
+  String get steamSwitchBackup => '设置备份位置';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      '无法读取此 Steam 安装目录或设置。请选择正确的 steam.exe 后重试。';
+
+  @override
+  String get steamSwitchCloseFailed => 'Steam 未能正常退出。请手动退出 Steam 后重试。';
+
+  @override
+  String get steamSwitchBusy => '另一个账号切换操作正在进行，请稍后重试。';
+
+  @override
+  String get steamSwitchChanged => '切换期间 Steam 设置发生了变化。请退出 Steam，刷新列表后重试。';
+
+  @override
+  String get steamSwitchFailed => '未能完成账号切换。请检查 Steam 后重试。';
+
+  @override
+  String get steamSwitchRecoveryNeeded => '切换失败，部分设置未能恢复。请保留下方备份，恢复设置后再重试。';
+
+  @override
+  String get appTitle => 'GooeSteamKit';
 
   @override
   String get navAccounts => '账户';
@@ -53,7 +132,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storeErrorBody =>
-      'AVA 的本地账户数据库（manifest.json）缺失或损坏。写入被中断或恢复不完整都可能导致此问题。请先重试；若持续失败，可重置后重新导入你的 maFile 备份。';
+      'GooeSteamKit 的本地账户数据库（manifest.json）缺失或损坏。写入被中断或恢复不完整都可能导致此问题。请先重试；若持续失败，可重置后重新导入你的 maFile 备份。';
 
   @override
   String get storeRepair => '尝试修复';
@@ -67,7 +146,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pinSetupTitle => '设置解锁 PIN';
 
   @override
-  String get pinSetupPrompt => '用 6 位 PIN 保护 AVA。解锁时输入它（或用指纹）。';
+  String get pinSetupPrompt => '用 6 位 PIN 保护 GooeSteamKit。解锁时输入它（或用指纹）。';
 
   @override
   String get pinLabel => '6 位 PIN';
@@ -97,13 +176,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pinMismatch => '两次 PIN 不一致。';
 
   @override
-  String get unlockBiometricReason => '解锁 AVA';
+  String get unlockBiometricReason => '解锁 GooeSteamKit';
 
   @override
-  String get settingsBiometric => '指纹解锁';
+  String get settingsBiometric => '使用系统解锁';
 
   @override
-  String get settingsBiometricDesc => '用指纹或设备密码解锁；口令保存在设备 Keystore 中。';
+  String get settingsBiometricDesc =>
+      '启动验证开启时，可用指纹、Windows Hello 或设备密码代替 GooeSteamKit PIN。关闭启动验证会同时停用此项；重新开启后需单独启用。';
 
   @override
   String get settingsBiometricNeedPasskey => '请先设置加密口令。';
@@ -112,7 +192,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsBiometricUnavailable => '此设备未设置生物识别或屏幕锁。';
 
   @override
-  String get settingsBiometricEnabled => '已启用指纹解锁。';
+  String get settingsBiometricEnabled => '已启用系统解锁';
 
   @override
   String get settingsHoldConfirm => '长按确认';
@@ -141,7 +221,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      '让 AVA 不出现在截屏、录屏和最近任务预览里。代价是投屏时窗口会变黑，也没法再截图附到反馈里。';
+      '让 GooeSteamKit 不出现在截屏、录屏和最近任务预览里。代价是投屏时窗口会变黑，也没法再截图附到反馈里。';
 
   @override
   String get passkeyLabel => '口令';
@@ -204,7 +284,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsTutorialReplay => '重新播放';
 
   @override
-  String get welcomeTitle => '欢迎使用 AVA';
+  String get welcomeTitle => '欢迎使用 GooeSteamKit';
 
   @override
   String get welcomeSubtitle => '本机加密保存你的验证器。开始前请选择一种方式。';
@@ -745,7 +825,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupReminderBody =>
-      'AVA 的令牌数据只保存在本机。请将 maFile 备份到安全的地方。撤销码（R 码）仅在你首次添加令牌时显示一次——请当场抄下并妥善保管；设备丢失时，它是移除令牌的最后手段。';
+      'GooeSteamKit 的令牌数据只保存在本机。请将 maFile 备份到安全的地方。撤销码（R 码）仅在你首次添加令牌时显示一次——请当场抄下并妥善保管；设备丢失时，它是移除令牌的最后手段。';
 
   @override
   String get backupReminderOk => '知道了';
@@ -1116,7 +1196,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return '验证器已迁移成功，但 AVA 未能把它保存到本设备。旧验证器已失效，以下是仅有的副本——关闭本页前请立即抄写。\n\n撤销代码：$code\n\n密钥：$secret';
+    return '验证器已迁移成功，但 GooeSteamKit 未能把它保存到本设备。旧验证器已失效，以下是仅有的副本——关闭本页前请立即抄写。\n\n撤销代码：$code\n\n密钥：$secret';
   }
 
   @override
@@ -1132,7 +1212,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get moveInRescueDismissTitle => '丢弃这些密钥？';
 
   @override
-  String get moveInRescueDismissBody => 'AVA 没有其他副本。若尚未抄下撤销代码与密钥，你将永久失去这个验证器。';
+  String get moveInRescueDismissBody =>
+      'GooeSteamKit 没有其他副本。若尚未抄下撤销代码与密钥，你将永久失去这个验证器。';
 
   @override
   String get moveInRescueDismissConfirm => '我已保存';
@@ -1259,7 +1340,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get privacyUpdateBody =>
-      '隐私说明在你同意之后有了变更。新增:AVA 现在可以通过你自己指定的服务器,在多台设备间同步账户库——默认关闭,所有数据先在本机加密再上传,开发者不运营任何同步服务器。请阅读下方最新的说明。';
+      '隐私说明在你同意之后有了变更。新增:GooeSteamKit 现在可以通过你自己指定的服务器,在多台设备间同步账户库——默认关闭,所有数据先在本机加密再上传,开发者不运营任何同步服务器。请阅读下方最新的说明。';
 
   @override
   String get privacyConsentScrollHint => '请滑到底部后继续';
@@ -1280,7 +1361,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get marketTabInventory => '库存';
 
   @override
-  String get marketTabListings => '我的在售';
+  String get marketTabListings => '我的出售';
 
   @override
   String get marketSelectGame => '选择游戏';
@@ -1619,7 +1700,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncSetUp => '设置同步…';
 
   @override
-  String get syncStatusOk => '已是最新';
+  String get syncStatusOk => '已连接';
 
   @override
   String get syncStatusSyncing => '正在同步…';
@@ -1761,10 +1842,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncPassphraseWrong => '这个口令打不开该同步库。';
 
   @override
-  String get syncPreviewTitle => '首次同步';
+  String get syncPreviewTitle => '连接同步库';
 
   @override
-  String get syncPreviewEmpty => '暂时没有要传输的内容——之后的账户变动会自动同步。';
+  String get syncPreviewEmpty => '连接后，在同步页选择“立即同步”或“一键拉取”；高级设置可分别选择项目。';
 
   @override
   String syncPreviewPull(int count) {
@@ -1782,14 +1863,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get syncStart => '开始同步';
+  String get syncStart => '连接';
 
   @override
-  String get syncDoneTitle => '同步已开启';
+  String get syncDoneTitle => '同步库已连接';
 
   @override
-  String get syncDoneBody =>
-      '账户现在会自动同步。新设备上每个账户首次使用时会重新登录——存过密码的自动完成，其余的会提示输一次。';
+  String get syncDoneBody => '在同步页选择上传或拉取。拉取会合并远程内容，保留本地独有的账户和收藏。';
 
   @override
   String get syncDone => '完成';
@@ -1841,23 +1921,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncConflictNoPassword => '未存密码';
 
   @override
-  String get syncAutoTitle => '自动同步';
+  String get syncAutoTitle => '自动上传';
 
   @override
-  String get syncAutoDesc => '启动时和每次改动后同步。关闭后只有下面的按钮会同步。';
+  String get syncAutoDesc => '启动及内容变动后，上传已选的同步项目；下载仅在点击“一键拉取”时进行。';
 
   @override
-  String get syncPasswordsTitle => '同步账户密码';
+  String get syncPasswordsTitle => '包含账户密码';
 
   @override
-  String get syncPasswordsDesc => '有密码，新设备才能自行登录。改动此项会重新上传全部账户。';
+  String get syncPasswordsDesc => '仅用于账户上传。修改后在下次上传账户时生效。';
 
   @override
   String get syncAppSettingsTitle => '同步应用设置';
 
   @override
   String get syncAppSettingsDesc =>
-      '外观与行为偏好（皮肤、明暗、长按确认等）跟随你到每台设备；语言与字号保持各设备独立。';
+      '仅包含外观与行为偏好。市场收藏和加速订阅分别选择；语言、字号和加速自动启动保持各设备独立。';
 
   @override
   String get syncNowButton => '立即同步';
@@ -1926,7 +2006,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get netErrTimeout => 'Steam 没有在规定时间内响应。网络可能很慢，或者被拦截了。';
 
   @override
-  String get netErrCert => 'Steam 的证书未通过验证，AVA 已中断这次连接。当前网络里可能有东西在监听流量。';
+  String get netErrCert =>
+      'Steam 的证书未通过验证，GooeSteamKit 已中断这次连接。当前网络里可能有东西在监听流量。';
 
   @override
   String netErrServer(int code) {
@@ -2011,6 +2092,1296 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get portableUnreadable =>
       '账号库损坏，或仍依赖原 Windows 的密钥。请从导出的 maFile 恢复，源文件未改动。';
+
+  @override
+  String get friendsTitle => '好友与交易';
+
+  @override
+  String get friendsSearch => '搜索昵称或 SteamID';
+
+  @override
+  String get friendsEmpty => '没有可显示的好友';
+
+  @override
+  String get friendsProfile => '查看 Steam 资料';
+
+  @override
+  String get friendsTrade => '发起交易';
+
+  @override
+  String get friendsOnline => '在线';
+
+  @override
+  String get friendsOffline => '离线';
+
+  @override
+  String get friendsPlaying => '游戏中';
+
+  @override
+  String get tradeNewTitle => '新交易报价';
+
+  @override
+  String get tradeYourItems => '我送出的物品';
+
+  @override
+  String get tradeTheirItems => '我收到的物品';
+
+  @override
+  String get tradeSelectItems => '选择物品';
+
+  @override
+  String get tradeNote => '附言（可选）';
+
+  @override
+  String get tradeReview => '检查报价';
+
+  @override
+  String get tradeSend => '确认发送';
+
+  @override
+  String get tradeReviewBody => '请核对对方 SteamID、双方物品和数量。Steam 可能要求进一步确认或暂挂。';
+
+  @override
+  String get tradeGiftWarning => '此报价只送出物品，你不会收到任何物品。';
+
+  @override
+  String get tradeNoItems => '当前没有可选的可交易物品。';
+
+  @override
+  String get tradeMore => '加载更多';
+
+  @override
+  String get tradeSent => '报价已发送。';
+
+  @override
+  String get tradeNeedsMobile => '报价已创建，请到待办中完成手机令牌确认。';
+
+  @override
+  String get tradeNeedsEmail => '报价已创建，请按 Steam 邮件完成确认。';
+
+  @override
+  String get tradeOpenPending => '查看待办与报价';
+
+  @override
+  String get tradeUnknownResult => '未能确认发送结果。请先查看已发出的报价，确认未发送后再重试，避免重复报价。';
+
+  @override
+  String get tradeChooseGame => '选择库存';
+
+  @override
+  String get tradeQuantity => '数量';
+
+  @override
+  String get tradeLoadFailed => '无法读取 Steam 好友或库存，请刷新重试。';
+
+  @override
+  String get tradeSendFailed => 'Steam 未确认发送成功，请查看报价记录后再试。';
+
+  @override
+  String get marketListingActive => '在售';
+
+  @override
+  String get marketListingOnHold => '暂挂中';
+
+  @override
+  String get marketListingPending => '等待确认';
+
+  @override
+  String get marketListingInactive => '未在售';
+
+  @override
+  String marketHoldUntil(String date) {
+    return '暂挂至 $date';
+  }
+
+  @override
+  String get marketListingsAll => '全部';
+
+  @override
+  String get marketCancelConfirm => '确定取消这件物品的市场上架？';
+
+  @override
+  String get settingsStartupVerification => '启动时验证身份';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      '开启时需输入 GooeSteamKit PIN 或使用系统验证。关闭后，任何能使用此设备的人都可打开 GooeSteamKit；账户文件仍加密保存在本机。';
+
+  @override
+  String get settingsStartupVerificationError => '无法保存启动验证设置，请检查系统安全存储后重试。';
+
+  @override
+  String get settingsLockNow => '立即锁定';
+
+  @override
+  String get settingsStartupVerificationPinChanged => '更改 PIN 后会重新开启启动验证。';
+
+  @override
+  String get settingsStartupVerificationDisable => '关闭启动验证？';
+
+  @override
+  String get dashboardTitle => '账户概览';
+
+  @override
+  String get dashboardWallet => '钱包余额';
+
+  @override
+  String get dashboardPendingBalance => '待到账余额';
+
+  @override
+  String get dashboardUnavailable => '暂未获取';
+
+  @override
+  String get dashboardMarket => '库存与市场';
+
+  @override
+  String get dashboardTools => '账户工具';
+
+  @override
+  String get dashboardCustomize => '布局设置';
+
+  @override
+  String get dashboardViewAll => '查看全部';
+
+  @override
+  String get dashboardNoListings => '目前没有出售记录。';
+
+  @override
+  String get dashboardFetchFailed => '暂时无法读取，请刷新重试。';
+
+  @override
+  String get dashboardSaveFailed => '无法保存显示偏好。';
+
+  @override
+  String get backupCodesTitle => '备用登录码';
+
+  @override
+  String get backupCodesAccountCheck =>
+      '浏览器可能登录着另一个 Steam 账号。生成备用码前，请核对网页中的账号是否与上方一致。';
+
+  @override
+  String get backupCodesHow => '通过 Steam 获取备用码';
+
+  @override
+  String get backupCodesSteps =>
+      '1. 点击下方按钮，打开 Steam 令牌管理页。\n2. 登录上方显示的目标账号。\n3. 选择“获取备用 Steam 令牌验证码”。\n4. 按 Steam 提示完成验证，并妥善保存生成的备用码。';
+
+  @override
+  String get backupCodesExplanation =>
+      '这是一次性备用登录码，与移除令牌的恢复码不同。备用码由 Steam 签发和管理；GooeSteamKit 提供官方流程入口，不在本地生成或保存这些码。';
+
+  @override
+  String get backupCodesOpenSteam => '前往 Steam 获取备用码';
+
+  @override
+  String get backupCodesCopyLink => '复制官方链接';
+
+  @override
+  String get backupCodesOpenFailed => '未能打开浏览器，请复制链接后手动打开。';
+
+  @override
+  String get loginAccountMismatch => '登录的是其他 Steam 账号。请使用当前账户完成验证，原账户未被修改。';
+
+  @override
+  String get tradeFromAccount => '发起账户';
+
+  @override
+  String get tradeToAccount => '交易对象';
+
+  @override
+  String get tradeValidationFailed => '报价尚未发送。请检查所选物品和数量；每方最多选择 256 项。';
+
+  @override
+  String get friendsProfileOpenFailed => '无法打开浏览器，可复制下方 Steam 官方链接。';
+
+  @override
+  String get steamSwitchQrTitle => '用 GooeSteamKit 账号扫码登录';
+
+  @override
+  String get steamSwitchQrHelp =>
+      '选择 GooeSteamKit 账号，在 Steam 显示登录二维码，再扫码并确认登录请求。';
+
+  @override
+  String get steamSwitchQrAccount => 'GooeSteamKit 账号';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      '请先在 GooeSteamKit 中重新登录此账号。仅有离线令牌码无法批准二维码登录。';
+
+  @override
+  String get steamSwitchQrNoAccounts => '请先向 GooeSteamKit 添加账号，再使用扫码登录。';
+
+  @override
+  String get approveScreenSelect => '拖框扫描屏幕二维码';
+
+  @override
+  String get approveScreenHelp =>
+      '点击后 GooeSteamKit 会暂时隐藏。拖动框选 Steam 登录二维码，再核对账号与登录设备并确认。';
+
+  @override
+  String get approveScreenInstruction => '拖动框选一个 Steam 登录二维码 · Esc / 右键取消';
+
+  @override
+  String get approveScreenNoCode => '未识别到二维码。请框选完整二维码，保留少许周围空白后重试。';
+
+  @override
+  String get approveScreenFailed => '无法截取屏幕，请重试或粘贴二维码链接。';
+
+  @override
+  String get approveSessionUnavailable => '此二维码已过期或无法核实登录信息，请在 Steam 刷新二维码后重试。';
+
+  @override
+  String get itemMarketActions => '物品市场选项';
+
+  @override
+  String get itemMarketViewPrice => '查看市场价格';
+
+  @override
+  String get itemMarketOpen => '在 Steam 市场查看';
+
+  @override
+  String get itemMarketVolume => '近期成交量';
+
+  @override
+  String get itemMarketReferenceNote => 'Steam 市场单件参考价，非卖出实收；价格会变动。';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return '币种：$currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => '此物品没有可用于查价的市场名称。';
+
+  @override
+  String get itemMarketOpenFailed => '无法打开 Steam 市场页面。';
+
+  @override
+  String get steamClientRunning => 'Steam 已启动';
+
+  @override
+  String get steamClientStopped => 'Steam 未启动';
+
+  @override
+  String get steamClientStatusLoading => '正在读取 Steam 状态…';
+
+  @override
+  String get steamClientStatusUnavailable => '暂时无法读取 Steam 状态';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return '当前登录：$account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => '当前登录账户尚未识别';
+
+  @override
+  String get steamClientCurrentBadge => '当前登录';
+
+  @override
+  String get forkLocalFeaturesTitle => '本地功能已开放';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      '此独立分支无需 Pro 验证即可使用全部本地功能。原作者的在线服务和订阅不包含在内。';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      '此 AVA 独立分支将 Steam 账户与验证器密钥保存在本设备上，Steam 请求直连 Valve。可选同步只有在你配置自己的服务器后才启用，账户数据在本机加密后再同步。本地功能无需 Pro 验证；此构建不使用广告、支付服务或原版更新检查。反馈只打开本分支的 GitHub Issues，不会自动发送报告或日志。没有跟踪或统计。请阅读下方本分支的隐私说明，继续即表示接受。';
+
+  @override
+  String get forkUpdateTitle => '软件更新';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return '当前版本 $version';
+  }
+
+  @override
+  String get forkUpdateCheck => '检查更新';
+
+  @override
+  String get forkUpdateChecking => '正在检查更新…';
+
+  @override
+  String get forkUpdateNoRelease => '暂时没有可用的发布版本';
+
+  @override
+  String get forkUpdateUpToDate => '当前已是最新版本';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return '发现新版本 $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => '更新说明';
+
+  @override
+  String get forkUpdateNoNotes => '此版本没有附带更新说明';
+
+  @override
+  String get forkUpdateDownload => '下载更新';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return '正在下载 $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => '取消下载';
+
+  @override
+  String get forkUpdateReady => '安装包已下载并通过校验';
+
+  @override
+  String get forkUpdateInstall => '安装更新';
+
+  @override
+  String get forkUpdateInstallTitle => '安装此更新？';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      '将打开系统安装页面。若提示，请允许 GooeSteamKit 安装应用，然后按系统提示完成更新。';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      '确认后将启动安装程序并关闭 GooeSteamKit。请先完成当前操作，再按安装程序提示更新。';
+
+  @override
+  String get forkUpdateInstallConfirm => '继续安装';
+
+  @override
+  String get forkUpdateInstallStarted => '已打开系统安装程序，请按提示完成更新';
+
+  @override
+  String get forkUpdateCheckFailed => '检查更新失败，请稍后重试';
+
+  @override
+  String get forkUpdateDownloadFailed => '下载失败，请重试';
+
+  @override
+  String get forkUpdateHashFailed => '安装包校验失败，已阻止安装，请重新下载';
+
+  @override
+  String get forkUpdateInstallFailed => '无法启动安装程序，请重试';
+
+  @override
+  String get forkUpdateNoCompatibleAsset => '此版本没有适用于本设备的安装包';
+
+  @override
+  String get forkUpdateUnverifiable => '此安装包缺少可信校验信息，无法下载或安装';
+
+  @override
+  String get forkUpdateInvalidMetadata => '发布信息不完整或无效，请稍后重试';
+
+  @override
+  String get forkUpdateUnsupported => '此设备暂不支持应用内更新';
+
+  @override
+  String get forkUpdateCancelled => '下载已取消';
+
+  @override
+  String get forkUpdatePermissionRequired => '请先允许 GooeSteamKit 安装应用，再返回此页面安装';
+
+  @override
+  String get forkUpdateOpenPermissionSettings => '允许安装应用';
+
+  @override
+  String get forkUpdateWrongPackage => '安装包不属于此应用，已阻止安装';
+
+  @override
+  String get forkUpdateSignatureMismatch => '安装包签名与当前应用不一致，已阻止安装';
+
+  @override
+  String get backupCodesNativeIntro =>
+      '在这里生成 Steam 一次性备用登录码。Steam 需要验证此账户绑定手机号收到的短信。生成新的一组可能替换原有备用码。';
+
+  @override
+  String get backupCodesSendSms => '发送验证短信';
+
+  @override
+  String get backupCodesSmsPrompt => '输入 Steam 短信中的验证码。';
+
+  @override
+  String get backupCodesSmsLabel => '短信验证码';
+
+  @override
+  String get backupCodesGenerate => '验证并生成备用码';
+
+  @override
+  String get backupCodesReady => '你的一次性备用登录码';
+
+  @override
+  String get backupCodesKeepSafe =>
+      '每个备用码只能使用一次。请打印并妥善保存。GooeSteamKit 不会保存这些码；离开此页或切换应用后会清除显示。生成或使用备用码时，Steam 会发送邮件通知。';
+
+  @override
+  String get backupCodesClear => '清除备用码';
+
+  @override
+  String get backupCodesRequestFailed => 'Steam 未能完成请求。程序没有自动重试。请检查网络后手动重试。';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Steam 返回了未识别的响应，无法确认结果；程序没有重试请求。';
+
+  @override
+  String get backupCodesInvalidSms => 'Steam 未接受验证码，请核对短信后重试。';
+
+  @override
+  String get backupCodesRateLimited => 'Steam 限制了请求次数，请稍后再试。';
+
+  @override
+  String get backupCodesPhoneRequired => 'Steam 要求此账户已绑定并验证手机号。';
+
+  @override
+  String get backupCodesManualHelp => 'Steam 官方网页（备用方式）';
+
+  @override
+  String get steamAccelerationTitle => 'Steam 加速';
+
+  @override
+  String get steamAccelerationDesc =>
+      '优先使用外部代理，外部关闭后接续内置加速。内置线路仅用于 GooeSteamKit 的 Steam 访问。';
+
+  @override
+  String get steamAccelerationOff => '未启用';
+
+  @override
+  String get steamAccelerationLoading => '正在同步订阅…';
+
+  @override
+  String get steamAccelerationStarting => '正在启动…';
+
+  @override
+  String get steamAccelerationRunning => '运行中';
+
+  @override
+  String get steamAccelerationPaused => '内置加速待命';
+
+  @override
+  String get steamAccelerationFailed => '加速不可用';
+
+  @override
+  String get steamAccelerationUnsupported => '目前仅支持 Windows 和 Android。';
+
+  @override
+  String get steamAccelerationConfigured => '订阅已保存在此设备';
+
+  @override
+  String get steamAccelerationUnconfigured => '尚未配置订阅';
+
+  @override
+  String get steamAccelerationConfigure => '添加订阅';
+
+  @override
+  String get steamAccelerationReplace => '更换订阅';
+
+  @override
+  String get steamAccelerationSubscription => '订阅地址';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      '链接可能包含私人凭据，会安全保存在设备上。在“同步 → 高级设置”中选择加速订阅与节点，即可通过同步口令加密上传或拉取。保存后点击“更新节点”加载节点。';
+
+  @override
+  String get steamAccelerationClear => '清除订阅';
+
+  @override
+  String get steamAccelerationClearConfirm =>
+      '停止内置加速并删除已保存的订阅和节点？开启设置同步时，这项删除也会同步到其他设备。';
+
+  @override
+  String get steamAccelerationSync => '更新节点';
+
+  @override
+  String get steamAccelerationDownloadingCore => '正在下载加速组件…';
+
+  @override
+  String get steamAccelerationCoreDownload => '加速组件下载失败，已尝试镜像和官方源，请稍后重试。';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      '当前使用外部连接。开启自动切换后，外部关闭时会接上内置线路，无需手动切换。';
+
+  @override
+  String get steamAccelerationNodes => '节点';
+
+  @override
+  String get steamAccelerationNoNodes => '请同步订阅获取可用节点。';
+
+  @override
+  String get steamAccelerationNode => '使用节点';
+
+  @override
+  String get steamAccelerationStart => '开启自动切换';
+
+  @override
+  String get steamAccelerationStop => '暂停自动切换';
+
+  @override
+  String get steamAccelerationAuto => '启动时自动开启';
+
+  @override
+  String get steamAccelerationAutoDesc =>
+      '优先使用外部代理或 VPN，关闭后恢复内置线路。手动暂停仅在本次运行期间生效。';
+
+  @override
+  String get steamAccelerationEnvironment => '外部代理检测';
+
+  @override
+  String get steamAccelerationExternalProxy => '检测到系统代理或 PAC';
+
+  @override
+  String get steamAccelerationExternalVpn => '检测到 VPN 或隧道';
+
+  @override
+  String get steamAccelerationNoExternal => '未检测到外部代理';
+
+  @override
+  String get steamAccelerationDetectionUnavailable =>
+      '无法确认外部代理，内置线路暂不启动。请检查系统代理设置后重新检测。';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      '应用可见时自动检查本机连接设置，不修改系统代理或 VPN。';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return '已跳过 $count 个不支持的节点。';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription =>
+      '请输入有效的 HTTP 或 HTTPS 订阅地址。';
+
+  @override
+  String get steamAccelerationNetworkError => '无法获取订阅，请检查网络后重试。';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      '订阅中没有支持的节点，请使用兼容的 Clash 订阅。';
+
+  @override
+  String get steamAccelerationStorageError => '系统安全存储不可用，无法保存设置。';
+
+  @override
+  String get steamAccelerationCoreUnavailable => '缺少加速组件，请安装更新的应用包。';
+
+  @override
+  String get steamAccelerationCoreIntegrity => '加速组件校验失败，已阻止启动。';
+
+  @override
+  String get steamAccelerationStartFailed => '无法启动加速，请刷新环境检测后重试。';
+
+  @override
+  String get inventorySearch => '搜索物品';
+
+  @override
+  String get inventoryFilterType => '类型';
+
+  @override
+  String get inventoryFilterRarity => '品质';
+
+  @override
+  String get inventoryFilterOther => '其他／未分类';
+
+  @override
+  String get inventoryFilterNoMatches => '没有符合筛选条件的物品';
+
+  @override
+  String get inventoryFilterLoaded => '筛选当前已加载的物品；加载更多后会包含剩余物品。';
+
+  @override
+  String get steamConnectionTitle => '连接检查';
+
+  @override
+  String get steamConnectionNotChecked => '尚未检查连接';
+
+  @override
+  String get steamConnectionChecking => '正在检查连接…';
+
+  @override
+  String get steamConnectionAvailable => '连接可用';
+
+  @override
+  String get steamConnectionPartial => '部分 Steam 服务无法连接';
+
+  @override
+  String get steamConnectionUnavailable => '无法连接 Steam';
+
+  @override
+  String get steamConnectionCheck => '检查连接';
+
+  @override
+  String get steamConnectionApi => 'Steam 登录接口';
+
+  @override
+  String get steamConnectionCommunity => 'Steam 社区与市场';
+
+  @override
+  String get steamConnectionReachable => '可连接';
+
+  @override
+  String get steamConnectionFailed => '连接失败';
+
+  @override
+  String get steamConnectionInternal => '内置线路';
+
+  @override
+  String get steamConnectionExternal => '外部 HTTP 代理';
+
+  @override
+  String get steamConnectionSystem => '外部 VPN／隧道';
+
+  @override
+  String get steamConnectionDirect => '直接连接';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return '上次检查：$time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      '仅代理 GooeSteamKit 内部的 Steam 请求，因此 Android 不显示系统 VPN 图标；Steam 客户端和其他应用不会被加速。';
+
+  @override
+  String get steamConnectionScope =>
+      '通过 GooeSteamKit 当前线路检查 Steam 接口和社区，不发送账户凭据。结果仅代表本次检查，不会持续检测。';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return '报价未发出。$reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => '核对发送结果';
+
+  @override
+  String get tradeSendNotFound =>
+      '暂未查到对应的新报价，Steam 可能尚未更新。请先检查待确认和已发送报价，避免重复发送。';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return '暂时无法核对发送结果。$reason';
+  }
+
+  @override
+  String get tradeSendRejected => 'Steam 拒绝了这笔报价，但未提供详细原因。请检查所选物品和交易限制。';
+
+  @override
+  String get tradeSendUnreadableResponse => 'Steam 未返回完整的发送回执。';
+
+  @override
+  String get steamConnectionPacHelp =>
+      '检测到了系统代理设置，但没有可用的 HTTP 端口或 VPN 线路。本程序不解析 PAC 脚本，请开启外部代理的 HTTP 代理或 VPN 模式。';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/秒';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return '预计还需 $seconds 秒';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return '预计还需 $minutes 分钟';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => '等待数据…';
+
+  @override
+  String get forkUpdateVerifying => '正在校验安装包…';
+
+  @override
+  String get forkUpdateConnectionHint =>
+      '自动模式通过 GH-Proxy 直连下载，无需开启代理；失败时切回 GitHub。安装包始终按 GitHub 的 SHA-256 校验。';
+
+  @override
+  String get forkUpdateSourceLabel => '下载来源';
+
+  @override
+  String get forkUpdateSourceAutomatic => '自动加速（推荐）';
+
+  @override
+  String get forkUpdateSourceOfficial => 'GitHub 官方';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return '加速源直连 · $provider';
+  }
+
+  @override
+  String get marketTabSearch => '市场';
+
+  @override
+  String get marketSearchHint => '搜索商品名称，例如 AK-47';
+
+  @override
+  String get marketSearchEmpty => '选择游戏和币种，输入商品名后搜索。仅在搜索时加载。';
+
+  @override
+  String get marketSearchButton => '搜索市场';
+
+  @override
+  String get marketSearchAllGames => '全部游戏';
+
+  @override
+  String get marketSearchGame => '游戏';
+
+  @override
+  String get marketSearchCurrency => '币种';
+
+  @override
+  String get marketSearchNoResults => '没有找到相关商品，试试其他关键词。';
+
+  @override
+  String get marketSearchMore => '加载更多';
+
+  @override
+  String marketSearchListings(int count) {
+    return '在售数量：$count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => '暂无价格';
+
+  @override
+  String get marketSearchPriceNote => '仅为可见商品按所选币种加载参考价格；价格可能变化。';
+
+  @override
+  String get marketSearchRefreshPrice => '刷新价格';
+
+  @override
+  String get marketSearchRateLimited => 'Steam 请求过多，请稍后重试。';
+
+  @override
+  String get marketSearchUnavailable => '暂时无法获取市场商品，请稍后重试。';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return '请求币种：$currency';
+  }
+
+  @override
+  String get steamConnectionUnresolvedProxy => '系统代理不可用';
+
+  @override
+  String get steamDesktopLoginButton => '打开 Steam 并登录';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      '使用所选账号打开或切换 Steam，并自动批准本次本机登录窗口的二维码。请先退出正在运行的游戏。';
+
+  @override
+  String get steamDesktopLoginPreparing => '正在准备所选账号…';
+
+  @override
+  String get steamDesktopLoginWaitingQr => '正在等待本机 Steam 登录二维码…';
+
+  @override
+  String get steamDesktopLoginApproving => '正在批准本机登录…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount => '正在确认 Steam 登录状态…';
+
+  @override
+  String get steamDesktopLoginComplete => '已核验 Steam 客户端当前账号为所选账号。';
+
+  @override
+  String get steamDesktopLoginManual => 'Steam 已打开，但未能确认本机登录二维码。可使用下方扫码入口继续。';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      '已提交登录批准请求，但尚未确认 Steam 已登录。请查看 Steam 窗口后刷新状态。';
+
+  @override
+  String get steamDesktopLoginCancelled => '已停止自动登录';
+
+  @override
+  String get steamDesktopLoginCancel => '停止自动批准';
+
+  @override
+  String get steamDesktopLoginWrongAccount => 'Steam 当前登录了其他账号，已停止自动批准。';
+
+  @override
+  String get steamClientOpen => '打开 Steam';
+
+  @override
+  String get steamSwitchLaunchFailed => 'Steam 未能启动。请检查安装路径，并确认 Steam 可以正常运行。';
+
+  @override
+  String get steamSwitchFileAccessFailed => '无法备份或修改 Steam 设置，请检查安装目录的读写权限。';
+
+  @override
+  String get steamDesktopLoginSession => 'Steam 已打开，正在连接所选账户…';
+
+  @override
+  String get steamSwitchInspecting => '检查本机 Steam';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return '阶段：$stage；错误码：$code；Windows：$systemError。';
+  }
+
+  @override
+  String get approveScreenBusy => '另一个截图正在进行，请先完成或取消。';
+
+  @override
+  String get approveScreenDisplayChanged => '屏幕布局已变化，请重新框选。';
+
+  @override
+  String get approveScreenRegionTooLarge => '框选范围过大，请只选择二维码区域。';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return '无法截取屏幕，请重试。错误信息：$detail。';
+  }
+
+  @override
+  String get marketFavoriteTitle => '收藏';
+
+  @override
+  String get marketFavoriteAdd => '收藏商品';
+
+  @override
+  String get marketFavoriteRemove => '取消收藏';
+
+  @override
+  String get marketFavoriteEmpty => '在市场搜索结果中收藏商品，下次可在这里直接查看价格。';
+
+  @override
+  String get marketFavoriteSaveFailed => '无法读取或保存市场收藏，请重试。';
+
+  @override
+  String get syncCompareTitle => '对比本地与远程';
+
+  @override
+  String get syncCompareRefresh => '刷新对比';
+
+  @override
+  String get syncCompareHelp =>
+      '先查看每项差异，再选择方向。“较新”根据上次共同版本后的改动判断；下方时间为最近同步时间，仅供参考。拉取或上传只处理选中的这一项。';
+
+  @override
+  String get syncComparePasswordChangePending =>
+      '密码同步设置已更改。请返回同步页面，勾选账户后点击立即同步以应用更改；仍可查看差异和拉取。';
+
+  @override
+  String get syncCompareStale => '本地或远程内容已发生变化，请刷新对比后重试。';
+
+  @override
+  String get syncCompareFailed => '对比或传输失败，请检查连接与同步密码后刷新；尚未确认传输成功。';
+
+  @override
+  String get syncCompareSame => '内容一致';
+
+  @override
+  String get syncCompareLocalOnly => '仅本地有';
+
+  @override
+  String get syncCompareRemoteOnly => '仅远程有';
+
+  @override
+  String get syncCompareLocalNewer => '本地有较新改动';
+
+  @override
+  String get syncCompareRemoteNewer => '远程有较新改动';
+
+  @override
+  String get syncCompareBothChanged => '两端内容不同，请选择保留哪一端';
+
+  @override
+  String get syncCompareRemoteDeleted => '远程已删除；上传将恢复此账户';
+
+  @override
+  String get syncCompareSettings => '设置、市场收藏与加速订阅';
+
+  @override
+  String get syncCompareSettingsConflict => '两端设置均有改动，请先对比再选择上传或拉取。';
+
+  @override
+  String get syncComparePull => '拉取远程 → 本地';
+
+  @override
+  String get syncCompareUpload => '上传本地 → 远程';
+
+  @override
+  String get syncCompareHidden => '敏感内容不同（已隐藏）';
+
+  @override
+  String get syncCompareCurrency => '市场币种';
+
+  @override
+  String get syncCompareFavorites => '市场收藏';
+
+  @override
+  String get syncCompareSubscription => '加速订阅地址';
+
+  @override
+  String get syncCompareNodes => '加速节点配置';
+
+  @override
+  String get syncCompareSelectedNode => '选中的加速节点';
+
+  @override
+  String get marketFavoriteSearch => '搜索';
+
+  @override
+  String get inventoryCooldownDetails => '交易与市场限制';
+
+  @override
+  String inventoryCooldownUntil(String time) {
+    return '冷却至 $time';
+  }
+
+  @override
+  String get inventoryCooldownTradable => '可交易';
+
+  @override
+  String get inventoryCooldownNotTradable => '不可交易';
+
+  @override
+  String get inventoryCooldownMarketable => '可上架';
+
+  @override
+  String get inventoryCooldownLocalTime => '时间已转换为本机时区。';
+
+  @override
+  String get inventoryCooldownUnknown => 'Steam 未提供可识别的解锁时间，不估算日期。';
+
+  @override
+  String get inventoryCooldownElapsed => '该日期已到，请刷新库存，以 Steam 返回的最新限制状态为准。';
+
+  @override
+  String inventoryCooldownRemaining(int days, int hours, int minutes) {
+    return '剩余：$days 天 $hours 小时 $minutes 分钟';
+  }
+
+  @override
+  String get deviceRevokeOthersAction => '撤销其他设备授权';
+
+  @override
+  String deviceRevokeOthersConfirm(int count) {
+    return '撤销下方列出的其他 $count 个设备授权？保留当前 GooeSteamKit 会话，其他设备需要重新登录。此操作不会移除 Steam 令牌验证器。';
+  }
+
+  @override
+  String get deviceRevokeOthersCurrentUnknown =>
+      '无法识别当前 GooeSteamKit 会话，请刷新后再撤销设备授权。';
+
+  @override
+  String get deviceRevokeOthersNone => '没有可撤销的其他设备授权。';
+
+  @override
+  String get deviceRevokeOthersBusy => '正在撤销其他设备授权…';
+
+  @override
+  String deviceRevokeOthersDone(int count) {
+    return '已确认撤销 $count 个其他设备授权。';
+  }
+
+  @override
+  String deviceRevokeOthersPartial(int done, int failed) {
+    return '已确认撤销 $done 个，另有 $failed 个未完成或未确认。请核对下方详情及刷新后的设备列表，再决定是否重试。';
+  }
+
+  @override
+  String get accountCopyInfoTitle => '复制账户信息';
+
+  @override
+  String get accountCopyPersonaName => '复制 Steam 昵称';
+
+  @override
+  String get accountCopyLoginName => '复制登录名';
+
+  @override
+  String get accountCopyUnavailable => '暂未获取';
+
+  @override
+  String get accountCopyFailed => '复制失败，请重试。';
+
+  @override
+  String get notificationsTitle => 'Steam 通知';
+
+  @override
+  String get notificationsInboxTab => '通知';
+
+  @override
+  String get notificationsRequestsTab => '好友申请';
+
+  @override
+  String get notificationsEmpty => '暂无通知。';
+
+  @override
+  String get notificationsRequestsEmpty => '暂无待处理好友申请。';
+
+  @override
+  String get notificationsMarkRead => '标为已读';
+
+  @override
+  String get notificationsMarkAllRead => '当前列表全部标为已读';
+
+  @override
+  String get notificationsHide => '忽略通知';
+
+  @override
+  String get notificationsItemTitle => 'Steam 通知';
+
+  @override
+  String get notificationsItemFallback => '这类通知暂未提供可显示的正文。';
+
+  @override
+  String get notificationsOpenSteam => '在 Steam 中查看';
+
+  @override
+  String get notificationsAcceptRequest => '同意';
+
+  @override
+  String get notificationsRejectRequest => '拒绝';
+
+  @override
+  String get notificationsActionUnconfirmed => '未确认操作结果，请刷新核对后再重试。';
+
+  @override
+  String get notificationsActionDone => '已更新。';
+
+  @override
+  String get notificationsLoadFailed => '暂时无法加载，请刷新或重新登录。';
+
+  @override
+  String get notificationsOpenFailed => '无法打开 Steam 页面。';
+
+  @override
+  String get notificationsUnread => '未读';
+
+  @override
+  String get notificationsSessionChanged => '账户会话已变化，请刷新列表后继续。';
+
+  @override
+  String confirmationBadgeCount(int count) {
+    return '$count 项待确认';
+  }
+
+  @override
+  String get confirmationBadgeUnknown => '尚未获取待确认数量。';
+
+  @override
+  String confirmationBadgeStale(int count) {
+    return '上次获取：$count 项待确认，请刷新核对。';
+  }
+
+  @override
+  String get notificationsTypeGift => '礼物';
+
+  @override
+  String get notificationsTypeComment => '评论';
+
+  @override
+  String get notificationsTypeInventory => '库存物品';
+
+  @override
+  String get notificationsTypeFriend => '好友申请';
+
+  @override
+  String get notificationsTypeSale => '促销';
+
+  @override
+  String get notificationsTypeWishlist => '愿望单';
+
+  @override
+  String get notificationsTypeTrade => '交易报价';
+
+  @override
+  String get notificationsTypeAccount => '账户通知';
+
+  @override
+  String get notificationsTypeSupport => 'Steam 客服';
+
+  @override
+  String get notificationsTypeModeration => '社区管理通知';
+
+  @override
+  String get notificationsTypeFamily => '家庭邀请';
+
+  @override
+  String get notificationsTypePlaytest => '测试邀请';
+
+  @override
+  String get notificationsTypeTradeReversal => '交易撤销';
+
+  @override
+  String get notificationsTypeReport => '举报结果';
+
+  @override
+  String get notificationsNoUnread => '暂无未读通知。';
+
+  @override
+  String notificationsHistory(int count) {
+    return '已读通知（$count）';
+  }
+
+  @override
+  String get notificationsCollapseHistory => '收起已读通知';
+
+  @override
+  String notificationsInventoryReceived(String game) {
+    return '$game 有新的库存物品。';
+  }
+
+  @override
+  String get notificationsItemLoading => '正在获取物品详情…';
+
+  @override
+  String get notificationsItemUnavailable => '物品详情暂不可用。';
+
+  @override
+  String get notificationsOpenInventory => '查看库存';
+
+  @override
+  String get notificationsFriendSummary => '进入好友申请，查看并处理当前邀请。';
+
+  @override
+  String get notificationsTradeSummary => '进入报价，查看物品与当前交易状态。';
+
+  @override
+  String get deviceRevokeOthersVerifyPending => '无法从刷新后的设备列表核实撤销结果，请刷新核对后再操作。';
+
+  @override
+  String get dashboardFriends => '好友';
+
+  @override
+  String get dashboardInventory => '库存';
+
+  @override
+  String get dashboardFavorites => '市场收藏';
+
+  @override
+  String get dashboardCardsDescription => '选择概览显示的卡片；关闭后不加载。手机首页保持简洁。';
+
+  @override
+  String dashboardFriendsSummary(int total, int online) {
+    return '共 $total 位好友 · $online 位在线';
+  }
+
+  @override
+  String dashboardInventorySummary(int games, int items) {
+    return '$games 个库存 · $items 件物品';
+  }
+
+  @override
+  String get dashboardFavoritesEmpty => '还没有收藏的市场物品。';
+
+  @override
+  String get dashboardInventoryEmpty => '暂无可显示的库存。';
+
+  @override
+  String get dashboardFriendsEmpty => '暂无好友。';
+
+  @override
+  String get dashboardFavoritesMore => '查看全部收藏';
+
+  @override
+  String dashboardFavoritesPriceNote(String currency) {
+    return '价格币种：$currency · 最低在售';
+  }
+
+  @override
+  String dashboardCardsLimited(int count) {
+    return '仅预览前 $count 项';
+  }
+
+  @override
+  String get dashboardEditLayout => '调整位置与大小';
+
+  @override
+  String get dashboardFinishLayout => '完成调整';
+
+  @override
+  String get dashboardLayoutHelp => '拖动手柄移动卡片；拖动右下角调整宽高。完成后在“布局设置”中退出调整。';
+
+  @override
+  String get dashboardLayoutHelpMobile =>
+      '拖动手柄上下移动卡片；拖动右下角调整高度。完成后在“布局设置”中退出调整。';
+
+  @override
+  String get dashboardResetLayout => '重置布局';
+
+  @override
+  String get dashboardDragCard => '移动卡片';
+
+  @override
+  String get dashboardResizeCard => '调整大小';
+
+  @override
+  String get dashboardLayoutSettingsHint => '在账户概览的“布局设置”中调整卡片位置和大小。';
+
+  @override
+  String get syncAdvancedOptions => '高级设置';
+
+  @override
+  String get syncUploadItems => '同步项目（上传）';
+
+  @override
+  String get syncPullItems => '拉取项目（下载）';
+
+  @override
+  String get syncItemAccounts => '账户与令牌';
+
+  @override
+  String get syncItemSettings => '应用设置';
+
+  @override
+  String get syncItemFavorites => '市场收藏与币种';
+
+  @override
+  String get syncItemAcceleration => '加速订阅与节点';
+
+  @override
+  String get syncSelectionEmpty => '未选择项目';
+
+  @override
+  String get syncSelectionHelp => '勾选后自动保存；这里只配置，不会开始传输。';
+
+  @override
+  String get syncUploadHelp => '将所选内容上传到远程，本地数据保持不变。';
+
+  @override
+  String get syncPullHelp => '下载并合并所选内容，保留本地独有的账户和收藏。';
+
+  @override
+  String get syncPullNow => '一键拉取';
+
+  @override
+  String get syncPulling => '正在下载…';
+
+  @override
+  String get syncOptionsSaveFailed => '同步选项保存失败，请重试。';
+
+  @override
+  String get syncUploaded => '已上传项目';
+
+  @override
+  String get syncPulled => '已拉取项目';
+
+  @override
+  String get syncPartialRetry => '已完成的项目会保留，可重试未完成的项目。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -2018,7 +3389,86 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   AppLocalizationsZhHant() : super('zh_Hant');
 
   @override
-  String get appTitle => 'AVA';
+  String get steamSwitchTitle => '切換 Steam 帳號';
+
+  @override
+  String get steamSwitchUnifiedHelp =>
+      '選取帳號後點擊切換，即可開啟 Steam 並登入。已匯入的帳號優先使用 Steam 記住的登入資訊，需要驗證時，有線上工作階段即可自動批准本次本機登入 QR 碼。未匯入的帳號仍可使用 Steam 已記住的登入資訊。請先退出正在執行的遊戲。';
+
+  @override
+  String get steamSwitchHelp =>
+      '可切換已在這台電腦的 Steam 登入過並記住登入資訊的帳號。將驗證器匯入 GooeSteamKit 不代表該帳號已登入 Steam 用戶端。';
+
+  @override
+  String get steamSwitchPath => 'Steam 安裝資料夾';
+
+  @override
+  String get steamSwitchNotFound => '找不到 Steam，請選擇 steam.exe 以指定安裝位置。';
+
+  @override
+  String get steamSwitchBrowse => '選擇 steam.exe';
+
+  @override
+  String get steamSwitchNoAccounts =>
+      '這台電腦尚無 Steam 登入紀錄。請先在 Steam 登入並記住登入資訊，再重新整理清單。';
+
+  @override
+  String get steamSwitchNoMatch =>
+      '所選帳號尚無本機登入紀錄。可使用上方的一鍵登入；登入並記住登入資訊後，重新整理即可從下方清單切換。';
+
+  @override
+  String get steamSwitchNeedsLogin => '請先在 Steam 登入此帳號並記住登入資訊，再重新整理清單。';
+
+  @override
+  String get steamSwitchButton => '切換帳號';
+
+  @override
+  String steamSwitchConfirm(String account) {
+    return 'Steam 將關閉並重新啟動，以登入 $account。請先結束遊戲，並等待 Steam 雲端存檔同步完成。是否繼續？';
+  }
+
+  @override
+  String get steamSwitchStopping => '正在等待 Steam 結束…';
+
+  @override
+  String get steamSwitchBackingUp => '正在備份 Steam 設定…';
+
+  @override
+  String get steamSwitchConfiguring => '正在設定 Steam 登入帳號…';
+
+  @override
+  String get steamSwitchStarting => '正在啟動 Steam…';
+
+  @override
+  String get steamSwitchRestoring => '正在還原 Steam 設定…';
+
+  @override
+  String get steamSwitchLaunched => '已啟動 Steam，請在用戶端確認登入帳號。若出現提示，請重新登入。';
+
+  @override
+  String get steamSwitchBackup => '設定備份位置';
+
+  @override
+  String get steamSwitchInvalidPath =>
+      '無法讀取此 Steam 安裝資料夾或設定。請選擇正確的 steam.exe 後再試。';
+
+  @override
+  String get steamSwitchCloseFailed => 'Steam 未能正常結束。請手動結束 Steam 後再試。';
+
+  @override
+  String get steamSwitchBusy => '另一個帳號切換作業正在進行，請稍後再試。';
+
+  @override
+  String get steamSwitchChanged => '切換期間 Steam 設定有所變更。請結束 Steam，重新整理清單後再試。';
+
+  @override
+  String get steamSwitchFailed => '無法完成帳號切換。請檢查 Steam 後再試。';
+
+  @override
+  String get steamSwitchRecoveryNeeded => '切換失敗，部分設定無法還原。請保留下方備份，還原設定後再試。';
+
+  @override
+  String get appTitle => 'GooeSteamKit';
 
   @override
   String get navAccounts => '帳號';
@@ -2062,7 +3512,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get storeErrorBody =>
-      'AVA 的本機帳號資料庫（manifest.json）遺失或損毀。寫入被中斷或還原不完整都可能造成這個情況。請先重試；若一直失敗，就重設後重新匯入你的 maFile 備份。';
+      'GooeSteamKit 的本機帳號資料庫（manifest.json）遺失或損毀。寫入被中斷或還原不完整都可能造成這個情況。請先重試；若一直失敗，就重設後重新匯入你的 maFile 備份。';
 
   @override
   String get storeRepair => '嘗試修復';
@@ -2076,7 +3526,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pinSetupTitle => '設定解鎖 PIN';
 
   @override
-  String get pinSetupPrompt => '用 6 位數 PIN 保護 AVA。解鎖時要輸入它（或用指紋）。';
+  String get pinSetupPrompt => '用 6 位數 PIN 保護 GooeSteamKit。解鎖時要輸入它（或用指紋）。';
 
   @override
   String get pinLabel => '6 位數 PIN';
@@ -2106,13 +3556,14 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get pinMismatch => '兩次輸入的 PIN 不一致。';
 
   @override
-  String get unlockBiometricReason => '解鎖 AVA';
+  String get unlockBiometricReason => '解鎖 GooeSteamKit';
 
   @override
-  String get settingsBiometric => '生物辨識解鎖';
+  String get settingsBiometric => '使用系統解鎖';
 
   @override
-  String get settingsBiometricDesc => '用指紋或裝置密碼解鎖；通行碼存放在裝置的 Keystore 裡。';
+  String get settingsBiometricDesc =>
+      '啟動驗證開啟時，可用指紋、Windows Hello 或裝置密碼代替 GooeSteamKit PIN。關閉啟動驗證會同時停用此項；重新開啟後需另行啟用。';
 
   @override
   String get settingsBiometricNeedPasskey => '請先設定加密通行碼。';
@@ -2121,7 +3572,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get settingsBiometricUnavailable => '這台裝置沒有設定生物辨識或螢幕鎖。';
 
   @override
-  String get settingsBiometricEnabled => '已啟用生物辨識解鎖。';
+  String get settingsBiometricEnabled => '已啟用系統解鎖';
 
   @override
   String get settingsHoldConfirm => '長按確認';
@@ -2150,7 +3601,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get settingsBlockScreenshotsDesc =>
-      '讓 AVA 不出現在截圖、螢幕錄影和最近使用畫面的預覽裡。代價是螢幕分享時視窗會變黑，也沒辦法再把截圖附到意見回饋裡。';
+      '讓 GooeSteamKit 不出現在截圖、螢幕錄影和最近使用畫面的預覽裡。代價是螢幕分享時視窗會變黑，也沒辦法再把截圖附到意見回饋裡。';
 
   @override
   String get passkeyLabel => '通行碼';
@@ -2213,7 +3664,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get settingsTutorialReplay => '重播';
 
   @override
-  String get welcomeTitle => '歡迎使用 AVA';
+  String get welcomeTitle => '歡迎使用 GooeSteamKit';
 
   @override
   String get welcomeSubtitle => '你的驗證器會加密儲存在這台裝置上。請選擇開始的方式。';
@@ -2755,7 +4206,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get backupReminderBody =>
-      'AVA 只把你的驗證器資料留在這台裝置上。請把 maFile 備份到安全的地方。撤銷碼（R 碼）只在你第一次新增驗證器時顯示一次——請當場抄下並保管好；萬一這台裝置遺失，它是你移除驗證器的最後手段。';
+      'GooeSteamKit 只把你的驗證器資料留在這台裝置上。請把 maFile 備份到安全的地方。撤銷碼（R 碼）只在你第一次新增驗證器時顯示一次——請當場抄下並保管好；萬一這台裝置遺失，它是你移除驗證器的最後手段。';
 
   @override
   String get backupReminderOk => '知道了';
@@ -3127,7 +4578,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String addMoveInSaveFailed(String code, String secret) {
-    return '驗證器已經移到這個帳號，但 AVA 沒能把它存到這台裝置。你的舊驗證器已經失效，所以以下是僅有的副本——關閉這個畫面之前請立刻抄下來。\n\n撤銷碼：$code\n\n金鑰：$secret';
+    return '驗證器已經移到這個帳號，但 GooeSteamKit 沒能把它存到這台裝置。你的舊驗證器已經失效，所以以下是僅有的副本——關閉這個畫面之前請立刻抄下來。\n\n撤銷碼：$code\n\n金鑰：$secret';
   }
 
   @override
@@ -3144,7 +4595,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get moveInRescueDismissBody =>
-      'AVA 沒有留下任何其他副本。如果你還沒抄下撤銷碼與金鑰，你將永久失去這個驗證器。';
+      'GooeSteamKit 沒有留下任何其他副本。如果你還沒抄下撤銷碼與金鑰，你將永久失去這個驗證器。';
 
   @override
   String get moveInRescueDismissConfirm => '我存好了';
@@ -3271,7 +4722,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get privacyUpdateBody =>
-      '隱私權說明在你同意之後有了變更。新增:AVA 現在可以透過你自己指定的伺服器,在多台裝置間同步帳號庫——預設關閉,所有資料先在本機加密再上傳,開發者不營運任何同步伺服器。請閱讀下方最新的說明。';
+      '隱私權說明在你同意之後有了變更。新增:GooeSteamKit 現在可以透過你自己指定的伺服器,在多台裝置間同步帳號庫——預設關閉,所有資料先在本機加密再上傳,開發者不營運任何同步伺服器。請閱讀下方最新的說明。';
 
   @override
   String get privacyConsentScrollHint => '請捲動到底才能繼續';
@@ -3292,7 +4743,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get marketTabInventory => '庫存';
 
   @override
-  String get marketTabListings => '我的上架';
+  String get marketTabListings => '我的出售';
 
   @override
   String get marketSelectGame => '選擇遊戲';
@@ -3631,10 +5082,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get syncSetUp => '設定同步…';
 
   @override
-  String get syncStatusOk => '已是最新';
+  String get syncStatusOk => '已連線';
 
   @override
-  String get syncStatusSyncing => '同步中…';
+  String get syncStatusSyncing => '正在同步…';
 
   @override
   String get syncStatusErrorShort => '上次同步失敗——點開查看詳情。';
@@ -3774,10 +5225,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get syncPassphraseWrong => '這組密語打不開這個同步庫。';
 
   @override
-  String get syncPreviewTitle => '首次同步';
+  String get syncPreviewTitle => '連線同步庫';
 
   @override
-  String get syncPreviewEmpty => '目前沒有要傳輸的內容——之後帳號有變動就會自動同步。';
+  String get syncPreviewEmpty => '連線後，在同步頁選擇「立即同步」或「一鍵拉取」；進階設定可分別選擇項目。';
 
   @override
   String syncPreviewPull(int count) {
@@ -3795,14 +5246,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
-  String get syncStart => '開始同步';
+  String get syncStart => '連線';
 
   @override
-  String get syncDoneTitle => '同步已開啟';
+  String get syncDoneTitle => '同步庫已連線';
 
   @override
-  String get syncDoneBody =>
-      '帳號現在會自動同步。新裝置上每個帳號第一次使用時要重新登入——存過密碼的會自己完成，其餘的會問一次。';
+  String get syncDoneBody => '在同步頁選擇上傳或拉取。拉取會合併遠端內容，保留本機獨有的帳戶與收藏。';
 
   @override
   String get syncDone => '完成';
@@ -3854,23 +5304,23 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get syncConflictNoPassword => '未存密碼';
 
   @override
-  String get syncAutoTitle => '自動同步';
+  String get syncAutoTitle => '自動上傳';
 
   @override
-  String get syncAutoDesc => '啟動時和每次改動後同步。關閉後只有下面的按鈕會同步。';
+  String get syncAutoDesc => '啟動及內容變動後，上傳已選的同步項目；下載僅在點選「一鍵拉取」時進行。';
 
   @override
-  String get syncPasswordsTitle => '同步帳號密碼';
+  String get syncPasswordsTitle => '包含帳戶密碼';
 
   @override
-  String get syncPasswordsDesc => '有密碼，新裝置才能自行登入。變更這一項會重新上傳所有帳號。';
+  String get syncPasswordsDesc => '僅用於帳戶上傳。修改後在下次上傳帳戶時生效。';
 
   @override
   String get syncAppSettingsTitle => '同步應用程式設定';
 
   @override
   String get syncAppSettingsDesc =>
-      '外觀與行為偏好（面板、明暗、長按確認等）跟著你到每台裝置；語言與文字大小維持各裝置獨立。';
+      '僅包含外觀與行為偏好。市場收藏和加速訂閱分別選擇；語言、字級和加速自動啟動維持各裝置獨立。';
 
   @override
   String get syncNowButton => '立即同步';
@@ -3940,7 +5390,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get netErrTimeout => 'Steam 沒有在規定時間內回應。網路可能很慢，或者被攔截了。';
 
   @override
-  String get netErrCert => 'Steam 的憑證未通過驗證，AVA 已中斷這次連線。目前網路裡可能有東西在監聽流量。';
+  String get netErrCert =>
+      'Steam 的憑證未通過驗證，GooeSteamKit 已中斷這次連線。目前網路裡可能有東西在監聽流量。';
 
   @override
   String netErrServer(int code) {
@@ -4025,4 +5476,1297 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get portableUnreadable =>
       '帳號庫損毀，或仍依賴原 Windows 的金鑰。請從匯出的 maFile 還原，來源檔案未變更。';
+
+  @override
+  String get friendsTitle => '好友與交易';
+
+  @override
+  String get friendsSearch => '搜尋名稱或 SteamID';
+
+  @override
+  String get friendsEmpty => '沒有可顯示的好友';
+
+  @override
+  String get friendsProfile => '檢視 Steam 個人檔案';
+
+  @override
+  String get friendsTrade => '建立交易報價';
+
+  @override
+  String get friendsOnline => '線上';
+
+  @override
+  String get friendsOffline => '離線';
+
+  @override
+  String get friendsPlaying => '遊戲中';
+
+  @override
+  String get tradeNewTitle => '新的交易報價';
+
+  @override
+  String get tradeYourItems => '你送出的物品';
+
+  @override
+  String get tradeTheirItems => '你收到的物品';
+
+  @override
+  String get tradeSelectItems => '選擇物品';
+
+  @override
+  String get tradeNote => '留言（選填）';
+
+  @override
+  String get tradeReview => '核對報價';
+
+  @override
+  String get tradeSend => '傳送報價';
+
+  @override
+  String get tradeReviewBody =>
+      '請核對交易對象的 SteamID、雙方物品與數量。Steam 可能要求進行確認，或暫掛物品。';
+
+  @override
+  String get tradeGiftWarning => '你將送出這些物品，且不會收到任何物品。';
+
+  @override
+  String get tradeNoItems => '此處沒有可交易的物品。';
+
+  @override
+  String get tradeMore => '載入更多';
+
+  @override
+  String get tradeSent => '報價已傳送。';
+
+  @override
+  String get tradeNeedsMobile => '報價已建立。請至「待處理」完成行動驗證。';
+
+  @override
+  String get tradeNeedsEmail => '報價已建立。請依 Steam 寄出的電子郵件進行確認。';
+
+  @override
+  String get tradeOpenPending => '檢視待處理事項與報價';
+
+  @override
+  String get tradeUnknownResult => '無法確定報價是否已傳送。請先檢查已傳送的報價，再決定是否重試，以免重複傳送。';
+
+  @override
+  String get tradeChooseGame => '選擇物品庫';
+
+  @override
+  String get tradeQuantity => '數量';
+
+  @override
+  String get tradeLoadFailed => '無法讀取 Steam 好友或物品庫。請重新整理後再試。';
+
+  @override
+  String get tradeSendFailed => 'Steam 未確認報價是否已傳送。請先檢查你的報價，再決定是否重試。';
+
+  @override
+  String get marketListingActive => '出售中';
+
+  @override
+  String get marketListingOnHold => '暫掛中';
+
+  @override
+  String get marketListingPending => '等待確認';
+
+  @override
+  String get marketListingInactive => '未生效';
+
+  @override
+  String marketHoldUntil(String date) {
+    return '暫掛至 $date';
+  }
+
+  @override
+  String get marketListingsAll => '全部';
+
+  @override
+  String get marketCancelConfirm => '要取消這筆市場上架嗎？';
+
+  @override
+  String get settingsStartupVerification => '啟動時驗證身分';
+
+  @override
+  String get settingsStartupVerificationDesc =>
+      '開啟時需輸入 GooeSteamKit PIN 或使用系統驗證。關閉後，任何能使用此裝置的人都可開啟 GooeSteamKit；帳戶檔案仍加密儲存在本機。';
+
+  @override
+  String get settingsStartupVerificationError => '無法儲存啟動驗證設定，請檢查系統安全儲存空間後重試。';
+
+  @override
+  String get settingsLockNow => '立即鎖定';
+
+  @override
+  String get settingsStartupVerificationPinChanged => '變更 PIN 後會重新開啟啟動驗證。';
+
+  @override
+  String get settingsStartupVerificationDisable => '要關閉啟動驗證嗎？';
+
+  @override
+  String get dashboardTitle => '帳戶總覽';
+
+  @override
+  String get dashboardWallet => '錢包餘額';
+
+  @override
+  String get dashboardPendingBalance => '待入帳餘額';
+
+  @override
+  String get dashboardUnavailable => '無法取得';
+
+  @override
+  String get dashboardMarket => '物品庫與市場';
+
+  @override
+  String get dashboardTools => '帳戶工具';
+
+  @override
+  String get dashboardCustomize => '版面設定';
+
+  @override
+  String get dashboardViewAll => '檢視全部';
+
+  @override
+  String get dashboardNoListings => '沒有市場上架物品。';
+
+  @override
+  String get dashboardFetchFailed => '無法載入此資訊。請重新整理後再試。';
+
+  @override
+  String get dashboardSaveFailed => '無法儲存顯示偏好設定。';
+
+  @override
+  String get backupCodesTitle => '備用登入碼';
+
+  @override
+  String get backupCodesAccountCheck =>
+      '瀏覽器可能登入了另一個 Steam 帳戶。產生備用碼前，請確認瀏覽器中的帳戶名稱與上方相同。';
+
+  @override
+  String get backupCodesHow => '向 Steam 取得備用碼';
+
+  @override
+  String get backupCodesSteps =>
+      '1. 使用下方按鈕開啟 Steam Guard 設定。\n2. 登入上方顯示的帳戶。\n3. 選擇「取得備用 Steam Guard 驗證碼」。\n4. 完成 Steam 要求的驗證，並妥善保管產生的備用碼。';
+
+  @override
+  String get backupCodesExplanation =>
+      '這些是一次性登入碼，與移除驗證器用的救援碼不同，由 Steam 發放及管理。GooeSteamKit 會開啟官方流程，不會產生或儲存這些備用碼。';
+
+  @override
+  String get backupCodesOpenSteam => '開啟 Steam 取得備用碼';
+
+  @override
+  String get backupCodesCopyLink => '複製官方連結';
+
+  @override
+  String get backupCodesOpenFailed => '無法開啟瀏覽器。請複製連結後手動開啟。';
+
+  @override
+  String get loginAccountMismatch => '登入的是其他 Steam 帳戶。請使用目前帳戶完成驗證，原帳戶未被修改。';
+
+  @override
+  String get tradeFromAccount => '發起帳戶';
+
+  @override
+  String get tradeToAccount => '交易對象';
+
+  @override
+  String get tradeValidationFailed => '報價尚未送出。請檢查所選物品和數量；每方最多選擇 256 項。';
+
+  @override
+  String get friendsProfileOpenFailed => '無法開啟瀏覽器，可複製下方 Steam 官方連結。';
+
+  @override
+  String get steamSwitchQrTitle => '用 GooeSteamKit 帳號掃碼登入';
+
+  @override
+  String get steamSwitchQrHelp =>
+      '選擇 GooeSteamKit 帳號，在 Steam 顯示登入 QR 碼，再掃碼並確認登入請求。';
+
+  @override
+  String get steamSwitchQrAccount => 'GooeSteamKit 帳號';
+
+  @override
+  String get steamSwitchQrNeedsSession =>
+      '請先在 GooeSteamKit 中重新登入此帳號。僅有離線驗證碼無法核准 QR 碼登入。';
+
+  @override
+  String get steamSwitchQrNoAccounts => '請先向 GooeSteamKit 新增帳號，再使用掃碼登入。';
+
+  @override
+  String get approveScreenSelect => '框選螢幕上的 QR 碼';
+
+  @override
+  String get approveScreenHelp =>
+      '點擊後 GooeSteamKit 會暫時隱藏。拖曳框選 Steam 登入 QR 碼，再核對帳號與登入裝置並確認。';
+
+  @override
+  String get approveScreenInstruction => '拖曳框選一個 Steam 登入 QR 碼 · Esc / 右鍵取消';
+
+  @override
+  String get approveScreenNoCode => '未辨識到 QR 碼。請框選完整 QR 碼，保留少許周圍空白後重試。';
+
+  @override
+  String get approveScreenFailed => '無法擷取螢幕，請重試或貼上 QR 碼連結。';
+
+  @override
+  String get approveSessionUnavailable =>
+      '此 QR 碼已過期或無法核實登入資訊，請在 Steam 重新整理 QR 碼後重試。';
+
+  @override
+  String get itemMarketActions => '物品市集選項';
+
+  @override
+  String get itemMarketViewPrice => '查看市集價格';
+
+  @override
+  String get itemMarketOpen => '在 Steam 市集查看';
+
+  @override
+  String get itemMarketVolume => '近期成交量';
+
+  @override
+  String get itemMarketReferenceNote => 'Steam 市集單件參考價，非出售實收；價格會變動。';
+
+  @override
+  String itemMarketCurrency(String currency) {
+    return '幣別：$currency';
+  }
+
+  @override
+  String get itemMarketNoIdentity => '此物品沒有可用於查價的市集名稱。';
+
+  @override
+  String get itemMarketOpenFailed => '無法開啟 Steam 市集頁面。';
+
+  @override
+  String get steamClientRunning => 'Steam 已啟動';
+
+  @override
+  String get steamClientStopped => 'Steam 未啟動';
+
+  @override
+  String get steamClientStatusLoading => '正在讀取 Steam 狀態…';
+
+  @override
+  String get steamClientStatusUnavailable => '暫時無法讀取 Steam 狀態';
+
+  @override
+  String steamClientCurrentAccount(String account) {
+    return '目前登入：$account';
+  }
+
+  @override
+  String get steamClientAccountUnknown => '尚未辨識目前登入帳戶';
+
+  @override
+  String get steamClientCurrentBadge => '目前登入';
+
+  @override
+  String get forkLocalFeaturesTitle => '本機功能已開放';
+
+  @override
+  String get forkLocalFeaturesBody =>
+      '此獨立分支無需 Pro 驗證即可使用全部本機功能。不包含原作者的線上服務與訂閱。';
+
+  @override
+  String get forkPrivacyConsentBody =>
+      '此 AVA 獨立分支將 Steam 帳戶與驗證器密鑰保存在本裝置上，Steam 請求直接連線至 Valve。選用同步只有在你設定自己的伺服器後才啟用，帳戶資料在本機加密後再同步。本機功能無需 Pro 驗證；此版本不使用廣告、付款服務或原版更新檢查。意見回饋只開啟本分支的 GitHub Issues，不會自動傳送報告或記錄。沒有追蹤或統計。請閱讀下方本分支的隱私說明，繼續即表示接受。';
+
+  @override
+  String get forkUpdateTitle => '軟體更新';
+
+  @override
+  String forkUpdateCurrentVersion(String version) {
+    return '目前版本 $version';
+  }
+
+  @override
+  String get forkUpdateCheck => '檢查更新';
+
+  @override
+  String get forkUpdateChecking => '正在檢查更新…';
+
+  @override
+  String get forkUpdateNoRelease => '暫時沒有可用的發布版本';
+
+  @override
+  String get forkUpdateUpToDate => '目前已是最新版本';
+
+  @override
+  String forkUpdateAvailable(String version) {
+    return '發現新版本 $version';
+  }
+
+  @override
+  String get forkUpdateReleaseNotes => '更新說明';
+
+  @override
+  String get forkUpdateNoNotes => '此版本沒有附上更新說明';
+
+  @override
+  String get forkUpdateDownload => '下載更新';
+
+  @override
+  String forkUpdateDownloading(String progress) {
+    return '正在下載 $progress';
+  }
+
+  @override
+  String get forkUpdateCancelDownload => '取消下載';
+
+  @override
+  String get forkUpdateReady => '安裝檔已下載並通過驗證';
+
+  @override
+  String get forkUpdateInstall => '安裝更新';
+
+  @override
+  String get forkUpdateInstallTitle => '安裝此更新？';
+
+  @override
+  String get forkUpdateInstallAndroid =>
+      '將開啟系統安裝畫面。若出現提示，請允許 GooeSteamKit 安裝應用程式，再依系統指示完成更新。';
+
+  @override
+  String get forkUpdateInstallWindows =>
+      '確認後將啟動安裝程式並關閉 GooeSteamKit。請先完成目前操作，再依安裝程式指示更新。';
+
+  @override
+  String get forkUpdateInstallConfirm => '繼續安裝';
+
+  @override
+  String get forkUpdateInstallStarted => '已開啟系統安裝程式，請依指示完成更新';
+
+  @override
+  String get forkUpdateCheckFailed => '無法檢查更新，請稍後再試';
+
+  @override
+  String get forkUpdateDownloadFailed => '下載失敗，請重試';
+
+  @override
+  String get forkUpdateHashFailed => '安裝檔驗證失敗，已阻止安裝，請重新下載';
+
+  @override
+  String get forkUpdateInstallFailed => '無法啟動安裝程式，請重試';
+
+  @override
+  String get forkUpdateNoCompatibleAsset => '此版本沒有適用於本裝置的安裝檔';
+
+  @override
+  String get forkUpdateUnverifiable => '此安裝檔缺少可信的校驗資訊，無法下載或安裝';
+
+  @override
+  String get forkUpdateInvalidMetadata => '發布資訊不完整或無效，請稍後再試';
+
+  @override
+  String get forkUpdateUnsupported => '此裝置暫不支援應用程式內更新';
+
+  @override
+  String get forkUpdateCancelled => '已取消下載';
+
+  @override
+  String get forkUpdatePermissionRequired => '請先允許 GooeSteamKit 安裝應用程式，再返回此頁安裝';
+
+  @override
+  String get forkUpdateOpenPermissionSettings => '允許安裝應用程式';
+
+  @override
+  String get forkUpdateWrongPackage => '安裝檔不屬於此應用程式，已阻止安裝';
+
+  @override
+  String get forkUpdateSignatureMismatch => '安裝檔簽章與目前應用程式不符，已阻止安裝';
+
+  @override
+  String get backupCodesNativeIntro =>
+      '在這裡產生 Steam 一次性備用登入碼。Steam 需要驗證此帳戶綁定手機號碼收到的簡訊。產生新的一組可能取代原有備用碼。';
+
+  @override
+  String get backupCodesSendSms => '傳送驗證簡訊';
+
+  @override
+  String get backupCodesSmsPrompt => '輸入 Steam 簡訊中的驗證碼。';
+
+  @override
+  String get backupCodesSmsLabel => '簡訊驗證碼';
+
+  @override
+  String get backupCodesGenerate => '驗證並產生備用碼';
+
+  @override
+  String get backupCodesReady => '你的一次性備用登入碼';
+
+  @override
+  String get backupCodesKeepSafe =>
+      '每個備用碼只能使用一次。請列印並妥善保存。GooeSteamKit 不會儲存這些碼；離開此頁或切換應用程式後會清除顯示。產生或使用備用碼時，Steam 會寄送電子郵件通知。';
+
+  @override
+  String get backupCodesClear => '清除備用碼';
+
+  @override
+  String get backupCodesRequestFailed => 'Steam 未能完成請求。程式沒有自動重試。請檢查網路後手動重試。';
+
+  @override
+  String get backupCodesUnexpectedResponse =>
+      'Steam 傳回了無法識別的回應，無法確認結果；程式沒有重試請求。';
+
+  @override
+  String get backupCodesInvalidSms => 'Steam 未接受驗證碼，請核對簡訊後重試。';
+
+  @override
+  String get backupCodesRateLimited => 'Steam 限制了請求次數，請稍後再試。';
+
+  @override
+  String get backupCodesPhoneRequired => 'Steam 要求此帳戶已綁定並驗證手機號碼。';
+
+  @override
+  String get backupCodesManualHelp => 'Steam 官方網頁（備用方式）';
+
+  @override
+  String get steamAccelerationTitle => 'Steam 加速';
+
+  @override
+  String get steamAccelerationDesc =>
+      '優先使用外部代理，外部關閉後接續內建加速。內建線路僅用於 GooeSteamKit 的 Steam 存取。';
+
+  @override
+  String get steamAccelerationOff => '未啟用';
+
+  @override
+  String get steamAccelerationLoading => '正在同步訂閱…';
+
+  @override
+  String get steamAccelerationStarting => '正在啟動…';
+
+  @override
+  String get steamAccelerationRunning => '執行中';
+
+  @override
+  String get steamAccelerationPaused => '內建加速待命';
+
+  @override
+  String get steamAccelerationFailed => '加速無法使用';
+
+  @override
+  String get steamAccelerationUnsupported => '目前僅支援 Windows 和 Android。';
+
+  @override
+  String get steamAccelerationConfigured => '訂閱已儲存在此裝置';
+
+  @override
+  String get steamAccelerationUnconfigured => '尚未設定訂閱';
+
+  @override
+  String get steamAccelerationConfigure => '新增訂閱';
+
+  @override
+  String get steamAccelerationReplace => '更換訂閱';
+
+  @override
+  String get steamAccelerationSubscription => '訂閱網址';
+
+  @override
+  String get steamAccelerationSubscriptionHelp =>
+      '連結可能包含私人憑證，會安全儲存在裝置上。在「同步 → 進階設定」中選擇加速訂閱與節點，即可透過同步密語加密上傳或拉取。儲存後點選「更新節點」載入節點。';
+
+  @override
+  String get steamAccelerationClear => '清除訂閱';
+
+  @override
+  String get steamAccelerationClearConfirm =>
+      '停止內建加速並刪除已儲存的訂閱和節點？開啟設定同步時，這項刪除也會同步到其他裝置。';
+
+  @override
+  String get steamAccelerationSync => '更新節點';
+
+  @override
+  String get steamAccelerationDownloadingCore => '正在下載加速元件…';
+
+  @override
+  String get steamAccelerationCoreDownload => '加速元件下載失敗，已嘗試鏡像與官方來源，請稍後再試。';
+
+  @override
+  String get steamAccelerationExternalActiveHelp =>
+      '目前使用外部連線。開啟自動切換後，外部關閉時會接上內建線路，無需手動切換。';
+
+  @override
+  String get steamAccelerationNodes => '節點';
+
+  @override
+  String get steamAccelerationNoNodes => '請同步訂閱以取得可用節點。';
+
+  @override
+  String get steamAccelerationNode => '使用節點';
+
+  @override
+  String get steamAccelerationStart => '開啟自動切換';
+
+  @override
+  String get steamAccelerationStop => '暫停自動切換';
+
+  @override
+  String get steamAccelerationAuto => '啟動時自動開啟';
+
+  @override
+  String get steamAccelerationAutoDesc =>
+      '優先使用外部代理或 VPN，關閉後恢復內建線路。手動暫停僅在本次執行期間生效。';
+
+  @override
+  String get steamAccelerationEnvironment => '外部代理偵測';
+
+  @override
+  String get steamAccelerationExternalProxy => '偵測到系統代理或 PAC';
+
+  @override
+  String get steamAccelerationExternalVpn => '偵測到 VPN 或通道';
+
+  @override
+  String get steamAccelerationNoExternal => '未偵測到外部代理';
+
+  @override
+  String get steamAccelerationDetectionUnavailable =>
+      '無法確認外部代理，內建線路暫不啟動。請檢查系統代理設定後重新偵測。';
+
+  @override
+  String get steamAccelerationEnvironmentHelp =>
+      '應用程式可見時自動檢查本機連線設定，不修改系統代理或 VPN。';
+
+  @override
+  String steamAccelerationSkipped(int count) {
+    return '已略過 $count 個不支援的節點。';
+  }
+
+  @override
+  String get steamAccelerationInvalidSubscription =>
+      '請輸入有效的 HTTP 或 HTTPS 訂閱網址。';
+
+  @override
+  String get steamAccelerationNetworkError => '無法取得訂閱，請檢查網路後重試。';
+
+  @override
+  String get steamAccelerationUnsupportedSubscription =>
+      '訂閱中沒有支援的節點，請使用相容的 Clash 訂閱。';
+
+  @override
+  String get steamAccelerationStorageError => '系統安全儲存空間無法使用，無法儲存設定。';
+
+  @override
+  String get steamAccelerationCoreUnavailable => '缺少加速元件，請安裝更新的應用程式套件。';
+
+  @override
+  String get steamAccelerationCoreIntegrity => '加速元件驗證失敗，已阻止啟動。';
+
+  @override
+  String get steamAccelerationStartFailed => '無法啟動加速，請重新整理環境偵測後再試。';
+
+  @override
+  String get inventorySearch => '搜尋物品';
+
+  @override
+  String get inventoryFilterType => '類型';
+
+  @override
+  String get inventoryFilterRarity => '品質';
+
+  @override
+  String get inventoryFilterOther => '其他／未分類';
+
+  @override
+  String get inventoryFilterNoMatches => '沒有符合篩選條件的物品';
+
+  @override
+  String get inventoryFilterLoaded => '篩選目前已載入的物品；載入更多後會包含其餘物品。';
+
+  @override
+  String get steamConnectionTitle => '連線檢查';
+
+  @override
+  String get steamConnectionNotChecked => '尚未檢查連線';
+
+  @override
+  String get steamConnectionChecking => '正在檢查連線…';
+
+  @override
+  String get steamConnectionAvailable => '連線可用';
+
+  @override
+  String get steamConnectionPartial => '部分 Steam 服務無法連線';
+
+  @override
+  String get steamConnectionUnavailable => '無法連線 Steam';
+
+  @override
+  String get steamConnectionCheck => '檢查連線';
+
+  @override
+  String get steamConnectionApi => 'Steam 登入介面';
+
+  @override
+  String get steamConnectionCommunity => 'Steam 社群與市集';
+
+  @override
+  String get steamConnectionReachable => '可連線';
+
+  @override
+  String get steamConnectionFailed => '連線失敗';
+
+  @override
+  String get steamConnectionInternal => '內建線路';
+
+  @override
+  String get steamConnectionExternal => '外部 HTTP 代理';
+
+  @override
+  String get steamConnectionSystem => '外部 VPN／通道';
+
+  @override
+  String get steamConnectionDirect => '直接連線';
+
+  @override
+  String steamConnectionCheckedAt(String time) {
+    return '上次檢查：$time';
+  }
+
+  @override
+  String get steamConnectionNoVpnIcon =>
+      '僅代理 GooeSteamKit 內部的 Steam 請求，因此 Android 不顯示系統 VPN 圖示；Steam 用戶端和其他應用程式不會被加速。';
+
+  @override
+  String get steamConnectionScope =>
+      '透過 GooeSteamKit 目前線路檢查 Steam 介面和社群，不傳送帳戶憑證。結果僅代表本次檢查，不會持續偵測。';
+
+  @override
+  String tradeSendNotSent(String reason) {
+    return '報價未送出。$reason';
+  }
+
+  @override
+  String get tradeCheckSendResult => '核對傳送結果';
+
+  @override
+  String get tradeSendNotFound =>
+      '暫未查到對應的新報價，Steam 可能尚未更新。請先檢查待確認與已傳送報價，避免重複傳送。';
+
+  @override
+  String tradeSendCheckFailed(String reason) {
+    return '暫時無法核對傳送結果。$reason';
+  }
+
+  @override
+  String get tradeSendRejected => 'Steam 拒絕了這筆報價，但未提供詳細原因。請檢查所選物品與交易限制。';
+
+  @override
+  String get tradeSendUnreadableResponse => 'Steam 未傳回完整的傳送回執。';
+
+  @override
+  String get steamConnectionPacHelp =>
+      '偵測到系統代理設定，但沒有可用的 HTTP 連接埠或 VPN 線路。本程式不解析 PAC 指令碼，請開啟外部代理的 HTTP 代理或 VPN 模式。';
+
+  @override
+  String forkUpdateTransferSize(String received, String total) {
+    return '$received / $total MiB';
+  }
+
+  @override
+  String forkUpdateTransferSpeed(String speed, String unit) {
+    return '$speed $unit/秒';
+  }
+
+  @override
+  String forkUpdateRemainingSeconds(int seconds) {
+    return '預計還需 $seconds 秒';
+  }
+
+  @override
+  String forkUpdateRemainingMinutes(int minutes) {
+    return '預計還需 $minutes 分鐘';
+  }
+
+  @override
+  String get forkUpdateWaitingForData => '等待資料…';
+
+  @override
+  String get forkUpdateVerifying => '正在驗證安裝套件…';
+
+  @override
+  String get forkUpdateConnectionHint =>
+      '自動模式透過 GH-Proxy 直接下載，無需開啟代理；失敗時切回 GitHub。安裝檔一律依 GitHub 的 SHA-256 驗證。';
+
+  @override
+  String get forkUpdateSourceLabel => '下載來源';
+
+  @override
+  String get forkUpdateSourceAutomatic => '自動加速（建議）';
+
+  @override
+  String get forkUpdateSourceOfficial => 'GitHub 官方';
+
+  @override
+  String forkUpdateSourceAccelerated(String provider) {
+    return '加速來源直連 · $provider';
+  }
+
+  @override
+  String get marketTabSearch => '市場';
+
+  @override
+  String get marketSearchHint => '搜尋商品名稱，例如 AK-47';
+
+  @override
+  String get marketSearchEmpty => '選擇遊戲和幣別，輸入商品名稱後搜尋。僅在搜尋時載入。';
+
+  @override
+  String get marketSearchButton => '搜尋市場';
+
+  @override
+  String get marketSearchAllGames => '全部遊戲';
+
+  @override
+  String get marketSearchGame => '遊戲';
+
+  @override
+  String get marketSearchCurrency => '幣別';
+
+  @override
+  String get marketSearchNoResults => '找不到相關商品，請嘗試其他關鍵字。';
+
+  @override
+  String get marketSearchMore => '載入更多';
+
+  @override
+  String marketSearchListings(int count) {
+    return '上架數量：$count';
+  }
+
+  @override
+  String get marketSearchPriceUnavailable => '暫無價格';
+
+  @override
+  String get marketSearchPriceNote => '僅為畫面中可見的商品依所選幣別載入參考價格；價格可能變動。';
+
+  @override
+  String get marketSearchRefreshPrice => '更新價格';
+
+  @override
+  String get marketSearchRateLimited => 'Steam 請求過多，請稍後再試。';
+
+  @override
+  String get marketSearchUnavailable => '暫時無法取得市場商品，請稍後再試。';
+
+  @override
+  String marketSearchRequestedCurrency(String currency) {
+    return '要求幣別：$currency';
+  }
+
+  @override
+  String get steamConnectionUnresolvedProxy => '系統代理無法使用';
+
+  @override
+  String get steamDesktopLoginButton => '開啟 Steam 並登入';
+
+  @override
+  String get steamDesktopLoginHelp =>
+      '使用所選帳號開啟或切換 Steam，並自動核准本次本機登入視窗的 QR 碼。請先退出正在執行的遊戲。';
+
+  @override
+  String get steamDesktopLoginPreparing => '正在準備所選帳號…';
+
+  @override
+  String get steamDesktopLoginWaitingQr => '正在等待本機 Steam 登入 QR 碼…';
+
+  @override
+  String get steamDesktopLoginApproving => '正在核准本機登入…';
+
+  @override
+  String get steamDesktopLoginWaitingAccount => '正在確認 Steam 登入狀態…';
+
+  @override
+  String get steamDesktopLoginComplete => '已核驗 Steam 用戶端目前帳號為所選帳號。';
+
+  @override
+  String get steamDesktopLoginManual => 'Steam 已開啟，但未能確認本機登入 QR 碼。可使用下方掃碼入口繼續。';
+
+  @override
+  String get steamDesktopLoginUnconfirmed =>
+      '已提交登入核准請求，但尚未確認 Steam 已登入。請查看 Steam 視窗後重新整理狀態。';
+
+  @override
+  String get steamDesktopLoginCancelled => '已停止自動登入';
+
+  @override
+  String get steamDesktopLoginCancel => '停止自動核准';
+
+  @override
+  String get steamDesktopLoginWrongAccount => 'Steam 目前登入了其他帳號，已停止自動核准。';
+
+  @override
+  String get steamClientOpen => '開啟 Steam';
+
+  @override
+  String get steamSwitchLaunchFailed => 'Steam 無法啟動。請檢查安裝路徑，並確認 Steam 可以正常執行。';
+
+  @override
+  String get steamSwitchFileAccessFailed => '無法備份或修改 Steam 設定，請檢查安裝目錄的讀寫權限。';
+
+  @override
+  String get steamDesktopLoginSession => 'Steam 已開啟，正在連線至所選帳號…';
+
+  @override
+  String get steamSwitchInspecting => '檢查本機 Steam';
+
+  @override
+  String steamSwitchErrorDetails(
+    String stage,
+    String code,
+    String systemError,
+  ) {
+    return '階段：$stage；錯誤碼：$code；Windows：$systemError。';
+  }
+
+  @override
+  String get approveScreenBusy => '另一項螢幕擷取正在進行，請先完成或取消。';
+
+  @override
+  String get approveScreenDisplayChanged => '螢幕配置已變更，請重新框選。';
+
+  @override
+  String get approveScreenRegionTooLarge => '框選範圍過大，請只選取 QR 碼區域。';
+
+  @override
+  String approveScreenFailedDetail(String detail) {
+    return '無法擷取螢幕，請重試。錯誤資訊：$detail。';
+  }
+
+  @override
+  String get marketFavoriteTitle => '收藏';
+
+  @override
+  String get marketFavoriteAdd => '收藏商品';
+
+  @override
+  String get marketFavoriteRemove => '取消收藏';
+
+  @override
+  String get marketFavoriteEmpty => '在市場搜尋結果中收藏商品，下次可在這裡直接查看價格。';
+
+  @override
+  String get marketFavoriteSaveFailed => '無法讀取或儲存市場收藏，請重試。';
+
+  @override
+  String get syncCompareTitle => '比較本機與遠端';
+
+  @override
+  String get syncCompareRefresh => '重新整理比較';
+
+  @override
+  String get syncCompareHelp =>
+      '先查看每項差異，再選擇方向。「較新」根據上次共同版本後的改動判斷；下方時間為最近同步時間，僅供參考。拉取或上傳只處理選中的這一項。';
+
+  @override
+  String get syncComparePasswordChangePending =>
+      '密碼同步設定已變更。請返回同步頁面，勾選帳戶後點選立即同步以套用變更；仍可查看差異和拉取。';
+
+  @override
+  String get syncCompareStale => '本機或遠端內容已發生變化，請重新整理比較後再試。';
+
+  @override
+  String get syncCompareFailed => '比較或傳輸失敗，請檢查連線與同步密碼後重新整理；尚未確認傳輸成功。';
+
+  @override
+  String get syncCompareSame => '內容一致';
+
+  @override
+  String get syncCompareLocalOnly => '僅本機有';
+
+  @override
+  String get syncCompareRemoteOnly => '僅遠端有';
+
+  @override
+  String get syncCompareLocalNewer => '本機有較新改動';
+
+  @override
+  String get syncCompareRemoteNewer => '遠端有較新改動';
+
+  @override
+  String get syncCompareBothChanged => '兩端內容不同，請選擇保留哪一端';
+
+  @override
+  String get syncCompareRemoteDeleted => '遠端已刪除；上傳將還原此帳戶';
+
+  @override
+  String get syncCompareSettings => '設定、市集收藏與加速訂閱';
+
+  @override
+  String get syncCompareSettingsConflict => '兩端設定均有改動，請先比較再選擇上傳或拉取。';
+
+  @override
+  String get syncComparePull => '拉取遠端 → 本機';
+
+  @override
+  String get syncCompareUpload => '上傳本機 → 遠端';
+
+  @override
+  String get syncCompareHidden => '敏感內容不同（已隱藏）';
+
+  @override
+  String get syncCompareCurrency => '市集幣別';
+
+  @override
+  String get syncCompareFavorites => '市集收藏';
+
+  @override
+  String get syncCompareSubscription => '加速訂閱網址';
+
+  @override
+  String get syncCompareNodes => '加速節點設定';
+
+  @override
+  String get syncCompareSelectedNode => '選取的加速節點';
+
+  @override
+  String get marketFavoriteSearch => '搜尋';
+
+  @override
+  String get inventoryCooldownDetails => '交易與市場限制';
+
+  @override
+  String inventoryCooldownUntil(String time) {
+    return '冷卻至 $time';
+  }
+
+  @override
+  String get inventoryCooldownTradable => '可交易';
+
+  @override
+  String get inventoryCooldownNotTradable => '不可交易';
+
+  @override
+  String get inventoryCooldownMarketable => '可上架';
+
+  @override
+  String get inventoryCooldownLocalTime => '時間已轉換為本機時區。';
+
+  @override
+  String get inventoryCooldownUnknown => 'Steam 未提供可識別的解鎖時間，不估算日期。';
+
+  @override
+  String get inventoryCooldownElapsed => '該日期已到，請重新整理庫存，以 Steam 傳回的最新限制狀態為準。';
+
+  @override
+  String inventoryCooldownRemaining(int days, int hours, int minutes) {
+    return '剩餘：$days 天 $hours 小時 $minutes 分鐘';
+  }
+
+  @override
+  String get deviceRevokeOthersAction => '撤銷其他裝置授權';
+
+  @override
+  String deviceRevokeOthersConfirm(int count) {
+    return '撤銷下方列出的其他 $count 個裝置授權？保留目前 GooeSteamKit 工作階段，其他裝置需要重新登入。此操作不會移除 Steam 驗證器。';
+  }
+
+  @override
+  String get deviceRevokeOthersCurrentUnknown =>
+      '無法識別目前 GooeSteamKit 工作階段，請重新整理後再撤銷裝置授權。';
+
+  @override
+  String get deviceRevokeOthersNone => '沒有可撤銷的其他裝置授權。';
+
+  @override
+  String get deviceRevokeOthersBusy => '正在撤銷其他裝置授權…';
+
+  @override
+  String deviceRevokeOthersDone(int count) {
+    return '已確認撤銷 $count 個其他裝置授權。';
+  }
+
+  @override
+  String deviceRevokeOthersPartial(int done, int failed) {
+    return '已確認撤銷 $done 個，另有 $failed 個未完成或未確認。請核對下方詳情及重新整理後的裝置清單，再決定是否重試。';
+  }
+
+  @override
+  String get accountCopyInfoTitle => '複製帳戶資訊';
+
+  @override
+  String get accountCopyPersonaName => '複製 Steam 暱稱';
+
+  @override
+  String get accountCopyLoginName => '複製登入名稱';
+
+  @override
+  String get accountCopyUnavailable => '尚未取得';
+
+  @override
+  String get accountCopyFailed => '複製失敗，請重試。';
+
+  @override
+  String get notificationsTitle => 'Steam 通知';
+
+  @override
+  String get notificationsInboxTab => '通知';
+
+  @override
+  String get notificationsRequestsTab => '好友申請';
+
+  @override
+  String get notificationsEmpty => '暫無通知。';
+
+  @override
+  String get notificationsRequestsEmpty => '暫無待處理好友申請。';
+
+  @override
+  String get notificationsMarkRead => '標為已讀';
+
+  @override
+  String get notificationsMarkAllRead => '目前清單全部標為已讀';
+
+  @override
+  String get notificationsHide => '忽略通知';
+
+  @override
+  String get notificationsItemTitle => 'Steam 通知';
+
+  @override
+  String get notificationsItemFallback => '這類通知暫未提供可顯示的內文。';
+
+  @override
+  String get notificationsOpenSteam => '在 Steam 中查看';
+
+  @override
+  String get notificationsAcceptRequest => '同意';
+
+  @override
+  String get notificationsRejectRequest => '拒絕';
+
+  @override
+  String get notificationsActionUnconfirmed => '未確認操作結果，請重新整理確認後再重試。';
+
+  @override
+  String get notificationsActionDone => '已更新。';
+
+  @override
+  String get notificationsLoadFailed => '暫時無法載入，請重新整理或重新登入。';
+
+  @override
+  String get notificationsOpenFailed => '無法開啟 Steam 頁面。';
+
+  @override
+  String get notificationsUnread => '未讀';
+
+  @override
+  String get notificationsSessionChanged => '帳戶工作階段已變更，請重新整理清單後繼續。';
+
+  @override
+  String confirmationBadgeCount(int count) {
+    return '$count 項待確認';
+  }
+
+  @override
+  String get confirmationBadgeUnknown => '尚未取得待確認數量。';
+
+  @override
+  String confirmationBadgeStale(int count) {
+    return '上次取得：$count 項待確認，請重新整理確認。';
+  }
+
+  @override
+  String get notificationsTypeGift => '禮物';
+
+  @override
+  String get notificationsTypeComment => '評論';
+
+  @override
+  String get notificationsTypeInventory => '庫存物品';
+
+  @override
+  String get notificationsTypeFriend => '好友申請';
+
+  @override
+  String get notificationsTypeSale => '促銷';
+
+  @override
+  String get notificationsTypeWishlist => '願望清單';
+
+  @override
+  String get notificationsTypeTrade => '交易報價';
+
+  @override
+  String get notificationsTypeAccount => '帳戶通知';
+
+  @override
+  String get notificationsTypeSupport => 'Steam 客服';
+
+  @override
+  String get notificationsTypeModeration => '社群管理通知';
+
+  @override
+  String get notificationsTypeFamily => '家庭邀請';
+
+  @override
+  String get notificationsTypePlaytest => '測試邀請';
+
+  @override
+  String get notificationsTypeTradeReversal => '交易撤銷';
+
+  @override
+  String get notificationsTypeReport => '檢舉結果';
+
+  @override
+  String get notificationsNoUnread => '暫無未讀通知。';
+
+  @override
+  String notificationsHistory(int count) {
+    return '已讀通知（$count）';
+  }
+
+  @override
+  String get notificationsCollapseHistory => '收起已讀通知';
+
+  @override
+  String notificationsInventoryReceived(String game) {
+    return '$game 有新的庫存物品。';
+  }
+
+  @override
+  String get notificationsItemLoading => '正在取得物品詳情…';
+
+  @override
+  String get notificationsItemUnavailable => '物品詳情暫時無法取得。';
+
+  @override
+  String get notificationsOpenInventory => '查看庫存';
+
+  @override
+  String get notificationsFriendSummary => '進入好友申請，查看並處理目前邀請。';
+
+  @override
+  String get notificationsTradeSummary => '進入報價，查看物品與目前交易狀態。';
+
+  @override
+  String get deviceRevokeOthersVerifyPending =>
+      '無法從重新整理後的裝置清單確認撤銷結果，請重新整理核對後再操作。';
+
+  @override
+  String get dashboardFriends => '好友';
+
+  @override
+  String get dashboardInventory => '物品庫';
+
+  @override
+  String get dashboardFavorites => '市場收藏';
+
+  @override
+  String get dashboardCardsDescription => '選擇概覽顯示的卡片；關閉後不載入。手機首頁保持簡潔。';
+
+  @override
+  String dashboardFriendsSummary(int total, int online) {
+    return '共 $total 位好友 · $online 位在線';
+  }
+
+  @override
+  String dashboardInventorySummary(int games, int items) {
+    return '$games 個物品庫 · $items 件物品';
+  }
+
+  @override
+  String get dashboardFavoritesEmpty => '還沒有收藏的市場物品。';
+
+  @override
+  String get dashboardInventoryEmpty => '暫無可顯示的物品庫。';
+
+  @override
+  String get dashboardFriendsEmpty => '暫無好友。';
+
+  @override
+  String get dashboardFavoritesMore => '查看全部收藏';
+
+  @override
+  String dashboardFavoritesPriceNote(String currency) {
+    return '價格幣別：$currency · 最低在售';
+  }
+
+  @override
+  String dashboardCardsLimited(int count) {
+    return '僅預覽前 $count 項';
+  }
+
+  @override
+  String get dashboardEditLayout => '調整位置與大小';
+
+  @override
+  String get dashboardFinishLayout => '完成調整';
+
+  @override
+  String get dashboardLayoutHelp => '拖曳把手移動卡片；拖曳右下角調整寬高。完成後在「版面設定」中結束調整。';
+
+  @override
+  String get dashboardLayoutHelpMobile =>
+      '拖曳把手上下移動卡片；拖曳右下角調整高度。完成後在「版面設定」中結束調整。';
+
+  @override
+  String get dashboardResetLayout => '重設配置';
+
+  @override
+  String get dashboardDragCard => '移動卡片';
+
+  @override
+  String get dashboardResizeCard => '調整大小';
+
+  @override
+  String get dashboardLayoutSettingsHint => '在帳戶概覽的「版面設定」中調整卡片位置和大小。';
+
+  @override
+  String get syncAdvancedOptions => '進階設定';
+
+  @override
+  String get syncUploadItems => '同步項目（上傳）';
+
+  @override
+  String get syncPullItems => '拉取項目（下載）';
+
+  @override
+  String get syncItemAccounts => '帳戶與驗證器';
+
+  @override
+  String get syncItemSettings => '應用程式設定';
+
+  @override
+  String get syncItemFavorites => '市場收藏與幣別';
+
+  @override
+  String get syncItemAcceleration => '加速訂閱與節點';
+
+  @override
+  String get syncSelectionEmpty => '未選擇項目';
+
+  @override
+  String get syncSelectionHelp => '勾選後自動儲存；這裡只設定，不會開始傳輸。';
+
+  @override
+  String get syncUploadHelp => '將所選內容上傳至遠端，本機資料保持不變。';
+
+  @override
+  String get syncPullHelp => '下載並合併所選內容，保留本機獨有的帳戶與收藏。';
+
+  @override
+  String get syncPullNow => '一鍵拉取';
+
+  @override
+  String get syncPulling => '正在下載…';
+
+  @override
+  String get syncOptionsSaveFailed => '同步選項儲存失敗，請重試。';
+
+  @override
+  String get syncUploaded => '已上傳項目';
+
+  @override
+  String get syncPulled => '已拉取項目';
+
+  @override
+  String get syncPartialRetry => '已完成的項目會保留，可重試未完成的項目。';
 }

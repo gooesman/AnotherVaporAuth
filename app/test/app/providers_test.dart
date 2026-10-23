@@ -53,6 +53,7 @@ class _ScriptedAvatars implements AvatarService {
   bool active = false;
   int _inFlight = 0;
   int maxInFlight = 0;
+  int equippedWhileProfilePending = 0;
   _ScriptedAvatars({this.failFor = 0});
 
   @override
@@ -68,8 +69,10 @@ class _ScriptedAvatars implements AvatarService {
 
   @override
   Future<EquippedItems> fetchEquippedItems(
-          int steamId, String? accessToken) async =>
-      const EquippedItems();
+          int steamId, String? accessToken) async {
+    if (active && _inFlight > 0) equippedWhileProfilePending++;
+    return const EquippedItems();
+  }
 }
 
 /// Inert until [onFirstFetch] is armed; then the first profile fetch runs the
@@ -417,6 +420,8 @@ void main() {
 
       expect(avatars.maxInFlight, 3,
           reason: 'accounts must refresh concurrently, not one at a time');
+      expect(avatars.equippedWhileProfilePending, 3,
+          reason: 'a slow profile must not delay equipped item requests');
       final byId = {
         for (final a
             in container.read(appControllerProvider).value!.accounts)
@@ -428,6 +433,32 @@ void main() {
       expect(byId[idB]!.personaName, isNull);
       expect(storage.files['$idA.maFile'], contains('p$idA'));
       expect(storage.files['$idC.maFile'], contains('p$idC'));
+    });
+
+    test('many accounts use bounded concurrency and still all refresh', () async {
+      final storage = MemoryStorageProvider();
+      final avatars = _ScriptedAvatars();
+      final container = ProviderContainer(overrides: [
+        storageProvider.overrideWithValue(storage),
+        timeAlignerProvider.overrideWithValue(() async {}),
+        avatarServiceProvider.overrideWithValue(avatars),
+      ]);
+      addTearDown(container.dispose);
+      await container.read(appControllerProvider.future);
+      final notifier = container.read(appControllerProvider.notifier);
+      final ids = List.generate(9, (i) => idA + i);
+      for (final id in ids) {
+        await notifier.importMaFile(_maFile(steamId: id));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      avatars.active = true;
+
+      await notifier.refreshAvatars();
+
+      expect(avatars.maxInFlight, 4);
+      for (final id in ids) {
+        expect(storage.files['$id.maFile'], contains('p$id'));
+      }
     });
 
     test(

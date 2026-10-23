@@ -7,6 +7,7 @@ import 'package:hashlib/hashlib.dart' as hashlib;
 import 'package:path_provider/path_provider.dart';
 
 import 'debug_log.dart';
+import 'steam_network.dart';
 
 /// Hosts that legitimately serve Steam avatar / item-image assets. A maFile
 /// is untrusted input (it can be edited or forged before import), so the
@@ -62,7 +63,7 @@ const int maxCachedImageBytes = 2 * 1024 * 1024; // 2 MiB
 class DiskImageCache {
   DiskImageCache({Dio? dio, Future<Directory> Function()? baseDir})
       : _dio = dio ??
-            Dio(BaseOptions(
+            SteamNetwork.createDio(BaseOptions(
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(seconds: 20),
               responseType: ResponseType.bytes,

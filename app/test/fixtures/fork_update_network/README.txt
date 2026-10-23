@@ -1,0 +1,1 @@
+Synthetic localhost transport fixture only. This self-signed public test key is not a deployment credential. Valid 2020-2120; explicit test-only trust authenticates GitHub hostnames while all sockets remain on loopback. Production keeps system TLS validation.

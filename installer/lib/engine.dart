@@ -1,12 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 
+import 'windows_shortcuts.dart';
+import 'windows_icon.dart';
+
 /// Stamped by CI: --dart-define=AVA_VERSION=x.y.z
 const appVersion = String.fromEnvironment('AVA_VERSION', defaultValue: 'dev');
+const appDisplayName = 'GooeSteamKit';
 
 const _regKey = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA';
 
@@ -44,8 +49,88 @@ class InstallEngine {
 
   static String get defaultInstallDir => Platform.isWindows
       ? p.join(
-          Platform.environment['LOCALAPPDATA'] ?? r'C:\', 'Programs', 'AVA')
+          Platform.environment['LOCALAPPDATA'] ?? r'C:\',
+          'Programs',
+          appDisplayName,
+        )
       : p.join(Platform.environment['HOME'] ?? '/tmp', 'ava-install-dryrun');
+
+  /// Prefer the running app's explicit update target, then an existing install.
+  /// An invalid explicit target must fail instead of installing a second copy.
+  static Future<String> resolveInstallDir(
+    List<String> args, {
+    Future<ProcessResult> Function(String, List<String>)? runProcess,
+    String? freshInstallDir,
+    String? legacyInstallDir,
+  }) async {
+    const flag = '--install-dir=';
+    final explicit = args.where((arg) => arg.startsWith(flag)).toList();
+    if (explicit.length > 1) {
+      throw StateError('More than one update install folder was supplied.');
+    }
+    if (explicit.isNotEmpty) {
+      final dir = explicit.single.substring(flag.length).trim();
+      if (!_isExistingInstall(dir)) {
+        throw StateError(
+          'Cannot identify the existing installation at "$dir". '
+          'No files were installed.',
+        );
+      }
+      return p.normalize(dir);
+    }
+
+    if (Platform.isWindows || runProcess != null) {
+      final run = runProcess ??
+          (exe, args) => Process.run(exe, args,
+              stdoutEncoding: utf8, stderrEncoding: utf8);
+      for (final key in const [
+        r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\GooeSteamKit',
+        _regKey,
+      ]) {
+        try {
+          // reg.exe converts redirected output to the system code page and
+          // loses characters outside it. Read Unicode and keep UTF-8 end to end.
+          // Only the fixed internal registry key enters this script, never a path.
+          final script = '''
+\$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new(\$false)
+\$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('${key.substring(5)}')
+if (\$null -eq \$key) { exit 1 }
+try {
+  \$dir = \$key.GetValue('InstallLocation')
+  if (\$dir -isnot [string]) { exit 1 }
+  [Console]::Out.Write(\$dir)
+} finally { \$key.Dispose() }
+''';
+          final result = await run('powershell', [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            script,
+          ]);
+          if (result.exitCode != 0) continue;
+          final dir = '${result.stdout}'.trim();
+          if (_isExistingInstall(dir)) return p.normalize(dir);
+        } on ProcessException {
+          // A missing/unavailable registration must not block a fresh install.
+        }
+      }
+    }
+
+    final fresh = freshInstallDir ?? defaultInstallDir;
+    final legacy = legacyInstallDir ?? p.join(p.dirname(fresh), 'AVA');
+    if (_isExistingInstall(legacy)) return p.normalize(legacy);
+    return fresh;
+  }
+
+  static bool _isExistingInstall(String dir) {
+    if (dir.isEmpty || !p.isAbsolute(dir)) return false;
+    try {
+      return looksLikeInstallDir(dir) && validateInstallDir(dir) == null;
+    } on FileSystemException {
+      return false;
+    }
+  }
 
   /// Name of the file listing everything [install] wrote, one relative path
   /// per line. Uninstall deletes exactly this list — never the directory
@@ -164,12 +249,20 @@ class InstallEngine {
       throw StateError('payload is a build-time placeholder — '
           'this binary was packaged without the real app');
     }
+    final iconName = WindowsIcon.payloadPath(files);
+    final previousManifest = File(p.join(dir, manifestName));
+    final retainedIcons = await WindowsIcon.retainedPaths(
+      dir,
+      await previousManifest.exists()
+          ? await previousManifest.readAsLines()
+          : const <String>[],
+    );
     final total = files.fold<int>(0, (s, f) => s + f.size);
     var done = 0;
     await Directory(dir).create(recursive: true);
     // Everything we create, relative to `dir` — the uninstaller deletes this
     // list and nothing else.
-    final written = <String>[];
+    final written = <String>{...retainedIcons};
     for (final f in files) {
       final target = resolveEntry(dir, f.name);
       if (target == null) {
@@ -199,13 +292,17 @@ class InstallEngine {
     await File(p.join(dir, manifestName)).writeAsString(written.join('\n'));
     progress(0.90);
     log('creating shortcuts');
-    await _shortcut('Programs', p.join(dir, 'ava.exe'), dir);
-    if (desktopShortcut) {
-      await _shortcut('Desktop', p.join(dir, 'ava.exe'), dir);
-    }
+    await WindowsShortcuts.update(
+      displayName: appDisplayName,
+      target: p.join(dir, 'ava.exe'),
+      workDir: dir,
+      iconPath: p.join(dir, iconName),
+      desktopShortcut: desktopShortcut,
+    );
     progress(0.95);
     log('registering uninstall entry');
-    await _registerUninstall(dir, uninstaller, total ~/ 1024);
+    await _registerUninstall(
+        dir, uninstaller, total ~/ 1024, p.join(dir, iconName));
     progress(1.0);
     log('install complete');
   }
@@ -335,12 +432,13 @@ class InstallEngine {
         'taskkill', ['/im', 'ava.exe', '/f', '/fi', 'STATUS eq RUNNING']);
     progress(0.3);
     log('removing shortcuts');
-    await _ps('''
-\$ws = New-Object -ComObject WScript.Shell
-foreach (\$sf in @('Programs','Desktop')) {
-  \$lnk = Join-Path \$ws.SpecialFolders(\$sf) 'AVA.lnk'
-  if (Test-Path \$lnk) { Remove-Item \$lnk -Force }
-}''');
+    await WindowsShortcuts.update(
+      displayName: appDisplayName,
+      target: p.join(dir, 'ava.exe'),
+      workDir: dir,
+      desktopShortcut: false,
+      uninstall: true,
+    );
     progress(0.6);
     log('removing registry entry');
     await Process.run('reg', ['delete', _regKey, '/f']);
@@ -398,19 +496,8 @@ foreach (\$sf in @('Programs','Desktop')) {
     log('uninstalled — this window can be closed');
   }
 
-  static Future<void> _shortcut(
-      String specialFolder, String target, String workDir) async {
-    await _ps('''
-\$ws = New-Object -ComObject WScript.Shell
-\$lnk = \$ws.CreateShortcut((Join-Path \$ws.SpecialFolders('$specialFolder') 'AVA.lnk'))
-\$lnk.TargetPath = '${_q(target)}'
-\$lnk.WorkingDirectory = '${_q(workDir)}'
-\$lnk.IconLocation = '${_q(target)},0'
-\$lnk.Save()''');
-  }
-
   static Future<void> _registerUninstall(
-      String dir, String uninstaller, int sizeKb) async {
+      String dir, String uninstaller, int sizeKb, String iconPath) async {
     Future<void> add(String name, String value,
         {bool dword = false}) async {
       final r = await Process.run('reg', [
@@ -423,27 +510,17 @@ foreach (\$sf in @('Programs','Desktop')) {
       }
     }
 
-    await add('DisplayName', 'AVA');
+    await add('DisplayName', appDisplayName);
     await add('DisplayVersion', appVersion);
     await add('Publisher', 'dotSlash');
     await add('InstallLocation', dir);
-    await add('DisplayIcon', p.join(dir, 'ava.exe'));
+    await add('DisplayIcon', '"$iconPath",0');
     await add('UninstallString', '"$uninstaller" --uninstall');
     await add('QuietUninstallString', '"$uninstaller" --uninstall --auto');
-    await add('URLInfoAbout', 'https://github.com/freefrank/AnotherVaporAuth');
+    await add('URLInfoAbout', 'https://github.com/gooesman/AnotherVaporAuth');
     await add('NoModify', '1', dword: true);
     await add('NoRepair', '1', dword: true);
     await add('EstimatedSize', '$sizeKb', dword: true);
   }
 
-  static Future<void> _ps(String script) async {
-    final r = await Process.run('powershell',
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script]);
-    if (r.exitCode != 0) {
-      throw StateError('powershell failed: ${r.stderr}');
-    }
-  }
-
-  /// Escapes a path for embedding in a single-quoted PowerShell string.
-  static String _q(String s) => s.replaceAll("'", "''");
 }
