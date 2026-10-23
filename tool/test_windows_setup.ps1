@@ -15,6 +15,56 @@ trap {
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or -not $env:RUNNER_TEMP) {
     throw 'Full setup tests require a disposable GitHub-hosted Windows runner'
 }
+# Use the Unicode Shell API: WScript.Shell rejects targets outside the system
+# ANSI code page, including Chinese paths on an English Windows runner.
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Text;
+[ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface ISetupTestShellLink {
+    void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int size, IntPtr data, uint flags);
+    void GetIDList(out IntPtr list);
+    void SetIDList(IntPtr list);
+    void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+    void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string value);
+    void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+    void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string value);
+    void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+    void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string value);
+    void GetHotkey(out short value);
+    void SetHotkey(short value);
+    void GetShowCmd(out int value);
+    void SetShowCmd(int value);
+    void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size, out int index);
+    void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string value, int index);
+    void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string value, uint reserved);
+    void Resolve(IntPtr window, uint flags);
+    void SetPath([MarshalAs(UnmanagedType.LPWStr)] string value);
+}
+public static class SetupTestShortcut {
+    static object Create() {
+        return Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("00021401-0000-0000-C000-000000000046")));
+    }
+    public static void Seed(string file, string target) {
+        object instance = Create();
+        try {
+            ((ISetupTestShellLink)instance).SetPath(target);
+            ((IPersistFile)instance).Save(file, true);
+        } finally { Marshal.FinalReleaseComObject(instance); }
+    }
+    public static string Target(string file) {
+        object instance = Create();
+        try {
+            ((IPersistFile)instance).Load(file, 0);
+            var path = new StringBuilder(32768);
+            ((ISetupTestShellLink)instance).GetPath(path, path.Capacity, IntPtr.Zero, 0);
+            return path.ToString();
+        } finally { Marshal.FinalReleaseComObject(instance); }
+    }
+}
+'@
 $setupPath = (Resolve-Path -LiteralPath $Setup).Path
 $payload = (Resolve-Path -LiteralPath $PayloadDirectory).Path
 $registry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA'
@@ -47,12 +97,9 @@ Write-Host 'Created isolated installation fixture.'
 New-Item -Path $registry -Force | Out-Null
 New-ItemProperty -LiteralPath $registry -Name InstallLocation -Value $installDir -PropertyType String | Out-Null
 New-ItemProperty -LiteralPath $registry -Name DisplayName -Value 'AVA' -PropertyType String | Out-Null
-$shell = New-Object -ComObject WScript.Shell
 foreach ($folder in $shortcutFolders) {
     New-Item -ItemType Directory -Path $folder -Force | Out-Null
-    $link = $shell.CreateShortcut((Join-Path $folder 'AVA.lnk'))
-    $link.TargetPath = Join-Path $installDir 'ava.exe'
-    $link.Save()
+    [SetupTestShortcut]::Seed((Join-Path $folder 'AVA.lnk'), (Join-Path $installDir 'ava.exe'))
 }
 New-Item -ItemType Directory -Path $accountData -Force | Out-Null
 $sentinels = @((Join-Path $installDir 'user-note.txt'), (Join-Path $accountData 'setup-test-sentinel.txt'))
@@ -93,8 +140,7 @@ function Assert-Installed {
     foreach ($folder in $shortcutFolders) {
         $newLink = Join-Path $folder 'GooeSteamKit.lnk'
         if (-not (Test-Path -LiteralPath $newLink)) { throw 'Branded shortcut is missing' }
-        $link = $shell.CreateShortcut($newLink)
-        if ($link.TargetPath -ine (Join-Path $installDir 'ava.exe')) { throw 'Shortcut targets another installation' }
+        if ([SetupTestShortcut]::Target($newLink) -ine (Join-Path $installDir 'ava.exe')) { throw 'Shortcut targets another installation' }
         foreach ($legacy in $shortcutNames | Where-Object { $_ -ne 'GooeSteamKit.lnk' }) {
             if (Test-Path -LiteralPath (Join-Path $folder $legacy)) { throw 'Legacy shortcut was not migrated' }
         }

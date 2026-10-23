@@ -8,16 +8,81 @@ import 'package:path/path.dart' as p;
 
 String _quote(String text) => text.replaceAll("'", "''");
 
+// Read actual .lnk files through the Unicode COM interface independently of the
+// production helper; WScript.Shell loses paths outside the Windows code page.
+const _unicodeShortcutReader = r'''
+Add-Type -TypeDefinition @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+[ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+class TestShellLink {}
+[ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface TestShellLinkW {
+  void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity, IntPtr data, uint flags);
+  void GetIDList(out IntPtr pidl);
+  void SetIDList(IntPtr pidl);
+  void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder text, int capacity);
+  void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string text);
+  void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder text, int capacity);
+  void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string text);
+  void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder text, int capacity);
+  void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string text);
+  void GetHotkey(out short key);
+  void SetHotkey(short key);
+  void GetShowCmd(out int show);
+  void SetShowCmd(int show);
+  void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder text, int capacity, out int index);
+  void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string text, int index);
+  void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string text, uint reserved);
+  void Resolve(IntPtr window, uint flags);
+  void SetPath([MarshalAs(UnmanagedType.LPWStr)] string text);
+}
+public sealed class TestShortcutInfo {
+  public string Target;
+  public string WorkDir;
+  public string Icon;
+}
+public static class TestShortcutReader {
+  public static TestShortcutInfo Read(string path) {
+    var instance = new TestShellLink();
+    try {
+      ((IPersistFile)instance).Load(path, 0);
+      var link = (TestShellLinkW)instance;
+      var target = new StringBuilder(32768);
+      var directory = new StringBuilder(32768);
+      var icon = new StringBuilder(32768);
+      int index;
+      link.GetPath(target, target.Capacity, IntPtr.Zero, 0);
+      link.GetWorkingDirectory(directory, directory.Capacity);
+      link.GetIconLocation(icon, icon.Capacity, out index);
+      return new TestShortcutInfo {
+        Target = target.ToString(), WorkDir = directory.ToString(),
+        Icon = icon.ToString() + "," + index
+      };
+    } finally { Marshal.FinalReleaseComObject(instance); }
+  }
+}
+'@
+''';
+
 Future<String> _powershell(String script) async {
-  final result = await Process.run('powershell', [
-    '-NoProfile',
-    '-NonInteractive',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-Command',
-    "\$ErrorActionPreference = 'Stop'; "
-        '\$ws = New-Object -ComObject WScript.Shell; $script',
-  ]);
+  final result = await Process.run(
+    'powershell',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      "\$ErrorActionPreference = 'Stop'; "
+          '[Console]::OutputEncoding = [Text.UTF8Encoding]::new(\$false); '
+          '\$ws = New-Object -ComObject WScript.Shell; $script',
+    ],
+    stdoutEncoding: utf8,
+    stderrEncoding: utf8,
+  );
   if (result.exitCode != 0) {
     throw StateError('Test shortcut operation failed: ${result.stderr}');
   }
@@ -82,8 +147,8 @@ void main() {
 
     Future<Map<String, dynamic>> readLink(String path) async {
       final json = await _powershell('''
-\$link = \$ws.CreateShortcut('${_quote(path)}')
-[pscustomobject]@{Target = \$link.TargetPath; WorkDir = \$link.WorkingDirectory; Icon = \$link.IconLocation} | ConvertTo-Json -Compress
+$_unicodeShortcutReader
+[TestShortcutReader]::Read('${_quote(path)}') | ConvertTo-Json -Compress
 ''');
       return jsonDecode(json) as Map<String, dynamic>;
     }
@@ -101,6 +166,62 @@ void main() {
         );
 
     String current(String folder) => p.join(folder, '$appDisplayName.lnk');
+
+    test(
+      'non-code-page paths survive create, migration, update and uninstall',
+      () async {
+        final unicodeRoot = p.join(tmp.path, "中文 אב กข अआ 𠮷 🦆's & directory");
+        programs = p.join(unicodeRoot, 'Start menu');
+        desktop = p.join(unicodeRoot, 'Desktop');
+        target = p.join(unicodeRoot, 'GooeSteamKit', 'ava.exe');
+        icon = p.join(p.dirname(target), '图标-𠮷.ico');
+        otherTarget = p.join(unicodeRoot, 'other install', 'ava.exe');
+        final otherIcon = p.join(p.dirname(otherTarget), 'foreign.ico');
+        for (final file in [target, icon, otherTarget, otherIcon]) {
+          await File(file).parent.create(recursive: true);
+          await File(file).writeAsString('inert Unicode fixture');
+        }
+        await update();
+        for (final folder in [programs, desktop]) {
+          expect(
+            (await readLink(current(folder)))['Target'],
+            equalsIgnoringCase(target),
+          );
+          await File(current(folder)).rename(p.join(folder, 'AVA.lnk'));
+        }
+        // Seed a different Unicode installation's link; our migration must leave it.
+        await WindowsShortcuts.update(
+          displayName: 'AVA-pc',
+          target: otherTarget,
+          workDir: p.dirname(otherTarget),
+          iconPath: otherIcon,
+          desktopShortcut: true,
+          programsDirectory: programs,
+          desktopDirectory: desktop,
+        );
+        await update();
+        icon = p.join(p.dirname(target), '更新-🦆.ico');
+        await File(icon).writeAsString('changed Unicode icon');
+        await update(withDesktop: false);
+        for (final folder in [programs, desktop]) {
+          final link = await readLink(current(folder));
+          expect(link['Target'], equalsIgnoringCase(target));
+          expect(link['WorkDir'], equalsIgnoringCase(p.dirname(target)));
+          expect(link['Icon'], equalsIgnoringCase('$icon,0'));
+          expect(File(p.join(folder, 'AVA.lnk')).existsSync(), isFalse);
+        }
+        await update(uninstall: true);
+        for (final folder in [programs, desktop]) {
+          expect(File(current(folder)).existsSync(), isFalse);
+          expect(
+            (await readLink(p.join(folder, 'AVA-pc.lnk')))['Target'],
+            equalsIgnoringCase(otherTarget),
+          );
+        }
+        expect(File(target).existsSync(), isTrue);
+        expect(File(otherTarget).existsSync(), isTrue);
+      },
+    );
 
     test(
       'migrates legacy names and retains usable target and distinct icon',

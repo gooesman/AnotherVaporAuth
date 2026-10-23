@@ -4,7 +4,7 @@ import 'dart:io';
 /// Folder overrides let integration tests exercise real .lnk files without
 /// touching the user's Desktop or Start menu.
 abstract final class WindowsShortcuts {
-  // WScript expands DOS 8.3 paths when reading .lnk targets. Normalize both
+  // Shell links may expand DOS 8.3 paths when reading targets. Normalize both
   // existing files through Windows rather than weakening ownership checks.
   // A missing/inaccessible file never proves that a shortcut belongs to us.
   static const _canonicalPathType = r'''
@@ -13,7 +13,70 @@ using System;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using Microsoft.Win32.SafeHandles;
+[ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+class AvaShellLink {}
+[ComImport, Guid("000214F9-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface AvaShellLinkW {
+  void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int capacity, IntPtr findData, uint flags);
+  void GetIDList(out IntPtr pidl);
+  void SetIDList(IntPtr pidl);
+  void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder description, int capacity);
+  void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string description);
+  void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder directory, int capacity);
+  void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string directory);
+  void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder arguments, int capacity);
+  void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
+  void GetHotkey(out short hotkey);
+  void SetHotkey(short hotkey);
+  void GetShowCmd(out int showCommand);
+  void SetShowCmd(int showCommand);
+  void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder icon, int capacity, out int index);
+  void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string icon, int index);
+  void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string path, uint reserved);
+  void Resolve(IntPtr window, uint flags);
+  void SetPath([MarshalAs(UnmanagedType.LPWStr)] string path);
+}
+public sealed class AvaShortcutInfo {
+  public string TargetPath;
+  public string WorkingDirectory;
+  public string IconLocation;
+}
+public static class AvaUnicodeShortcut {
+  public static AvaShortcutInfo Read(string path) {
+    var instance = new AvaShellLink();
+    try {
+      ((IPersistFile)instance).Load(path, 0);
+      var link = (AvaShellLinkW)instance;
+      var target = new StringBuilder(32768);
+      var directory = new StringBuilder(32768);
+      var icon = new StringBuilder(32768);
+      int index;
+      link.GetPath(target, target.Capacity, IntPtr.Zero, 0);
+      link.GetWorkingDirectory(directory, directory.Capacity);
+      link.GetIconLocation(icon, icon.Capacity, out index);
+      return new AvaShortcutInfo {
+        TargetPath = target.ToString(), WorkingDirectory = directory.ToString(),
+        IconLocation = icon.ToString() + "," + index
+      };
+    } catch (COMException) { return null; }
+    finally { Marshal.FinalReleaseComObject(instance); }
+  }
+  public static void Write(string path, string target, string directory, string icon) {
+    var instance = new AvaShellLink();
+    try {
+      var file = (IPersistFile)instance;
+      // Preserve an existing owned link's other settings when updating it.
+      if (File.Exists(path)) file.Load(path, 0);
+      var link = (AvaShellLinkW)instance;
+      link.SetPath(target);
+      link.SetWorkingDirectory(directory);
+      link.SetIconLocation(icon, 0);
+      file.Save(path, true);
+    } finally { Marshal.FinalReleaseComObject(instance); }
+  }
+}
 public static class AvaShortcutPath {
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
   private static extern uint GetFinalPathNameByHandle(SafeFileHandle file, StringBuilder path, uint capacity, uint flags);
@@ -77,8 +140,8 @@ function Test-OwnedShortcut(\$link) {
 function Get-OwnedShortcut([string]\$path) {
   if (-not (Test-Path -LiteralPath \$path -PathType Leaf)) { return \$null }
   if ((Get-Item -LiteralPath \$path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { return \$null }
-  \$link = \$ws.CreateShortcut(\$path)
-  if (Test-OwnedShortcut \$link) { return \$link }
+  \$link = [AvaUnicodeShortcut]::Read(\$path)
+  if (\$null -ne \$link -and (Test-OwnedShortcut \$link)) { return \$link }
   return \$null
 }
 \$icon = '${_quote(iconPath ?? '')}'
@@ -119,11 +182,7 @@ foreach (\$entry in \$folders) {
   # Keep an unrelated same-name link, and the old entry it would replace.
   if (\$exists -and \$null -eq \$existingOwned) { continue }
   [IO.Directory]::CreateDirectory(\$entry.Path) | Out-Null
-  \$link = \$ws.CreateShortcut(\$path)
-    \$link.TargetPath = \$target
-    \$link.WorkingDirectory = '${_quote(workDir)}'
-    \$link.IconLocation = "\$icon,0"
-    \$link.Save()
+  [AvaUnicodeShortcut]::Write(\$path, \$target, '${_quote(workDir)}', \$icon)
   \$saved = Get-OwnedShortcut \$path
   if (\$null -eq \$saved -or -not \$saved.IconLocation.EndsWith(',0') -or
       -not [string]::Equals([AvaShortcutPath]::ExistingFile(\$saved.IconLocation.Substring(0, \$saved.IconLocation.Length - 2)),
