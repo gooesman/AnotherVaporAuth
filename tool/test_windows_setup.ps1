@@ -22,8 +22,8 @@ $newRegistry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\GooeSt
 $defaults = @('AVA', 'GooeSteamKit') | ForEach-Object { Join-Path $env:LOCALAPPDATA "Programs\$_" }
 $accountData = Join-Path $env:APPDATA 'dotslash.pro\AVA'
 $shortcutFolders = @(
-    [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
-    [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)
+    [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory, [Environment+SpecialFolderOption]::DoNotVerify)
+    [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs, [Environment+SpecialFolderOption]::DoNotVerify)
 )
 $shortcutNames = @('AVA.lnk', 'AVA-pc.lnk', 'gooes SteamKit.lnk', 'GooeSteamKit.lnk')
 foreach ($path in @($registry, $newRegistry, $accountData) + $defaults) {
