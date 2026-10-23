@@ -161,18 +161,32 @@ class ForkUpdateService {
       throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
     }
     final names = _assetNames(target, tag);
-    final matches = assets.whereType<Map<String, dynamic>>().where(
-      (asset) => names.contains(asset['name']),
-    );
+    final matches = assets
+        .whereType<Map<String, dynamic>>()
+        .where((asset) => names.contains(asset['name']))
+        .toList();
     if (matches.isEmpty) {
       return const ForkUpdateCheck(
         status: ForkUpdateCheckStatus.noCompatibleAsset,
       );
     }
-    if (matches.length != 1) {
+    // A branded package may coexist with its byte-identical legacy alias so
+    // older clients can still discover the update. Prefer the branded name.
+    final branded = matches.where((asset) => asset['name'] == names.first);
+    final candidates = branded.isNotEmpty ? branded : matches;
+    if (candidates.length != 1 ||
+        matches.map((asset) => asset['name']).toSet().length !=
+            matches.length) {
       throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
     }
-    final rawAsset = matches.single;
+    final rawAsset = candidates.single;
+    if (matches.any(
+      (asset) =>
+          asset['size'] != rawAsset['size'] ||
+          asset['digest'] != rawAsset['digest'],
+    )) {
+      throw const ForkUpdateException(ForkUpdateErrorCode.invalidMetadata);
+    }
     final size = rawAsset['size'];
     final name = rawAsset['name'] as String;
     final url = rawAsset['browser_download_url'];
@@ -805,6 +819,7 @@ class ForkUpdateService {
   static Set<String> _assetNames(ForkUpdateTarget target, String tag) =>
       switch (target) {
         ForkUpdateTarget.windowsX64 => {
+          'GooeSteamKit-$tag-windows-x64-setup.exe',
           'AVA-pc-$tag-windows-x64-setup.exe',
           'AVA-$tag-windows-x64-setup.exe',
         },

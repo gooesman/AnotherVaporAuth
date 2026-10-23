@@ -146,7 +146,7 @@ jobs:
         working-directory: .
         run: |
           $src = (Resolve-Path installer/build/windows/x64/runner/Release).Path
-          $name = "AVA-pc-v$env:AVA_VERSION+$env:AVA_BUILD_NUMBER-windows-x64-setup.exe"
+          $name = "GooeSteamKit-v$env:AVA_VERSION+$env:AVA_BUILD_NUMBER-windows-x64-setup.exe"
           $out = Join-Path (Get-Location).Path $name
           $ico = (Resolve-Path app/windows/runner/resources/app_icon.ico).Path
           $makensis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
@@ -167,12 +167,16 @@ jobs:
             sha256 = (Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToLowerInvariant()
           } | ConvertTo-Json | Set-Content -LiteralPath windows-preview.json -Encoding utf8
 
+      - name: Verify installed-directory upgrades and branding
+        working-directory: .
+        run: ./tool/test_windows_setup.ps1 -Setup "GooeSteamKit-v$env:AVA_VERSION+$env:AVA_BUILD_NUMBER-windows-x64-setup.exe" -PayloadDirectory app/build/windows/x64/runner/Release
+
       - name: Upload Windows installer preview
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: AVA-windows-installer-preview-${{ github.sha }}
           path: |
-            AVA-pc-v*-windows-x64-setup.exe
+            GooeSteamKit-v*-windows-x64-setup.exe
             windows-preview.json
           if-no-files-found: error
           retention-days: 14

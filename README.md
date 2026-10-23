@@ -36,12 +36,14 @@ in this fork. This is a community project, unaffiliated with Valve or Steam.
 
 | Platform | Download from this fork | File to choose |
 |---|---|---|
-| **Windows x64** | [Windows installer](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-pc-…-windows-x64-setup.exe` |
+| **Windows x64** | [Windows installer](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `GooeSteamKit-…-windows-x64-setup.exe` |
 | **Android ARM64** | [Android APK](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-Fork-…-android-arm64.apk` |
 
-Both apps are named **GooeSteamKit**. Download filenames retain their earlier
-prefixes so existing in-app updaters can recognize them. This fork currently
-publishes Windows and Android packages.
+Both apps are named **GooeSteamKit**. Windows also provides a byte-identical
+`AVA-pc-…` compatibility package for older updaters; new versions prefer the
+GooeSteamKit filename. Updates reuse the running app's directory, standalone
+setup discovers existing installations, and fresh installs default to
+`Programs\GooeSteamKit`. This fork publishes Windows and Android packages.
 
 Already installed? Open **Settings → Software updates**. Both platforms offer
 automatic download acceleration through third-party GH-Proxy routes, with GitHub

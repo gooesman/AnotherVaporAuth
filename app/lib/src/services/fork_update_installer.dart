@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 import '../core/fork_update.dart';
@@ -22,18 +23,24 @@ class ForkUpdateInstaller {
     String? operatingSystem,
     this._channel = const MethodChannel('ava/app_update'),
     Future<void> Function(VerifiedForkUpdate)? verify,
-    Future<void> Function(String)? launchWindows,
+    Future<void> Function(String, List<String>)? launchWindows,
     Future<void> Function()? closeWindows,
+    String? windowsExecutable,
+    Map<String, String>? windowsEnvironment,
   }) : _operatingSystem = operatingSystem ?? Platform.operatingSystem,
        _verify = verify ?? ForkUpdateService().verifyAgain,
        _launchWindows = launchWindows ?? _startWindowsInstaller,
-       _closeWindows = closeWindows ?? windowManager.close;
+       _closeWindows = closeWindows ?? windowManager.close,
+       _windowsExecutable = windowsExecutable ?? Platform.resolvedExecutable,
+       _windowsEnvironment = windowsEnvironment ?? Platform.environment;
 
   final String _operatingSystem;
   final MethodChannel _channel;
   final Future<void> Function(VerifiedForkUpdate) _verify;
-  final Future<void> Function(String) _launchWindows;
+  final Future<void> Function(String, List<String>) _launchWindows;
   final Future<void> Function() _closeWindows;
+  final String _windowsExecutable;
+  final Map<String, String> _windowsEnvironment;
   bool _installing = false;
 
   void _requireTarget(ForkUpdateTarget target) {
@@ -76,12 +83,17 @@ class ForkUpdateInstaller {
         // Android reads this URI asynchronously. Keep the APK after handoff.
       } else {
         try {
-          await _launchWindows(update.file.absolute.path);
+          await _launchWindows(update.file.absolute.path, [
+            // Single-file portable builds run in a temporary extraction folder.
+            // Let setup discover the registered install for that case instead.
+            if ((_windowsEnvironment['AVA_PORTABLE_ROOT'] ?? '').isEmpty)
+              '--install-dir=${p.windows.dirname(_windowsExecutable)}',
+          ]);
         } catch (_) {
           throw const ForkUpdateInstallException('installer_unavailable');
         }
         // Launch the interactive installer first, then release the running
-        // app's files. A launch failure must leave AVA open.
+        // app's files. A launch failure must leave GooeSteamKit open.
         try {
           await _closeWindows();
         } catch (_) {
@@ -103,10 +115,13 @@ class ForkUpdateInstaller {
     }
   }
 
-  static Future<void> _startWindowsInstaller(String path) async {
+  static Future<void> _startWindowsInstaller(
+    String path,
+    List<String> arguments,
+  ) async {
     await Process.start(
       path,
-      const [],
+      arguments,
       runInShell: false,
       mode: ProcessStartMode.detached,
     );

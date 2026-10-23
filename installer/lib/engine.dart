@@ -48,8 +48,77 @@ class InstallEngine {
 
   static String get defaultInstallDir => Platform.isWindows
       ? p.join(
-          Platform.environment['LOCALAPPDATA'] ?? r'C:\', 'Programs', 'AVA')
+          Platform.environment['LOCALAPPDATA'] ?? r'C:\',
+          'Programs',
+          appDisplayName,
+        )
       : p.join(Platform.environment['HOME'] ?? '/tmp', 'ava-install-dryrun');
+
+  /// Prefer the running app's explicit update target, then an existing install.
+  /// An invalid explicit target must fail instead of installing a second copy.
+  static Future<String> resolveInstallDir(
+    List<String> args, {
+    Future<ProcessResult> Function(String, List<String>)? runProcess,
+    String? freshInstallDir,
+    String? legacyInstallDir,
+  }) async {
+    const flag = '--install-dir=';
+    final explicit = args.where((arg) => arg.startsWith(flag)).toList();
+    if (explicit.length > 1) {
+      throw StateError('More than one update install folder was supplied.');
+    }
+    if (explicit.isNotEmpty) {
+      final dir = explicit.single.substring(flag.length).trim();
+      if (!_isExistingInstall(dir)) {
+        throw StateError(
+          'Cannot identify the existing installation at "$dir". '
+          'No files were installed.',
+        );
+      }
+      return p.normalize(dir);
+    }
+
+    if (Platform.isWindows || runProcess != null) {
+      final run = runProcess ?? (exe, args) => Process.run(exe, args);
+      for (final key in const [
+        r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\GooeSteamKit',
+        _regKey,
+      ]) {
+        try {
+          final result = await run('reg', [
+            'query',
+            key,
+            '/v',
+            'InstallLocation',
+          ]);
+          if (result.exitCode != 0) continue;
+          final match = RegExp(
+            r'^\s*InstallLocation\s+REG_SZ\s+(.+?)\s*$',
+            multiLine: true,
+            caseSensitive: false,
+          ).firstMatch('${result.stdout}');
+          final dir = match?.group(1)?.trim();
+          if (dir != null && _isExistingInstall(dir)) return p.normalize(dir);
+        } on ProcessException {
+          // A missing/unavailable registration must not block a fresh install.
+        }
+      }
+    }
+
+    final fresh = freshInstallDir ?? defaultInstallDir;
+    final legacy = legacyInstallDir ?? p.join(p.dirname(fresh), 'AVA');
+    if (_isExistingInstall(legacy)) return p.normalize(legacy);
+    return fresh;
+  }
+
+  static bool _isExistingInstall(String dir) {
+    if (dir.isEmpty || !p.isAbsolute(dir)) return false;
+    try {
+      return looksLikeInstallDir(dir) && validateInstallDir(dir) == null;
+    } on FileSystemException {
+      return false;
+    }
+  }
 
   /// Name of the file listing everything [install] wrote, one relative path
   /// per line. Uninstall deletes exactly this list — never the directory

@@ -77,6 +77,19 @@ jobs:
               if not condition:
                   raise SystemExit(message)
 
+          def add_windows_compatibility_alias(package, metadata, tag):
+              require(package.name == f'GooeSteamKit-{tag}-windows-x64-setup.exe'
+                      and metadata['release_file'] == package.name,
+                      'Unexpected primary Windows package name')
+              alias = package.with_name(f'AVA-pc-{tag}-windows-x64-setup.exe')
+              shutil.copyfile(package, alias)
+              with alias.open('rb') as stream:
+                  digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+              require(digest == metadata['sha256'] and alias.stat().st_size == metadata['size'],
+                      'Windows compatibility alias differs from the verified package')
+              return alias, {**metadata, 'release_file': alias.name,
+                             'compatibility_alias_for': package.name}
+
           def select_release_draft(releases, tag, commit, resume_id):
               matches = [release for release in releases if release.get('tag_name') == tag]
               if resume_id is None:
@@ -150,7 +163,7 @@ jobs:
           payloads = []
           max_size = 512 * 1024 * 1024
           platforms = [
-              ('windows-x64', f'AVA-windows-installer-preview-{commit}', 'windows-preview.json', f'AVA-pc-{tag}-windows-x64-setup.exe'),
+              ('windows-x64', f'AVA-windows-installer-preview-{commit}', 'windows-preview.json', f'GooeSteamKit-{tag}-windows-x64-setup.exe'),
               ('android-arm64', f'AVA-android-preview-{commit}', 'android-preview.json', 'app-cn-release.apk'),
           ]
           for platform, artifact_name, metadata_name, source_name in platforms:
@@ -195,6 +208,12 @@ jobs:
                   require(digest == metadata['sha256'], 'Package SHA-256 mismatch')
                   manifests.append({**metadata, 'release_file': name, 'artifact_id': artifact['id'], 'artifact_sha256': archive_hash})
                   payloads.append(destination)
+                  if platform == 'windows-x64':
+                      # Older installed updaters only recognize AVA-pc names.
+                      # Keep an identical, separately verified compatibility asset.
+                      alias, alias_manifest = add_windows_compatibility_alias(destination, manifests[-1], tag)
+                      manifests.append(alias_manifest)
+                      payloads.append(alias)
 
           # Do not distribute the Android GPL component without its matching
           # source snapshot and license. Download only flat files, never execute

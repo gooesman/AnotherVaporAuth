@@ -19,6 +19,19 @@ void main(List<String> args) async {
       p.basename(InstallEngine.selfImage).toLowerCase() == 'uninstall.exe';
   final auto =
       args.contains('--auto') || (staged && InstallEngine.stagedAuto);
+  String? initialInstallDir;
+  String? initializationError;
+  if (!uninstall) {
+    try {
+      initialInstallDir = await InstallEngine.resolveInstallDir(args);
+    } catch (error) {
+      initializationError = '$error';
+      if (auto) {
+        stderr.writeln('ERROR: $error');
+        exit(1);
+      }
+    }
+  }
   await windowManager.ensureInitialized();
   const options = WindowOptions(
     size: Size(760, 460),
@@ -32,7 +45,13 @@ void main(List<String> args) async {
     await windowManager.show();
     await windowManager.focus();
   });
-  runApp(InstallerApp(uninstall: uninstall, auto: auto, staged: staged));
+  runApp(InstallerApp(
+    uninstall: uninstall,
+    auto: auto,
+    staged: staged,
+    initialInstallDir: initialInstallDir,
+    initializationError: initializationError,
+  ));
 }
 
 class InstallerApp extends StatelessWidget {
@@ -40,10 +59,14 @@ class InstallerApp extends StatelessWidget {
       {super.key,
       required this.uninstall,
       required this.auto,
-      required this.staged});
+      required this.staged,
+      this.initialInstallDir,
+      this.initializationError});
   final bool uninstall;
   final bool auto;
   final bool staged;
+  final String? initialInstallDir;
+  final String? initializationError;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -53,7 +76,11 @@ class InstallerApp extends StatelessWidget {
             scaffoldBackgroundColor: Fx.bg,
             fontFamily: Fx.font),
         home: InstallerScreen(
-            uninstall: uninstall, auto: auto, staged: staged),
+            uninstall: uninstall,
+            auto: auto,
+            staged: staged,
+            initialInstallDir: initialInstallDir,
+            initializationError: initializationError),
       );
 }
 
@@ -64,10 +91,14 @@ class InstallerScreen extends StatefulWidget {
       {super.key,
       required this.uninstall,
       required this.auto,
-      required this.staged});
+      required this.staged,
+      this.initialInstallDir,
+      this.initializationError});
   final bool uninstall;
   final bool auto;
   final bool staged;
+  final String? initialInstallDir;
+  final String? initializationError;
 
   @override
   State<InstallerScreen> createState() => _InstallerScreenState();
@@ -81,7 +112,8 @@ class _InstallerScreenState extends State<InstallerScreen>
   late final AnimationController _marquee = AnimationController(
       vsync: this, duration: const Duration(seconds: 22))
     ..repeat();
-  final _path = TextEditingController(text: InstallEngine.defaultInstallDir);
+  late final _path = TextEditingController(
+      text: widget.initialInstallDir ?? InstallEngine.defaultInstallDir);
   final _scroll = ScrollController();
   final _logs = <String>[];
   var _phase = Phase.ready;
@@ -97,6 +129,11 @@ class _InstallerScreenState extends State<InstallerScreen>
   @override
   void initState() {
     super.initState();
+    if (!widget.uninstall && widget.initializationError != null) {
+      _phase = Phase.error;
+      _error = widget.initializationError!;
+      return;
+    }
     // The staged cleanup copy always starts immediately — the user already
     // confirmed in stage 1.
     if (widget.auto || widget.staged) {

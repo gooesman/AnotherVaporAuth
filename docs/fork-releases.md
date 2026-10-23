@@ -10,15 +10,16 @@ GooeSteamKit 是基于原版 AVA 的独立 Fork。更新只读取 `gooesman/Anot
 
 正式 Release 包含：
 
-- `AVA-pc-v1.5.0+100042-windows-x64-setup.exe`
+- `GooeSteamKit-v1.5.17+100042-windows-x64-setup.exe`
+- `AVA-pc-v1.5.17+100042-windows-x64-setup.exe`（同内容兼容别名）
 - `AVA-Fork-v1.5.0+100042-android-arm64.apk`
 - `SHA256SUMS.txt`
 - `release-provenance.json`
 - `mihomo-v1.19.32-source.tar.gz`、`mihomo-LICENSE.txt`、`mihomo-NOTICE.txt`
 
-安装包文件名保留 `AVA-pc-`、`AVA-Fork-` 前缀，供旧版应用内更新器识别；文件名不随应用显示名称更改。
+Windows 新版更新器优先选择 `GooeSteamKit-` 包，同时支持 `AVA-pc-` 兼容别名和更早的 `AVA-` 包。发布时从同一个已校验安装包复制兼容别名，两个文件都纳入 SHA-256 与来源记录，并校验上传结果，让旧客户端仍能发现更新。Android 本轮继续使用 `AVA-Fork-` 文件名前缀。
 
-Windows 应用、安装器与快捷方式统一显示为 GooeSteamKit（此前为 AVA-pc）。内部仍使用 `ava.exe`、`%LOCALAPPDATA%\Programs\AVA`、AVA 存储标识和原有应用数据目录。安装包附带按内容哈希命名的独立 ICO，供桌面与开始菜单快捷方式引用，避免仅替换同一路径 EXE 后仍沿用旧图标缓存。更新会对指向当前安装的既有快捷方式改名并更新图标引用，保留指向其他安装的快捷方式。NSIS 的 `APPVER` 参数只使用三段版本号；完整版本和构建编号写入应用和预览元数据。
+Windows 应用、安装器与快捷方式统一显示为 GooeSteamKit（此前为 AVA-pc）。应用内更新传入当前运行目录；直接运行安装包时，先查找已登记的有效安装位置，再兼容旧的 `%LOCALAPPDATA%\Programs\AVA`，新安装默认使用 `%LOCALAPPDATA%\Programs\GooeSteamKit`。无效的显式更新目录会报错，不能静默改装到另一处。内部仍使用 `ava.exe`、AVA 存储标识和原有应用数据目录。安装包附带按内容哈希命名的独立 ICO，供桌面与开始菜单快捷方式引用，避免仅替换同一路径 EXE 后仍沿用旧图标缓存。更新会对指向当前安装的既有快捷方式改名并更新图标引用，保留指向其他安装的快捷方式。NSIS 的 `APPVER` 参数只使用三段版本号；完整版本和构建编号写入应用和预览元数据。
 
 Android 应用名称与手机桌面标签统一为 GooeSteamKit。保持现有 AVA Fork 的包名 `pro.dotslash.ava.fork` 和固定私有签名，仍是 ARM64 / CN release 优化构建（AOT、不可调试）。递增版本号后，现有 AVA Fork 可直接覆盖更新，保留账号和设置，无需重新导入。原版 AVA 和旧 AVA dev 仍分开安装，只有从这些应用首次迁移才需要导出／导入，旧数据保留在原应用内。私钥只能由仓库 Secrets 提供，不得提交到 Git。
 

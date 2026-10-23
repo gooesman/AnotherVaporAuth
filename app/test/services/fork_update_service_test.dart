@@ -298,6 +298,43 @@ void main() {
     },
   );
 
+  test('branded Windows package wins over identical legacy aliases', () async {
+    const name = 'GooeSteamKit-$_tag-windows-x64-setup.exe';
+    for (final brandedFirst in [true, false]) {
+      final assets = [_asset(name), _asset(_windowsName)];
+      final data = _metadata()
+        ..['assets'] = brandedFirst ? assets : assets.reversed.toList();
+      final sut = service(
+        (request) =>
+            request.uri.path.endsWith('latest') ? _json(data) : _binary(),
+      );
+      final result = await _check(sut);
+      expect(result.status, ForkUpdateCheckStatus.available);
+      expect(result.release!.asset.name, name);
+      final downloaded = await sut.download(result.release!);
+      expect(p.basename(downloaded.file.path), name);
+      await sut.verifyAgain(downloaded);
+    }
+  });
+
+  test(
+    'duplicate branded packages and mismatched aliases are rejected',
+    () async {
+      const name = 'GooeSteamKit-$_tag-windows-x64-setup.exe';
+      for (final assets in [
+        [_asset(name), _asset(name)],
+        [_asset(name), _asset(_windowsName)..['size'] = _bytes.length + 1],
+        [_asset(name), _asset(_windowsName)..['digest'] = 'sha256:${'0' * 64}'],
+      ]) {
+        final data = _metadata()..['assets'] = assets;
+        expect(
+          (await _check(service((_) => _json(data)))).status,
+          ForkUpdateCheckStatus.invalidMetadata,
+        );
+      }
+    },
+  );
+
   test(
     'invalid and oversized metadata or asset declarations are rejected',
     () async {

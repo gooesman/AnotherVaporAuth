@@ -40,7 +40,7 @@ void main() {
       final installer = ForkUpdateInstaller(
         operatingSystem: 'windows',
         verify: (_) async => events.add('verify'),
-        launchWindows: (_) async => events.add('launch'),
+        launchWindows: (_, _) async => events.add('launch'),
         closeWindows: () async => events.add('close'),
       );
       expect(await installer.canInstall(ForkUpdateTarget.windowsX64), isTrue);
@@ -56,7 +56,7 @@ void main() {
       operatingSystem: 'windows',
       verify: (_) async =>
           throw const ForkUpdateException(ForkUpdateErrorCode.hashMismatch),
-      launchWindows: (_) async => events.add('launch'),
+      launchWindows: (_, _) async => events.add('launch'),
       closeWindows: () async => events.add('close'),
     );
     await expectLater(
@@ -66,12 +66,46 @@ void main() {
     expect(events, isEmpty);
   });
 
+  test(
+    'Windows update passes the running directory as one literal argument',
+    () async {
+      final package = update(ForkUpdateTarget.windowsX64);
+      final installer = ForkUpdateInstaller(
+        operatingSystem: 'windows',
+        windowsExecutable: r'D:\游戏工具 & apps\GooeSteamKit\ava.exe',
+        windowsEnvironment: const {},
+        verify: (_) async {},
+        launchWindows: (path, arguments) async {
+          expect(path, package.file.absolute.path);
+          expect(arguments, [r'--install-dir=D:\游戏工具 & apps\GooeSteamKit']);
+        },
+        closeWindows: () async {},
+      );
+      await installer.install(package);
+    },
+  );
+
+  test(
+    'packed portable update does not target its temporary extraction',
+    () async {
+      final installer = ForkUpdateInstaller(
+        operatingSystem: 'windows',
+        windowsExecutable: r'C:\Temp\ns123\ava\ava.exe',
+        windowsEnvironment: const {'AVA_PORTABLE_ROOT': r'D:\Portable'},
+        verify: (_) async {},
+        launchWindows: (_, arguments) async => expect(arguments, isEmpty),
+        closeWindows: () async {},
+      );
+      await installer.install(update(ForkUpdateTarget.windowsX64));
+    },
+  );
+
   test('launch failure leaves Windows open', () async {
     var closed = false;
     final installer = ForkUpdateInstaller(
       operatingSystem: 'windows',
       verify: (_) async {},
-      launchWindows: (_) async =>
+      launchWindows: (_, _) async =>
           throw const ProcessException('test', [], 'failed'),
       closeWindows: () async => closed = true,
     );
@@ -178,7 +212,7 @@ void main() {
     final installer = ForkUpdateInstaller(
       operatingSystem: 'windows',
       verify: (_) => verified.future,
-      launchWindows: (_) async => launched++,
+      launchWindows: (_, _) async => launched++,
       closeWindows: () async {},
     );
     final first = installer.install(update(ForkUpdateTarget.windowsX64));

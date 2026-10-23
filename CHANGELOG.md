@@ -5,6 +5,16 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.17] — 2026-10-23 · Fork
+
+### Fixed
+- Windows updates reuse the running application's directory. Standalone setup discovers registered installations and the legacy default location; fresh installs default to `Programs\GooeSteamKit`. Invalid explicit update targets fail visibly instead of installing a second copy elsewhere.
+- Windows packages use the GooeSteamKit filename. A byte-identical AVA-pc compatibility alias keeps updates available to older clients; new clients prefer the branded package and verify its digest. Existing account storage and shortcuts remain compatible.
+
+### 修复
+- 电脑端更新沿用当前程序所在目录；直接运行安装包会查找已登记位置与旧版默认目录，新安装默认使用 `Programs\GooeSteamKit`。明确指定的更新目录无效时显示错误，避免静默装到另一处。
+- Windows 主安装包统一使用 GooeSteamKit 文件名；同时提供内容相同的 AVA-pc 兼容包，保证旧客户端仍能找到更新。新版优先下载新名称并校验文件，保留原有账户存储与快捷方式兼容。
+
 ## [v1.5.16] — 2026-10-15 · Fork
 
 ### Changed

@@ -5,9 +5,11 @@ import copy
 import hashlib
 from pathlib import Path
 import re
+import shutil
 import tempfile
 import textwrap
 import unittest
+from unittest.mock import patch
 
 
 def load_release_guards():
@@ -17,7 +19,8 @@ def load_release_guards():
     script = textwrap.dedent(script).rsplit('\nPY', 1)[0]
     tree = ast.parse(script, filename=str(workflow))
     ast.increment_lineno(tree, prefix.count('\n') + 1)
-    names = {'require', 'select_release_draft', 'verify_release_draft'}
+    names = {'require', 'select_release_draft', 'verify_release_draft',
+             'add_windows_compatibility_alias'}
     functions = [node for node in tree.body
                  if isinstance(node, ast.FunctionDef) and node.name in names]
     if {node.name for node in functions} != names:
@@ -25,15 +28,16 @@ def load_release_guards():
     # Only the named function definitions enter this module. In particular, no
     # workflow top-level API calls, environment reads or publication can run.
     module = ast.Module(body=functions, type_ignores=[])
-    namespace = {'hashlib': hashlib, 're': re, 'Path': Path}
+    namespace = {'hashlib': hashlib, 're': re, 'Path': Path, 'shutil': shutil}
     exec(compile(module, str(workflow), 'exec'), namespace)
-    return namespace['select_release_draft'], namespace['verify_release_draft']
+    return (namespace['select_release_draft'], namespace['verify_release_draft'],
+            namespace['add_windows_compatibility_alias'])
 
 
 class ReleaseDraftGateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        select, verify = load_release_guards()
+        select, verify, _ = load_release_guards()
         cls.select = staticmethod(select)
         cls.verify = staticmethod(verify)
 
@@ -47,6 +51,7 @@ class ReleaseDraftGateTest(unittest.TestCase):
         self.paths = []
         asset_records = []
         for index, name in enumerate([
+            'GooeSteamKit-v1.5.1+100014-windows-x64-setup.exe',
             'AVA-pc-v1.5.1+100014-windows-x64-setup.exe',
             'AVA-Fork-v1.5.1+100014-android-arm64.apk',
             'mihomo-v1.19.32-source.tar.gz',
@@ -188,6 +193,58 @@ class ReleaseDraftGateTest(unittest.TestCase):
         path.write_bytes(b'x' * path.stat().st_size)
         with self.assertRaises(SystemExit):
             self.verify_draft()
+
+
+class WindowsCompatibilityAssetTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        _, _, alias = load_release_guards()
+        cls.add_alias = staticmethod(alias)
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.tag = 'v1.5.17+100042'
+        self.package = Path(directory.name) / f'GooeSteamKit-{self.tag}-windows-x64-setup.exe'
+        self.package.write_bytes(b'synthetic verified Windows setup')
+        self.metadata = {
+            'release_file': self.package.name,
+            'file': self.package.name,
+            'sha256': hashlib.sha256(self.package.read_bytes()).hexdigest(),
+            'size': self.package.stat().st_size,
+            'artifact_id': 42,
+            'artifact_sha256': 'a' * 64,
+            'commit': 'b' * 40,
+        }
+
+    def test_alias_keeps_bytes_and_source_provenance(self):
+        alias, metadata = self.add_alias(self.package, self.metadata, self.tag)
+        self.assertEqual(alias.name, f'AVA-pc-{self.tag}-windows-x64-setup.exe')
+        self.assertEqual(alias.read_bytes(), self.package.read_bytes())
+        self.assertEqual(metadata, {
+            **self.metadata, 'release_file': alias.name,
+            'compatibility_alias_for': self.package.name,
+        })
+        # Both records can go through the existing checksum/publication gates.
+        for path, record in [(self.package, self.metadata), (alias, metadata)]:
+            self.assertEqual(path.name, record['release_file'])
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), record['sha256'])
+
+    def test_rejects_other_version_and_unbranded_source(self):
+        for tag, name in [('v1.5.17+100043', self.package.name),
+                          (self.tag, f'AVA-pc-{self.tag}-windows-x64-setup.exe')]:
+            with self.subTest(tag=tag, name=name), self.assertRaises(SystemExit):
+                self.add_alias(self.package.with_name(name), self.metadata, tag)
+
+    def test_rejects_different_copied_bytes(self):
+        def tamper(_source, destination):
+            destination.write_bytes(b'x' * self.metadata['size'])
+        with patch.object(shutil, 'copyfile', tamper), self.assertRaises(SystemExit):
+            self.add_alias(self.package, self.metadata, self.tag)
+
+    def test_rejects_wrong_provenance_size(self):
+        with self.assertRaises(SystemExit):
+            self.add_alias(self.package, {**self.metadata, 'size': 1}, self.tag)
 
 
 if __name__ == '__main__':

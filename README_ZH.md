@@ -34,10 +34,11 @@ GooeSteamKit 是 **gooesman 独立维护的 Fork**，基于 freefrank 开发的
 
 | 平台 | 本分支下载入口 | 选择的文件 |
 |---|---|---|
-| **Windows x64** | [电脑安装包](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-pc-…-windows-x64-setup.exe` |
+| **Windows x64** | [电脑安装包](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `GooeSteamKit-…-windows-x64-setup.exe` |
 | **Android ARM64** | [手机 APK](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-Fork-…-android-arm64.apk` |
 
-两端应用名称均为 **GooeSteamKit**。安装包保留旧文件名前缀，以兼容早期版本的应用内更新。
+两端应用名称均为 **GooeSteamKit**。Windows 同时提供内容相同的 `AVA-pc-…` 兼容包，供旧版更新器识别；新版优先下载 GooeSteamKit 命名的安装包。
+电脑端更新自动沿用当前安装目录；直接运行安装包时会查找已有安装，新安装默认使用 `Programs\GooeSteamKit`。
 本分支目前发布 Windows 和 Android 安装包。
 
 已安装用户可进入 **设置 → 软件更新**。两端均支持通过第三方 GH-Proxy 线路自动加速下载，
