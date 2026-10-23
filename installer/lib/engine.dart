@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
@@ -79,26 +80,37 @@ class InstallEngine {
     }
 
     if (Platform.isWindows || runProcess != null) {
-      final run = runProcess ?? (exe, args) => Process.run(exe, args);
+      final run = runProcess ??
+          (exe, args) => Process.run(exe, args,
+              stdoutEncoding: utf8, stderrEncoding: utf8);
       for (final key in const [
         r'HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\GooeSteamKit',
         _regKey,
       ]) {
         try {
-          final result = await run('reg', [
-            'query',
-            key,
-            '/v',
-            'InstallLocation',
+          // reg.exe converts redirected output to the system code page and
+          // loses characters outside it. Read Unicode and keep UTF-8 end to end.
+          // Only the fixed internal registry key enters this script, never a path.
+          final script = '''
+\$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new(\$false)
+\$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('${key.substring(5)}')
+if (\$null -eq \$key) { exit 1 }
+try {
+  \$dir = \$key.GetValue('InstallLocation')
+  if (\$dir -isnot [string]) { exit 1 }
+  [Console]::Out.Write(\$dir)
+} finally { \$key.Dispose() }
+''';
+          final result = await run('powershell', [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            script,
           ]);
           if (result.exitCode != 0) continue;
-          final match = RegExp(
-            r'^\s*InstallLocation\s+REG_SZ\s+(.+?)\s*$',
-            multiLine: true,
-            caseSensitive: false,
-          ).firstMatch('${result.stdout}');
-          final dir = match?.group(1)?.trim();
-          if (dir != null && _isExistingInstall(dir)) return p.normalize(dir);
+          final dir = '${result.stdout}'.trim();
+          if (_isExistingInstall(dir)) return p.normalize(dir);
         } on ProcessException {
           // A missing/unavailable registration must not block a fresh install.
         }

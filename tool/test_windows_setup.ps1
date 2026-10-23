@@ -39,7 +39,7 @@ foreach ($folder in $shortcutFolders) {
 Write-Host 'Verified empty shortcut locations.'
 
 $testRoot = Join-Path (Resolve-Path -LiteralPath $env:RUNNER_TEMP).Path "steamkit-setup-$([guid]::NewGuid().ToString('N'))"
-$installDir = Join-Path $testRoot '中文 自定义目录\GooeSteamKit'
+$installDir = Join-Path $testRoot '中文 𠮷 🦆 自定义目录\GooeSteamKit'
 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 Get-ChildItem -LiteralPath $payload -Force | Copy-Item -Destination $installDir -Recurse
 Write-Host 'Created isolated installation fixture.'

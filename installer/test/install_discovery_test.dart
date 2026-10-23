@@ -32,20 +32,26 @@ void main() {
   }
 
   void register(String product, String dir, {int exitCode = 0}) {
-    registrations[product] = ProcessResult(
-      1,
-      exitCode,
-      '\r\n    InstallLocation    REG_SZ    $dir\r\n',
-      '',
-    );
+    registrations[product] = ProcessResult(1, exitCode, dir, '');
   }
 
   Future<ProcessResult> query(String executable, List<String> args) async {
-    expect(executable, 'reg');
-    expect(args.first, 'query');
-    expect(args.sublist(2), ['/v', 'InstallLocation']);
+    expect(executable, 'powershell');
+    expect(args.length, 4);
+    expect(args.take(3), ['-NoProfile', '-NonInteractive', '-Command']);
+    final script = args.last;
+    expect(
+      script,
+      contains(r'[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)'),
+    );
+    expect(script, contains(r"$key.GetValue('InstallLocation')"));
+    expect(script, contains(r'[Console]::Out.Write($dir)'));
+    final key = RegExp(
+      r"OpenSubKey\('Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\(GooeSteamKit|AVA)'\)",
+    ).firstMatch(script);
+    expect(key, isNotNull);
     queries.add(args);
-    return registrations[args[1].split('\\').last] ??
+    return registrations[key!.group(1)] ??
         ProcessResult(1, 1, '', 'No registration');
   }
 
@@ -97,12 +103,20 @@ void main() {
     );
   });
 
-  test('registered path retains spaces and Chinese characters', () async {
-    final target = existing(p.join(tmp.path, '中文 软件目录', '我的 GooeSteamKit'));
-    register('AVA', target);
-    expect(await resolve(), target);
-    expect(queries.length, 2);
-  });
+  test(
+    'registered path retains characters outside the Windows code page',
+    () async {
+      final target = existing(
+        p.join(tmp.path, '中文 软件目录', "𠮷 🦆 测试's & GooeSteamKit"),
+      );
+      register('AVA', target);
+      expect(await resolve(), target);
+      expect(queries.length, 2);
+      for (final args in queries) {
+        expect(args.last, isNot(contains(target)));
+      }
+    },
+  );
 
   test('new registration is recognized before a legacy registration', () async {
     final target = existing(p.join(tmp.path, 'registered current'));
