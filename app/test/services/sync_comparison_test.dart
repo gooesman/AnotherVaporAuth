@@ -40,7 +40,14 @@ const id2 = 76561198000000002;
 const favorites = {
   'currency': 23,
   'items': [
-    {'appid': 440, 'market_hash_name': 'Key', 'name': 'Key'},
+    {
+      'appid': 440,
+      'market_hash_name': 'Key',
+      'name': 'Key',
+      'icon_url': '',
+      'type': '',
+      'rarity_color': '',
+    },
   ],
 };
 
