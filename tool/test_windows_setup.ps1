@@ -4,6 +4,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+trap {
+    Write-Host $_.Exception.ToString()
+    Write-Host $_.InvocationInfo.PositionMessage
+    Write-Host $_.ScriptStackTrace
+    throw
+}
 # This exercises real HKCU registration and shell shortcuts. Never run it on
 # a developer's machine or on a persistent/self-hosted CI account.
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or -not $env:RUNNER_TEMP) {
@@ -15,27 +21,33 @@ $registry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA'
 $newRegistry = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\GooeSteamKit'
 $defaults = @('AVA', 'GooeSteamKit') | ForEach-Object { Join-Path $env:LOCALAPPDATA "Programs\$_" }
 $accountData = Join-Path $env:APPDATA 'dotslash.pro\AVA'
-$shell = New-Object -ComObject WScript.Shell
-$shortcutFolders = @($shell.SpecialFolders('Desktop'), $shell.SpecialFolders('Programs'))
+$shortcutFolders = @(
+    [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
+    [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)
+)
 $shortcutNames = @('AVA.lnk', 'AVA-pc.lnk', 'gooes SteamKit.lnk', 'GooeSteamKit.lnk')
 foreach ($path in @($registry, $newRegistry, $accountData) + $defaults) {
     if (Test-Path -LiteralPath $path) { throw "Refusing to overwrite an existing installation or data: $path" }
 }
+Write-Host 'Verified empty installation, registry and data locations.'
 if (Get-Process -Name ava,ava_installer -ErrorAction SilentlyContinue) { throw 'Existing app process found' }
 foreach ($folder in $shortcutFolders) {
     foreach ($name in $shortcutNames) {
         if (Test-Path -LiteralPath (Join-Path $folder $name)) { throw 'Existing app shortcut found' }
     }
 }
+Write-Host 'Verified empty shortcut locations.'
 
 $testRoot = Join-Path (Resolve-Path -LiteralPath $env:RUNNER_TEMP).Path "steamkit-setup-$([guid]::NewGuid().ToString('N'))"
 $installDir = Join-Path $testRoot '中文 自定义目录\GooeSteamKit'
 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
 Get-ChildItem -LiteralPath $payload -Force | Copy-Item -Destination $installDir -Recurse
+Write-Host 'Created isolated installation fixture.'
 # Seed the old registration and shortcut, as an existing AVA installation would.
 New-Item -Path $registry -Force | Out-Null
 New-ItemProperty -LiteralPath $registry -Name InstallLocation -Value $installDir -PropertyType String | Out-Null
 New-ItemProperty -LiteralPath $registry -Name DisplayName -Value 'AVA' -PropertyType String | Out-Null
+$shell = New-Object -ComObject WScript.Shell
 foreach ($folder in $shortcutFolders) {
     New-Item -ItemType Directory -Path $folder -Force | Out-Null
     $link = $shell.CreateShortcut((Join-Path $folder 'AVA.lnk'))
