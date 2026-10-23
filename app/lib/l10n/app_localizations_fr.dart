@@ -1804,7 +1804,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncSetUp => 'Configurer la synchronisation…';
 
   @override
-  String get syncStatusOk => 'À jour';
+  String get syncStatusOk => 'Connecté';
 
   @override
   String get syncStatusSyncing => 'Synchronisation…';
@@ -1955,11 +1955,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cette phrase secrète n\'ouvre pas cette bibliothèque.';
 
   @override
-  String get syncPreviewTitle => 'Première synchronisation';
+  String get syncPreviewTitle => 'Connecter la bibliothèque de synchronisation';
 
   @override
   String get syncPreviewEmpty =>
-      'Rien à transférer pour l\'instant — les comptes se synchroniseront désormais automatiquement.';
+      'Après la connexion, choisissez l’envoi ou le téléchargement sur la page de synchronisation. Sélectionnez séparément les éléments dans les paramètres avancés.';
 
   @override
   String syncPreviewPull(int count) {
@@ -1977,14 +1977,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get syncStart => 'Démarrer la synchronisation';
+  String get syncStart => 'Connecter';
 
   @override
-  String get syncDoneTitle => 'Synchronisation activée';
+  String get syncDoneTitle => 'Bibliothèque de synchronisation connectée';
 
   @override
   String get syncDoneBody =>
-      'Les comptes se synchronisent désormais automatiquement. Sur un nouvel appareil, chaque compte se reconnecte à sa première utilisation — ceux dont le mot de passe est enregistré le font seuls ; les autres le demandent une fois.';
+      'Choisissez l’envoi ou le téléchargement sur la page de synchronisation. Le téléchargement fusionne les données distantes et conserve les comptes et favoris propres à cet appareil.';
 
   @override
   String get syncDone => 'Terminé';
@@ -2040,18 +2040,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncConflictNoPassword => 'Aucun mot de passe enregistré';
 
   @override
-  String get syncAutoTitle => 'Synchronisation automatique';
+  String get syncAutoTitle => 'Envoi automatique';
 
   @override
   String get syncAutoDesc =>
-      'Synchronise au lancement et après chaque modification. Désactivé, seul le bouton ci-dessous synchronise.';
+      'Envoie les éléments sélectionnés au démarrage et après chaque modification. Le téléchargement reste manuel.';
 
   @override
-  String get syncPasswordsTitle => 'Synchroniser les mots de passe des comptes';
+  String get syncPasswordsTitle => 'Inclure les mots de passe des comptes';
 
   @override
   String get syncPasswordsDesc =>
-      'Les mots de passe permettent à un nouvel appareil de se connecter seul. Modifier ce réglage renvoie tous les comptes.';
+      'Concerne l’envoi des comptes. Les modifications prennent effet au prochain envoi de comptes.';
 
   @override
   String get syncAppSettingsTitle =>
@@ -2059,7 +2059,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncAppSettingsDesc =>
-      'Synchronise l’apparence et le comportement, ainsi que les abonnements d’accélération Steam chiffrés, les nœuds et leur sélection. La langue, la taille du texte et le démarrage automatique restent propres à chaque appareil.';
+      'Préférences d’apparence et de comportement uniquement. Les favoris et abonnements se sélectionnent séparément. La langue, la taille du texte et le démarrage automatique de l’accélération restent propres à chaque appareil.';
 
   @override
   String get syncNowButton => 'Synchroniser maintenant';
@@ -2767,7 +2767,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'Ce lien peut contenir des identifiants privés et est stocké de façon sécurisée. Si la synchronisation des réglages est activée, les abonnements et les nœuds sont chiffrés avec votre mot de passe de synchronisation puis synchronisés. Après l’enregistrement, actualisez les nœuds.';
+      'Ce lien peut contenir des identifiants privés et est stocké de manière sécurisée. Dans Synchronisation → Paramètres avancés, sélectionnez les abonnements et nœuds à envoyer ou télécharger, chiffrés avec votre phrase secrète. Actualisez ensuite les nœuds.';
 
   @override
   String get steamAccelerationClear => 'Effacer l’abonnement';
@@ -3196,6 +3196,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.';
 
   @override
+  String get syncComparePasswordChangePending =>
+      'Les paramètres de synchronisation des mots de passe ont changé. Retournez à la page de synchronisation, sélectionnez les comptes et cliquez sur Synchroniser maintenant pour appliquer la modification. Vous pouvez toujours comparer les différences et télécharger les données.';
+
+  @override
   String get syncCompareStale =>
       'Local or remote data changed. Refresh the comparison before trying again.';
 
@@ -3566,4 +3570,60 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dashboardLayoutSettingsHint =>
       'Ouvrez Disposition de l’aperçu dans l’aperçu du compte pour déplacer ou redimensionner les cartes.';
+
+  @override
+  String get syncAdvancedOptions => 'Paramètres avancés';
+
+  @override
+  String get syncUploadItems => 'Éléments à synchroniser (envoi)';
+
+  @override
+  String get syncPullItems => 'Éléments à télécharger';
+
+  @override
+  String get syncItemAccounts => 'Comptes et authentificateurs';
+
+  @override
+  String get syncItemSettings => 'Paramètres de l’application';
+
+  @override
+  String get syncItemFavorites => 'Favoris du marché et devise';
+
+  @override
+  String get syncItemAcceleration => 'Abonnements d’accélération et nœuds';
+
+  @override
+  String get syncSelectionEmpty => 'Aucun élément sélectionné';
+
+  @override
+  String get syncSelectionHelp =>
+      'La sélection est enregistrée automatiquement. La modifier ne lance aucun transfert.';
+
+  @override
+  String get syncUploadHelp =>
+      'Envoie les éléments sélectionnés au serveur. Les données locales restent inchangées.';
+
+  @override
+  String get syncPullHelp =>
+      'Télécharge et fusionne les éléments sélectionnés. Conserve les comptes et favoris présents uniquement sur cet appareil.';
+
+  @override
+  String get syncPullNow => 'Télécharger maintenant';
+
+  @override
+  String get syncPulling => 'Téléchargement…';
+
+  @override
+  String get syncOptionsSaveFailed =>
+      'Impossible d’enregistrer les options. Réessayez.';
+
+  @override
+  String get syncUploaded => 'Éléments envoyés';
+
+  @override
+  String get syncPulled => 'Éléments téléchargés';
+
+  @override
+  String get syncPartialRetry =>
+      'Les éléments terminés sont conservés. Vous pouvez réessayer les éléments restants.';
 }

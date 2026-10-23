@@ -65,6 +65,7 @@ class _SecureStore extends SteamAccelerationStore {
   String? value;
   int reads = 0;
   int writes = 0;
+  bool failRead = false;
   bool failWrite = false;
   Completer<void>? pendingRead;
   Completer<void>? pendingWrite;
@@ -74,6 +75,7 @@ class _SecureStore extends SteamAccelerationStore {
   @override
   Future<String?> read() async {
     reads++;
+    if (failRead) throw const FileSystemException('synthetic read failure');
     if (!readStarted.isCompleted) readStarted.complete();
     await pendingRead?.future;
     return value;
@@ -208,6 +210,30 @@ class _DebounceTimer implements Timer {
 }
 
 void main() {
+  test('selected settings snapshot never reads unselected subscription secrets',
+      () async {
+    final fixture = await _Fixture.create();
+    await fixture.container.read(marketFavoritesProvider.notifier)
+        .applySynced(_favoriteDoc);
+    fixture.store.failRead = true;
+    final snapshot = await fixture.port.snapshot(
+      selection: const SyncSelection(
+        accounts: false, settings: false, acceleration: false,
+      ),
+    );
+    expect(snapshot, {'market_favorites': _favoriteDoc});
+    expect(fixture.store.reads, 0);
+    expect(fixture.fetches, 0);
+    expect(fixture.runtime.starts, 0);
+    final preferences = await fixture.port.snapshot(
+      selection: const SyncSelection(
+        accounts: false, favorites: false, acceleration: false,
+      ),
+    );
+    expect(preferences!.keys.toSet(), SyncSelection.settingKeys);
+    expect(fixture.store.reads, 0);
+  });
+
   test('settings snapshot and pull retain favorites and selected currency', () async {
     final fixture = await _Fixture.create();
     await fixture.port.apply({'market_favorites': _favoriteDoc});

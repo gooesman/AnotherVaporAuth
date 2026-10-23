@@ -35,6 +35,73 @@ class _ScreenEngine extends SyncEngine {
 
 void main() {
   testWidgets(
+    'pending password policy explains blocked uploads and keeps pull available',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final engine = (await tester.runAsync(() async {
+        final device = Device(InMemoryServer(), 'password-widget-device');
+        device.settingsPort.values['market_favorites'] = {
+          'currency': 1,
+          'items': [],
+        };
+        await device.engine.reconcileInternal();
+        device.settingsPort.values['market_favorites'] = {
+          'currency': 23,
+          'items': [],
+        };
+        await device.engine.setSyncPasswords(false);
+        final preview = await device.engine.compareWithRemote();
+        expect(preview.uploadBlockedByPasswordChange, isTrue);
+        device.engine.dispose();
+        return _ScreenEngine(device, preview);
+      }))!;
+      addTearDown(engine.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [syncEngineProvider.overrideWithValue(engine)],
+          child: MaterialApp(
+            theme: buildAvaTheme(AvaThemeVariant.light),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(1.5)),
+              child: child!,
+            ),
+            home: const SyncCompareScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('密码同步设置已更改。请返回同步页面，勾选账户后点击立即同步以应用更改；仍可查看差异和拉取。'),
+        findsOneWidget,
+      );
+      final upload = find.widgetWithText(FilledButton, '上传本地 → 远程');
+      await tester.scrollUntilVisible(
+        upload,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(upload).onPressed, isNull);
+      await tester.tap(upload);
+      expect(engine.uploaded, isNull);
+      final pull = find.widgetWithText(OutlinedButton, '拉取远程 → 本地');
+      expect(tester.widget<OutlinedButton>(pull).onPressed, isNotNull);
+      await tester.tap(pull);
+      await tester.pumpAndSettle();
+      expect(engine.uploaded, isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'phone comparison shows currency codes, hides secrets, waits for direction',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -47,7 +114,7 @@ void main() {
           'currency': 1,
           'items': [],
         };
-        await device.engine.syncNow();
+        await device.engine.reconcileInternal();
         device.settingsPort.values.addAll({
           'market_favorites': {'currency': 23, 'items': []},
           'steam_acceleration': kSubscription,

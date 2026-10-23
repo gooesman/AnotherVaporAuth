@@ -52,7 +52,11 @@ class _SyncCompareScreenState extends ConsumerState<SyncCompareScreen> {
 
   Future<void> _apply(SyncComparisonItem item, bool upload) async {
     final preview = _preview;
-    if (_busy || preview == null) return;
+    if (_busy ||
+        preview == null ||
+        (upload && preview.uploadBlockedByPasswordChange)) {
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -118,6 +122,10 @@ class _SyncCompareScreenState extends ConsumerState<SyncCompareScreen> {
                 ),
               ],
               if (preview != null) ...[
+                if (preview.uploadBlockedByPasswordChange) ...[
+                  const SizedBox(height: 12),
+                  Text(l.syncComparePasswordChangePending),
+                ],
                 const SizedBox(height: 12),
                 Text(
                   '${l.syncConflictLocalSide}: ${_time(preview.localSyncAt)}\n${l.syncConflictRemoteSide}: ${_time(preview.remoteSyncAt)}',
@@ -178,7 +186,9 @@ class _SyncCompareScreenState extends ConsumerState<SyncCompareScreen> {
                       label: Text(l.syncComparePull),
                     ),
                     FilledButton.icon(
-                      onPressed: !_busy && item.canUpload
+                      onPressed: !_busy &&
+                              item.canUpload &&
+                              _preview?.uploadBlockedByPasswordChange != true
                           ? () => _apply(item, true)
                           : null,
                       icon: const Icon(Icons.cloud_upload_outlined),

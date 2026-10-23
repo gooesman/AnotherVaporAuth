@@ -14,6 +14,7 @@ class SyncComparison {
   final List<SyncComparisonItem> items;
   final DateTime? localSyncAt;
   final DateTime? remoteSyncAt;
+  final bool uploadBlockedByPasswordChange;
   final String _configKey;
   final RemoteFile? _sidecar;
   const SyncComparison._(
@@ -22,6 +23,7 @@ class SyncComparison {
     this.remoteSyncAt,
     this._configKey,
     this._sidecar,
+    this.uploadBlockedByPasswordChange,
   );
 }
 
@@ -63,7 +65,7 @@ extension SyncComparisonOperations on SyncEngine {
   }
 
   Future<({SyncConfig config, String password, String phrase})>
-  _comparisonAccess() async {
+  _comparisonAccess({bool upload = false}) async {
     final config = await configStore.loadConfig();
     final password = await configStore.loadWebdavPassword();
     final phrase = await configStore.loadPassphrase();
@@ -73,8 +75,10 @@ extension SyncComparisonOperations on SyncEngine {
         accounts.snapshot() == null) {
       throw StateError('Sync unavailable or locked');
     }
-    // Finish an outstanding key/password-policy change through syncNow first.
-    if (config.forcePushPending) {
+    // A pending password-upload policy does not restrict read-only comparisons
+    // or pulls. Uploads must first finish the whole-account policy cleanup.
+    if (config.forcePushPending &&
+        (upload || await configStore.loadPreviousPassphrase() != null)) {
       throw StateError('Sync configuration change pending');
     }
     return (config: config, password: password, phrase: phrase);
@@ -93,8 +97,7 @@ extension SyncComparisonOperations on SyncEngine {
         : SyncSidecar.parse(utf8.decode(file.bytes));
     if (file != null &&
         (remote.passphraseEpoch != config.passphraseEpoch ||
-            verifyPasskeyCheck(phrase, remote.passkeyCheck) == false ||
-            remote.includePasswords != config.syncPasswords)) {
+            verifyPasskeyCheck(phrase, remote.passkeyCheck) == false)) {
       throw StateError('Sync configuration changed; synchronize first');
     }
     return remote;
@@ -161,7 +164,7 @@ extension SyncComparisonOperations on SyncEngine {
                   );
             if (local == null && payload == null) return;
             final localHash = local == null ? null : payloadHash(local);
-            final kind = localHash == entry?.hash && local != null
+            var kind = localHash == entry?.hash && local != null
                 ? SyncComparisonKind.same
                 : local == null
                 ? SyncComparisonKind.remoteOnly
@@ -176,6 +179,27 @@ extension SyncComparisonOperations on SyncEngine {
                       localHash != (localBaseHash ?? base.hash)
                 ? SyncComparisonKind.localChanged
                 : SyncComparisonKind.bothChanged;
+            if (id == null &&
+                local != null &&
+                payload != null &&
+                localHash != entry?.hash &&
+                state.remoteContentHashes.isNotEmpty) {
+              var localChanged = false;
+              var remoteChanged = false;
+              for (final group in _settingsSelections.entries) {
+                localChanged |=
+                    payloadHash(group.value.selectSettings(local)) !=
+                    state.localContentHashes[group.key];
+                remoteChanged |=
+                    payloadHash(group.value.selectSettings(payload)) !=
+                    state.remoteContentHashes[group.key];
+              }
+              kind = localChanged && !remoteChanged
+                  ? SyncComparisonKind.localChanged
+                  : remoteChanged && !localChanged
+                  ? SyncComparisonKind.remoteChanged
+                  : SyncComparisonKind.bothChanged;
+            }
             items.add(
               SyncComparisonItem._(
                 id,
@@ -191,7 +215,7 @@ extension SyncComparisonOperations on SyncEngine {
           for (final id in ids) {
             await add(id, remote.accounts[id], state.base[id], null);
           }
-          if (access.config.syncSettings && settings != null) {
+          if (settings != null) {
             await add(
               null,
               remote.settings,
@@ -214,6 +238,7 @@ extension SyncComparisonOperations on SyncEngine {
             dates.isEmpty ? null : dates.last,
             _comparisonKey(access.config, access.phrase),
             file,
+            access.config.forcePushPending,
           );
         } finally {
           transport.close();
@@ -230,7 +255,7 @@ extension SyncComparisonOperations on SyncEngine {
         !(upload ? item.canUpload : item.canPull)) {
       throw StateError('Invalid comparison selection');
     }
-    final access = await _comparisonAccess();
+    final access = await _comparisonAccess(upload: upload);
     if (_comparisonKey(access.config, access.phrase) != preview._configKey) {
       throw SyncComparisonChanged();
     }
@@ -264,10 +289,29 @@ extension SyncComparisonOperations on SyncEngine {
       }
 
       await checkLocal();
+      final reviewedAccount = item.steamId == null
+          ? null
+          : accounts
+                .snapshot()
+                ?.where((account) => account.steamId == item.steamId)
+                .firstOrNull;
+      final reviewedAccountPayload = reviewedAccount == null
+          ? null
+          : jsonDecode(
+                  jsonEncode(
+                    syncPayloadJson(reviewedAccount, includePassword: true),
+                  ),
+                )
+                as Map<String, dynamic>;
+      final reviewedLocalHash = reviewedAccountPayload == null
+          ? null
+          : payloadHash(reviewedAccountPayload);
       final state = await configStore.loadState();
       final id = item.steamId;
       final oldEntry = id == null ? remote.settings : remote.accounts[id];
-      final losing = upload ? item.remote : item.local;
+      final losing = upload
+          ? item.remote
+          : reviewedAccountPayload ?? item.local;
       if (id != null &&
           losing != null &&
           !await trash.put(
@@ -293,7 +337,8 @@ extension SyncComparisonOperations on SyncEngine {
             (id == null ? state.settingsBase : state.base[id])?.rev ?? 0;
         final rev =
             (baseRev > item.remoteRevision ? baseRev : item.remoteRevision) + 1;
-        final payload = item.local!;
+        final payload = {...item.local!};
+        if (id != null && !remote.includePasswords) payload.remove('password');
         final enc = encryptSyncPayload(access.phrase, payload);
         // Random IV suffix keeps a losing 412 attempt from replacing a live blob.
         final nonce = base64Url
@@ -322,7 +367,7 @@ extension SyncComparisonOperations on SyncEngine {
           tombstones: tombstones,
           settings: id == null ? entry : null,
           passkeyCheck: check,
-          includePasswords: access.config.syncPasswords,
+          includePasswords: remote.includePasswords,
           devices: {
             ...remote.devices,
             devId: SyncDeviceInfo(
@@ -359,12 +404,43 @@ extension SyncComparisonOperations on SyncEngine {
         entry = oldEntry!;
         await checkLocal();
         if (id == null) {
-          await settings!.apply(item.remote!);
+          final incoming = {...item.remote!};
+          if (incoming.containsKey('market_favorites')) {
+            incoming['market_favorites'] = _mergeFavorites(
+              item.local?['market_favorites'],
+              incoming['market_favorites'],
+            );
+          }
+          await _applyRemoteChange(() => settings!.apply(incoming));
         } else {
-          await accounts.applyRemote(item.remote!);
+          await _applyRemoteChange(() => accounts.applyRemote(item.remote!));
         }
       }
       final settingsAfter = id == null ? await settings!.snapshot() : null;
+      final localContentHashes = {...state.localContentHashes};
+      final remoteContentHashes = {...state.remoteContentHashes};
+      if (id == null && settingsAfter != null) {
+        final localDocument = upload ? item.local! : settingsAfter;
+        final remoteDocument = upload ? item.local! : item.remote!;
+        for (final group in _settingsSelections.entries) {
+          localContentHashes[group.key] = payloadHash(
+            group.value.selectSettings(localDocument),
+          );
+          remoteContentHashes[group.key] = payloadHash(
+            group.value.selectSettings(remoteDocument),
+          );
+        }
+      } else if (id != null) {
+        final after = accounts
+            .snapshot()
+            ?.where((a) => a.steamId == id)
+            .firstOrNull;
+        if (after != null) {
+          localContentHashes['account:$id'] = upload
+              ? reviewedLocalHash!
+              : payloadHash(syncPayloadJson(after, includePassword: true));
+        }
+      }
       await configStore.saveState(
         SyncLocalState(
           base: {
@@ -382,6 +458,8 @@ extension SyncComparisonOperations on SyncEngine {
                     ? null
                     : payloadHash(settingsAfter))
               : state.settingsLocalHash,
+          localContentHashes: localContentHashes,
+          remoteContentHashes: remoteContentHashes,
         ),
       );
       _publish(

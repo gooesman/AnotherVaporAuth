@@ -975,14 +975,16 @@ class _SyncCard extends ConsumerWidget {
     final String description;
     if (!status.configured) {
       description = l.syncSettingsDesc;
-    } else if (status.conflicts.isNotEmpty) {
-      description = l.syncStatusConflicts(status.conflicts.length);
+    } else if (status.syncing) {
+      description = l.syncStatusSyncing;
     } else if (status.needsPassphrase) {
       description = l.syncNeedsPassphrase;
     } else if (status.hasError) {
       description = l.syncStatusErrorShort;
-    } else if (status.syncing) {
-      description = l.syncStatusSyncing;
+    } else if (status.settingsConflict) {
+      description = l.syncCompareSettingsConflict;
+    } else if (status.conflicts.isNotEmpty) {
+      description = l.syncStatusConflicts(status.conflicts.length);
     } else {
       description = l.syncStatusOk;
     }

@@ -1782,7 +1782,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSetUp => 'Set up sync…';
 
   @override
-  String get syncStatusOk => 'Up to date';
+  String get syncStatusOk => 'Connected';
 
   @override
   String get syncStatusSyncing => 'Syncing…';
@@ -1927,11 +1927,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'That passphrase doesn\'t open this library.';
 
   @override
-  String get syncPreviewTitle => 'First sync';
+  String get syncPreviewTitle => 'Connect sync library';
 
   @override
   String get syncPreviewEmpty =>
-      'Nothing to transfer yet — accounts will sync automatically from now on.';
+      'After connecting, choose Sync now or Pull now on the sync page. Select the items for each action in Advanced settings.';
 
   @override
   String syncPreviewPull(int count) {
@@ -1949,14 +1949,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get syncStart => 'Start syncing';
+  String get syncStart => 'Connect';
 
   @override
-  String get syncDoneTitle => 'Sync is on';
+  String get syncDoneTitle => 'Sync library connected';
 
   @override
   String get syncDoneBody =>
-      'Accounts now sync automatically. On a new device each account signs in again the first time you use it — accounts with a saved password do that by themselves; the others ask once.';
+      'Choose upload or pull on the sync page. Pull merges remote data and keeps accounts and favorites that exist only on this device.';
 
   @override
   String get syncDone => 'Done';
@@ -2012,25 +2012,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncConflictNoPassword => 'No saved password';
 
   @override
-  String get syncAutoTitle => 'Automatic sync';
+  String get syncAutoTitle => 'Automatic upload';
 
   @override
   String get syncAutoDesc =>
-      'Sync at launch and after every change. Off means only the button below syncs.';
+      'Upload the selected sync items at startup and after changes. Download only when you choose Pull now.';
 
   @override
-  String get syncPasswordsTitle => 'Sync account passwords';
+  String get syncPasswordsTitle => 'Include account passwords';
 
   @override
   String get syncPasswordsDesc =>
-      'Passwords let a new device sign in by itself. Changing this re-uploads every account.';
+      'Applies when uploading accounts. Changes take effect on the next account upload.';
 
   @override
   String get syncAppSettingsTitle => 'Sync app settings';
 
   @override
   String get syncAppSettingsDesc =>
-      'Sync appearance and behavior preferences plus encrypted Steam acceleration subscriptions, nodes and the selected node. Language, text size and acceleration auto-start stay per-device.';
+      'Appearance and behavior preferences only. Select market favorites and acceleration subscriptions separately. Language, text size and acceleration auto-start stay per-device.';
 
   @override
   String get syncNowButton => 'Sync now';
@@ -2730,7 +2730,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'This link may contain private credentials and is stored securely on your device. With Sync app settings enabled, subscriptions and nodes are also encrypted with your sync passphrase and synced. After saving, select Refresh nodes.';
+      'This link may contain private credentials and is stored securely. Choose acceleration subscriptions and nodes in Sync → Advanced settings to upload or pull them, encrypted with your sync passphrase. After saving, select Refresh nodes.';
 
   @override
   String get steamAccelerationClear => 'Clear subscription';
@@ -3155,6 +3155,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.';
 
   @override
+  String get syncComparePasswordChangePending =>
+      'Password sync settings have changed. Return to the sync page, select accounts, and click Sync now to apply the change. You can still compare differences and pull.';
+
+  @override
   String get syncCompareStale =>
       'Local or remote data changed. Refresh the comparison before trying again.';
 
@@ -3524,4 +3528,60 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardLayoutSettingsHint =>
       'To move or resize cards, open Overview layout in the account overview.';
+
+  @override
+  String get syncAdvancedOptions => 'Advanced settings';
+
+  @override
+  String get syncUploadItems => 'Sync items (upload)';
+
+  @override
+  String get syncPullItems => 'Pull items (download)';
+
+  @override
+  String get syncItemAccounts => 'Accounts and authenticators';
+
+  @override
+  String get syncItemSettings => 'App settings';
+
+  @override
+  String get syncItemFavorites => 'Market favorites and currency';
+
+  @override
+  String get syncItemAcceleration => 'Acceleration subscriptions and nodes';
+
+  @override
+  String get syncSelectionEmpty => 'No items selected';
+
+  @override
+  String get syncSelectionHelp =>
+      'Selections are saved automatically. Changing them does not start a transfer.';
+
+  @override
+  String get syncUploadHelp =>
+      'Upload the selected items to remote. Local data stays unchanged.';
+
+  @override
+  String get syncPullHelp =>
+      'Download and merge the selected items. Keep accounts and favorites that exist only on this device.';
+
+  @override
+  String get syncPullNow => 'Pull now';
+
+  @override
+  String get syncPulling => 'Downloading…';
+
+  @override
+  String get syncOptionsSaveFailed =>
+      'Could not save sync options. Please try again.';
+
+  @override
+  String get syncUploaded => 'Items uploaded';
+
+  @override
+  String get syncPulled => 'Items downloaded';
+
+  @override
+  String get syncPartialRetry =>
+      'Completed items are kept. You can retry the unfinished items.';
 }

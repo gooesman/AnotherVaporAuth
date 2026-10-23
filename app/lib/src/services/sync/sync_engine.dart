@@ -32,6 +32,7 @@ import 'sync_config_store.dart';
 import 'sync_trash.dart';
 
 part 'sync_comparison.dart';
+part 'sync_transfer.dart';
 
 /// The engine's window into the local account store.
 abstract class SyncAccountsPort {
@@ -58,7 +59,9 @@ abstract class SyncAccountsPort {
 abstract class SyncSettingsPort {
   /// The current curated settings document, or null while unavailable
   /// (store locked / not bootstrapped).
-  Future<Map<String, dynamic>?> snapshot();
+  Future<Map<String, dynamic>?> snapshot({
+    SyncSelection selection = const SyncSelection(),
+  });
 
   /// Applies a pulled settings document (unknown keys ignored).
   Future<void> apply(Map<String, dynamic> settings);
@@ -164,20 +167,6 @@ class SyncEngineStatus {
       );
 }
 
-/// Counts for the wizard's first-merge preview.
-class SyncPreview {
-  final int pulls;
-  final int pushes;
-  final int conflicts;
-  final List<String> pullNames;
-  const SyncPreview({
-    required this.pulls,
-    required this.pushes,
-    required this.conflicts,
-    this.pullNames = const [],
-  });
-}
-
 class SyncEngine {
   final SyncConfigStore configStore;
   final SyncAccountsPort accounts;
@@ -216,6 +205,8 @@ class SyncEngine {
 
   Timer? _debounceTimer;
   bool _started = false;
+  int _autoGeneration = 0;
+  bool _applyingRemote = false;
 
   /// Serializes rounds. Each caller's future completes after its own round,
   /// so `await syncNow()` always means "a round that saw my state ran" —
@@ -225,7 +216,10 @@ class SyncEngine {
   Future<SyncComparison> compareWithRemote() => _compareWithRemote();
 
   Future<void> applyComparison(SyncComparison preview, SyncComparisonItem item,
-      {required bool upload}) => _applyComparison(preview, item, upload: upload);
+      {required bool upload}) {
+    if (!upload) _cancelAutomaticUpload();
+    return _applyComparison(preview, item, upload: upload);
+  }
 
   /// Max commit-race retries before giving up the round (the next trigger
   /// tries again anyway).
@@ -250,7 +244,7 @@ class SyncEngine {
   /// Called whenever the account list may have changed (any store write).
   /// Debounced; no-op rounds are cheap (hash comparison only).
   void notifyAccountsChanged() {
-    if (!_status.configured) return;
+    if (!_status.configured || _applyingRemote) return;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(debounce, () {
       unawaited(_autoSync());
@@ -258,19 +252,45 @@ class SyncEngine {
   }
 
   Future<void> _autoSync() async {
+    final generation = _autoGeneration;
     final config = await configStore.loadConfig();
     if (config == null || !config.autoSync) return;
-    await syncNow();
+    await _queueTransfer(upload: true, automaticGeneration: generation);
   }
 
-  /// Runs one full sync round, queued behind any round already in flight.
-  Future<void> syncNow() {
+  /// Compatibility name for the explicit, one-way upload action.
+  Future<void> syncNow() => uploadNow();
+
+  Future<void> uploadNow() => _queueTransfer(upload: true);
+
+  Future<void> pullNow() {
+    _cancelAutomaticUpload();
+    return _queueTransfer(upload: false);
+  }
+
+  void _cancelAutomaticUpload() {
+    _autoGeneration++;
+    _debounceTimer?.cancel();
+  }
+
+  Future<T> _applyRemoteChange<T>(Future<T> Function() action) async {
+    _applyingRemote = true;
+    try {
+      return await action();
+    } finally {
+      _applyingRemote = false;
+    }
+  }
+
+  /// Legacy three-way reconciliation, retained for recovery and its tests.
+  /// User actions and automatic uploads use the directional methods above.
+  Future<void> reconcileInternal() {
     final run = _rounds.then((_) => _runRound());
     _rounds = run.then<void>((_) {}, onError: (_) {});
     return run;
   }
 
-  Future<void> _runRound() async {
+  Future<void> _runRound({bool rotationOnly = false}) async {
     final config = await configStore.loadConfig();
     if (config == null) {
       _publish(_status.copyWith(configured: false));
@@ -303,13 +323,13 @@ class SyncEngine {
     try {
       transport = transportFactory(config, webdavPassword);
       var lost = await _attemptRound(transport, config, passphrase,
-          previousPassphrase: previousPassphrase);
+          previousPassphrase: previousPassphrase, rotationOnly: rotationOnly);
       var retries = 0;
       while (lost != null && retries < _maxCommitRetries) {
         retries++;
         dlog('sync: commit raced, retry $retries/$_maxCommitRetries');
         final again = await _attemptRound(transport, config, passphrase,
-            previousPassphrase: previousPassphrase);
+            previousPassphrase: previousPassphrase, rotationOnly: rotationOnly);
         if (again != null && again.sameBaseAs(lost)) {
           // Nobody committed in between, yet the guard failed again: the
           // server is refusing the precondition built from what it served
@@ -360,7 +380,7 @@ class SyncEngine {
   /// guard failed and the caller should retry.
   Future<_LostCommit?> _attemptRound(
       SyncTransport transport, SyncConfig config, String passphrase,
-      {String? previousPassphrase}) async {
+      {String? previousPassphrase, bool rotationOnly = false}) async {
     final local = accounts.snapshot();
     if (local == null) return null;
 
@@ -416,6 +436,17 @@ class SyncEngine {
       }
       return _rotateRemote(transport, config, remote, sidecarFile,
           previousPassphrase, passphrase);
+    }
+    if (rotationOnly) {
+      // Resume cleanup after a committed rotation whose local save failed.
+      if (previousPassphrase != null &&
+          verifyPasskeyCheck(passphrase, remote.passkeyCheck) == true) {
+        await configStore.saveConfig(config.copyWith(forcePushPending: false));
+        await configStore.clearPreviousPassphrase();
+        _publish(status.copyWith(syncing: false, errorKind: SyncErrorKind.none));
+        return null;
+      }
+      throw StateError('Remote encryption changed; retry the passphrase change');
     }
 
     // 3. The include-passwords flag must agree across devices. A local
@@ -754,6 +785,8 @@ class SyncEngine {
       tombstonesSeen: newSeen,
       settingsBase: newSettingsBase,
       settingsLocalHash: newSettingsLocalHash,
+      localContentHashes: state.localContentHashes,
+      remoteContentHashes: state.remoteContentHashes,
     ));
     if (effectiveConfig.forcePushPending) {
       await configStore
@@ -862,7 +895,9 @@ class SyncEngine {
     }
     await configStore.saveState(SyncLocalState(base: base,
         tombstonesSeen: state.tombstonesSeen, settingsBase: settingsBase,
-        settingsLocalHash: state.settingsLocalHash));
+        settingsLocalHash: state.settingsLocalHash,
+        localContentHashes: state.localContentHashes,
+        remoteContentHashes: state.remoteContentHashes));
     await configStore.saveConfig(config.copyWith(forcePushPending: false));
     await configStore.clearPreviousPassphrase();
 
@@ -901,79 +936,61 @@ class SyncEngine {
   /// winner outward (keep local) or nothing (keep remote), and a round is
   /// triggered immediately.
   Future<void> resolveConflict(int steamId, {required bool keepLocal}) async {
-    final item = _status.conflicts
-        .where((c) => c.steamId == steamId)
-        .firstOrNull;
-    if (item == null) return;
-    final passphrase = await configStore.loadPassphrase();
-    if (passphrase == null) return;
-    final state = await configStore.loadState();
-    final newBase = Map<int, SyncBaseEntry>.of(state.base);
-    final newSeen = Map<int, int>.of(state.tombstonesSeen);
-
-    if (keepLocal) {
-      if (item.remotePayload != null) {
-        await trash.put(
-          steamId: steamId,
-          accountName: item.remotePayload?['account_name'] as String?,
-          payload: item.remotePayload!,
-          reason: SyncTrashReason.conflictRemote,
-          passphrase: passphrase,
-        );
-      }
-      // Align the base with the remote so the local copy reads as "changed
-      // on top of it" — the next round pushes rev+1 (or resurrects past the
-      // tombstone).
-      if (item.remote != null) {
-        newBase[steamId] =
-            SyncBaseEntry(rev: item.remote!.rev, hash: item.remote!.hash);
-      } else if (item.tombstone != null) {
-        newBase.remove(steamId);
-        newSeen[steamId] = item.tombstone!.rev;
-      }
-      if (item.kind == SyncConflictKind.deleteEdit) {
-        // "Keep local" of a local delete = the delete wins: mark the remote
-        // version as seen so the next round pushes the tombstone.
-        // (base already aligned above; nothing else to do)
-      }
-    } else {
-      // Keep remote. Trash the local copy (when one exists), then apply.
-      if (item.localPayload != null) {
-        await trash.put(
-          steamId: steamId,
-          accountName: item.localPayload?['account_name'] as String?,
-          payload: item.localPayload!,
-          reason: SyncTrashReason.conflictLocal,
-          passphrase: passphrase,
-        );
-      }
-      if (item.kind == SyncConflictKind.editDelete) {
-        // Remote deleted it; accept the deletion.
-        await accounts.removeAccount(steamId);
-        newBase.remove(steamId);
-        newSeen[steamId] = item.tombstone!.rev;
-      } else if (item.remotePayload != null && item.remote != null) {
-        await accounts.applyRemote(item.remotePayload!);
-        newBase[steamId] =
-            SyncBaseEntry(rev: item.remote!.rev, hash: item.remote!.hash);
-      }
+    final conflict = status.conflicts.where((c) => c.steamId == steamId).firstOrNull;
+    if (conflict == null) return;
+    final preview = await compareWithRemote();
+    final item = preview.items.where((item) => item.steamId == steamId).firstOrNull;
+    if (item == null) throw SyncComparisonChanged();
+    if (keepLocal ? item.canUpload : item.canPull) {
+      await applyComparison(preview, item, upload: keepLocal);
+      return;
     }
-
-    await configStore.saveState(SyncLocalState(
-      base: newBase,
-      tombstonesSeen: newSeen,
-      settingsBase: state.settingsBase,
-      settingsLocalHash: state.settingsLocalHash,
-    ));
-    _publish(_status.copyWith(
-      conflicts: [
-        for (final c in _status.conflicts)
-          if (c.steamId != steamId) c
-      ],
-    ));
-    await syncNow();
+    if (!keepLocal && item.remoteDeleted && item.local != null) {
+      _cancelAutomaticUpload();
+      await _serializedComparison(() async {
+        final access = await _comparisonAccess();
+        final transport = transportFactory(access.config, access.password);
+        try {
+          final file = await transport.getFile(kSyncSidecarFilename);
+          if (file?.etag != preview._sidecar?.etag ||
+              !const ListEquality<int>().equals(file?.bytes, preview._sidecar?.bytes) ||
+              payloadHash((await _comparisonLocal(steamId, access.config))!) !=
+                  item._localHash) {
+            throw SyncComparisonChanged();
+          }
+          final account = accounts.snapshot()?.where((a) => a.steamId == steamId).firstOrNull;
+          if (account == null) throw SyncComparisonChanged();
+          final fullPayload = syncPayloadJson(account, includePassword: true);
+          final hash = payloadHash(fullPayload);
+          if (!await trash.put(steamId: steamId, accountName: item.name,
+              payload: fullPayload, reason: SyncTrashReason.remoteDelete,
+              passphrase: access.phrase)) {
+            throw StateError('Could not save recovery copy');
+          }
+          final current = accounts.snapshot()?.where((a) => a.steamId == steamId).firstOrNull;
+          if (current == null || payloadHash(syncPayloadJson(current,
+              includePassword: true)) != hash) {
+            throw SyncComparisonChanged();
+          }
+          await _applyRemoteChange(() => accounts.removeAccount(steamId));
+          final state = await configStore.loadState();
+          await configStore.saveState(SyncLocalState(
+            base: {...state.base}..remove(steamId),
+            tombstonesSeen: {...state.tombstonesSeen, steamId: item.remoteRevision},
+            settingsBase: state.settingsBase, settingsLocalHash: state.settingsLocalHash,
+            localContentHashes: {...state.localContentHashes}..remove('account:$steamId'),
+            remoteContentHashes: state.remoteContentHashes,
+          ));
+        } finally {
+          transport.close();
+        }
+      });
+    } else if (item.kind != SyncComparisonKind.same) {
+      throw StateError('Choose an available copy in the comparison screen');
+    }
+    _publish(status.copyWith(conflicts:
+        status.conflicts.where((c) => c.steamId != steamId).toList()));
   }
-
   // ─── Settings mutations ────────────────────────────────────────────────
 
   Future<void> setAutoSync(bool enabled) async {
@@ -982,14 +999,25 @@ class SyncEngine {
     await configStore.saveConfig(config.copyWith(autoSync: enabled));
   }
 
-  /// Flips whether the curated app-settings document syncs. Turning it on
-  /// runs a round immediately (adopting the remote document when this
-  /// device never synced settings before).
+  /// Saves the legacy settings option without starting a transfer.
   Future<void> setSyncSettings(bool enabled) async {
     final config = await configStore.loadConfig();
     if (config == null) return;
     await configStore.saveConfig(config.copyWith(syncSettings: enabled));
-    if (enabled) await syncNow();
+  }
+
+  Future<void> setUploadSelection(SyncSelection selection) async {
+    final config = await configStore.loadConfig();
+    if (config != null) {
+      await configStore.saveConfig(config.copyWith(uploadSelection: selection));
+    }
+  }
+
+  Future<void> setPullSelection(SyncSelection selection) async {
+    final config = await configStore.loadConfig();
+    if (config != null) {
+      await configStore.saveConfig(config.copyWith(pullSelection: selection));
+    }
   }
 
   /// Flips whether payloads carry the account password. Marks a full
@@ -1000,7 +1028,6 @@ class SyncEngine {
     if (config == null) return;
     await configStore.saveConfig(
         config.copyWith(syncPasswords: enabled, forcePushPending: true));
-    await syncNow();
   }
 
   /// Accepts a re-entered passphrase after [SyncErrorKind.passphrase],
@@ -1029,7 +1056,6 @@ class SyncEngine {
       await configStore.savePassphrase(passphrase);
       _publish(_status.copyWith(
           needsPassphrase: false, errorKind: SyncErrorKind.none));
-      unawaited(syncNow());
       return true;
     } finally {
       transport.close();
@@ -1037,8 +1063,7 @@ class SyncEngine {
   }
 
   /// Changes the sync passphrase: bumps the epoch, re-encrypts everything.
-  /// Refused while the preliminary sync has errors or conflicts. Rotation
-  /// preserves the current remote plaintext, including settings not synced
+  /// Rotation preserves the current remote plaintext, including settings not synced
   /// by this device and concurrent edits encountered during commit retries.
   Future<String?> changePassphrase(String newPassphrase) {
     final run = _rounds.then((_) => _changePassphrase(newPassphrase));
@@ -1054,14 +1079,25 @@ class SyncEngine {
       return 'passphrase change pending';
     }
     if (accounts.snapshot() == null) return 'account store is locked';
-    await _runRound();
-    if (_status.conflicts.isNotEmpty) return 'conflicts pending';
-    if (_status.hasError) return 'sync not clean';
-    config = await configStore.loadConfig();
-    if (config == null) return 'not configured';
+    if (config.forcePushPending) return 'password policy change pending';
     final previousPassphrase = await configStore.loadPassphrase();
     if (previousPassphrase == null || previousPassphrase.isEmpty) {
       return 'missing stored sync passphrase';
+    }
+    final password = await configStore.loadWebdavPassword();
+    if (password == null) return 'missing sync credentials';
+    final transport = transportFactory(config, password);
+    try {
+      final file = await transport.getFile(kSyncSidecarFilename);
+      if (file != null) {
+        final remote = SyncSidecar.parse(utf8.decode(file.bytes));
+        if (verifyPasskeyCheck(previousPassphrase, remote.passkeyCheck) == false) {
+          return 'stored passphrase no longer opens the remote';
+        }
+        config = config.copyWith(passphraseEpoch: remote.passphraseEpoch);
+      }
+    } finally {
+      transport.close();
     }
     // Save the old key before replacing anything. It is secure-storage-only
     // and survives failed PUTs/restarts until the new sidecar is committed.
@@ -1080,7 +1116,7 @@ class SyncEngine {
     }
     // The forced round re-encrypts every payload and commits the new epoch
     // plus a fresh passkey_check (see the epoch check in _attemptRound).
-    await _runRound();
+    await _runRound(rotationOnly: true);
     if (_status.hasError) return _status.errorDetail ?? 'sync failed';
     if ((await configStore.loadConfig())?.forcePushPending == true) {
       return 'passphrase change pending';

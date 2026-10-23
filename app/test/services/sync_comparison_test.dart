@@ -52,8 +52,8 @@ void main() {
       final a = Device(server, 'A');
       final b = Device(server, 'B');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       a.port.accounts[0] = account(id1, name: 'manual-change');
       final manifestStaged = Completer<void>();
       final allowOrdinaryCommit = Completer<void>();
@@ -85,9 +85,9 @@ void main() {
           afterPut: (name) async {
             if (name != kSyncSidecarFilename) return;
             // B first adopts A's committed revision, then edits it normally.
-            await b.engine.syncNow();
+            await b.engine.reconcileInternal();
             b.port.accounts[0] = account(id1, name: 'ordinary-newer-change');
-            ordinaryRound = ordinary.syncNow();
+            ordinaryRound = ordinary.reconcileInternal();
             await manifestStaged.future;
           },
           beforePut: (name) async {
@@ -126,8 +126,8 @@ void main() {
       final a = Device(server, 'A');
       final b = Device(server, 'B');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       a.port.accounts[0] = account(id1, name: 'local-name');
       final count = server.etagSeq;
       final preview = await a.engine.compareWithRemote();
@@ -140,7 +140,7 @@ void main() {
       expect(server.etagSeq, count);
       expect(b.port.accounts.single.accountName, 'gaben');
       await a.engine.applyComparison(preview, item, upload: true);
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.port.accounts.single.accountName, 'local-name');
     },
   );
@@ -152,13 +152,13 @@ void main() {
       final a = Device(server, 'A');
       final b = Device(server, 'B');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       a.settingsPort.values.addAll({
         'market_favorites': favorites,
         'steam_acceleration': kSubscription,
       });
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       b.port.accounts.add(account(id2, name: 'local-only'));
       final preview = await b.engine.compareWithRemote();
       final item = preview.items.firstWhere((i) => i.steamId == null);
@@ -182,13 +182,13 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'A');
       final b = Device(server, 'B');
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       a.settingsPort.values['market_favorites'] = favorites;
       b.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final count = server.etagSeq;
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.engine.status.settingsConflict, isTrue);
       expect(server.etagSeq, count);
       final preview = await b.engine.compareWithRemote();
@@ -196,7 +196,7 @@ void main() {
       expect(item.kind, SyncComparisonKind.bothChanged);
       await b.engine.applyComparison(preview, item, upload: true);
       expect(b.engine.status.settingsConflict, isFalse);
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       expect(a.settingsPort.values['steam_acceleration'], kSubscription);
     },
   );
@@ -219,10 +219,10 @@ void main() {
     final a = Device(server, 'A');
     final b = Device(server, 'B');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final preview = await b.engine.compareWithRemote();
     a.port.accounts[0] = account(id1, name: 'new-remote');
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     await expectLater(
       b.engine.applyComparison(preview, preview.items.first, upload: false),
       throwsA(isA<SyncComparisonChanged>()),
@@ -236,7 +236,7 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'A');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       a.port.accounts[0] = account(id1, name: 'changed');
       final preview = await a.engine.compareWithRemote();
       final before = a.configStore.state.toJson();
@@ -259,7 +259,7 @@ void main() {
     final a = Device(server, 'A');
     final b = Device(server, 'B');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     b.port.accounts.add(account(id1, name: 'local'));
     final preview = await b.engine.compareWithRemote();
     b.trash.failPuts = true;
@@ -279,7 +279,7 @@ void main() {
       await expectLater(a.engine.compareWithRemote(), throwsStateError);
       a.port.locked = false;
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final sidecar = SyncSidecar.parse(
         utf8.decode(server.files[kSyncSidecarFilename]!.$1),
       );

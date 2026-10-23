@@ -1796,10 +1796,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncSetUp => 'Sync einrichten…';
 
   @override
-  String get syncStatusOk => 'Auf dem neuesten Stand';
+  String get syncStatusOk => 'Verbunden';
 
   @override
-  String get syncStatusSyncing => 'Synchronisiere…';
+  String get syncStatusSyncing => 'Synchronisierung…';
 
   @override
   String get syncStatusErrorShort =>
@@ -1943,11 +1943,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Passphrase öffnet diese Bibliothek nicht.';
 
   @override
-  String get syncPreviewTitle => 'Erster Sync';
+  String get syncPreviewTitle => 'Synchronisationsbibliothek verbinden';
 
   @override
   String get syncPreviewEmpty =>
-      'Noch nichts zu übertragen — Konten werden ab jetzt automatisch synchronisiert.';
+      'Nach dem Verbinden auf der Synchronisationsseite hochladen oder abrufen. Die Inhalte lassen sich in den erweiterten Einstellungen getrennt auswählen.';
 
   @override
   String syncPreviewPull(int count) {
@@ -1965,14 +1965,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get syncStart => 'Sync starten';
+  String get syncStart => 'Verbinden';
 
   @override
-  String get syncDoneTitle => 'Sync ist aktiv';
+  String get syncDoneTitle => 'Synchronisationsbibliothek verbunden';
 
   @override
   String get syncDoneBody =>
-      'Konten werden jetzt automatisch synchronisiert. Auf einem neuen Gerät meldet sich jedes Konto bei der ersten Nutzung einmal neu an — Konten mit gespeichertem Passwort machen das von selbst, die übrigen fragen einmal nach.';
+      'Auf der Synchronisationsseite hochladen oder abrufen. Beim Abruf werden entfernte Daten zusammengeführt; nur lokal vorhandene Konten und Favoriten bleiben erhalten.';
 
   @override
   String get syncDone => 'Fertig';
@@ -2028,25 +2028,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncConflictNoPassword => 'Kein gespeichertes Passwort';
 
   @override
-  String get syncAutoTitle => 'Automatischer Sync';
+  String get syncAutoTitle => 'Automatischer Upload';
 
   @override
   String get syncAutoDesc =>
-      'Synchronisiert beim Start und nach jeder Änderung. Ist das aus, synchronisiert nur der Button unten.';
+      'Ausgewählte Inhalte beim Start und nach Änderungen hochladen. Downloads erfolgen nur über „Jetzt abrufen“.';
 
   @override
-  String get syncPasswordsTitle => 'Kontopasswörter synchronisieren';
+  String get syncPasswordsTitle => 'Kontopasswörter einschließen';
 
   @override
   String get syncPasswordsDesc =>
-      'Mit Passwörtern kann sich ein neues Gerät von selbst anmelden. Eine Änderung hier lädt alle Konten neu hoch.';
+      'Gilt für Konto-Uploads. Änderungen werden beim nächsten Konto-Upload wirksam.';
 
   @override
   String get syncAppSettingsTitle => 'App-Einstellungen synchronisieren';
 
   @override
   String get syncAppSettingsDesc =>
-      'Synchronisiert Darstellung und Verhalten sowie verschlüsselte Steam-Abonnements, Knoten und die Knotenauswahl. Sprache, Textgröße und automatischer Beschleunigungsstart bleiben gerätespezifisch.';
+      'Nur Darstellung und Verhalten. Marktfavoriten und Beschleunigungsabonnements werden separat ausgewählt. Sprache, Textgröße und automatischer Beschleunigungsstart bleiben gerätespezifisch.';
 
   @override
   String get syncNowButton => 'Jetzt synchronisieren';
@@ -2751,7 +2751,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'Dieser Link kann private Zugangsdaten enthalten und wird sicher gespeichert. Bei aktivierter Einstellungssynchronisierung werden Abonnements und Knoten mit deinem Synchronisierungspasswort verschlüsselt und synchronisiert. Nach dem Speichern: Knoten aktualisieren.';
+      'Dieser Link kann private Zugangsdaten enthalten und wird sicher gespeichert. Unter Synchronisation → Erweiterte Einstellungen Abonnements und Knoten zum verschlüsselten Upload oder Abruf auswählen. Danach die Knoten aktualisieren.';
 
   @override
   String get steamAccelerationClear => 'Abonnement löschen';
@@ -3179,6 +3179,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.';
 
   @override
+  String get syncComparePasswordChangePending =>
+      'Die Einstellungen zur Passwortsynchronisierung wurden geändert. Kehre zur Synchronisierungsseite zurück, wähle Konten aus und klicke auf Jetzt synchronisieren, um die Änderung anzuwenden. Du kannst weiterhin Unterschiede vergleichen und Daten herunterladen.';
+
+  @override
   String get syncCompareStale =>
       'Local or remote data changed. Refresh the comparison before trying again.';
 
@@ -3548,4 +3552,60 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dashboardLayoutSettingsHint =>
       'Öffne das Übersichtslayout in der Kontoübersicht, um Position und Größe der Karten anzupassen.';
+
+  @override
+  String get syncAdvancedOptions => 'Erweiterte Einstellungen';
+
+  @override
+  String get syncUploadItems => 'Synchronisationsinhalte (Upload)';
+
+  @override
+  String get syncPullItems => 'Abrufinhalte (Download)';
+
+  @override
+  String get syncItemAccounts => 'Konten und Authentifikatoren';
+
+  @override
+  String get syncItemSettings => 'App-Einstellungen';
+
+  @override
+  String get syncItemFavorites => 'Marktfavoriten und Währung';
+
+  @override
+  String get syncItemAcceleration => 'Beschleunigungsabonnements und Knoten';
+
+  @override
+  String get syncSelectionEmpty => 'Keine Inhalte ausgewählt';
+
+  @override
+  String get syncSelectionHelp =>
+      'Die Auswahl wird automatisch gespeichert. Änderungen starten keine Übertragung.';
+
+  @override
+  String get syncUploadHelp =>
+      'Ausgewählte Inhalte zum Server hochladen. Lokale Daten bleiben unverändert.';
+
+  @override
+  String get syncPullHelp =>
+      'Ausgewählte Inhalte herunterladen und zusammenführen. Nur lokal vorhandene Konten und Favoriten bleiben erhalten.';
+
+  @override
+  String get syncPullNow => 'Jetzt abrufen';
+
+  @override
+  String get syncPulling => 'Wird heruntergeladen…';
+
+  @override
+  String get syncOptionsSaveFailed =>
+      'Synchronisationsoptionen konnten nicht gespeichert werden. Bitte erneut versuchen.';
+
+  @override
+  String get syncUploaded => 'Hochgeladene Inhalte';
+
+  @override
+  String get syncPulled => 'Heruntergeladene Inhalte';
+
+  @override
+  String get syncPartialRetry =>
+      'Abgeschlossene Inhalte bleiben erhalten. Nicht abgeschlossene Inhalte können erneut versucht werden.';
 }

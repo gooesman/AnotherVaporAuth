@@ -14,15 +14,13 @@ import '../../core/sync/http_policy.dart';
 import '../../core/sync/sync_payload.dart';
 import '../../core/sync/sync_transport.dart';
 import '../../services/sync/sync_config_store.dart';
-import '../../services/sync/sync_engine.dart';
 import '../../services/sync/sync_setup.dart';
 import '../widgets/ava_panel.dart';
 import '../widgets/hold_button.dart';
 import '../widgets/scanline_overlay.dart';
+import 'sync_screen.dart';
 
-/// Setup wizard for account-library sync (spec §UX): backend → server →
-/// passphrase → first-merge preview → done. Nothing is saved and nothing on
-/// the remote is touched until the preview is confirmed.
+/// Connect a sync library before choosing an upload or a pull on the sync page.
 class SyncSetupScreen extends ConsumerStatefulWidget {
   const SyncSetupScreen({super.key});
 
@@ -58,8 +56,8 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
   String? _passphraseError;
 
   // Preview step.
-  SyncPreview? _preview;
   bool _starting = false;
+  String? _connectionError;
 
   @override
   void dispose() {
@@ -76,6 +74,7 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
     url: _effectiveUrl(),
     username: _username.text.trim(),
     deviceName: _defaultDeviceName(),
+    autoSync: false,
     syncPasswords: _remote?.exists == true
         ? (_remote?.includePasswords ?? true)
         : true,
@@ -301,13 +300,6 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
           transport.close();
         }
       }
-      final accounts =
-          ref.read(appControllerProvider).value?.accounts ?? const [];
-      _preview = previewFirstSync(
-        sidecar: _remote?.sidecar,
-        local: accounts,
-        includePasswords: _draftConfig().syncPasswords,
-      );
       if (!mounted) return;
       setState(() {
         _verifying = false;
@@ -325,17 +317,31 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
   // ─── Preview step logic ──────────────────────────────────────────────
 
   Future<void> _start() async {
-    setState(() => _starting = true);
-    final engine = ref.read(syncEngineProvider);
-    await engine.configStore.saveConfig(_draftConfig());
-    await engine.configStore.saveWebdavPassword(_password.text);
-    await engine.configStore.savePassphrase(_passphrase.text);
-    await engine.syncNow();
-    if (!mounted) return;
     setState(() {
-      _starting = false;
-      _step = _Step.done;
+      _starting = true;
+      _connectionError = null;
     });
+    try {
+      final engine = ref.read(syncEngineProvider);
+      await engine.configStore.saveWebdavPassword(_password.text);
+      await engine.configStore.savePassphrase(_passphrase.text);
+      await engine.configStore.saveConfig(_draftConfig());
+      if (!mounted) return;
+      // Connecting must not silently choose a transfer direction. Recreate the
+      // engine so its configured status reflects the saved connection.
+      ref.invalidate(syncEngineProvider);
+      setState(() => _step = _Step.done);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _connectionError = AppLocalizations.of(
+            context,
+          ).syncOptionsSaveFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
   }
 
   // ─── Build ───────────────────────────────────────────────────────────
@@ -639,37 +645,18 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
 
   Widget _previewStep(AppLocalizations l) {
     final t = Theme.of(context).extension<AvaTokens>()!;
-    final p = _preview!;
-    final empty = p.pulls == 0 && p.pushes == 0 && p.conflicts == 0;
     return _panel(
       title: l.syncPreviewTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (empty)
-            Text(
-              l.syncPreviewEmpty,
-              style: TextStyle(color: t.muted, fontSize: context.r(13)),
-            )
-          else ...[
-            if (p.pulls > 0)
-              _previewRow(
-                t,
-                Icons.download_outlined,
-                l.syncPreviewPull(p.pulls),
-              ),
-            if (p.pushes > 0)
-              _previewRow(
-                t,
-                Icons.upload_outlined,
-                l.syncPreviewPush(p.pushes),
-              ),
-            if (p.conflicts > 0)
-              _previewRow(
-                t,
-                Icons.call_split,
-                l.syncPreviewConflict(p.conflicts),
-              ),
+          Text(
+            l.syncPreviewEmpty,
+            style: TextStyle(color: t.muted, fontSize: context.r(13)),
+          ),
+          if (_connectionError != null) ...[
+            SizedBox(height: context.r(8)),
+            Text(_connectionError!, style: TextStyle(color: t.bad)),
           ],
           SizedBox(height: context.r(14)),
           FilledButton(
@@ -681,24 +668,6 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
                     child: const CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(l.syncStart),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _previewRow(AvaTokens t, IconData icon, String text) {
-    return Padding(
-      padding: context.rInsets(v: 5),
-      child: Row(
-        children: [
-          Icon(icon, size: context.r(18), color: t.accent),
-          SizedBox(width: context.r(10)),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(color: t.text, fontSize: context.r(13.5)),
-            ),
           ),
         ],
       ),
@@ -723,7 +692,9 @@ class _SyncSetupScreenState extends ConsumerState<SyncSetupScreen> {
               ),
             ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const SyncScreen()),
+            ),
             child: Text(l.syncDone),
           ),
         ],

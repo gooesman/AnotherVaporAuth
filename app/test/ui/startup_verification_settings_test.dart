@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:ava/l10n/app_localizations.dart';
 import 'package:ava/src/app/providers.dart';
+import 'package:ava/src/app/sync_providers.dart';
 import 'package:ava/src/app/theme.dart';
 import 'package:ava/src/core/models/manifest.dart';
 import 'package:ava/src/services/account_store.dart';
 import 'package:ava/src/services/biometric_unlock.dart';
 import 'package:ava/src/services/startup_unlock.dart';
 import 'package:ava/src/services/storage_provider.dart';
+import 'package:ava/src/services/sync/sync_engine.dart';
 import 'package:ava/src/ui/settings_screen.dart';
 import 'package:ava/src/ui/widgets/ava_panel.dart';
 import 'package:flutter/material.dart';
@@ -74,11 +76,19 @@ class _Unlocked extends AppController {
   );
 }
 
+class _SyncStatus extends SyncStatusController {
+  _SyncStatus(this.value);
+  final SyncEngineStatus value;
+  @override
+  SyncEngineStatus build() => value;
+}
+
 Future<void> _pumpSettings(
   WidgetTester tester,
   _Startup startup,
-  _Biometric biometric,
-) async {
+  _Biometric biometric, {
+  SyncEngineStatus? syncStatus,
+}) async {
   tester.view.physicalSize = const Size(393, 852);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -94,6 +104,8 @@ Future<void> _pumpSettings(
         appControllerProvider.overrideWith(_Unlocked.new),
         startupUnlockProvider.overrideWithValue(startup),
         biometricUnlockProvider.overrideWithValue(biometric),
+        if (syncStatus != null)
+          syncStatusProvider.overrideWith(() => _SyncStatus(syncStatus)),
       ],
       child: MaterialApp(
         theme: buildAvaTheme(AvaThemeVariant.light),
@@ -111,6 +123,48 @@ Future<void> _pumpSettings(
 }
 
 void main() {
+  for (final entry in [
+    (const SyncEngineStatus(configured: true, syncing: true,
+        settingsConflict: true), '正在同步…'),
+    (const SyncEngineStatus(configured: true, errorKind: SyncErrorKind.network,
+        settingsConflict: true), '上次同步失败——打开查看详情。'),
+  ]) {
+    testWidgets('settings shows current sync state before old conflicts: ${entry.$2}',
+        (tester) async {
+      await _pumpSettings(tester, _Startup(), _Biometric(), syncStatus: entry.$1);
+      final label = find.text(entry.$2);
+      await tester.scrollUntilVisible(label, 240,
+          scrollable: find.byType(Scrollable).first);
+      expect(label, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  testWidgets('settings entry shows the unresolved settings conflict', (
+    tester,
+  ) async {
+    await _pumpSettings(
+      tester,
+      _Startup(),
+      _Biometric(),
+      syncStatus: const SyncEngineStatus(
+        configured: true,
+        settingsConflict: true,
+      ),
+    );
+    final label = find.text('两端设置均有改动，请先对比再选择上传或拉取。');
+    await tester.scrollUntilVisible(
+      label,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(label, findsOneWidget);
+    expect(find.text('已是最新'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets(
     'legacy biometric setting is unavailable while startup verification is off',
     (tester) async {

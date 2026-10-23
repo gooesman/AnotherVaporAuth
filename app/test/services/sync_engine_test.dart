@@ -28,6 +28,10 @@ class InMemoryServer {
 
   /// Called before every PUT — lets a test inject a concurrent commit.
   void Function(String name)? onPut;
+  void Function(String name)? onGet;
+  final List<String> gets = [];
+  final List<String> puts = [];
+  final List<String> deletes = [];
 }
 
 class InMemoryTransport implements SyncTransport {
@@ -39,6 +43,8 @@ class InMemoryTransport implements SyncTransport {
 
   @override
   Future<RemoteFile?> getFile(String name) async {
+    server.gets.add(name);
+    server.onGet?.call(name);
     final f = server.files[name];
     return f == null ? null : RemoteFile(f.$1, f.$2);
   }
@@ -46,6 +52,7 @@ class InMemoryTransport implements SyncTransport {
   @override
   Future<String?> putFile(String name, Uint8List bytes,
       {String? ifMatch, bool ifAbsent = false}) async {
+    server.puts.add(name);
     server.onPut?.call(name);
     if (server.rejectIfMatch && ifMatch != null) {
       throw const SyncPreconditionFailed('etag rewritten');
@@ -66,7 +73,10 @@ class InMemoryTransport implements SyncTransport {
   }
 
   @override
-  Future<void> deleteFile(String name) async => server.files.remove(name);
+  Future<void> deleteFile(String name) async {
+    server.deletes.add(name);
+    server.files.remove(name);
+  }
 
   @override
   Future<void> probe() async {}
@@ -163,6 +173,7 @@ class MemoryTrash extends SyncTrash {
 class FakePort implements SyncAccountsPort {
   final List<SteamGuardAccount> accounts = [];
   bool locked = false;
+  void Function(int id)? onApply;
 
   @override
   List<SteamGuardAccount>? snapshot() => locked ? null : accounts;
@@ -173,6 +184,7 @@ class FakePort implements SyncAccountsPort {
         jsonDecode(jsonEncode(payload)) as Map<String, dynamic>);
     accounts.removeWhere((a) => a.steamId == incoming.steamId);
     accounts.add(incoming);
+    onApply?.call(incoming.steamId);
   }
 
   @override
@@ -189,15 +201,17 @@ class FakeSettingsPort implements SyncSettingsPort {
   };
   int applies = 0;
   bool failApply = false;
+  void Function(Map<String, dynamic>)? onApply;
 
   @override
-  Future<Map<String, dynamic>?> snapshot() async => Map.of(values);
+  Future<Map<String, dynamic>?> snapshot({SyncSelection selection = const SyncSelection()}) async => selection.selectSettings(values);
 
   @override
   Future<void> apply(Map<String, dynamic> doc) async {
     if (failApply) throw StateError('secure storage unavailable');
     applies++;
     values = {...values, ...doc};
+    onApply?.call(doc);
   }
 }
 
@@ -209,7 +223,8 @@ class Device {
   final FakeSettingsPort settingsPort = FakeSettingsPort();
   late final SyncEngine engine;
 
-  Device(InMemoryServer server, String id, {String passphrase = kPass}) {
+  Device(InMemoryServer server, String id, {String passphrase = kPass,
+      Duration debounce = const Duration(seconds: 5)}) {
     configStore.config = const SyncConfig(
       url: 'https://example.com/dav/ava/',
       username: 'user',
@@ -223,6 +238,7 @@ class Device {
       trash: trash,
       transportFactory: (_, _) => InMemoryTransport(server),
       deviceId: () async => id,
+      debounce: debounce,
     );
   }
 }
@@ -261,7 +277,7 @@ void main() {
     final a = Device(server, 'devA0001');
     a.port.accounts.addAll([account(id1), account(id2, name: 'alt')]);
 
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     expect(a.engine.status.hasError, isFalse);
     expect(a.engine.status.lastPushed, 2);
@@ -292,10 +308,10 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     expect(b.engine.status.lastPulled, 1);
     final got = b.port.accounts.single;
@@ -308,20 +324,20 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     // Session-only change: nothing to sync.
     a.port.accounts.single.session.accessToken = 'rotated';
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(a.engine.status.lastPushed, 0);
 
     // Real change: propagates.
     a.port.accounts.single.password = 'newpass';
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(a.engine.status.lastPushed, 1);
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
     expect(b.port.accounts.single.password, 'newpass');
   });
 
@@ -330,22 +346,22 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.addAll([account(id1), account(id2, name: 'alt')]);
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     // B deletes one account.
     b.port.accounts.removeWhere((x) => x.steamId == id2);
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     // A applies the tombstone: account gone, trash copy kept.
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(a.port.accounts.map((x) => x.steamId), [id1]);
     expect(a.trash.entries.single.steamId, id2);
     expect(a.trash.entries.single.reason, SyncTrashReason.remoteDelete);
 
     // And it does NOT bounce back on B's next round.
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
     expect(b.port.accounts.map((x) => x.steamId), [id1]);
   });
 
@@ -353,21 +369,21 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     b.port.accounts.clear();
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     a.trash.failPuts = true;
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     // The delete was refused; the account is still here.
     expect(a.port.accounts, hasLength(1));
 
     // Once the trash works again the delete goes through.
     a.trash.failPuts = false;
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(a.port.accounts, isEmpty);
   });
 
@@ -376,14 +392,14 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     a.port.accounts.single.password = 'versionA';
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     b.port.accounts.single.password = 'versionB';
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     final conflict = b.engine.status.conflicts.single;
     expect(conflict.steamId, id1);
@@ -395,7 +411,7 @@ void main() {
     expect(b.engine.status.conflicts, isEmpty);
     expect(b.trash.entries.single.reason, SyncTrashReason.conflictRemote);
 
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(a.port.accounts.single.password, 'versionB');
   });
 
@@ -404,14 +420,14 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     a.port.accounts.single.password = 'versionA';
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     b.port.accounts.single.password = 'versionB';
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     await b.engine.resolveConflict(id1, keepLocal: false);
     expect(b.port.accounts.single.password, 'versionA');
@@ -422,10 +438,10 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
 
     // A stages a change. Mid-push — right before A commits its sidecar —
     // another device commits a new account, so A's If-Match fails.
@@ -463,7 +479,7 @@ void main() {
       }
     };
 
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(a.engine.status.hasError, isFalse);
 
     // A's change landed AND B's competing entry survived.
@@ -477,7 +493,7 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final before = server.files[kSyncSidecarFilename];
 
     server.rejectIfMatch = true;
@@ -486,7 +502,7 @@ void main() {
       if (name == kSyncSidecarFilename) commits++;
     };
     a.port.accounts.single.password = 'changed';
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     // One retry shows nobody else committed; no blind retries after that.
     expect(commits, 2);
@@ -500,17 +516,17 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     final b = Device(server, 'devB0002', passphrase: 'totally wrong one');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
     expect(b.engine.status.needsPassphrase, isTrue);
     expect(b.engine.status.errorKind, SyncErrorKind.passphrase);
     expect(b.port.accounts, isEmpty);
 
     // providePassphrase with the right one heals it.
     expect(await b.engine.providePassphrase(kPass), isTrue);
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
     expect(b.port.accounts, hasLength(1));
   });
 
@@ -519,9 +535,10 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     await a.engine.setSyncPasswords(false);
+    await a.engine.uploadNow();
 
     final sidecar = SyncSidecar.parse(
         utf8.decode(server.files[kSyncSidecarFilename]!.$1));
@@ -533,7 +550,7 @@ void main() {
 
     // The other device adopts the flag instead of fighting it.
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
     expect(b.configStore.config!.syncPasswords, isFalse);
   });
 
@@ -542,7 +559,7 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
 
     const newPass = 'an entirely new passphrase';
     expect(await a.engine.changePassphrase(newPass), isNull);
@@ -555,7 +572,7 @@ void main() {
 
     // A device still holding the old passphrase is asked for the new one.
     final b = Device(server, 'devB0002');
-    await b.engine.syncNow();
+    await b.engine.reconcileInternal();
     expect(b.engine.status.needsPassphrase, isTrue);
   });
 
@@ -564,7 +581,7 @@ void main() {
     final a = Device(server, 'devA0001');
     a.port.locked = true;
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(server.files, isEmpty);
   });
 
@@ -572,7 +589,7 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     expect(server.files, isNotEmpty);
 
     await a.engine.disconnect(deleteRemote: true);
@@ -598,16 +615,16 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       await a.engine.setSyncSettings(false);
       a.settingsPort.values['skin'] = 'pixel';
       a.settingsPort.values['steam_acceleration'] = {
         'v': 1, 'configured': false,
       };
       b.settingsPort.values['skin'] = 'neon';
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       final remoteBefore = remoteSettings(server);
       final localBefore = Map.of(a.settingsPort.values);
       final baseBefore = a.configStore.state.toJson();
@@ -634,7 +651,7 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       await a.engine.setSyncSettings(false);
       final remoteBefore = server.files[kSyncSidecarFilename];
       final sidecar = SyncSidecar.parse(utf8.decode(remoteBefore!.$1));
@@ -660,7 +677,7 @@ void main() {
           transportFactory: (_, _) => InMemoryTransport(server),
           deviceId: () async => 'devA0001');
       addTearDown(restarted.dispose);
-      await restarted.syncNow();
+      await restarted.reconcileInternal();
       expect(restarted.status.hasError, isFalse);
       expect(remoteSettings(server, passphrase: newPass)['steam_acceleration'],
           kSubscription);
@@ -674,7 +691,7 @@ void main() {
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       await a.engine.setSyncSettings(false);
       var injected = false;
       server.onPut = (name) {
@@ -728,7 +745,7 @@ void main() {
       expect(a.configStore.previousPassphrase, isNull);
       // Normal merging follows the rotation; concurrently changed plaintext
       // was not falsely marked as already imported on this device.
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       expect(a.port.accounts, hasLength(2));
       expect(a.port.accounts.firstWhere((acc) => acc.steamId == id1).password,
           'concurrent-edit');
@@ -739,7 +756,7 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       await a.engine.setSyncSettings(false);
       server.onPut = (name) {
         if (name == kSyncSidecarFilename &&
@@ -754,7 +771,7 @@ void main() {
       expect(a.configStore.config!.forcePushPending, isTrue);
       expect(remoteSettings(server, passphrase: newPass)['steam_acceleration'],
           kSubscription);
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       expect(a.engine.status.hasError, isFalse);
       expect(a.configStore.previousPassphrase, isNull);
       expect(a.configStore.config!.forcePushPending, isFalse);
@@ -764,7 +781,7 @@ void main() {
         () async {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final remoteBefore = server.files[kSyncSidecarFilename];
       a.configStore.failSavePrevious = true;
       await expectLater(a.engine.changePassphrase('not stored'),
@@ -781,7 +798,7 @@ void main() {
       expect(a.configStore.previousPassphrase, kPass);
       expect(a.configStore.config!.forcePushPending, isFalse);
       expect(server.files[kSyncSidecarFilename], same(remoteBefore));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       expect(a.engine.status.hasError, isFalse);
       expect(a.configStore.previousPassphrase, isNull);
     });
@@ -790,10 +807,10 @@ void main() {
         () async {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002', passphrase: 'wrong current key');
       b.configStore.previousPassphrase = kPass;
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.engine.status.needsPassphrase, isTrue);
       expect(b.configStore.previousPassphrase, kPass);
       expect(b.settingsPort.applies, 0);
@@ -822,10 +839,10 @@ void main() {
         () async {
       final server = InMemoryServer();
       final old = Device(server, 'old00001');
-      await old.engine.syncNow();
+      await old.engine.reconcileInternal();
       final newer = Device(server, 'new00001');
       newer.settingsPort.values['steam_acceleration'] = kSubscription;
-      await newer.engine.syncNow();
+      await newer.engine.reconcileInternal();
 
       expect(newer.settingsPort.values['steam_acceleration'], kSubscription);
       final base = newer.configStore.state;
@@ -833,14 +850,14 @@ void main() {
           payloadHash(newer.settingsPort.values));
       expect(base.settingsLocalHash, isNot(base.settingsBase!.hash));
       final writes = server.etagSeq;
-      await newer.engine.syncNow();
-      await old.engine.syncNow();
-      await newer.engine.syncNow();
+      await newer.engine.reconcileInternal();
+      await old.engine.reconcileInternal();
+      await newer.engine.reconcileInternal();
       expect(server.etagSeq, writes);
 
       // A real subsequent user edit still propagates the full current document.
       newer.settingsPort.values['skin'] = 'neon';
-      await newer.engine.syncNow();
+      await newer.engine.reconcileInternal();
       expect(remoteSettings(server)['skin'], 'neon');
       expect(remoteSettings(server)['steam_acceleration'], kSubscription);
       expect(newer.configStore.state.settingsLocalHash,
@@ -852,29 +869,29 @@ void main() {
       final server = InMemoryServer();
       final newer = Device(server, 'new00001');
       newer.settingsPort.values['steam_acceleration'] = kSubscription;
-      await newer.engine.syncNow();
+      await newer.engine.reconcileInternal();
       final old = Device(server, 'old00001');
-      await old.engine.syncNow();
+      await old.engine.reconcileInternal();
       // An older app publishes only the settings keys it understands.
       old.settingsPort.values.remove('steam_acceleration');
       old.settingsPort.values['hold_confirm'] = false;
-      await old.engine.syncNow();
-      await newer.engine.syncNow();
+      await old.engine.reconcileInternal();
+      await newer.engine.reconcileInternal();
       expect(newer.settingsPort.values['steam_acceleration'], kSubscription);
       expect(newer.settingsPort.values['hold_confirm'], isFalse);
       expect(newer.configStore.state.settingsLocalHash,
           isNot(newer.configStore.state.settingsBase!.hash));
       final writes = server.etagSeq;
       for (var i = 0; i < 3; i++) {
-        await newer.engine.syncNow();
-        await old.engine.syncNow();
+        await newer.engine.reconcileInternal();
+        await old.engine.reconcileInternal();
       }
       expect(server.etagSeq, writes);
       newer.settingsPort.values['steam_acceleration'] = {
         ...kSubscription,
         'selected': 'another-node',
       };
-      await newer.engine.syncNow();
+      await newer.engine.reconcileInternal();
       expect(remoteSettings(server)['steam_acceleration']['selected'],
           'another-node');
     });
@@ -883,20 +900,20 @@ void main() {
         () async {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       final before = b.configStore.state.toJson();
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       b.settingsPort.failApply = true;
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.engine.status.hasError, isTrue);
       expect(b.configStore.state.toJson(), before);
       expect(b.settingsPort.values.containsKey('steam_acceleration'), isFalse);
 
       b.settingsPort.failApply = false;
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.engine.status.hasError, isFalse);
       expect(b.settingsPort.values['steam_acceleration'], kSubscription);
       expect(b.configStore.state.settingsLocalHash,
@@ -907,9 +924,9 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.settingsPort.values['steam_acceleration'], kSubscription);
       for (final file in server.files.values) {
         final text = utf8.decode(file.$1);
@@ -921,16 +938,17 @@ void main() {
       a.settingsPort.values['steam_acceleration'] = {
         'v': 1, 'configured': false,
       };
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       expect(b.settingsPort.values['steam_acceleration'], kSubscription);
       await a.engine.setSyncSettings(true);
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       expect(b.settingsPort.values['steam_acceleration'],
           {'v': 1, 'configured': false});
 
       a.settingsPort.values['steam_acceleration'] = kSubscription;
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       const newPass = 'replacement synchronization passphrase';
       expect(await a.engine.changePassphrase(newPass), isNull);
       final sidecar = SyncSidecar.parse(
@@ -949,17 +967,17 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
       b.settingsPort.values['steam_acceleration'] = kSubscription;
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       await b.engine.setSyncSettings(false);
       final base = b.configStore.state.settingsBase;
       final localHash = b.configStore.state.settingsLocalHash;
       a.port.accounts.single.password = 'remote-edit';
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       b.port.accounts.single.password = 'local-edit';
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.engine.status.conflicts, hasLength(1));
       await b.engine.resolveConflict(id1, keepLocal: true);
       expect(b.configStore.state.settingsBase!.toJson(), base!.toJson());
@@ -972,16 +990,16 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       // State saved by the previous app version has only the remote hash.
       b.configStore.state = SyncLocalState.fromJson(
           b.configStore.state.toJson()..remove('settings_local_hash'));
 
       a.settingsPort.values['skin'] = 'neon';
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
       expect(b.settingsPort.values['skin'], 'neon');
     });
 
@@ -991,14 +1009,14 @@ void main() {
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
       a.settingsPort.values['skin'] = 'pixel';
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
 
       final c = Device(server, 'devC0003'); // fresh defaults
-      await c.engine.syncNow();
+      await c.engine.reconcileInternal();
       expect(c.settingsPort.values['skin'], 'pixel');
 
       // And A's next round sees nothing to change.
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final sidecar = SyncSidecar.parse(
           utf8.decode(server.files[kSyncSidecarFilename]!.$1));
       final entry = sidecar.settings!;
@@ -1011,21 +1029,21 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
 
       a.settingsPort.values['skin'] = 'neon';
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       b.settingsPort.values['hold_confirm'] = false;
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
       expect(b.engine.status.settingsConflict, isTrue);
       expect(b.settingsPort.values['skin'], 'none');
       final preview = await b.engine.compareWithRemote();
       await b.engine.applyComparison(preview,
           preview.items.firstWhere((item) => item.steamId == null), upload: true);
 
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       expect(a.settingsPort.values['hold_confirm'], false);
       // The user explicitly chose B's complete settings document.
       expect(a.settingsPort.values['skin'], 'none');
@@ -1036,15 +1054,15 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final b = Device(server, 'devB0002');
-      await b.engine.syncNow();
+      await b.engine.reconcileInternal();
 
       await a.engine.setSyncSettings(false);
       a.settingsPort.values['skin'] = 'neon';
       a.port.accounts.single.password = 'stillsyncs';
-      await a.engine.syncNow();
-      await b.engine.syncNow();
+      await a.engine.reconcileInternal();
+      await b.engine.reconcileInternal();
 
       expect(b.settingsPort.values['skin'], 'none');
       expect(b.port.accounts.single.password, 'stillsyncs');
@@ -1054,9 +1072,9 @@ void main() {
       final server = InMemoryServer();
       final a = Device(server, 'devA0001');
       a.port.accounts.add(account(id1));
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       a.settingsPort.values['skin'] = 'neon';
-      await a.engine.syncNow();
+      await a.engine.reconcileInternal();
       final settingsFiles = server.files.keys
           .where((k) => k.startsWith('ava.settings.'))
           .toList();
@@ -1068,12 +1086,12 @@ void main() {
     final server = InMemoryServer();
     final a = Device(server, 'devA0001');
     a.port.accounts.add(account(id1));
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final firstFiles =
         server.files.keys.where((k) => k.endsWith('.maFile')).toList();
 
     a.port.accounts.single.password = 'changed';
-    await a.engine.syncNow();
+    await a.engine.reconcileInternal();
     final secondFiles =
         server.files.keys.where((k) => k.endsWith('.maFile')).toList();
 

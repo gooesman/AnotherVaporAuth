@@ -31,6 +31,11 @@ class SyncScreen extends ConsumerStatefulWidget {
 
 class _SyncScreenState extends ConsumerState<SyncScreen> {
   SyncConfig? _config;
+  bool? _uploading;
+  bool _saving = false;
+
+  bool get _busy =>
+      _uploading != null || _saving || ref.read(syncStatusProvider).syncing;
 
   @override
   void initState() {
@@ -59,8 +64,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
               ? const CircularProgressIndicator()
               : FilledButton(
                   onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (_) => const SyncSetupScreen()),
+                    MaterialPageRoute(builder: (_) => const SyncSetupScreen()),
                   ),
                   child: Text(l.syncSetUp),
                 ),
@@ -78,16 +82,21 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
               padding: context.rSafeInsets(all: 16),
               children: [
                 _statusCard(l, status, config),
+                _transferCard(l, status, config),
                 if (status.conflicts.isNotEmpty) _conflictsCard(l, status),
-                if (status.settingsConflict) _card(child: Material(
-                  type: MaterialType.transparency, child: ListTile(
-                  title: Text(l.syncCompareSettingsConflict),
-                  trailing: const Icon(Icons.compare_arrows),
-                  onTap: _compare,
-                ))),
-                _optionsCard(l, status, config),
+                if (status.settingsConflict)
+                  _card(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                        title: Text(l.syncCompareSettingsConflict),
+                        trailing: const Icon(Icons.compare_arrows),
+                        onTap: _busy ? null : _compare,
+                      ),
+                    ),
+                  ),
                 _dataCard(l, status),
-                _dangerCard(l, status),
+                _advancedCard(l, status, config),
               ],
             ),
           ),
@@ -148,7 +157,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                         style: TextStyle(
                             color: t.text, fontSize: context.r(15))),
                     SizedBox(height: context.r(3)),
-                    Text(line,
+                    Text(_uploading == false ? l.syncPulling : line,
                         style: TextStyle(
                             color: color, fontSize: context.r(12.5))),
                     SizedBox(height: context.r(3)),
@@ -164,6 +173,19 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
               ),
             ],
           ),
+          if (!status.syncing &&
+              (status.lastSyncAt != null ||
+                  status.lastPushed > 0 ||
+                  status.lastPulled > 0)) ...[
+            SizedBox(height: context.r(10)),
+            Text(
+              '${l.syncUploaded}: ${status.lastPushed} · '
+              '${l.syncPulled}: ${status.lastPulled}',
+            ),
+            if (status.hasError &&
+                (status.lastPushed > 0 || status.lastPulled > 0))
+              Text(l.syncPartialRetry),
+          ],
           if (status.needsPassphrase) ...[
             SizedBox(height: context.r(12)),
             OutlinedButton(
@@ -367,64 +389,249 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
     );
   }
 
-  // ─── Options ─────────────────────────────────────────────────────────
+  // ─── Transfers and options ──────────────────────────────────────────
 
-  Widget _optionsCard(
-      AppLocalizations l, SyncEngineStatus status, SyncConfig config) {
-    final t = Theme.of(context).extension<AvaTokens>()!;
+  String _selectionSummary(
+    AppLocalizations l,
+    SyncSelection selection, {
+    bool passwords = false,
+  }) {
+    final labels = [
+      if (selection.accounts) l.syncItemAccounts,
+      if (selection.accounts && passwords) l.syncPasswordsTitle,
+      if (selection.settings) l.syncItemSettings,
+      if (selection.favorites) l.syncItemFavorites,
+      if (selection.acceleration) l.syncItemAcceleration,
+    ];
+    return labels.isEmpty ? l.syncSelectionEmpty : labels.join(' · ');
+  }
+
+  Future<void> _transfer(bool upload) async {
+    if (_busy) return;
+    setState(() => _uploading = upload);
+    try {
+      final engine = ref.read(syncEngineProvider);
+      if (upload) {
+        await engine.uploadNow();
+      } else {
+        await engine.pullNow();
+      }
+      await _loadConfig();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).syncCompareFailed),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = null);
+    }
+  }
+
+  Future<void> _saveOption(Future<void> Function() save) async {
+    if (_busy) return;
+    setState(() => _saving = true);
+    try {
+      await save();
+      await _loadConfig();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).syncOptionsSaveFailed),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Widget _transferCard(
+    AppLocalizations l,
+    SyncEngineStatus status,
+    SyncConfig config,
+  ) {
+    final enabled = !_busy && !status.needsPassphrase;
     return _card(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _optionRow(
-            t,
-            title: l.syncAutoTitle,
-            description: l.syncAutoDesc,
-            trailing: Switch(
-              value: config.autoSync,
-              onChanged: (v) async {
-                await ref.read(syncEngineProvider).setAutoSync(v);
-                await _loadConfig();
-              },
-            ),
-          ),
-          _optionRow(
-            t,
-            title: l.syncPasswordsTitle,
-            description: l.syncPasswordsDesc,
-            trailing: Switch(
-              value: config.syncPasswords,
-              onChanged: (v) async {
-                await ref.read(syncEngineProvider).setSyncPasswords(v);
-                await _loadConfig();
-              },
-            ),
-          ),
-          _optionRow(
-            t,
-            title: l.syncAppSettingsTitle,
-            description: l.syncAppSettingsDesc,
-            trailing: Switch(
-              value: config.syncSettings,
-              onChanged: (v) async {
-                await ref.read(syncEngineProvider).setSyncSettings(v);
-                await _loadConfig();
-              },
+          FilledButton.icon(
+            key: const ValueKey('sync-upload-now'),
+            onPressed: enabled && config.uploadSelection.any
+                ? () => _transfer(true)
+                : null,
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: Text(
+              _uploading == true ? l.syncStatusSyncing : l.syncNowButton,
             ),
           ),
           SizedBox(height: context.r(6)),
-          Row(
-            children: [
-              FilledButton.icon(
-                onPressed: status.syncing
-                    ? null
-                    : () => ref.read(syncEngineProvider).syncNow(),
-                icon: Icon(Icons.sync, size: context.r(16)),
-                label: Text(l.syncNowButton),
-              ),
-            ],
+          Text(l.syncUploadHelp),
+          Text(
+            _selectionSummary(
+              l,
+              config.uploadSelection,
+              passwords: config.syncPasswords,
+            ),
           ),
+          SizedBox(height: context.r(16)),
+          OutlinedButton.icon(
+            key: const ValueKey('sync-pull-now'),
+            onPressed: enabled && config.pullSelection.any
+                ? () => _transfer(false)
+                : null,
+            icon: const Icon(Icons.cloud_download_outlined),
+            label: Text(_uploading == false ? l.syncPulling : l.syncPullNow),
+          ),
+          SizedBox(height: context.r(6)),
+          Text(l.syncPullHelp),
+          Text(_selectionSummary(l, config.pullSelection)),
         ],
+      ),
+    );
+  }
+
+  Widget _selectionOptions(
+    AppLocalizations l,
+    SyncConfig config, {
+    required bool upload,
+  }) {
+    final selection = upload ? config.uploadSelection : config.pullSelection;
+    void save(SyncSelection value) => _saveOption(
+      () => upload
+          ? ref.read(syncEngineProvider).setUploadSelection(value)
+          : ref.read(syncEngineProvider).setPullSelection(value),
+    );
+    Widget option(
+      String id,
+      String title,
+      bool value,
+      SyncSelection Function(bool) change,
+    ) => CheckboxListTile(
+      key: ValueKey('sync-${upload ? 'upload' : 'pull'}-$id'),
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      title: Text(title),
+      value: value,
+      onChanged: _busy ? null : (value) => save(change(value!)),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          upload ? l.syncUploadItems : l.syncPullItems,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        option(
+          'accounts',
+          l.syncItemAccounts,
+          selection.accounts,
+          (v) => selection.copyWith(accounts: v),
+        ),
+        if (upload)
+          Padding(
+            padding: context.rInsets(left: 24),
+            child: SwitchListTile(
+              key: const ValueKey('sync-upload-passwords'),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l.syncPasswordsTitle),
+              subtitle: Text(l.syncPasswordsDesc),
+              value: selection.accounts && config.syncPasswords,
+              onChanged: _busy || !selection.accounts
+                  ? null
+                  : (v) => _saveOption(
+                      () => ref.read(syncEngineProvider).setSyncPasswords(v),
+                    ),
+            ),
+          ),
+        option(
+          'settings',
+          l.syncItemSettings,
+          selection.settings,
+          (v) => selection.copyWith(settings: v),
+        ),
+        option(
+          'favorites',
+          l.syncItemFavorites,
+          selection.favorites,
+          (v) => selection.copyWith(favorites: v),
+        ),
+        option(
+          'acceleration',
+          l.syncItemAcceleration,
+          selection.acceleration,
+          (v) => selection.copyWith(acceleration: v),
+        ),
+      ],
+    );
+  }
+
+  Widget _advancedCard(
+    AppLocalizations l,
+    SyncEngineStatus status,
+    SyncConfig config,
+  ) {
+    final t = Theme.of(context).extension<AvaTokens>()!;
+    return _card(
+      child: Material(
+        type: MaterialType.transparency,
+        child: ExpansionTile(
+          key: const ValueKey('sync-advanced-options'),
+          tilePadding: EdgeInsets.zero,
+          title: Text(l.syncAdvancedOptions),
+          childrenPadding: context.rInsets(top: 8),
+          children: [
+            Text(l.syncSelectionHelp),
+            SizedBox(height: context.r(12)),
+            _selectionOptions(l, config, upload: true),
+            const Divider(),
+            _selectionOptions(l, config, upload: false),
+            const Divider(),
+            _optionRow(
+              t,
+              title: l.syncAutoTitle,
+              description: l.syncAutoDesc,
+              trailing: Switch(
+                key: const ValueKey('sync-auto-upload'),
+                value: config.autoSync,
+                onChanged: _busy
+                    ? null
+                    : (v) => _saveOption(
+                        () => ref.read(syncEngineProvider).setAutoSync(v),
+                      ),
+              ),
+            ),
+            const Divider(),
+            _actionRow(
+              t,
+              Icons.cloud_outlined,
+              l.syncViewRemote,
+              _busy ? null : _viewRemote,
+            ),
+            _actionRow(
+              t,
+              Icons.delete_outline,
+              l.syncTrashTitle,
+              _busy ? null : _viewTrash,
+            ),
+            _actionRow(
+              t,
+              Icons.password,
+              l.syncChangePassphrase,
+              _busy ? null : _changePassphrase,
+            ),
+            _actionRow(
+              t,
+              Icons.link_off,
+              l.syncDisconnect,
+              _busy ? null : _disconnect,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -465,20 +672,23 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _actionRow(t, Icons.compare_arrows, l.syncCompareTitle, _compare),
-          _actionRow(t, Icons.cloud_outlined, l.syncViewRemote, _viewRemote),
           _actionRow(
-              t, Icons.delete_outline, l.syncTrashTitle, _viewTrash),
+            t,
+            Icons.compare_arrows,
+            l.syncCompareTitle,
+            _busy ? null : _compare,
+          ),
         ],
       ),
     );
   }
 
-  void _compare() => Navigator.of(context).push<void>(MaterialPageRoute(
-      builder: (_) => const SyncCompareScreen()));
+  void _compare() => Navigator.of(
+    context,
+  ).push<void>(MaterialPageRoute(builder: (_) => const SyncCompareScreen()));
 
   Widget _actionRow(
-      AvaTokens t, IconData icon, String label, VoidCallback onTap) {
+      AvaTokens t, IconData icon, String label, VoidCallback? onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(t.radiusSm),
@@ -584,20 +794,6 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
   }
 
   // ─── Danger zone ─────────────────────────────────────────────────────
-
-  Widget _dangerCard(AppLocalizations l, SyncEngineStatus status) {
-    final t = Theme.of(context).extension<AvaTokens>()!;
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _actionRow(
-              t, Icons.password, l.syncChangePassphrase, _changePassphrase),
-          _actionRow(t, Icons.link_off, l.syncDisconnect, _disconnect),
-        ],
-      ),
-    );
-  }
 
   Future<void> _changePassphrase() async {
     final l = AppLocalizations.of(context);

@@ -19,7 +19,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/sync/sync_planner.dart';
+import '../../core/sync/sync_selection.dart';
 import '../storage_provider.dart';
+
+export '../../core/sync/sync_selection.dart';
 
 class SyncConfig {
   /// Only 'webdav' today; 'gdrive' is reserved for the Pro backend.
@@ -36,6 +39,23 @@ class SyncConfig {
   /// decision: default on). Device-specific preferences (language, text
   /// size) are never part of the document regardless of this flag.
   final bool syncSettings;
+
+  final SyncSelection? _uploadSelection;
+  final SyncSelection? _pullSelection;
+  SyncSelection get uploadSelection =>
+      _uploadSelection ??
+      SyncSelection(
+        settings: syncSettings,
+        favorites: syncSettings,
+        acceleration: syncSettings,
+      );
+  SyncSelection get pullSelection =>
+      _pullSelection ??
+      SyncSelection(
+        settings: syncSettings,
+        favorites: syncSettings,
+        acceleration: syncSettings,
+      );
 
   /// Passphrase epoch this device's stored passphrase belongs to; compared
   /// against the remote sidecar to detect a passphrase change made elsewhere.
@@ -68,7 +88,13 @@ class SyncConfig {
     this.pinnedCerts = const {},
     this.conditionalUnsupported = false,
     this.forcePushPending = false,
-  });
+    SyncSelection? uploadSelection,
+    SyncSelection? pullSelection,
+  // Public arguments retain the old syncSettings fallback for const callers.
+  // ignore: prefer_initializing_formals
+  }) : _uploadSelection = uploadSelection,
+       // ignore: prefer_initializing_formals
+       _pullSelection = pullSelection;
 
   factory SyncConfig.fromJson(Map<String, dynamic> json) => SyncConfig(
         backend: (json['backend'] as String?) ?? 'webdav',
@@ -78,19 +104,26 @@ class SyncConfig {
         autoSync: json['auto_sync'] != false,
         syncPasswords: json['sync_passwords'] != false,
         syncSettings: json['sync_settings'] != false,
+    uploadSelection: SyncSelection.fromJson(
+      json['upload_selection'],
+      legacySettings: json['sync_settings'] != false,
+    ),
+    pullSelection: SyncSelection.fromJson(
+      json['pull_selection'],
+      legacySettings: json['sync_settings'] != false,
+    ),
         passphraseEpoch: (json['passphrase_epoch'] as num?)?.toInt() ?? 1,
         httpOverrides: {
           for (final h in (json['http_overrides'] as List? ?? const []))
-            h.toString()
-        },
+        h.toString(),
+    },
         pinnedCerts: {
-          for (final e
-              in ((json['pinned_certs'] as Map?) ?? const {}).entries)
-            e.key.toString(): e.value.toString()
-        },
+      for (final e in ((json['pinned_certs'] as Map?) ?? const {}).entries)
+        e.key.toString(): e.value.toString(),
+    },
         conditionalUnsupported: json['conditional_unsupported'] == true,
         forcePushPending: json['force_push_pending'] == true,
-      );
+  );
 
   Map<String, dynamic> toJson() => {
         'backend': backend,
@@ -100,12 +133,14 @@ class SyncConfig {
         'auto_sync': autoSync,
         'sync_passwords': syncPasswords,
         'sync_settings': syncSettings,
+    'upload_selection': uploadSelection.toJson(),
+    'pull_selection': pullSelection.toJson(),
         'passphrase_epoch': passphraseEpoch,
         'http_overrides': [...httpOverrides],
         'pinned_certs': pinnedCerts,
         'conditional_unsupported': conditionalUnsupported,
         'force_push_pending': forcePushPending,
-      };
+  };
 
   SyncConfig copyWith({
     bool? autoSync,
@@ -116,8 +151,9 @@ class SyncConfig {
     Map<String, String>? pinnedCerts,
     bool? conditionalUnsupported,
     bool? forcePushPending,
-  }) =>
-      SyncConfig(
+    SyncSelection? uploadSelection,
+    SyncSelection? pullSelection,
+  }) => SyncConfig(
         backend: backend,
         url: url,
         username: username,
@@ -131,7 +167,9 @@ class SyncConfig {
         conditionalUnsupported:
             conditionalUnsupported ?? this.conditionalUnsupported,
         forcePushPending: forcePushPending ?? this.forcePushPending,
-      );
+    uploadSelection: uploadSelection ?? _uploadSelection,
+    pullSelection: pullSelection ?? _pullSelection,
+  );
 }
 
 /// This device's merge base.
@@ -150,11 +188,18 @@ class SyncLocalState {
   /// credentials are stored here. Older state files fall back to settingsBase.
   final String? settingsLocalHash;
 
+  /// Local snapshots after successful directional transfers. Per-category
+  /// hashes keep an unrelated edit from uploading stale settings or favorites.
+  final Map<String, String> localContentHashes;
+  final Map<String, String> remoteContentHashes;
+
   const SyncLocalState({
     this.base = const {},
     this.tombstonesSeen = const {},
     this.settingsBase,
     this.settingsLocalHash,
+    this.localContentHashes = const {},
+    this.remoteContentHashes = const {},
   });
 
   factory SyncLocalState.fromJson(Map<String, dynamic> json) {
@@ -182,20 +227,35 @@ class SyncLocalState {
       tombstonesSeen: seen,
       settingsBase: json['settings_base'] is Map
           ? SyncBaseEntry.fromJson(
-              (json['settings_base'] as Map).cast<String, dynamic>())
+              (json['settings_base'] as Map).cast<String, dynamic>(),
+            )
           : null,
       settingsLocalHash: json['settings_local_hash'] as String?,
+      localContentHashes: {
+        for (final entry
+            in (json['local_content_hashes'] as Map? ?? const {}).entries)
+          if (entry.value is String) '${entry.key}': entry.value as String,
+      },
+      remoteContentHashes: {
+        for (final entry
+            in (json['remote_content_hashes'] as Map? ?? const {}).entries)
+          if (entry.value is String) '${entry.key}': entry.value as String,
+      },
     );
   }
 
   Map<String, dynamic> toJson() => {
         'base': {for (final e in base.entries) '${e.key}': e.value.toJson()},
         'tombstones_seen': {
-          for (final e in tombstonesSeen.entries) '${e.key}': e.value
-        },
+      for (final e in tombstonesSeen.entries) '${e.key}': e.value,
+    },
         if (settingsBase != null) 'settings_base': settingsBase!.toJson(),
         if (settingsLocalHash != null) 'settings_local_hash': settingsLocalHash,
-      };
+    if (localContentHashes.isNotEmpty)
+      'local_content_hashes': localContentHashes,
+    if (remoteContentHashes.isNotEmpty)
+      'remote_content_hashes': remoteContentHashes,
+  };
 }
 
 class SyncConfigStore {
@@ -203,10 +263,11 @@ class SyncConfigStore {
   final FlutterSecureStorage _secure;
 
   SyncConfigStore(this.storage, {FlutterSecureStorage? secure})
-      : _secure = secure ??
+    : _secure =
+          secure ??
             const FlutterSecureStorage(
               aOptions: AndroidOptions(encryptedSharedPreferences: true),
-            );
+          );
 
   static const _kWebdavPassword = 'ava.sync.webdav_password';
   static const _kPassphrase = 'ava.sync.passphrase';
@@ -237,7 +298,9 @@ class SyncConfigStore {
     try {
       final f = File(await _path(name));
       if (await f.exists()) await f.delete();
-    } catch (_) {/* best-effort */}
+    } catch (_) {
+      /* best-effort */
+    }
   }
 
   Future<SyncConfig?> loadConfig() async {
@@ -252,7 +315,9 @@ class SyncConfigStore {
 
   Future<SyncLocalState> loadState() async {
     final json = await _readJson('sync_state.json');
-    return json == null ? const SyncLocalState() : SyncLocalState.fromJson(json);
+    return json == null
+        ? const SyncLocalState()
+        : SyncLocalState.fromJson(json);
   }
 
   Future<void> saveState(SyncLocalState state) =>

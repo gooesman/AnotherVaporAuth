@@ -1700,7 +1700,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncSetUp => '设置同步…';
 
   @override
-  String get syncStatusOk => '已是最新';
+  String get syncStatusOk => '已连接';
 
   @override
   String get syncStatusSyncing => '正在同步…';
@@ -1842,10 +1842,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncPassphraseWrong => '这个口令打不开该同步库。';
 
   @override
-  String get syncPreviewTitle => '首次同步';
+  String get syncPreviewTitle => '连接同步库';
 
   @override
-  String get syncPreviewEmpty => '暂时没有要传输的内容——之后的账户变动会自动同步。';
+  String get syncPreviewEmpty => '连接后，在同步页选择“立即同步”或“一键拉取”；高级设置可分别选择项目。';
 
   @override
   String syncPreviewPull(int count) {
@@ -1863,14 +1863,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get syncStart => '开始同步';
+  String get syncStart => '连接';
 
   @override
-  String get syncDoneTitle => '同步已开启';
+  String get syncDoneTitle => '同步库已连接';
 
   @override
-  String get syncDoneBody =>
-      '账户现在会自动同步。新设备上每个账户首次使用时会重新登录——存过密码的自动完成，其余的会提示输一次。';
+  String get syncDoneBody => '在同步页选择上传或拉取。拉取会合并远程内容，保留本地独有的账户和收藏。';
 
   @override
   String get syncDone => '完成';
@@ -1922,23 +1921,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncConflictNoPassword => '未存密码';
 
   @override
-  String get syncAutoTitle => '自动同步';
+  String get syncAutoTitle => '自动上传';
 
   @override
-  String get syncAutoDesc => '启动时和每次改动后同步。关闭后只有下面的按钮会同步。';
+  String get syncAutoDesc => '启动及内容变动后，上传已选的同步项目；下载仅在点击“一键拉取”时进行。';
 
   @override
-  String get syncPasswordsTitle => '同步账户密码';
+  String get syncPasswordsTitle => '包含账户密码';
 
   @override
-  String get syncPasswordsDesc => '有密码，新设备才能自行登录。改动此项会重新上传全部账户。';
+  String get syncPasswordsDesc => '仅用于账户上传。修改后在下次上传账户时生效。';
 
   @override
   String get syncAppSettingsTitle => '同步应用设置';
 
   @override
   String get syncAppSettingsDesc =>
-      '同步外观与行为偏好，以及加密保存的 Steam 加速订阅、节点和所选节点。语言、字号和加速自动启动开关保持各设备独立。';
+      '仅包含外观与行为偏好。市场收藏和加速订阅分别选择；语言、字号和加速自动启动保持各设备独立。';
 
   @override
   String get syncNowButton => '立即同步';
@@ -2585,7 +2584,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      '链接可能包含私人凭据，会安全保存在设备上。开启“同步应用设置”后，订阅和节点也会通过同步口令加密同步。保存后点击“更新节点”加载节点。';
+      '链接可能包含私人凭据，会安全保存在设备上。在“同步 → 高级设置”中选择加速订阅与节点，即可通过同步口令加密上传或拉取。保存后点击“更新节点”加载节点。';
 
   @override
   String get steamAccelerationClear => '清除订阅';
@@ -2981,6 +2980,10 @@ class AppLocalizationsZh extends AppLocalizations {
       '先查看每项差异，再选择方向。“较新”根据上次共同版本后的改动判断；下方时间为最近同步时间，仅供参考。拉取或上传只处理选中的这一项。';
 
   @override
+  String get syncComparePasswordChangePending =>
+      '密码同步设置已更改。请返回同步页面，勾选账户后点击立即同步以应用更改；仍可查看差异和拉取。';
+
+  @override
   String get syncCompareStale => '本地或远程内容已发生变化，请刷新对比后重试。';
 
   @override
@@ -3328,6 +3331,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get dashboardLayoutSettingsHint => '在账户概览的“布局设置”中调整卡片位置和大小。';
+
+  @override
+  String get syncAdvancedOptions => '高级设置';
+
+  @override
+  String get syncUploadItems => '同步项目（上传）';
+
+  @override
+  String get syncPullItems => '拉取项目（下载）';
+
+  @override
+  String get syncItemAccounts => '账户与令牌';
+
+  @override
+  String get syncItemSettings => '应用设置';
+
+  @override
+  String get syncItemFavorites => '市场收藏与币种';
+
+  @override
+  String get syncItemAcceleration => '加速订阅与节点';
+
+  @override
+  String get syncSelectionEmpty => '未选择项目';
+
+  @override
+  String get syncSelectionHelp => '勾选后自动保存；这里只配置，不会开始传输。';
+
+  @override
+  String get syncUploadHelp => '将所选内容上传到远程，本地数据保持不变。';
+
+  @override
+  String get syncPullHelp => '下载并合并所选内容，保留本地独有的账户和收藏。';
+
+  @override
+  String get syncPullNow => '一键拉取';
+
+  @override
+  String get syncPulling => '正在下载…';
+
+  @override
+  String get syncOptionsSaveFailed => '同步选项保存失败，请重试。';
+
+  @override
+  String get syncUploaded => '已上传项目';
+
+  @override
+  String get syncPulled => '已拉取项目';
+
+  @override
+  String get syncPartialRetry => '已完成的项目会保留，可重试未完成的项目。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -5028,10 +5082,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get syncSetUp => '設定同步…';
 
   @override
-  String get syncStatusOk => '已是最新';
+  String get syncStatusOk => '已連線';
 
   @override
-  String get syncStatusSyncing => '同步中…';
+  String get syncStatusSyncing => '正在同步…';
 
   @override
   String get syncStatusErrorShort => '上次同步失敗——點開查看詳情。';
@@ -5171,10 +5225,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get syncPassphraseWrong => '這組密語打不開這個同步庫。';
 
   @override
-  String get syncPreviewTitle => '首次同步';
+  String get syncPreviewTitle => '連線同步庫';
 
   @override
-  String get syncPreviewEmpty => '目前沒有要傳輸的內容——之後帳號有變動就會自動同步。';
+  String get syncPreviewEmpty => '連線後，在同步頁選擇「立即同步」或「一鍵拉取」；進階設定可分別選擇項目。';
 
   @override
   String syncPreviewPull(int count) {
@@ -5192,14 +5246,13 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   }
 
   @override
-  String get syncStart => '開始同步';
+  String get syncStart => '連線';
 
   @override
-  String get syncDoneTitle => '同步已開啟';
+  String get syncDoneTitle => '同步庫已連線';
 
   @override
-  String get syncDoneBody =>
-      '帳號現在會自動同步。新裝置上每個帳號第一次使用時要重新登入——存過密碼的會自己完成，其餘的會問一次。';
+  String get syncDoneBody => '在同步頁選擇上傳或拉取。拉取會合併遠端內容，保留本機獨有的帳戶與收藏。';
 
   @override
   String get syncDone => '完成';
@@ -5251,23 +5304,23 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get syncConflictNoPassword => '未存密碼';
 
   @override
-  String get syncAutoTitle => '自動同步';
+  String get syncAutoTitle => '自動上傳';
 
   @override
-  String get syncAutoDesc => '啟動時和每次改動後同步。關閉後只有下面的按鈕會同步。';
+  String get syncAutoDesc => '啟動及內容變動後，上傳已選的同步項目；下載僅在點選「一鍵拉取」時進行。';
 
   @override
-  String get syncPasswordsTitle => '同步帳號密碼';
+  String get syncPasswordsTitle => '包含帳戶密碼';
 
   @override
-  String get syncPasswordsDesc => '有密碼，新裝置才能自行登入。變更這一項會重新上傳所有帳號。';
+  String get syncPasswordsDesc => '僅用於帳戶上傳。修改後在下次上傳帳戶時生效。';
 
   @override
   String get syncAppSettingsTitle => '同步應用程式設定';
 
   @override
   String get syncAppSettingsDesc =>
-      '同步外觀與行為偏好，以及加密儲存的 Steam 加速訂閱、節點和所選節點。語言、文字大小和加速自動啟動開關維持各裝置獨立。';
+      '僅包含外觀與行為偏好。市場收藏和加速訂閱分別選擇；語言、字級和加速自動啟動維持各裝置獨立。';
 
   @override
   String get syncNowButton => '立即同步';
@@ -5917,7 +5970,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      '連結可能含有私人憑證，會安全儲存在裝置上。開啟「同步應用程式設定」後，訂閱與節點也會使用同步密碼加密同步。儲存後點選「更新節點」載入節點。';
+      '連結可能包含私人憑證，會安全儲存在裝置上。在「同步 → 進階設定」中選擇加速訂閱與節點，即可透過同步密語加密上傳或拉取。儲存後點選「更新節點」載入節點。';
 
   @override
   String get steamAccelerationClear => '清除訂閱';
@@ -6313,6 +6366,10 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '先查看每項差異，再選擇方向。「較新」根據上次共同版本後的改動判斷；下方時間為最近同步時間，僅供參考。拉取或上傳只處理選中的這一項。';
 
   @override
+  String get syncComparePasswordChangePending =>
+      '密碼同步設定已變更。請返回同步頁面，勾選帳戶後點選立即同步以套用變更；仍可查看差異和拉取。';
+
+  @override
   String get syncCompareStale => '本機或遠端內容已發生變化，請重新整理比較後再試。';
 
   @override
@@ -6661,4 +6718,55 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get dashboardLayoutSettingsHint => '在帳戶概覽的「版面設定」中調整卡片位置和大小。';
+
+  @override
+  String get syncAdvancedOptions => '進階設定';
+
+  @override
+  String get syncUploadItems => '同步項目（上傳）';
+
+  @override
+  String get syncPullItems => '拉取項目（下載）';
+
+  @override
+  String get syncItemAccounts => '帳戶與驗證器';
+
+  @override
+  String get syncItemSettings => '應用程式設定';
+
+  @override
+  String get syncItemFavorites => '市場收藏與幣別';
+
+  @override
+  String get syncItemAcceleration => '加速訂閱與節點';
+
+  @override
+  String get syncSelectionEmpty => '未選擇項目';
+
+  @override
+  String get syncSelectionHelp => '勾選後自動儲存；這裡只設定，不會開始傳輸。';
+
+  @override
+  String get syncUploadHelp => '將所選內容上傳至遠端，本機資料保持不變。';
+
+  @override
+  String get syncPullHelp => '下載並合併所選內容，保留本機獨有的帳戶與收藏。';
+
+  @override
+  String get syncPullNow => '一鍵拉取';
+
+  @override
+  String get syncPulling => '正在下載…';
+
+  @override
+  String get syncOptionsSaveFailed => '同步選項儲存失敗，請重試。';
+
+  @override
+  String get syncUploaded => '已上傳項目';
+
+  @override
+  String get syncPulled => '已拉取項目';
+
+  @override
+  String get syncPartialRetry => '已完成的項目會保留，可重試未完成的項目。';
 }

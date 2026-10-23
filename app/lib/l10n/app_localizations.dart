@@ -3170,7 +3170,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncStatusOk.
   ///
   /// In en, this message translates to:
-  /// **'Up to date'**
+  /// **'Connected'**
   String get syncStatusOk;
 
   /// No description provided for @syncStatusSyncing.
@@ -3422,13 +3422,13 @@ abstract class AppLocalizations {
   /// No description provided for @syncPreviewTitle.
   ///
   /// In en, this message translates to:
-  /// **'First sync'**
+  /// **'Connect sync library'**
   String get syncPreviewTitle;
 
   /// No description provided for @syncPreviewEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Nothing to transfer yet — accounts will sync automatically from now on.'**
+  /// **'After connecting, choose Sync now or Pull now on the sync page. Select the items for each action in Advanced settings.'**
   String get syncPreviewEmpty;
 
   /// No description provided for @syncPreviewPull.
@@ -3452,19 +3452,19 @@ abstract class AppLocalizations {
   /// No description provided for @syncStart.
   ///
   /// In en, this message translates to:
-  /// **'Start syncing'**
+  /// **'Connect'**
   String get syncStart;
 
   /// No description provided for @syncDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync is on'**
+  /// **'Sync library connected'**
   String get syncDoneTitle;
 
   /// No description provided for @syncDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'Accounts now sync automatically. On a new device each account signs in again the first time you use it — accounts with a saved password do that by themselves; the others ask once.'**
+  /// **'Choose upload or pull on the sync page. Pull merges remote data and keeps accounts and favorites that exist only on this device.'**
   String get syncDoneBody;
 
   /// No description provided for @syncDone.
@@ -3566,25 +3566,25 @@ abstract class AppLocalizations {
   /// No description provided for @syncAutoTitle.
   ///
   /// In en, this message translates to:
-  /// **'Automatic sync'**
+  /// **'Automatic upload'**
   String get syncAutoTitle;
 
   /// No description provided for @syncAutoDesc.
   ///
   /// In en, this message translates to:
-  /// **'Sync at launch and after every change. Off means only the button below syncs.'**
+  /// **'Upload the selected sync items at startup and after changes. Download only when you choose Pull now.'**
   String get syncAutoDesc;
 
   /// No description provided for @syncPasswordsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync account passwords'**
+  /// **'Include account passwords'**
   String get syncPasswordsTitle;
 
   /// No description provided for @syncPasswordsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Passwords let a new device sign in by itself. Changing this re-uploads every account.'**
+  /// **'Applies when uploading accounts. Changes take effect on the next account upload.'**
   String get syncPasswordsDesc;
 
   /// No description provided for @syncAppSettingsTitle.
@@ -3596,7 +3596,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncAppSettingsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Sync appearance and behavior preferences plus encrypted Steam acceleration subscriptions, nodes and the selected node. Language, text size and acceleration auto-start stay per-device.'**
+  /// **'Appearance and behavior preferences only. Select market favorites and acceleration subscriptions separately. Language, text size and acceleration auto-start stay per-device.'**
   String get syncAppSettingsDesc;
 
   /// No description provided for @syncNowButton.
@@ -4814,7 +4814,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAccelerationSubscriptionHelp.
   ///
   /// In en, this message translates to:
-  /// **'This link may contain private credentials and is stored securely on your device. With Sync app settings enabled, subscriptions and nodes are also encrypted with your sync passphrase and synced. After saving, select Refresh nodes.'**
+  /// **'This link may contain private credentials and is stored securely. Choose acceleration subscriptions and nodes in Sync → Advanced settings to upload or pull them, encrypted with your sync passphrase. After saving, select Refresh nodes.'**
   String get steamAccelerationSubscriptionHelp;
 
   /// No description provided for @steamAccelerationClear.
@@ -5513,6 +5513,12 @@ abstract class AppLocalizations {
   /// **'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.'**
   String get syncCompareHelp;
 
+  /// No description provided for @syncComparePasswordChangePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Password sync settings have changed. Return to the sync page, select accounts, and click Sync now to apply the change. You can still compare differences and pull.'**
+  String get syncComparePasswordChangePending;
+
   /// No description provided for @syncCompareStale.
   ///
   /// In en, this message translates to:
@@ -6154,6 +6160,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To move or resize cards, open Overview layout in the account overview.'**
   String get dashboardLayoutSettingsHint;
+
+  /// No description provided for @syncAdvancedOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced settings'**
+  String get syncAdvancedOptions;
+
+  /// No description provided for @syncUploadItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync items (upload)'**
+  String get syncUploadItems;
+
+  /// No description provided for @syncPullItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull items (download)'**
+  String get syncPullItems;
+
+  /// No description provided for @syncItemAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts and authenticators'**
+  String get syncItemAccounts;
+
+  /// No description provided for @syncItemSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'App settings'**
+  String get syncItemSettings;
+
+  /// No description provided for @syncItemFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Market favorites and currency'**
+  String get syncItemFavorites;
+
+  /// No description provided for @syncItemAcceleration.
+  ///
+  /// In en, this message translates to:
+  /// **'Acceleration subscriptions and nodes'**
+  String get syncItemAcceleration;
+
+  /// No description provided for @syncSelectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No items selected'**
+  String get syncSelectionEmpty;
+
+  /// No description provided for @syncSelectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Selections are saved automatically. Changing them does not start a transfer.'**
+  String get syncSelectionHelp;
+
+  /// No description provided for @syncUploadHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload the selected items to remote. Local data stays unchanged.'**
+  String get syncUploadHelp;
+
+  /// No description provided for @syncPullHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download and merge the selected items. Keep accounts and favorites that exist only on this device.'**
+  String get syncPullHelp;
+
+  /// No description provided for @syncPullNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull now'**
+  String get syncPullNow;
+
+  /// No description provided for @syncPulling.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get syncPulling;
+
+  /// No description provided for @syncOptionsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save sync options. Please try again.'**
+  String get syncOptionsSaveFailed;
+
+  /// No description provided for @syncUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Items uploaded'**
+  String get syncUploaded;
+
+  /// No description provided for @syncPulled.
+  ///
+  /// In en, this message translates to:
+  /// **'Items downloaded'**
+  String get syncPulled;
+
+  /// No description provided for @syncPartialRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed items are kept. You can retry the unfinished items.'**
+  String get syncPartialRetry;
 }
 
 class _AppLocalizationsDelegate

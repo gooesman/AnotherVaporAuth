@@ -1824,7 +1824,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get syncSetUp => 'Настроить синхронизацию…';
 
   @override
-  String get syncStatusOk => 'Всё синхронизировано';
+  String get syncStatusOk => 'Подключено';
 
   @override
   String get syncStatusSyncing => 'Синхронизация…';
@@ -1991,11 +1991,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Эта парольная фраза не подходит к этой библиотеке.';
 
   @override
-  String get syncPreviewTitle => 'Первая синхронизация';
+  String get syncPreviewTitle => 'Подключить библиотеку синхронизации';
 
   @override
   String get syncPreviewEmpty =>
-      'Переносить пока нечего — дальше аккаунты будут синхронизироваться автоматически.';
+      'После подключения выберите отправку или загрузку на странице синхронизации. Данные для каждого действия выбираются в дополнительных настройках.';
 
   @override
   String syncPreviewPull(int count) {
@@ -2029,14 +2029,14 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get syncStart => 'Начать синхронизацию';
+  String get syncStart => 'Подключить';
 
   @override
-  String get syncDoneTitle => 'Синхронизация включена';
+  String get syncDoneTitle => 'Библиотека синхронизации подключена';
 
   @override
   String get syncDoneBody =>
-      'Теперь аккаунты синхронизируются автоматически. На новом устройстве каждый аккаунт при первом использовании входит заново — аккаунты с сохранённым паролем делают это сами, остальные один раз спросят.';
+      'Выберите отправку или загрузку на странице синхронизации. При загрузке удалённые данные объединяются с локальными, а уникальные локальные аккаунты и избранное сохраняются.';
 
   @override
   String get syncDone => 'Готово';
@@ -2092,25 +2092,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get syncConflictNoPassword => 'Пароль не сохранён';
 
   @override
-  String get syncAutoTitle => 'Автоматическая синхронизация';
+  String get syncAutoTitle => 'Автоматическая отправка';
 
   @override
   String get syncAutoDesc =>
-      'Синхронизация при запуске и после каждого изменения. Если выключено, синхронизирует только кнопка ниже.';
+      'Отправлять выбранные данные при запуске и после изменений. Загрузка выполняется только по кнопке «Загрузить сейчас».';
 
   @override
-  String get syncPasswordsTitle => 'Синхронизировать пароли аккаунтов';
+  String get syncPasswordsTitle => 'Включать пароли аккаунтов';
 
   @override
   String get syncPasswordsDesc =>
-      'С паролем новое устройство входит в аккаунт само. Изменение этой настройки заново выгружает все аккаунты.';
+      'Для отправки аккаунтов. Изменения вступят в силу при следующей отправке аккаунтов.';
 
   @override
   String get syncAppSettingsTitle => 'Синхронизировать настройки приложения';
 
   @override
   String get syncAppSettingsDesc =>
-      'Синхронизация оформления и поведения, зашифрованных подписок ускорения Steam, узлов и выбранного узла. Язык, размер текста и автоматический запуск ускорения остаются отдельными для каждого устройства.';
+      'Только оформление и поведение. Избранное рынка и подписки ускорения выбираются отдельно. Язык, размер текста и автозапуск ускорения остаются отдельными для каждого устройства.';
 
   @override
   String get syncNowButton => 'Синхронизировать';
@@ -2815,7 +2815,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get steamAccelerationSubscriptionHelp =>
-      'Ссылка может содержать личные учётные данные и хранится защищённо. При синхронизации настроек подписки и узлы шифруются вашим паролем синхронизации и передаются между устройствами. После сохранения обновите узлы.';
+      'Ссылка может содержать личные данные доступа и хранится защищённо. Выберите подписки и узлы в разделе Синхронизация → Дополнительные настройки, чтобы отправлять или загружать их с шифрованием парольной фразой. Затем обновите узлы.';
 
   @override
   String get steamAccelerationClear => 'Удалить подписку';
@@ -3243,6 +3243,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Compare each item before choosing a direction. Newer means changed since the last shared version; times below are last sync times, for reference. Pull or upload affects only the selected row.';
 
   @override
+  String get syncComparePasswordChangePending =>
+      'Настройки синхронизации паролей изменены. Вернитесь на страницу синхронизации, выберите аккаунты и нажмите «Синхронизировать», чтобы применить изменение. Просмотр различий и загрузка с сервера по-прежнему доступны.';
+
+  @override
   String get syncCompareStale =>
       'Local or remote data changed. Refresh the comparison before trying again.';
 
@@ -3612,4 +3616,60 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get dashboardLayoutSettingsHint =>
       'Откройте «Макет обзора» в обзоре аккаунта, чтобы перемещать карточки и менять их размер.';
+
+  @override
+  String get syncAdvancedOptions => 'Дополнительные настройки';
+
+  @override
+  String get syncUploadItems => 'Данные для отправки';
+
+  @override
+  String get syncPullItems => 'Данные для загрузки';
+
+  @override
+  String get syncItemAccounts => 'Аккаунты и аутентификаторы';
+
+  @override
+  String get syncItemSettings => 'Настройки приложения';
+
+  @override
+  String get syncItemFavorites => 'Избранное рынка и валюта';
+
+  @override
+  String get syncItemAcceleration => 'Подписки ускорения и узлы';
+
+  @override
+  String get syncSelectionEmpty => 'Ничего не выбрано';
+
+  @override
+  String get syncSelectionHelp =>
+      'Выбор сохраняется автоматически. Изменение выбора не запускает передачу.';
+
+  @override
+  String get syncUploadHelp =>
+      'Отправить выбранные данные на сервер. Локальные данные не изменяются.';
+
+  @override
+  String get syncPullHelp =>
+      'Загрузить и объединить выбранные данные. Сохранить аккаунты и избранное, существующие только на этом устройстве.';
+
+  @override
+  String get syncPullNow => 'Загрузить сейчас';
+
+  @override
+  String get syncPulling => 'Загрузка…';
+
+  @override
+  String get syncOptionsSaveFailed =>
+      'Не удалось сохранить параметры. Попробуйте ещё раз.';
+
+  @override
+  String get syncUploaded => 'Отправлено элементов';
+
+  @override
+  String get syncPulled => 'Загружено элементов';
+
+  @override
+  String get syncPartialRetry =>
+      'Завершённые элементы сохранены. Незавершённые можно повторить.';
 }

@@ -37,9 +37,8 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     if (data != null && !data.locked) engine.notifyAccountsChanged();
   });
   // Synced app settings: any change to a curated preference schedules a
-  // round, exactly like an account change. Applying a pulled document goes
-  // through these same notifiers, which re-fires the listeners — the
-  // follow-up round is a hash-equal no-op.
+  // upload, exactly like an account change. The engine suppresses these
+  // notifications while applying a pull so imported changes stay local.
   void onSetting(Object? prev, Object? next) {
     if (prev != null && prev != next) engine.notifyAccountsChanged();
   }
@@ -110,12 +109,14 @@ class AppAccountsPort implements SyncAccountsPort {
 
   @override
   Future<void> applyRemote(Map<String, dynamic> payload) async {
-    await ref.read(appControllerProvider.notifier).importMaFile(
-      jsonEncode(payload),
-      sourceName: 'sync',
-      localOnly: true,
-      syncPayload: true,
-    );
+    await ref
+        .read(appControllerProvider.notifier)
+        .importMaFile(
+          jsonEncode(payload),
+          sourceName: 'sync',
+          localOnly: true,
+          syncPayload: true,
+        );
   }
 
   @override
@@ -147,25 +148,32 @@ class AppSettingsPort implements SyncSettingsPort {
   AppSettingsPort(this.ref);
 
   @override
-  Future<Map<String, dynamic>?> snapshot() async {
+  Future<Map<String, dynamic>?> snapshot({
+    SyncSelection selection = const SyncSelection(),
+  }) async {
     final data = ref.read(appControllerProvider).value;
     if (data == null || data.locked) return null;
     final store = ref.read(settingsStoreProvider);
     final snapshot = <String, dynamic>{
-      'skin': (await store.loadSkin()) ?? AvaSkin.none.name,
-      'brightness_mode':
-          (await store.loadBrightnessMode()) ?? AvaBrightnessMode.system.name,
-      'hold_confirm': await store.loadHoldConfirm(),
-      'delete_hold': await store.loadDeleteHold(),
-      'haptics': await store.loadHaptics(),
-      'block_screenshots': await store.loadBlockScreenshots(),
-      'auto_confirm_market': data.store.manifest.autoConfirmMarketTransactions,
-      'market_favorites': await ref
-          .read(marketFavoritesProvider.notifier)
-          .exportForSync(),
-      'steam_acceleration': await ref
-          .read(steamAccelerationServiceProvider)
-          .exportSyncConfiguration(),
+      if (selection.settings) ...{
+        'skin': (await store.loadSkin()) ?? AvaSkin.none.name,
+        'brightness_mode':
+            (await store.loadBrightnessMode()) ?? AvaBrightnessMode.system.name,
+        'hold_confirm': await store.loadHoldConfirm(),
+        'delete_hold': await store.loadDeleteHold(),
+        'haptics': await store.loadHaptics(),
+        'block_screenshots': await store.loadBlockScreenshots(),
+        'auto_confirm_market':
+            data.store.manifest.autoConfirmMarketTransactions,
+      },
+      if (selection.favorites)
+        'market_favorites': await ref
+            .read(marketFavoritesProvider.notifier)
+            .exportForSync(),
+      if (selection.acceleration)
+        'steam_acceleration': await ref
+            .read(steamAccelerationServiceProvider)
+            .exportSyncConfiguration(),
     };
     if (!ref.mounted) return null;
     final current = ref.read(appControllerProvider).value;
@@ -203,7 +211,8 @@ class AppSettingsPort implements SyncSettingsPort {
       requireUnlocked();
     }
     if (favorites != null) {
-      await ref.read(marketFavoritesProvider.notifier)
+      await ref
+          .read(marketFavoritesProvider.notifier)
           .applySynced(favorites.toJson());
       requireUnlocked();
     }

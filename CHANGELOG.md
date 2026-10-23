@@ -5,6 +5,18 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.18] — 2026-10-23 · Fork
+
+### Changed
+- Sync now uploads selected local content; Pull now downloads and merges selected remote content while preserving local-only accounts and favorites. Advanced settings saves separate selections for accounts, app preferences, market favorites/currency and acceleration subscriptions/nodes.
+- Changing selections only saves preferences. New connections wait for an explicit transfer direction; optional automatic uploads send local changes and do not echo pulled data back to the server. Concurrent edits remain available for comparison.
+- Sync status reports completed item counts and failures, including settings conflicts at the settings entry. Unselected subscription credentials are not read when transferring other categories.
+
+### 调整
+- 同步首页提供“立即同步”和“一键拉取”：前者只上传勾选的本地内容，后者只下载并合并远端内容，保留本地独有账号和收藏。高级设置分别记住账户、应用设置、市场收藏／币种、加速订阅／节点的上传与拉取选择。
+- 更改勾选只保存；首次连接后明确选择传输方向。可选自动上传只处理本地改动，拉取不会反过来触发上传，两端同时改动时保留冲突供对比。
+- 显示已完成项目数与失败提示，设置入口补充设置冲突；未勾选订阅时不读取订阅凭据，避免拖累其他项目。
+
 ## [v1.5.17] — 2026-10-23 · Fork
 
 ### Fixed

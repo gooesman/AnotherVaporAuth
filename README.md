@@ -105,17 +105,19 @@ duration when opened. An unavailable expiry is not guessed from the item type.
 
 ### Compare and synchronize devices
 
-In **Settings → Sync → Compare local and remote**, expand a row to inspect its
-differences, then choose **Pull remote → local** or **Upload local → remote**.
-Each action handles that row only: an account is one row; enabled app settings,
-market favorites/currency and acceleration subscription form one settings row.
-Account secrets and subscription credentials are hidden in the comparison.
+In **Settings → Sync**, **Sync now** uploads the selected local content to the
+remote library. **Pull now** downloads and merges the selected remote content,
+retaining accounts and favorite items found only on this device.
+**Advanced settings** remembers separate upload and pull selections for accounts,
+app preferences, market favorites/currency and acceleration subscriptions/nodes.
+Changing a selection saves it without starting a transfer.
 
-Changes are compared with the last shared version; displayed sync times are
-for reference. When settings changed on both devices, synchronization waits for
-your choice. An outdated comparison must be refreshed before applying it.
-Favorites and currency sync when **Sync app settings** is enabled; cached prices
-are not synchronized. See the [sync design and behavior][sync-guide].
+Connecting a library does not transfer data automatically. Optional automatic
+sync uploads local changes; a pull does not trigger an upload in response.
+Use **Compare local and remote** to inspect differences and explicitly resolve
+conflicts. Account secrets and subscription credentials remain hidden, and an
+outdated comparison must be refreshed before applying it. Cached market prices
+and live Steam sessions are not synchronized. See the [sync behavior][sync-guide].
 
 ### Optional Steam connectivity
 
