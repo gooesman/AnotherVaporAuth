@@ -28,7 +28,7 @@ class SteamNotificationsButton extends ConsumerWidget {
     final unread = counts?.unreadCount;
     final requests = counts?.pendingFriendCount;
     final icon = Badge(
-      isLabelVisible: (unread ?? 0) > 0,
+      isLabelVisible: (unread ?? 0) > 0 || (requests ?? 0) > 0,
       child: const Icon(Icons.notifications_outlined, size: 20),
     );
     final tooltip = '${l.notificationsTitle}\n'

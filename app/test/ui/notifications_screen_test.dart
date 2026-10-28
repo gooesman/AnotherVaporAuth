@@ -224,7 +224,49 @@ Future<void> _openRequests(WidgetTester tester) async {
 Finder _inCard(String id, String label) =>
     find.descendant(of: find.byKey(ValueKey(id)), matching: find.text(label));
 
+Finder _tabBadge(String label) =>
+    find.ancestor(of: find.text(label), matching: find.byType(Badge));
+
 void main() {
+  testWidgets('each tab indicates its own outstanding items', (tester) async {
+    final api = _NoNetwork();
+    final notifications = _Notifications(api);
+    final friends = _Friends(api);
+    await tester.pumpWidget(_app(notifications, friends));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Badge>(_tabBadge('Notifications')).isLabelVisible,
+      isTrue,
+    );
+    expect(
+      tester.widget<Badge>(_tabBadge('Friend requests')).isLabelVisible,
+      isTrue,
+    );
+    await tester.tap(find.text('Mark this list as read'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Badge>(_tabBadge('Notifications')).isLabelVisible,
+      isFalse,
+    );
+    expect(
+      tester.widget<Badge>(_tabBadge('Friend requests')).isLabelVisible,
+      isTrue,
+    );
+    await _openRequests(tester);
+    await tester.tap(_inCard('friend-request-76561198000000002', 'Accept'));
+    await tester.pumpAndSettle();
+    await tester.tap(_inCard('friend-request-76561198000000003', 'Decline'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Badge>(_tabBadge('Notifications')).isLabelVisible,
+      isFalse,
+    );
+    expect(
+      tester.widget<Badge>(_tabBadge('Friend requests')).isLabelVisible,
+      isFalse,
+    );
+  });
+
   testWidgets(
     'friend tab dot clears after requests while notifications are read',
     (tester) async {
@@ -235,10 +277,7 @@ void main() {
       final account = _account();
       await tester.pumpWidget(_app(notifications, friends, account: account));
       await tester.pumpAndSettle();
-      final dot = find.descendant(
-        of: find.byType(Tab),
-        matching: find.byType(Badge),
-      );
+      final dot = _tabBadge('Friend requests');
       expect(find.text('No unread notifications.'), findsOneWidget);
       expect(tester.widget<Badge>(dot).isLabelVisible, isTrue);
       expect(friends.reads, 0);
@@ -270,11 +309,12 @@ void main() {
     await tester.pumpWidget(_app(notifications, friends, account: account));
     await tester.pumpAndSettle();
     await _openRequests(tester);
-    final dot = find.descendant(
-      of: find.byType(Tab),
-      matching: find.byType(Badge),
-    );
+    final dot = _tabBadge('Friend requests');
     expect(tester.widget<Badge>(dot).isLabelVisible, isFalse);
+    expect(
+      tester.widget<Badge>(_tabBadge('Notifications')).isLabelVisible,
+      isTrue,
+    );
     final counts = ProviderScope.containerOf(
       tester.element(find.byType(NotificationsScreen)),
     ).read(steamNotificationCountsProvider)[account.steamId];

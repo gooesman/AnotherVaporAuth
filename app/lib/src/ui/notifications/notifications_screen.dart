@@ -384,6 +384,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         (counts) => counts[widget.account.steamId],
       ),
     );
+    final unreadCount = snapshot?.matches(widget.account) == true
+        ? snapshot!.unreadCount
+        : null;
     final requestCount = _requests != null && _listSessions[1] == _session
         ? _requests!.length
         : snapshot?.matches(widget.account) == true
@@ -414,7 +417,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         bottom: TabBar(
           controller: _tabs,
           tabs: [
-            Tab(text: l.notificationsInboxTab),
+            Tab(
+              child: Badge(
+                isLabelVisible: (unreadCount ?? 0) > 0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(l.notificationsInboxTab),
+                ),
+              ),
+            ),
             Tab(
               child: Badge(
                 isLabelVisible: (requestCount ?? 0) > 0,

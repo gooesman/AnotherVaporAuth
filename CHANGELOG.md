@@ -5,6 +5,14 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.20] — 2026-10-28 · Fork
+
+### Fixed
+- The home bell again shows a dot for either unread notifications or pending friend requests. Inside the notification screen, each tab has its own dot so the outstanding item is clear.
+
+### 修复
+- 首页铃铛在有未读通知或待处理好友申请时显示红点；进入通知页后，分别在“通知”和“好友申请”标签旁显示红点，方便分辨待处理内容。
+
 ## [v1.5.19] — 2026-10-28 · Fork
 
 ### Fixed

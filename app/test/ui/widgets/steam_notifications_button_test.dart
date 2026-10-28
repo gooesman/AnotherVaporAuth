@@ -10,48 +10,58 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   for (final compact in [false, true]) {
-    testWidgets('bell only indicates unread notifications (compact=$compact)', (
-      tester,
-    ) async {
-      final account = SteamGuardAccount(
-        session: SessionData(steamId: 1, accessToken: 'fixture'),
-      );
-      final container = ProviderContainer(
-        overrides: [
-          steamNotificationCountsEnabledProvider.overrideWithValue(true),
-        ],
-      );
-      addTearDown(container.dispose);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: SteamNotificationsButton(
-                account: account,
-                compact: compact,
-                onPressed: () {},
+    testWidgets(
+      'bell indicates notifications or friend requests (compact=$compact)',
+      (tester) async {
+        final account = SteamGuardAccount(
+          session: SessionData(steamId: 1, accessToken: 'fixture'),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            steamNotificationCountsEnabledProvider.overrideWithValue(true),
+          ],
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SteamNotificationsButton(
+                  account: account,
+                  compact: compact,
+                  onPressed: () {},
+                ),
               ),
             ),
           ),
-        ),
-      );
-      final controller = container.read(
-        steamNotificationCountsProvider.notifier,
-      );
-      for (final unread in [0, 1, 0]) {
-        controller.recordCounts(
-          account,
-          SteamNotificationCounts(unreadCount: unread, pendingFriendCount: 2),
         );
-        await tester.pump();
-        expect(
-          tester.widget<Badge>(find.byType(Badge)).isLabelVisible,
-          unread > 0,
+        final controller = container.read(
+          steamNotificationCountsProvider.notifier,
         );
-      }
-    });
+        for (final (unread, requests) in [
+          (0, 0),
+          (1, 0),
+          (0, 2),
+          (1, 2),
+          (0, 0),
+        ]) {
+          controller.recordCounts(
+            account,
+            SteamNotificationCounts(
+              unreadCount: unread,
+              pendingFriendCount: requests,
+            ),
+          );
+          await tester.pump();
+          expect(
+            tester.widget<Badge>(find.byType(Badge)).isLabelVisible,
+            unread > 0 || requests > 0,
+          );
+        }
+      },
+    );
   }
 }
