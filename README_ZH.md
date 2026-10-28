@@ -34,10 +34,11 @@ GooeSteamKit 是 **gooesman 独立维护的 Fork**，基于 freefrank 开发的
 
 | 平台 | 本分支下载入口 | 选择的文件 |
 |---|---|---|
-| **Windows x64** | [电脑安装包](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-pc-…-windows-x64-setup.exe` |
+| **Windows x64** | [电脑安装包](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `GooeSteamKit-…-windows-x64-setup.exe` |
 | **Android ARM64** | [手机 APK](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-Fork-…-android-arm64.apk` |
 
-两端应用名称均为 **GooeSteamKit**。安装包保留旧文件名前缀，以兼容早期版本的应用内更新。
+两端应用名称均为 **GooeSteamKit**。Windows 同时提供内容相同的 `AVA-pc-…` 兼容包，供旧版更新器识别；新版优先下载 GooeSteamKit 命名的安装包。
+电脑端更新自动沿用当前安装目录；直接运行安装包时会查找已有安装，新安装默认使用 `Programs\GooeSteamKit`。
 本分支目前发布 Windows 和 Android 安装包。
 
 已安装用户可进入 **设置 → 软件更新**。两端均支持通过第三方 GH-Proxy 线路自动加速下载，
@@ -52,20 +53,25 @@ GooeSteamKit 是 **gooesman 独立维护的 Fork**，基于 freefrank 开发的
 | 功能 | 可以做什么 |
 |---|---|
 | **账户与 Steam 令牌** | 管理多个账户、离线生成验证码、倒计时与复制、导入导出 maFile，记住用户名／昵称／Steam ID 显示偏好。 |
-| **账户概览** | 查看钱包余额、待到账金额和市场状态。电脑端展示概览卡片，手机首页保持令牌与账号列表的简洁布局。 |
-| **电脑端 Steam 登录** | 打开 Steam、切换账户，批准本次已核实的本机登录窗口二维码；也支持手动拖框扫码。 |
-| **好友与交易** | 查看好友、收到和发出的报价，选择双方库存物品、审阅报价并处理交易确认。 |
-| **库存与出售** | 按游戏和库存上下文查看物品，搜索名称、筛选类型与品质，显示淡品质色边框；支持批量上架及在售／暂挂／待确认记录。 |
-| **市场查价** | 按商品、游戏和币种搜索，查看参考价格与物品详情，也可打开对应 Steam 市场页面。 |
+| **账户概览** | 查看钱包余额、待到账金额和市场状态，可选好友、库存及市场收藏预览；在设置或概览的“布局设置”中选择卡片，再调整位置和大小，手机首页保持令牌与账号列表的简洁布局。 |
+| **电脑端 Steam 登录** | 选中已导入账户后，登录与切换按钮均可打开／切换 Steam 并批准本次已核实的本机登录窗口二维码；也支持手动拖框扫码。 |
+| **好友与交易** | 查看好友、同意或拒绝好友申请、收到和发出的报价，选择双方库存物品、审阅报价并处理交易确认。 |
+| **通知与待办数量** | 首页账户行直接显示待确认数量；消息与好友申请按需加载，默认优先显示未读、折叠已读历史。可见的库存通知按需补齐单个物品的名称与缩略图，库存、交易报价和好友申请可进入相应应用内页面，其余类型可进入 Steam 通知中心。支持标为已读或忽略。 |
+| **库存与出售** | 按游戏和库存上下文查看物品，搜索名称、筛选类型与品质，显示淡品质色边框和 Steam 提供的冷却说明；支持批量上架及在售／暂挂／待确认记录。 |
+| **市场查价** | 按商品、游戏和币种搜索，收藏后直接查看所选币种的价格与物品详情，也可打开对应 Steam 市场页面。 |
 | **备用登录码** | 在应用内请求短信、输入验证码并展示 Steam 一次性备用登录码。 |
 | **可选 Steam 加速** | 优先跟随检测到的外部代理，支持用自己的 Clash 订阅作为内置备用线路，并显示当前线路状态。 |
-| **应用锁与同步** | 可选启动 PIN 验证与系统解锁；使用自己的 WebDAV 加密同步账户和设置，可包含加速订阅。 |
+| **应用锁与同步** | 可选启动 PIN 验证与系统解锁；通过 WebDAV 加密同步账户与设置，包含市场收藏、币种和加速订阅，可对比本地／远程后选择上传或拉取。 |
 | **外观与其他工具** | 浅色／深色／跟随系统、皮肤、简洁刷新圆环，以及设备会话管理、Steam 密钥兑换和七种语言。 |
 
 ### 常用操作
 
 - **手机端：** 点按账户切换首页当前令牌，长按直接进入该账户概览，再使用库存、市场、好友或备用码。
-- **电脑端：** 从左侧列表选择账户，通过概览或右键菜单操作；账户行不使用左右滑动操作。
+- **电脑端：** 从左侧列表选择账户，通过首页概览或右键菜单操作；头像不再打开重复的全屏概览，窄窗口仍保留概览菜单入口。账户行不使用左右滑动操作。
+- **概览布局：** 从概览的 **布局设置** 菜单选择 **调整位置与大小**，拖动手柄在网格上移动卡片，拖动右下角调整大小。电脑端可横向、纵向移动并调整宽高，最多三列；手机保持单列，可上下移动和调整高度。遇到其他卡片时会将其向下避让，也可保留空隙；内容超出卡片时在卡片内滚动。完成后从同一菜单选择 **完成调整**。
+- **布局记忆：** 位置和大小保存在本机，一列、两列、三列窗口宽度分别记忆。未保存过的宽度档先按当前空间显示，首次调整后才保存，不覆盖其他宽度档的布局。关闭卡片后再开启仍保留位置和大小；设置页提供卡片开关和 **重置布局**，重置恢复默认排列，不改变已开启的卡片。
+- **复制账户信息：** 电脑右键当前名称，手机长按当前名称，可选择复制 Steam 昵称、登录名或 SteamID；普通点按仍切换并记住名称显示方式。
+- **登录设备：** 核对列表后可撤销其他设备授权，保留当前 GooeSteamKit 会话及验证器；未确认或失败的操作会明确反馈，不静默重试。
 - **启动解锁：** 指纹／Windows Hello 等系统解锁是启动验证的子项；关闭启动验证会同时关闭系统解锁，账户文件仍保持加密。
 
 ### 市场价格与币种
@@ -73,8 +79,27 @@ GooeSteamKit 是 **gooesman 独立维护的 Fork**，基于 freefrank 开发的
 选择游戏、币种，输入商品名称后点击 **搜索市场**，可见商品会自动查询**所选币种的最低在售价**，
 无需逐个点刷新。切换币种后，可见商品会重新查价；物品详情将近期成交中位价与在售价分开展示。
 
+点击结果旁的星标即可收藏。进入 **收藏** 后无需再次搜索，并记住所选币种。
+只有当前可见的商品会加载报价，未显示的收藏不会在后台查价。
+概览可预览前四个收藏的同币种价格，并直接进入完整收藏列表；新增预览卡片默认关闭。
+
 搜索按需发起、结果分页加载、近期报价使用缓存，不持续轮询价格，也不把未经确认的美元搜索价改标成人民币。
 Steam 限流或暂时无法取得报价时，会显示相应状态并提供重试。报价仅供参考，实际交易以 Steam 为准。
+
+库存与交易选物品页面也会显示 Steam 的限制说明。Steam 提供可识别的到期时间时，
+详情按本地时间显示，并在打开时计算剩余时间；没有时间信息时不会按物品类型猜测冷却期。
+
+### 对比与跨设备同步
+
+进入 **设置 → 同步**，**立即同步**把勾选的本地内容上传到远程；**一键拉取**把勾选的远程内容
+下载并合并到本地，保留仅在本地存在的账号和收藏。**高级设置**分别记住上传与拉取的选择：
+账户、应用设置、市场收藏与币种、加速订阅与节点。更改勾选只保存，不会立即开始传输。
+
+连接同步库后先选择传输方向；自动同步可在高级设置中开启，只上传本地改动。
+拉取不会反过来触发自动上传。需要核对差异或处理冲突时，进入 **对比本地与远程**；
+账户秘密与订阅凭据在对比中隐藏，对比过期后必须刷新才能应用。
+市场报价缓存与当前 Steam 登录会话不参与同步。
+详见[同步设计与行为说明][sync-guide]。
 
 ### 可选 Steam 加速
 
@@ -139,6 +164,7 @@ Steam 协议实现参考了 [SteamAuth](https://github.com/geel9/SteamAuth) 与
 [build-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/app/README.md
 [releases-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-releases.md
 [switch-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md
+[sync-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/specs/2026-08-12-config-sync-design.md
 [connectivity]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#optional-steam-connectivity
 [migration]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#android-installation-and-migration
 [privacy]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy-zh.md

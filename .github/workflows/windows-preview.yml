@@ -1,0 +1,341 @@
+name: Windows and Android preview
+
+# Build a downloadable preview for this feature branch or on request. It never
+# creates a Release, installs the app, or contacts the upstream deployment.
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/windows-steam-account-switch]
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.44.4'
+  FLUTTER_SUPPRESS_ANALYTICS: 'true'
+  PUB_CACHE: ${{ github.workspace }}/.pub-cache
+
+jobs:
+  windows-preview:
+    name: Check and build Windows preview
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2  # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Restore locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Read shared preview version
+        run: |
+          $version = [regex]::Match((Get-Content -Raw pubspec.yaml), '(?m)^version:\s*(\d+\.\d+\.\d+)(?:\+\d+)?\s*$')
+          if (-not $version.Success) { throw 'Expected a three-part version in app/pubspec.yaml' }
+          $semver = $version.Groups[1].Value
+          if (($semver.Split('.') | Where-Object { [long]$_ -gt 65535 }).Count) { throw 'Version exceeds Windows resource limits' }
+          "AVA_VERSION=$semver" >> $env:GITHUB_ENV
+          "AVA_BUILD_NUMBER=$([long]$env:GITHUB_RUN_NUMBER + 100000)" >> $env:GITHUB_ENV
+
+      - name: Build and run Windows native regressions
+        run: |
+          # Use the same pinned release engine and wrapper that Flutter stages
+          # into ephemeral, so native failures surface before full app packaging.
+          flutter precache --windows
+          if ($LASTEXITCODE -ne 0) { throw 'Windows engine cache preparation failed' }
+          $engine = (Resolve-Path (Join-Path $env:FLUTTER_ROOT 'bin/cache/artifacts/engine/windows-x64-release')).Path
+          $wrapper = (Resolve-Path (Join-Path $env:FLUTTER_ROOT 'bin/cache/artifacts/engine/windows-x64/cpp_client_wrapper/include')).Path
+          cmake -S test/native -B build/native-tests -A x64 "-DFLUTTER_ENGINE_DIR=$engine" "-DFLUTTER_WRAPPER_INCLUDE_DIR=$wrapper"
+          if ($LASTEXITCODE -ne 0) { throw 'Native test configuration failed' }
+          cmake --build build/native-tests --config Release
+          if ($LASTEXITCODE -ne 0) { throw 'Native test build failed' }
+          ctest --test-dir build/native-tests -C Release --output-on-failure --output-junit native-results.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Native regression tests failed' }
+
+      - name: Upload isolated Windows regression harnesses
+        if: ${{ always() && hashFiles('app/build/native-tests/Release/*.exe') != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-windows-native-tests-${{ github.sha }}
+          path: |
+            app/build/native-tests/Release/*.exe
+            app/build/native-tests/Release/*.dll
+            app/build/native-tests/native-results.xml
+            app/build/native-tests/Testing/Temporary/LastTest.log
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Test
+        run: flutter test --no-pub
+
+      - name: Clean before packaging
+        run: flutter clean
+
+      - name: Restore locked dependencies after cleaning
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build Windows release
+        run: flutter build windows --release --build-name=$env:AVA_VERSION --build-number=$env:AVA_BUILD_NUMBER --no-pub
+
+      - name: Verify packaged shortcut icon
+        run: |
+          $iconHash = (Get-FileHash windows/runner/resources/app_icon.ico -Algorithm SHA256).Hash.ToLowerInvariant()
+          $icons = @(Get-ChildItem build/windows/x64/runner/Release -File -Filter 'gooesteamkit-icon-*.ico')
+          if ($icons.Count -ne 1 -or $icons[0].Name -cne "gooesteamkit-icon-$iconHash.ico") { throw 'Missing or stale independent shortcut icon' }
+          if ((Get-FileHash $icons[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant() -cne $iconHash) { throw 'Packaged shortcut icon differs from the application artwork' }
+
+      - name: Include optional component notices
+        run: |
+          New-Item -ItemType Directory -Force build/windows/x64/runner/Release/third_party/mihomo | Out-Null
+          Copy-Item ../third_party/mihomo/* build/windows/x64/runner/Release/third_party/mihomo/
+
+      # GitHub packages this complete directory as a downloadable ZIP.
+      # Keep the DLLs and data directory alongside ava.exe after extracting.
+      - name: Upload Windows preview
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: AVA-windows-preview-${{ github.sha }}
+          path: app/build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Embed Windows payload
+        working-directory: .
+        run: |
+          $identity = (Get-Item app/build/windows/x64/runner/Release/ava.exe).VersionInfo
+          if ($identity.CompanyName -ne 'dotslash.pro' -or $identity.ProductName -ne 'AVA' -or $identity.FileDescription -ne 'GooeSteamKit') { throw 'App resource identity must preserve the existing account data directory' }
+          $actual = $identity.ProductVersion
+          if ($actual -ne "$env:AVA_VERSION+$env:AVA_BUILD_NUMBER") { throw "Unexpected app version: $actual" }
+          Compress-Archive -Path app/build/windows/x64/runner/Release/* -DestinationPath installer/assets/payload.zip -Force
+          if ((Get-Item installer/assets/payload.zip).Length -lt 10MB) { throw 'Refusing a placeholder installer payload' }
+
+      - name: Check and build installer app
+        working-directory: installer
+        run: |
+          flutter pub get --enforce-lockfile
+          if ($LASTEXITCODE -ne 0) { throw 'Installer dependencies failed' }
+          flutter analyze --no-pub
+          if ($LASTEXITCODE -ne 0) { throw 'Installer analysis failed' }
+          flutter test --no-pub
+          if ($LASTEXITCODE -ne 0) { throw 'Installer tests failed' }
+          flutter clean
+          if ($LASTEXITCODE -ne 0) { throw 'Installer clean failed' }
+          flutter pub get --enforce-lockfile
+          if ($LASTEXITCODE -ne 0) { throw 'Installer dependencies failed after clean' }
+          flutter build windows --release --no-pub "--dart-define=AVA_VERSION=$env:AVA_VERSION+$env:AVA_BUILD_NUMBER"
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+
+      - name: Install NSIS
+        run: |
+          choco install nsis --version=3.12.0 -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "NSIS installation failed: $LASTEXITCODE" }
+
+      - name: Pack setup and record provenance
+        working-directory: .
+        run: |
+          $src = (Resolve-Path installer/build/windows/x64/runner/Release).Path
+          $name = "GooeSteamKit-v$env:AVA_VERSION+$env:AVA_BUILD_NUMBER-windows-x64-setup.exe"
+          $out = Join-Path (Get-Location).Path $name
+          $ico = (Resolve-Path app/windows/runner/resources/app_icon.ico).Path
+          $makensis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
+          foreach ($candidate in @("${env:ProgramFiles(x86)}\NSIS\makensis.exe", "${env:ProgramFiles}\NSIS\makensis.exe")) {
+            if (-not $makensis -and (Test-Path -LiteralPath $candidate)) { $makensis = $candidate }
+          }
+          if (-not $makensis) { throw 'makensis not found' }
+          & $makensis /INPUTCHARSET UTF8 /V2 "/DSRCDIR=$src" "/DOUTFILE=$out" "/DICONFILE=$ico" "/DAPPVER=$env:AVA_VERSION" tool/setup.nsi
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $out)) { throw 'Setup packaging failed' }
+          @{
+            schema = 1; repository = $env:GITHUB_REPOSITORY
+            workflow = '.github/workflows/windows-preview.yml'
+            run_id = [long]$env:GITHUB_RUN_ID; run_number = [long]$env:GITHUB_RUN_NUMBER
+            run_attempt = [long]$env:GITHUB_RUN_ATTEMPT; commit = $env:GITHUB_SHA
+            version = $env:AVA_VERSION; build = [long]$env:AVA_BUILD_NUMBER
+            platform = 'windows-x64'; file = $name
+            size = (Get-Item -LiteralPath $out).Length
+            sha256 = (Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToLowerInvariant()
+          } | ConvertTo-Json | Set-Content -LiteralPath windows-preview.json -Encoding utf8
+
+      - name: Verify installed-directory upgrades and branding
+        working-directory: .
+        run: ./tool/test_windows_setup.ps1 -Setup "GooeSteamKit-v$env:AVA_VERSION+$env:AVA_BUILD_NUMBER-windows-x64-setup.exe" -PayloadDirectory app/build/windows/x64/runner/Release
+
+      - name: Upload Windows installer preview
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-windows-installer-preview-${{ github.sha }}
+          path: |
+            GooeSteamKit-v*-windows-x64-setup.exe
+            windows-preview.json
+          if-no-files-found: error
+          retention-days: 14
+
+  android-preview:
+    name: Build Android preview (GooeSteamKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ORG_GRADLE_PROJECT_avaForkPreview: 'true'
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - name: Use runner Java 17
+        run: flutter config --jdk-dir "$JAVA_HOME_17_X64"
+      - name: Clean before packaging
+        run: flutter clean
+      - name: Restore locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Prepare private fork signing
+        env:
+          AVA_FORK_KEYSTORE_B64: ${{ secrets.AVA_FORK_KEYSTORE_B64 }}
+          AVA_FORK_KEYSTORE_PASSWORD: ${{ secrets.AVA_FORK_KEYSTORE_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+          encoded = os.environ.get('AVA_FORK_KEYSTORE_B64', '')
+          password = os.environ.get('AVA_FORK_KEYSTORE_PASSWORD', '')
+          if not encoded or not password or any(c in password for c in '\r\n\\'):
+              raise SystemExit('Private fork signing secrets are missing or invalid')
+          keystore = Path(os.environ['RUNNER_TEMP']) / 'ava-fork.p12'
+          keystore.write_bytes(base64.b64decode(encoded, validate=True))
+          keystore.chmod(0o600)
+          properties = Path('android/key.properties')
+          properties.write_text(f'storeFile={keystore.as_posix()}\nstorePassword={password}\nkeyAlias=ava-fork\nkeyPassword={password}\nstoreType=PKCS12\n')
+          properties.chmod(0o600)
+          print('Private fork signing configured')
+          PY
+      - name: Stage verified optional Steam acceleration component and source
+        run: python3 ../tool/prepare_steam_core.py --android --source-output ../dist/core-source
+
+      - name: Build side-by-side Android preview
+        # Fork preview uses its own fixed signing key, package and label. It
+        # keeps production AVA and older randomly signed AVA dev data intact.
+        # AOT release mode removes debug/JIT overhead while retaining the
+        # existing fork package and signing key for in-place upgrades.
+        run: flutter build apk --release --flavor cn --dart-define=AVA_CHANNEL=cn --target-platform android-arm64 --build-number=$((100000 + GITHUB_RUN_NUMBER)) --no-pub
+
+      - name: Verify unchanged packaged Steam acceleration component
+        run: python3 ../tool/prepare_steam_core.py --verify-apk build/app/outputs/flutter-apk/app-cn-release.apk
+      - name: Verify isolated package identity
+        run: |
+          set -o pipefail
+          APK=build/app/outputs/flutter-apk/app-cn-release.apk
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$APK" | grep -Fx 'pro.dotslash.ava.fork'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK" > "$RUNNER_TEMP/ava-preview-manifest.xml"
+          python3 - "$RUNNER_TEMP/ava-preview-manifest.xml" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          ns = '{http://schemas.android.com/apk/res/android}'
+          manifest = ET.parse(sys.argv[1])
+          activities = manifest.findall('application/activity')
+          main = [a for a in activities if a.get(ns + 'name', '').endswith('.MainActivity')]
+          assert len(main) == 1 and main[0].get(ns + 'enableOnBackInvokedCallback') == 'false', 'Predictive back preview must be disabled'
+          aliases = {a.get(ns + 'name', '').rsplit('.', 1)[-1]: a for a in manifest.findall('application/activity-alias')}
+          assert set(aliases) == {'LauncherNeon', 'LauncherPixel'}, 'Existing launcher aliases must remain available for upgrades'
+          assert aliases['LauncherNeon'].get(ns + 'enabled') == 'true'
+          assert aliases['LauncherPixel'].get(ns + 'enabled') == 'false'
+          assert all(a.get(ns + 'label') for a in aliases.values()), 'Both aliases need the compact launcher label'
+          print('Verified: system predictive back preview is disabled')
+          PY
+          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | grep -Fx "application-label:'GooeSteamKit'"
+          # aapt badging does not reliably enumerate launcher activity aliases.
+          # Resolve both labels and adaptive icon resources from the actual APK.
+          python3 ../tool/verify_android_launcher.py "$APK"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1 | tee "$RUNNER_TEMP/ava-preview-signature.txt"
+          python3 - "$RUNNER_TEMP/ava-preview-signature.txt" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+          lines = Path(sys.argv[1]).read_text().splitlines()
+          assert 'Number of signers: 1' in lines, 'Expected exactly one APK signer'
+          pattern = re.compile(r'^(?:Signer #\d+|V\d+(?:\.\d+)? Signer):? certificate SHA-256 digest: ([0-9a-fA-F]{64})$')
+          digests = {match.group(1).lower() for line in lines if (match := pattern.fullmatch(line))}
+          expected = 'a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f'
+          assert digests == {expected}, 'APK certificate does not match the fixed fork signing identity'
+          print('Verified: exactly one signer with the fixed fork certificate')
+          PY
+          sha256sum "$APK"
+      - name: Verify cn preview excludes ads and billing
+        # R8 rewrites class names: its original-name mapping is authoritative.
+        run: |
+          APK=build/app/outputs/flutter-apk/app-cn-release.apk
+          python3 ../tool/verify_android_release.py --apk "$APK" --manifest "$RUNNER_TEMP/ava-preview-manifest.xml" --mapping build/app/outputs/mapping/cnRelease/mapping.txt
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" dex packages --defined-only "$APK" > "$RUNNER_TEMP/ava-preview-dex.txt"
+          if grep -E 'com[.]google[.]android[.]gms[.]ads([.]|[[:space:]]|$)|com[.]android[.]billingclient([.]|[[:space:]]|$)|com[.]google[.]android[.]ump([.]|[[:space:]]|$)' "$RUNNER_TEMP/ava-preview-dex.txt"; then
+            echo 'Unexpected ads or billing code in cn preview'
+            exit 1
+          fi
+      - name: Record Android provenance
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+          match = re.search(r'^version:\s*(\d+\.\d+\.\d+)(?:\+\d+)?\s*$', Path('pubspec.yaml').read_text(), re.M)
+          if not match:
+              raise SystemExit('Expected a three-part version in app/pubspec.yaml')
+          version = match[1]
+          build = 100000 + int(os.environ['GITHUB_RUN_NUMBER'])
+          apk = Path('build/app/outputs/flutter-apk/app-cn-release.apk')
+          analyzer = Path(os.environ['ANDROID_HOME']) / 'cmdline-tools/latest/bin/apkanalyzer'
+          actual_build = subprocess.check_output([str(analyzer), 'manifest', 'version-code', str(apk)], text=True).strip()
+          actual_version = subprocess.check_output([str(analyzer), 'manifest', 'version-name', str(apk)], text=True).strip()
+          if actual_build != str(build) or actual_version != version + '-fork':
+              raise SystemExit('APK version does not match the shared preview version')
+          metadata = {
+              'schema': 1, 'repository': os.environ['GITHUB_REPOSITORY'],
+              'workflow': '.github/workflows/windows-preview.yml',
+              'run_id': int(os.environ['GITHUB_RUN_ID']), 'run_number': int(os.environ['GITHUB_RUN_NUMBER']),
+              'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'commit': os.environ['GITHUB_SHA'],
+              'version': version, 'build': build, 'platform': 'android-arm64', 'file': apk.name,
+              'build_mode': 'release',
+              'size': apk.stat().st_size, 'sha256': hashlib.file_digest(apk.open('rb'), 'sha256').hexdigest(),
+              'package': 'pro.dotslash.ava.fork',
+              'signer_sha256': 'a6f42083bc64974ddd82120735a85259cb8751cd22134d6255e5f621e93aec3f',
+          }
+          apk.with_name('android-preview.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          PY
+      - name: Upload Android preview
+        # Keep Gradle's release APK filename in the artifact; promotion gives
+        # it the strict versioned asset name used by the in-app updater.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-android-preview-${{ github.sha }}
+          path: |
+            app/build/app/outputs/flutter-apk/app-cn-release.apk
+            app/build/app/outputs/flutter-apk/android-preview.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload corresponding component source and notices
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: AVA-steam-core-source-${{ github.sha }}
+          path: dist/core-source/*
+          if-no-files-found: error
+          retention-days: 14

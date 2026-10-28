@@ -25,6 +25,12 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  steam_client_bridge_ = std::make_unique<SteamClientBridge>(
+      flutter_controller_->engine()->messenger());
+  steam_acceleration_bridge_ = std::make_unique<SteamAccelerationBridge>(
+      flutter_controller_->engine()->messenger());
+  screen_qr_capture_ = std::make_unique<ScreenQrCapture>(
+      flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -40,6 +46,9 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  screen_qr_capture_.reset();
+  steam_acceleration_bridge_.reset();
+  steam_client_bridge_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }

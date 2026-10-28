@@ -3,4 +3,6 @@
     <!-- AVA's dark app background — used for the launch window so there is no
          white flash before the Flutter UI draws. -->
     <color name="ava_launch_bg">#FF06060F</color>
+    <!-- Full-bleed adaptive background; the launcher supplies its own mask. -->
+    <color name="gooes_launcher_background">#FF202020</color>
 </resources>

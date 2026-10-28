@@ -24,6 +24,7 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
   String? _error;
   int _shake = 0;
   bool _canBio = false;
+  bool _authenticating = false;
 
   @override
   void initState() {
@@ -40,41 +41,70 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
   }
 
   Future<void> _maybeBiometric() async {
-    final bio = ref.read(biometricUnlockProvider);
-    final enabled = (await bio.isEnabled) && (await bio.isSupported);
+    final enabled = await _biometricsAllowed();
     if (!mounted) return;
     setState(() => _canBio = enabled);
-    if (enabled) _biometricUnlock();
+    if (enabled && !ref.read(appControllerProvider.notifier).manuallyLocked) {
+      _biometricUnlock();
+    }
+  }
+
+  Future<bool> _biometricsAllowed() async {
+    final startup = ref.read(startupUnlockProvider);
+    final bio = ref.read(biometricUnlockProvider);
+    // Read the stored policy again, including for explicit/manual unlock.
+    // Older releases could leave a biometric credential while this was off.
+    return await startup.verificationRequired &&
+        await bio.isEnabled &&
+        await bio.isSupported;
   }
 
   Future<void> _biometricUnlock() async {
+    if (_busy || _authenticating) return;
     final l = AppLocalizations.of(context);
-    final passKey =
-        await ref.read(biometricUnlockProvider).unlock(l.unlockBiometricReason);
-    if (!mounted || passKey == null) return;
-    // Show the themed loading state while the DEK is unwrapped + accounts decrypt.
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    final ok = await ref.read(appControllerProvider.notifier).unlock(passKey);
-    if (!mounted || ok) return;
-    setState(() {
-      _busy = false;
-      _error = l.unlockInvalid;
-      _shake++;
-    });
+    final bio = ref.read(biometricUnlockProvider);
+    final startup = ref.read(startupUnlockProvider);
+    setState(() => _authenticating = true);
+    try {
+      if (!await _biometricsAllowed()) {
+        if (mounted) setState(() => _canBio = false);
+        return;
+      }
+      if (!mounted) return;
+      final passKey = await bio.unlock(l.unlockBiometricReason);
+      final stillRequired = await startup.verificationRequired;
+      if (!mounted) return;
+      if (!stillRequired) {
+        setState(() => _canBio = false);
+        return;
+      }
+      if (passKey == null) return;
+      // Show the themed loading state only while the vault is being opened.
+      setState(() {
+        _busy = true;
+        _error = null;
+      });
+      final ok = await ref.read(appControllerProvider.notifier).unlock(passKey);
+      if (!mounted || ok) return;
+      setState(() {
+        _busy = false;
+        _error = l.unlockInvalid;
+        _shake++;
+      });
+    } finally {
+      if (mounted) setState(() => _authenticating = false);
+    }
   }
 
   Future<void> _submit() async {
-    if (_busy || _controller.text.length < 6) return;
+    if (_busy || _authenticating || _controller.text.length < 6) return;
     setState(() {
       _busy = true;
       _error = null;
     });
-    final ok = await ref.read(appControllerProvider.notifier).unlock(
-          _controller.text,
-        );
+    final ok = await ref
+        .read(appControllerProvider.notifier)
+        .unlock(_controller.text);
     if (!mounted) return;
     if (!ok) {
       _controller.clear(); // let the user retype (and re-trigger auto-submit)
@@ -96,14 +126,17 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
         content: Text(l.resetVaultBody),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l.commonCancel)),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.commonCancel),
+          ),
           FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: t.bad,
-                  foregroundColor: const Color(0xFF06060F)),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l.resetVaultConfirm)),
+            style: FilledButton.styleFrom(
+              backgroundColor: t.bad,
+              foregroundColor: const Color(0xFF06060F),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.resetVaultConfirm),
+          ),
         ],
       ),
     );
@@ -156,14 +189,16 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: _busy ? null : _submit,
+                      onPressed: _busy || _authenticating ? null : _submit,
                       child: Text(l.unlockButton),
                     ),
                   ),
                   if (_canBio) ...[
                     SizedBox(height: context.r(12)),
                     OutlinedButton.icon(
-                      onPressed: _busy ? null : _biometricUnlock,
+                      onPressed: _busy || _authenticating
+                          ? null
+                          : _biometricUnlock,
                       icon: const Icon(Icons.fingerprint),
                       label: Text(l.unlockWithBiometric),
                     ),
@@ -174,13 +209,11 @@ class _UnlockScreenState extends ConsumerState<UnlockScreen> {
                   // original device) — without this, the only way out is
                   // clearing app data from system settings.
                   TextButton(
-                    onPressed: _busy ? null : _confirmReset,
+                    onPressed: _busy || _authenticating ? null : _confirmReset,
                     child: Text(
                       l.unlockCantUnlock,
                       style: TextStyle(
-                        color: Theme.of(context)
-                            .extension<AvaTokens>()!
-                            .muted,
+                        color: Theme.of(context).extension<AvaTokens>()!.muted,
                         fontSize: context.r(12.5),
                       ),
                     ),
@@ -211,8 +244,7 @@ class _UnlockLoading extends ConsumerWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-              child: const SkinAmbient()),
+          Positioned.fill(child: const SkinAmbient()),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,

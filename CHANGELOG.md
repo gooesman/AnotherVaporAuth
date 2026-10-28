@@ -1,9 +1,311 @@
 # Changelog · 更新日志
 
-All notable changes to **AVA (AnotherVaporAuth)**. Each version has an English
+All notable changes to **GooeSteamKit**, based on AVA (AnotherVaporAuth). Each version has an English
 block followed by a 中文 block. The format follows
-[Keep a Changelog](https://keepachangelog.com/); `v*` tags (e.g. `v1.4.0`)
-trigger automated releases.
+[Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
+preview builds through its [manual release process](docs/fork-releases.md).
+
+## [v1.5.20] — 2026-10-28 · Fork
+
+### Fixed
+- The home bell again shows a dot for either unread notifications or pending friend requests. Inside the notification screen, each tab has its own dot so the outstanding item is clear.
+
+### 修复
+- 首页铃铛在有未读通知或待处理好友申请时显示红点；进入通知页后，分别在“通知”和“好友申请”标签旁显示红点，方便分辨待处理内容。
+
+## [v1.5.19] — 2026-10-28 · Fork
+
+### Fixed
+- The home notification dot now indicates unread notifications only. Pending friend requests have their own dot beside the Friend requests tab, so reading all notifications clears the home dot without accepting or dismissing invitations.
+- Loading or responding to friend requests updates their shared count directly from the refreshed list, without an extra counter request. Older in-flight reads cannot restore a cleared count.
+
+### 修复
+- 首页通知红点只表示未读通知；好友申请在通知页的“好友申请”标签旁单独显示红点。通知全部已读后首页红点消失，不会自动同意或忽略好友申请。
+- 查看、同意或拒绝好友申请后，从刷新后的列表更新计数，全部处理完即清除申请红点，不增加额外计数请求；旧请求不能把已清除的计数写回来。
+
+## [v1.5.18] — 2026-10-23 · Fork
+
+### Changed
+- Sync now uploads selected local content; Pull now downloads and merges selected remote content while preserving local-only accounts and favorites. Advanced settings saves separate selections for accounts, app preferences, market favorites/currency and acceleration subscriptions/nodes.
+- Changing selections only saves preferences. New connections wait for an explicit transfer direction; optional automatic uploads send local changes and do not echo pulled data back to the server. Concurrent edits remain available for comparison.
+- Sync status reports completed item counts and failures, including settings conflicts at the settings entry. Unselected subscription credentials are not read when transferring other categories.
+
+### 调整
+- 同步首页提供“立即同步”和“一键拉取”：前者只上传勾选的本地内容，后者只下载并合并远端内容，保留本地独有账号和收藏。高级设置分别记住账户、应用设置、市场收藏／币种、加速订阅／节点的上传与拉取选择。
+- 更改勾选只保存；首次连接后明确选择传输方向。可选自动上传只处理本地改动，拉取不会反过来触发上传，两端同时改动时保留冲突供对比。
+- 显示已完成项目数与失败提示，设置入口补充设置冲突；未勾选订阅时不读取订阅凭据，避免拖累其他项目。
+
+## [v1.5.17] — 2026-10-23 · Fork
+
+### Fixed
+- Windows updates reuse the running application's directory. Standalone setup discovers registered installations and the legacy default location; fresh installs default to `Programs\GooeSteamKit`. Invalid explicit update targets fail visibly instead of installing a second copy elsewhere.
+- Windows packages use the GooeSteamKit filename. A byte-identical AVA-pc compatibility alias keeps updates available to older clients; new clients prefer the branded package and verify its digest. Existing account storage and shortcuts remain compatible.
+- Registered installation paths and shortcut targets retain Unicode characters, including characters outside the Windows system code page.
+
+### 修复
+- 电脑端更新沿用当前程序所在目录；直接运行安装包会查找已登记位置与旧版默认目录，新安装默认使用 `Programs\GooeSteamKit`。明确指定的更新目录无效时显示错误，避免静默装到另一处。
+- Windows 主安装包统一使用 GooeSteamKit 文件名；同时提供内容相同的 AVA-pc 兼容包，保证旧客户端仍能找到更新。新版优先下载新名称并校验文件，保留原有账户存储与快捷方式兼容。
+- 修复安装目录与快捷方式的字符兼容问题，中文及系统代码页之外的特殊字符也能正确保留。
+
+## [v1.5.16] — 2026-10-15 · Fork
+
+### Changed
+- Overview cards move to grid positions and resize in width and height on desktop, with collision avoidance and optional gaps. Phone overviews remain single-column with vertical movement and height adjustment; overflowing content scrolls inside the card.
+- Enter and finish adjustment from the existing Overview layout menu. Settings keeps card visibility and reset controls with a hint to the overview; reset preserves enabled cards.
+- Remember positions and sizes locally for each one-, two- or three-column window width. Narrowing a window preserves wider layouts, hidden cards keep their layout, and editing reuses card state.
+- Request favorite prices only while a row is visible in both the resized card and the surrounding page; stop pending quotes when either viewport hides it.
+
+### 调整
+- 电脑概览卡片可在网格上移动位置并调整宽高，自动避让且可保留空隙；手机概览保持单列，可上下移动并调整高度，超出内容在卡片内滚动。
+- 统一从原有“布局设置”菜单进入和完成调整；设置页保留卡片开关、重置及操作提示，重置不改变已开启的卡片。
+- 一列、两列、三列窗口宽度分别在本机记忆位置和大小；缩窄不覆盖宽窗口布局，隐藏卡片保留布局，调整时复用已有数据状态。
+- 收藏价格仅在商品同时出现在卡片与页面可见区域时获取；卡片缩小或页面滚动遮住商品后，停止等待中的报价请求。
+
+## [v1.5.15] — 2026-10-15 · Fork
+
+### Added
+- Arrange all overview cards with drag handles in Edit layout. Desktop card widths snap to columns; heights follow content. Phone overviews remain a single column with reorder support.
+- Keep card order and widths locally across restarts and visibility changes. Settings also support reordering, desktop width choices and resetting the layout without changing enabled cards.
+
+### 新增
+- 概览进入“编辑布局”后可拖动所有卡片排序，电脑端可拖动卡片宽度并自动对齐；高度随内容变化，手机概览保持单列并支持排序。
+- 卡片顺序和宽度在本机记忆，重启或关闭后重新开启均保留。设置中也可排序、选择电脑端宽度，重置布局不改变已开启的卡片。
+
+## [v1.5.14] — 2026-10-15 · Fork
+
+### Added
+- Optional account-overview cards for friends, inventory contexts and market favorites. Preview up to four entries, see online counts, open the matching inventory, and view favorites' lowest asking prices in the saved currency.
+- Choose overview cards in Settings or the existing tune menu. New cards are off by default; previous selections are preserved and phone home remains compact.
+
+### Changed
+- Summary reads use bounded session caches; inventory previews fetch no item pages. Favorite quotes load only for visible rows, serially with a short cache. Covering, locking or backgrounding the overview cancels its reads.
+
+### 新增
+- 账户概览可开启好友、库存分区与市场收藏卡片，最多预览四项；查看在线人数、进入对应库存，并按已选币种显示收藏商品最低在售价。
+- 设置及概览右上角均可分别选择卡片；新增卡片默认关闭，保留原有选择，手机首页仍保持简洁。
+
+### 调整
+- 摘要复用有界会话缓存，库存预览不加载物品页；收藏只为可见商品串行查价并使用短缓存。离开概览、锁定或进入后台时取消相应请求。
+
+## [v1.5.13] — 2026-10-14 · Fork
+
+### Fixed
+- Inventory notifications now request metadata for the visible notification's exact item and show its name, thumbnail and game instead of only a generic category. Requests are serialized, cached per session/language and cancelled offscreen; unavailable historical items keep an explicit unavailable state without scanning the inventory or loading prices.
+- Notifications show unread items first, newest first, with read history collapsed by default. Comments and account messages use Steam's type-specific body fields. Inventory, trade and friend notifications open the corresponding in-app view; inventory links select the matching game/context.
+
+### 修复
+- 库存通知按可见通知中的确切物品补齐名称、小图和游戏，不再只显示通用分类。请求串行限速、按会话与语言缓存，离屏即取消；旧物品详情无法取得时明确显示不可用，不扫描整个库存或加载市场价格。
+- 通知默认优先显示未读及最新消息，已读历史默认折叠；评论与账户消息按 Steam 对应字段展示正文。库存、报价和好友通知进入应用内对应功能，库存入口选中相应游戏与库存分区。
+
+## [v1.5.12] — 2026-10-14 · Fork
+
+### Added
+- Home account rows and the desktop pending action show confirmation counts. Notification and friend-request indicators use a shared, infrequently refreshed memory cache; hidden or locked screens cancel queued and in-flight count reads. Failed reads retain an explicitly stale or unknown value.
+- Steam notifications and incoming friend requests load on demand. Mark the displayed notification list as read, read or ignore individual notifications, and accept or decline incoming friend requests. Unsupported notification content opens Steam's notification center; declining a request does not block its sender. Uncertain writes require a refresh before retrying.
+- Right-click the selected account name on desktop or hold it on mobile to copy its Steam nickname, login name or SteamID. Ordinary taps still cycle the remembered name display.
+- Revoke other device authorizations together after reviewing the list, preserving the identified current GooeSteamKit session and Steam authenticator. Results are checked against a refreshed device list; partial failures are shown separately.
+
+### Changed
+- Desktop avatars no longer open a full-screen duplicate of the inline account overview. Narrow desktop windows keep an overview menu entry; mobile account long-press still opens its overview.
+
+### 新增
+- 首页账户行和电脑端待办按钮显示待确认数量；通知与好友申请提示共用低频内存缓存，隐藏或锁定时取消排队及在途计数请求。读取失败明确显示过期或未知状态。
+- Steam 通知与收到的好友申请按需加载；可将当前通知列表一键已读、单条已读或忽略，以及同意或拒绝好友申请。不支持的通知正文可进入 Steam 通知中心查看；拒绝申请不会屏蔽对方，写入结果未确认时需先刷新核对。
+- 电脑右键当前名称、手机长按当前名称可复制 Steam 昵称、登录名或 SteamID；普通点按仍切换并记住名称显示方式。
+- 登录设备可在核对列表后批量撤销其他授权，保留已识别的当前 GooeSteamKit 会话与 Steam 验证器；刷新设备列表核实结果，分别显示部分失败。
+
+### 调整
+- 电脑头像不再打开与首页重复的全屏账户概览；窄窗口仍保留概览菜单入口，手机长按账户进入概览的行为保持不变。
+
+## [v1.5.11] — 2026-10-14 · Fork
+
+### Added
+- Inventory and trade selection show Steam's cooldown notices, with local unlock times and remaining duration when Steam supplies a definite date. Restricted items remain visible but cannot be selected for trading.
+- Market favorites reopen without searching and load visible-item quotes in the saved currency. Favorites and the currency join encrypted app-settings sync alongside acceleration subscriptions; cached prices are not synchronized.
+- Sync comparison shows local/remote field differences and version relationships, with per-account or settings-document upload/pull actions. Concurrent settings edits wait for a choice, changed previews must be refreshed, and private values stay hidden.
+
+### Fixed
+- Both Windows account selectors now share the selected SteamID. Switching an imported account uses the same Steam launch, verified local QR approval and final account check as the one-action login button.
+- Explicitly cleared synchronized account fields replace old local values while device sessions and fields omitted by older clients are retained. Failed comparison commits do not overwrite the remote SDA manifest.
+
+### 新增
+- 库存与交易选物显示 Steam 提供的冷却说明；有明确截止日期时显示本机时间与剩余时长。受限物品仍可查看，但不能选入交易。
+- 市场收藏无需重新搜索，打开后按保存的币种加载可见商品报价。收藏与币种和加速订阅一同加入加密设置同步，不同步缓存价格。
+- 同步页显示两端字段差异和版本关系，可按账户或设置文档选择上传／拉取；设置双端改动等待选择，过期对比须刷新，敏感值隐藏。
+
+### 修复
+- Windows 两处账户选择共用同一 SteamID；已导入账户的切换按钮接入启动 Steam、批准核验后的本机二维码及最终账号确认流程。
+- 拉取时远程明确清空的账户字段覆盖旧值，同时保留本机会话与旧版本未携带的字段；对比上传提交失败时不覆盖远端 SDA 清单。
+
+## [v1.5.10] — 2026-10-13 · Fork
+
+### Fixed
+- Market search now automatically loads the lowest asking price in the selected currency for visible items and item details, instead of showing the search endpoint's default-dollar quotes. Reads are spaced, cached and cancelled when hidden; failed prices stay unavailable and can be retried. Recent-sale medians remain separate.
+- Windows screen QR scans no longer report failure after successfully decoding a selection: working pixels are copied before clearing the engine's read-only reply. This also fixes automatic desktop login QR decoding.
+- Steam opens before the online session check for one-click sign-in. A separate **Open Steam** button works without an imported account; launch and settings-access failures retain safe, actionable diagnostics.
+- Windows switch backups request the read-security permission needed to apply their protected access rules, fixing an access-denied failure before Steam could launch. Backup access remains restricted to the current user and SYSTEM.
+- Screen selection waits for the app's hide transition to finish and composes the dimmed overlay offscreen before presenting it, avoiding app ghosts and intermediate flashes while dragging. Busy, changed-display and oversized-selection errors are distinguished.
+
+### 修复
+- 市场列表和商品详情自动按所选币种加载最低在售价，不再直接显示搜索接口默认返回的美元报价，也不以最近成交中位价替代。查价限速、缓存并在离页时取消；失败不回退错误币种，可手动重试。
+- 修复 Windows 框选二维码完成后误报失败：先复制系统只读截图，再清理解码工作内存；一键登录的二维码解码同步修复。
+- 一键登录先打开本机 Steam，再检查在线会话。新增无需导入账号的独立“打开 Steam”按钮，启动及设置读写失败显示具体阶段与安全诊断信息。
+- 修复切号备份目录设置权限时因缺少读取安全信息权限而被 Windows 拒绝、导致 Steam 尚未启动便中断的问题；备份仍仅限当前用户与 SYSTEM 访问。
+- 框选前等待主程序隐藏完成，遮罩和选区先在内存合成再统一显示，避免主程序残影与拖动闪烁；区分截图占用、屏幕变化和选区过大等错误。
+
+## [v1.5.9] — 2026-10-13 · Fork
+
+### Added
+- One Windows action opens or switches Steam to the selected account and submits approval for a QR challenge read twice from the same verified local Steam login window. It never approves unrelated pending requests, and confirms the selected account using the client's current local identity. Manual QR selection remains available when automatic recognition cannot be verified.
+
+### Changed
+- External HTTP proxies and VPN/tunnel routes take priority even without an internal subscription. Once enabled, automatic switching resumes the built-in route after the external route closes; the startup preference remains local to each device. The home status names the current route separately from Steam connectivity.
+- Local environment checks run every five seconds while the app is visible and pause while hidden. Stable checks do not rebuild the UI; new requests use a fresh connection pool after route changes, without replaying an in-flight trade or login approval.
+
+### Fixed
+- Stopped external Windows tunnels with only local interface routes no longer prevent built-in fallback. Unknown or unresolved system proxy settings remain clearly identified, and component failures do not trigger repeated automatic restarts.
+
+### 新增
+- Windows 一次操作即可打开或切换到所选 Steam 账号，并批准从同一个已核验本机 Steam 登录窗口两次读取的二维码请求。不批准其他待处理请求，以客户端当前本机身份核对账号；无法确认自动识别时保留手动框选扫码。
+
+### 调整
+- 即使未添加内置订阅，也优先使用外部 HTTP 代理或 VPN／隧道。启用自动切换后，外部关闭会接续内置线路；启动偏好仍由每台设备独立保存。首页分别显示当前线路和 Steam 连接结果。
+- 应用可见时每五秒检查本机网络设置，隐藏后暂停。环境不变时不重建界面，线路改变后新请求使用新连接，不重复发送正在处理的交易或登录批准。
+
+### 修复
+- Windows 外部代理退出后，只有本地接口路由的空隧道网卡不再阻挡内置接续。未知或无法解析的系统代理有明确提示，组件失败后不会自动反复重启。
+
+## [v1.5.8] — 2026-10-13 · Fork
+
+### Added
+- Encrypted app-settings sync includes the Steam acceleration subscription, sanitized cached nodes and selected node. Explicit removal propagates; receiving a configuration does not start acceleration. Automatic startup stays per-device, and older documents preserve local subscriptions.
+
+### Fixed
+- Windows acceleration components download through a primary mirror, backup mirror and official fallback with pinned archive and executable hashes. Archive verification and extraction run in the background; the UI distinguishes downloading from starting and explains when an external proxy or VPN pauses the built-in core.
+- The update download-source selector stays visible on both platforms, including when already up to date or when a version check fails.
+- Late preference reads no longer overwrite freshly changed or synchronized settings; selecting a node cannot write an old node into a newly synchronized subscription. Locked settings imports and failed secure-storage writes cannot advance the sync baseline.
+- Passphrase rotation re-encrypts all referenced remote payloads, including settings disabled on this device, without replacing their contents. Retry and restart handling retains the previous key in secure storage until completion, and concurrent remote edits are re-read before retrying.
+
+### 新增
+- 加密设置同步纳入 Steam 加速订阅、筛选后的缓存节点与所选节点。清除订阅同样会同步；接收配置不会启动加速，自动启动开关仍由各设备独立保存，旧文档缺字段时保留本机订阅。
+
+### 修复
+- Windows 加速组件增加主镜像、备用镜像与官方回退，并校验压缩包和程序的固定摘要。压缩包校验及解压在后台执行，界面区分下载和启动阶段，明确提示外部代理或 VPN 导致的暂停。
+- 两端软件更新页始终显示下载源选项，没有新版或检查失败时也可查看。
+- 修复启动时旧设置覆盖刚修改或同步的设置，以及切换节点时旧节点写入新订阅的竞态；锁定时导入与安全存储失败均不会推进同步基线。
+- 更换同步口令时重新加密远端引用的全部载荷，包括本机已关闭同步的设置，保留其内容。失败重试和重启期间仅在安全存储中暂存旧口令，完成后清除；并发远端修改会在重试前重新读取。
+
+## [v1.5.7] — 2026-10-12 · Fork
+
+### Changed
+- Use **GooeSteamKit** consistently for the app, installer and launcher labels on Windows and Android. Existing Android package/signing identity, AVA data paths and update asset filename prefixes remain unchanged.
+
+### Fixed
+- Windows shortcuts use a separately packaged ICO named by its content hash, so updated artwork gets a new icon path instead of reusing the executable's cached icon. Updates rename and refresh existing desktop and Start-menu shortcuts belonging to this installation, preserving links to other installations.
+
+### 调整
+- 电脑与手机的应用、安装器和桌面标签统一为 **GooeSteamKit**，保留现有 Android 包名、签名、AVA 数据路径及更新安装包文件名前缀。
+
+### 修复
+- Windows 快捷方式改用随安装包提供、按内容哈希命名的独立 ICO，图案变化时使用新路径，避免沿用同一路径 EXE 的旧图标缓存。更新时对属于当前安装的既有桌面、开始菜单快捷方式改名并刷新图标，保留指向其他安装的快捷方式。
+
+## [v1.5.6] — 2026-10-12 · Fork
+
+### Changed
+- Refresh the app, Windows installer and Android launcher artwork with the goose-and-shield design.
+- Shorten the Android home-screen label to **gooesteamkit**, retaining the full app name **gooes SteamKit**, package identity and update compatibility.
+
+### Fixed
+- Android 8+ launcher icons use a native vector foreground and solid dark background instead of a pre-rounded raster tile. Both launcher aliases use the same adaptive artwork; older Android versions retain a PNG of the new shield design.
+
+### 调整
+- 应用、Windows 安装器与 Android 桌面图标更新为盾牌大鹅设计。
+- 手机桌面短名称改为 **gooesteamkit**，应用全名仍为 **gooes SteamKit**，保持包名与覆盖更新兼容性。
+
+### 修复
+- Android 8 及以上改用原生矢量前景与纯色深背景组成的自适应图标，替代自带圆角的整张图片。两个启动别名使用同款图案；较旧 Android 系统使用新版盾牌图案 PNG。
+
+## [v1.5.5] — 2026-10-12 · Fork
+
+### Added
+- A read-only Market tab searches Steam items by name, game and currency, with reference prices and item details. Searches start only on explicit submission, load one page at a time and reuse recent results; inventory and listings also load only when their tabs are opened.
+
+### Changed
+- Windows and Android are now named **gooes SteamKit**, with a shared goose icon across the app, installer and shortcuts. Existing AVA-pc and AVA Fork installations retain their accounts and update compatibility; the original author's MIT notice remains included.
+
+### Fixed
+- Home remembers the username, nickname or Steam ID display choice after restarting on desktop and phone. The saved choice applies to the selected account and account list; a quick tap during startup takes precedence over the previous setting.
+- Windows shortcut migration recognizes equivalent short and long paths while preserving shortcuts for other installations.
+
+### 新增
+- “库存与市场”新增只读市场页，可按名称、游戏与币种搜索商品、查看参考价格和详情。仅手动搜索时请求，分批加载并复用近期结果；库存和出售也改为打开相应页签时才加载。
+
+### 调整
+- 电脑和手机统一更名为 **gooes SteamKit**，应用、安装器与快捷方式使用新的大鹅图标；现有 AVA-pc／AVA Fork 可保留账户直接更新，并保留原作者 MIT 许可与署名。
+
+### 修复
+- 电脑和手机重启后记住首页的用户名／昵称／Steam ID 显示方式，当前账户与账户列表统一显示；启动时立即切换也不会被旧设置覆盖。
+- 电脑快捷方式迁移可识别同一安装位置的短路径与完整路径写法，保留指向其他安装的快捷方式。
+
+## [v1.5.4] — 2026-10-12 · Fork
+
+### Fixed
+- Account overview cards load independently, reuse recent results and cancel unneeded reads. A total request deadline prevents redirects and pagination from extending offline loading indefinitely; hidden cards no longer fetch.
+- Temporary network failures no longer trigger password login attempts or misleading expired-session messages during pending-login and overview refreshes.
+- Home refresh uses a compact circular indicator with skin-matched colors and borders, removing the full-screen purple grid and checkerboard effects. Pull cancellation and reduced-motion settings are respected.
+- Avatar and pending-login checks start together. Profile requests have bounded lifetimes, run together per account and limit account concurrency to reduce startup connection pressure.
+- Late avatar responses cannot restore a deleted account or overwrite newly imported credentials; normal token renewal and account-list reloads still preserve valid cosmetic updates and queued accounts.
+
+### 修复
+- 账户概览各面板独立加载，复用近期结果并取消不再需要的请求；总时限覆盖重定向和分页，避免断网时一直等待，隐藏的面板不再加载。
+- 临时网络故障不再触发密码重登，概览和待确认登录刷新也不再将其误报为会话失效。
+- 首页刷新改为随皮肤配色及边框适配的小圆环，移除整屏紫色网格与棋盘纹理；支持取消下拉及系统减少动画设置。
+- 头像与待确认登录同时检查；头像请求设定总时限，同账户请求并发，多账户限制并发数，减少启动时的连接压力。
+- 拦截已删除、重新导入账户的迟到头像结果，避免恢复已删除账户或覆盖新凭据；正常登录续期和列表重载不会丢失有效头像更新或跳过排队账户。
+
+## [v1.5.3] — 2026-10-11 · Fork
+
+### Added
+- Windows and Android updates offer direct GH-Proxy acceleration with a backup route and GitHub fallback. GitHub-only downloads remain selectable; official GitHub metadata and full SHA-256 verification remain authoritative.
+
+### Fixed
+- Phone market game/context selectors remain visible with screen-corner insets, enlarged text and landscape layouts. Desktop keeps horizontal game tabs.
+- Market category and filter results are cached to reduce repeated inventory scans; selecting the current context no longer clears and reloads its items.
+- Update downloads show the active source and reset progress and speed when switching sources.
+
+### 新增
+- 电脑和手机更新支持 GH-Proxy 直连加速、备用线路及 GitHub 回退，也可手动选择官方源；版本与可信 SHA-256 仍由 GitHub 官方提供，保留整包校验。
+
+### 修复
+- 修复手机圆角屏、大字体或横屏下市场游戏／库存选择栏消失的问题；电脑保留横向游戏标签。
+- 缓存市场分类及筛选结果，减少重复扫描库存；重选当前库存不再清空并重复加载。
+- 下载显示实际来源，切换来源时同步重置进度与速度。
+
+## [v1.5.2] — 2026-10-11
+
+### Fixed
+- In-app updates now use an already-enabled system HTTP proxy or internal accelerator, with external routing taking priority. Opening updates does not start another proxy.
+- Large update packages download in up to four parallel ranges, with bounded retries and ordinary-download fallback when ranges are unsupported. Official GitHub TLS and full-package SHA-256 checks remain enabled.
+- Update downloads show transferred size, recent speed, estimated time remaining and a separate verification stage. Progress refreshes are limited to four per second to keep the interface responsive.
+
+### 修复
+- 应用内更新可使用已开启的系统 HTTP 代理或内置加速，外部线路优先；打开更新页不会启动第二个代理。
+- 大安装包支持最多四路分段下载、有限重试，以及不支持分段时的普通下载回退，保持 GitHub 官方连接的 TLS 与整包 SHA-256 校验。
+- 下载新增已传输大小、近期速度、预计剩余时间和独立校验状态；进度最多每秒刷新四次，避免频繁刷新界面。
+
+## [v1.5.1+100014] — 2026-10-11 · Fork
+
+### Fixed
+- Desktop account cards no longer slide sideways; their right-click actions remain available. Phone gestures are unchanged.
+- Steam acceleration accepts HTTP and HTTPS subscriptions with URL-encoded Basic authentication and custom ports. A Clash-compatible client identifier requests the provider’s Clash format.
+- Smoother home/countdown updates, lazy inventory/friend rows and bounded image decoding; Android uses an optimized ARM64 release build while preserving its signing identity.
+- Acceleration distinguishes core operation from Steam connectivity, inventory offers type/rarity filters, and uncertain trade results can be checked without automatically resending.
+
+### 修复
+- 电脑账户卡片取消左右滑动，保留右键菜单；手机手势保持不变。
+- Steam 加速支持 HTTP／HTTPS、地址内编码的用户名密码和自定义端口，并使用 Clash 客户端标识取得兼容的订阅格式。
+- 优化首页倒计时、好友及库存列表加载和图片解码；Android 改用 ARM64 release 优化包，保持原有签名。
+- 加速状态区分组件运行和 Steam 连通性；库存增加类型与品质筛选，报价结果不明确时可核实状态，不自动重发。
 
 ## [v1.5.1] — 2026-10-09
 

@@ -1,7 +1,7 @@
 name: ava
-description: "AVA (AnotherVaporAuth) — a Steam authenticator"
+description: "GooeSteamKit — a Steam authenticator and account assistant based on AVA"
 publish_to: 'none'
-version: 1.5.1+67
+version: 1.5.20+85
 
 environment:
   sdk: ^3.12.2
@@ -23,10 +23,15 @@ dependencies:
 
   # Networking (Steam web API)
   dio: ^5.7.0
+  # Optional Steam-only acceleration: use versions already in the lockfile.
+  yaml: 3.1.3
+  archive: 4.0.9
 
   # QR (login direction A render / direction B scan)
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.2.0
+  # Pure-Dart desktop screen-region QR decoding; no uploaded screenshots.
+  zxing2: 0.2.4
 
   # Files / storage
   # file_selector (flutter.dev official) instead of file_picker: file_picker 11
@@ -71,21 +76,23 @@ dev_dependencies:
   path_provider_platform_interface: ^2.1.3
   share_plus_platform_interface: ^5.0.2
 
-# Launcher icons: default to the Neon variant (the in-app logo switches with the
-# theme, but OS launcher icons can't change at runtime).
+# Shared GooeSteamKit artwork for this fork's Android and Windows builds.
+# Android 8+ uses the separately maintained native adaptive vector resources;
+# this generator supplies the legacy PNG fallback and Windows ICO only.
+# Other platforms keep their existing native launcher assets.
 flutter_launcher_icons:
-  image_path: "assets/icon/icon_neon.png"
+  image_path: "assets/icon/gooes_steamkit.png"
   android: true
+  ios: false
   min_sdk_android: 21
   web:
     generate: false
   windows:
     generate: true
-    image_path: "assets/icon/icon_neon.png"
+    image_path: "assets/icon/gooes_steamkit.png"
     icon_size: 256
   macos:
-    generate: true
-    image_path: "assets/icon/icon_neon.png"
+    generate: false
 
 flutter:
   uses-material-design: true

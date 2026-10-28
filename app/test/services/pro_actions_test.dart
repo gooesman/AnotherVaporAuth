@@ -65,45 +65,54 @@ class _RecordingApi implements EntitlementApi {
   Future<String> refresh(String token, String deviceId) async => 'jwt';
 
   @override
-  Future<String> verifyPlay(
-      {required String idToken,
-      required String purchaseToken,
-      required String deviceId,
-      required String deviceClass}) async {
+  Future<String> verifyPlay({
+    required String idToken,
+    required String purchaseToken,
+    required String deviceId,
+    required String deviceClass,
+  }) async {
     calls.add('verifyPlay:$idToken:$purchaseToken:$deviceId:$deviceClass');
     return 'jwt';
   }
 
   @override
-  Future<String> redeemAfdian(
-      {required String orderNo,
-      required String deviceId,
-      required String deviceClass}) async {
+  Future<String> redeemAfdian({
+    required String orderNo,
+    required String deviceId,
+    required String deviceClass,
+  }) async {
     calls.add('redeemAfdian:$orderNo');
     if (orderNo == 'bound') throw EntitlementApiException(403, 'order_bound');
     return 'jwt';
   }
 
   @override
-  Future<String> redeemBeta(
-      {required String code,
-      required String deviceId,
-      required String deviceClass}) async {
+  Future<String> redeemBeta({
+    required String code,
+    required String deviceId,
+    required String deviceClass,
+  }) async {
     calls.add('redeemBeta:$code');
     if (code == 'capped') {
-      throw EntitlementApiException(403, 'code_activation_limit',
-          activations: [
-            EntitlementActivation(
-                deviceClass: 'android',
-                activatedAt: DateTime.utc(2026, 7, 16)),
-          ]);
+      throw EntitlementApiException(
+        403,
+        'code_activation_limit',
+        activations: [
+          EntitlementActivation(
+            deviceClass: 'android',
+            activatedAt: DateTime.utc(2026, 7, 16),
+          ),
+        ],
+      );
     }
     return 'jwt';
   }
 
   @override
-  Future<String> claimVip(
-      {required String deviceId, required String deviceClass}) async {
+  Future<String> claimVip({
+    required String deviceId,
+    required String deviceClass,
+  }) async {
     calls.add('claimVip');
     if (claimFailures-- > 0) throw EntitlementApiException(404, 'no_vip');
     return 'jwt';
@@ -125,6 +134,7 @@ void main() {
     api = _RecordingApi();
     adopted = [];
     actions = ProActions(
+      enabled: true,
       api: api,
       play: play,
       deviceId: () async => 'dev-1',
@@ -144,8 +154,7 @@ void main() {
     // Sign-in MUST precede billing: the money step comes after the fallible
     // no-side-effect step.
     expect(play.calls, ['signin', 'subscribe']);
-    expect(api.calls,
-        ['verifyPlay:id-token-1:purchase-token-1:dev-1:android']);
+    expect(api.calls, ['verifyPlay:id-token-1:purchase-token-1:dev-1:android']);
     expect(adopted, ['jwt']);
   });
 
@@ -160,14 +169,16 @@ void main() {
     expect(adopted, isEmpty);
   });
 
-  test('unconfigured sign-in short-circuits both flows before any native call',
-      () async {
-    play.signInConfigured = false;
-    expect((await actions.subscribeViaPlay()).code, 'not_configured');
-    expect((await actions.restoreViaPlay()).code, 'not_configured');
-    // Neither billing nor restore's native acknowledge may run.
-    expect(play.calls, isEmpty);
-  });
+  test(
+    'unconfigured sign-in short-circuits both flows before any native call',
+    () async {
+      play.signInConfigured = false;
+      expect((await actions.subscribeViaPlay()).code, 'not_configured');
+      expect((await actions.restoreViaPlay()).code, 'not_configured');
+      // Neither billing nor restore's native acknowledge may run.
+      expect(play.calls, isEmpty);
+    },
+  );
 
   test('subscribeViaPlay: user cancel maps to canceled', () async {
     play.subscribeError = PlatformException(code: 'canceled');
@@ -186,8 +197,7 @@ void main() {
     play.restoreToken = 'restored-token';
     final r = await actions.restoreViaPlay();
     expect(r.ok, isTrue);
-    expect(api.calls,
-        ['verifyPlay:id-token-1:restored-token:dev-1:android']);
+    expect(api.calls, ['verifyPlay:id-token-1:restored-token:dev-1:android']);
   });
 
   test('redeemAfdian: trims input and surfaces worker error codes', () async {
@@ -225,18 +235,22 @@ void main() {
     expect(adopted, isEmpty);
   });
 
-  test('redeemBeta: the refusal\'s slot map survives into the result', () async {
-    // The worker attaches the occupied classes to make the refusal
-    // actionable; dropping them here would leave the paywall with only the
-    // static "switched devices too often" copy.
-    final r = await actions.redeemBeta('capped');
-    expect(r.activations, hasLength(1));
-    expect(r.activations!.single.deviceClass, 'android');
-    expect(r.activations!.single.activatedAt, DateTime.utc(2026, 7, 16));
-  });
+  test(
+    'redeemBeta: the refusal\'s slot map survives into the result',
+    () async {
+      // The worker attaches the occupied classes to make the refusal
+      // actionable; dropping them here would leave the paywall with only the
+      // static "switched devices too often" copy.
+      final r = await actions.redeemBeta('capped');
+      expect(r.activations, hasLength(1));
+      expect(r.activations!.single.deviceClass, 'android');
+      expect(r.activations!.single.activatedAt, DateTime.utc(2026, 7, 16));
+    },
+  );
 
   test('adopt failure surfaces bad_token', () async {
     actions = ProActions(
+      enabled: true,
       api: api,
       play: play,
       deviceId: () async => 'dev-1',

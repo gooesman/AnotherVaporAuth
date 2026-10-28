@@ -24,7 +24,9 @@ class SteamImageProvider extends ImageProvider<SteamImageProvider> {
 
   @override
   ImageStreamCompleter loadImage(
-      SteamImageProvider key, ImageDecoderCallback decode) {
+    SteamImageProvider key,
+    ImageDecoderCallback decode,
+  ) {
     return MultiFrameImageStreamCompleter(
       codec: _load(key, decode),
       scale: 1.0,
@@ -33,7 +35,9 @@ class SteamImageProvider extends ImageProvider<SteamImageProvider> {
   }
 
   Future<ui.Codec> _load(
-      SteamImageProvider key, ImageDecoderCallback decode) async {
+    SteamImageProvider key,
+    ImageDecoderCallback decode,
+  ) async {
     final bytes = await DiskImageCache.instance.load(url);
     if (bytes == null) {
       // Evict the failed entry so a later rebuild retries (e.g. once
@@ -60,4 +64,25 @@ class SteamImageProvider extends ImageProvider<SteamImageProvider> {
 
   @override
   String toString() => 'SteamImageProvider("$url")';
+}
+
+/// Thumbnail decodes track physical display pixels instead of full CDN sizes.
+/// Small buckets reuse the decoded image during desktop window resizing, and
+/// fit preserves non-square inventory art without allocating an upscaled copy.
+ResizeImage steamThumbnailProvider(
+  String url, {
+  required Size logicalSize,
+  required double devicePixelRatio,
+}) {
+  int pixels(double logical) {
+    final physical = (logical * devicePixelRatio).ceil().clamp(1, 768);
+    return ((physical + 31) ~/ 32) * 32;
+  }
+
+  return ResizeImage(
+    SteamImageProvider(url),
+    width: pixels(logicalSize.width),
+    height: pixels(logicalSize.height),
+    policy: ResizeImagePolicy.fit,
+  );
 }

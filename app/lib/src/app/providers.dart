@@ -10,6 +10,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/crypto/vault_crypto.dart';
 import '../core/models/manifest.dart';
+import '../core/models/session_data.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/protocol/confirmations_client.dart';
 import '../core/protocol/family_groups_client.dart';
@@ -24,11 +25,14 @@ import '../skins/skin_spec.dart';
 import '../services/auto_login.dart';
 import '../services/avatar_service.dart';
 import '../services/biometric_unlock.dart';
+import '../services/startup_unlock.dart';
 import '../services/credential_store.dart';
 import '../core/entitlement.dart';
+import '../core/fork_policy.dart';
 import '../core/update_check.dart';
 import '../services/debug_log.dart';
 import '../services/entitlement_store.dart';
+import '../services/disabled_entitlement.dart';
 import '../services/play_channel.dart';
 import '../services/pro_actions.dart';
 import '../services/update_service.dart';
@@ -43,8 +47,9 @@ import 'settings_store.dart';
 import 'theme.dart';
 
 /// Platform storage (maFiles location).
-final storageProvider =
-    Provider<StorageProvider>((ref) => StorageProvider.forPlatform());
+final storageProvider = Provider<StorageProvider>(
+  (ref) => StorageProvider.forPlatform(),
+);
 
 /// Explicitly supplied by the desktop entrypoint; tests/mobile never probe disks.
 final portableLibraryProvider = Provider<PortableLibrary?>((ref) => null);
@@ -60,57 +65,81 @@ final apiClientProvider = Provider<SteamApiClient>((ref) => SteamApiClient());
 final avatarServiceProvider = Provider<AvatarService>((ref) => AvatarService());
 
 /// System-credential (biometric / device PIN) app unlock.
-final biometricUnlockProvider =
-    Provider<BiometricUnlock>((ref) => BiometricUnlock());
+final biometricUnlockProvider = Provider<BiometricUnlock>(
+  (ref) => BiometricUnlock(),
+);
+
+final biometricUnlockEnabledProvider = FutureProvider<bool>(
+  (ref) => ref.watch(biometricUnlockProvider).isEnabled,
+);
+
+final startupUnlockProvider = Provider<StartupUnlock>(
+  (ref) => StartupUnlock(vaultKeys: ref.read(vaultKeyStoreProvider)),
+);
+
+/// Device-local security preference, intentionally excluded from sync.
+final startupVerificationEnabledProvider = FutureProvider<bool>(
+  (ref) => ref.watch(startupUnlockProvider).verificationRequired,
+);
 
 /// Keystore-backed holder for the vault DEK (PIN-wrapped).
-final vaultKeyStoreProvider =
-    Provider<VaultKeyStore>((ref) => VaultKeyStore());
+final vaultKeyStoreProvider = Provider<VaultKeyStore>((ref) => VaultKeyStore());
 
 /// Stores account passwords (keystore) for automatic session re-establishment.
-final credentialStoreProvider =
-    Provider<CredentialStore>((ref) => CredentialStore());
+final credentialStoreProvider = Provider<CredentialStore>(
+  (ref) => CredentialStore(),
+);
 
 /// Headless session maintenance (refresh token → access token, or a full
 /// re-login with the stored password + the account's own TOTP).
-final autoLoginProvider =
-    Provider<AutoLogin>((ref) => AutoLogin(ref.read(apiClientProvider)));
+final autoLoginProvider = Provider<AutoLogin>(
+  (ref) => AutoLogin(ref.read(apiClientProvider)),
+);
 
 /// Steam inventory reader (games, wallet, items).
-final inventoryClientProvider =
-    Provider<InventoryClient>((ref) => InventoryClient(ref.read(apiClientProvider)));
+final inventoryClientProvider = Provider<InventoryClient>(
+  (ref) => InventoryClient(ref.read(apiClientProvider)),
+);
 
 /// Steam Community Market operations (price, sell, listings).
-final marketClientProvider =
-    Provider<MarketClient>((ref) => MarketClient(ref.read(apiClientProvider)));
+final marketClientProvider = Provider<MarketClient>(
+  (ref) => MarketClient(ref.read(apiClientProvider)),
+);
 
 /// Steam trade offers (list, accept, decline, cancel) client.
 final tradeOffersClientProvider = Provider<TradeOffersClient>(
-    (ref) => TradeOffersClient(ref.read(apiClientProvider)));
+  (ref) => TradeOffersClient(ref.read(apiClientProvider)),
+);
 
 /// Mobile confirmations (trade / market listing) client.
 final confirmationsClientProvider = Provider<ConfirmationsClient>(
-    (ref) => ConfirmationsClient(ref.read(apiClientProvider)));
+  (ref) => ConfirmationsClient(ref.read(apiClientProvider)),
+);
 
 /// Steam family groups (invites, join, read-only group info) client.
 final familyGroupsClientProvider = Provider<FamilyGroupsClient>(
-    (ref) => FamilyGroupsClient(ref.read(apiClientProvider)));
+  (ref) => FamilyGroupsClient(ref.read(apiClientProvider)),
+);
 
 /// Device / session management (read-only device list; IAuthenticationService).
 final sessionsClientProvider = Provider<SessionsClient>(
-    (ref) => SessionsClient(ref.read(apiClientProvider)));
+  (ref) => SessionsClient(ref.read(apiClientProvider)),
+);
 
 /// Steam product-key (CD key) activation via the store's ajax endpoint.
 final storeKeyClientProvider = Provider<StoreKeyClient>(
-    (ref) => StoreKeyClient(ref.read(apiClientProvider)));
+  (ref) => StoreKeyClient(ref.read(apiClientProvider)),
+);
 
 /// Time alignment hook (overridable in tests to avoid network).
-final timeAlignerProvider =
-    Provider<Future<void> Function()>((ref) => SteamTime.align);
+final timeAlignerProvider = Provider<Future<void> Function()>(
+  (ref) => SteamTime.align,
+);
 
 /// Persisted lightweight app settings (currently: locale override).
-final settingsStoreProvider =
-    Provider<SettingsStore>((ref) => SettingsStore(ref.read(storageProvider)));
+final settingsStoreProvider = Provider<SettingsStore>(
+  (ref) => SettingsStore(ref.read(storageProvider)),
+);
 
 /// Shared shape for every scalar setting persisted in app_settings.json:
 /// publish the default synchronously, apply the stored value when the async
@@ -121,19 +150,24 @@ class PersistedSettingController<T> extends Notifier<T> {
   final T _defaultValue;
   final Future<T?> Function(SettingsStore store) _load;
   final Future<void> Function(SettingsStore store, T value) _save;
+  int _revision = 0;
 
   PersistedSettingController(this._defaultValue, this._load, this._save);
 
   @override
   T build() {
+    final revision = ++_revision;
     _load(ref.read(settingsStoreProvider)).then((v) {
-      if (!ref.mounted || v == null) return;
+      // An explicit change (including a sync pull) wins over a slower cold
+      // start read that captured this preference before the change.
+      if (!ref.mounted || revision != _revision || v == null) return;
       state = v;
     });
     return _defaultValue;
   }
 
   Future<void> set(T value) async {
+    _revision++;
     state = value;
     await _save(ref.read(settingsStoreProvider), value);
   }
@@ -150,26 +184,28 @@ T? _enumByName<T extends Enum>(List<T> values, String? name) {
 
 /// The styled skin layer (none / neon / pixel), persisted.
 final skinProvider = NotifierProvider<SkinController, AvaSkin>(
-    SkinController.new);
+  SkinController.new,
+);
 
 /// Pure persistence since 0.90.1 — launcher-icon syncing that once hooked in
 /// here was retired; see the retirement note in app.dart before reviving it.
 class SkinController extends PersistedSettingController<AvaSkin> {
   SkinController()
-      : super(
-          // Default is the plain look since 0.90 (neon moved behind the paywall).
-          AvaSkin.none,
-          (s) async => _enumByName(AvaSkin.values, await s.loadSkin()),
-          (s, v) => s.saveSkin(v.name),
-        );
+    : super(
+        // Default is the plain look since 0.90 (neon moved behind the paywall).
+        AvaSkin.none,
+        (s) async => _enumByName(AvaSkin.values, await s.loadSkin()),
+        (s, v) => s.saveSkin(v.name),
+      );
 
   Future<void> setSkin(AvaSkin skin) => set(skin);
 }
 
 /// The active skin's effect spec, loaded from the bundled JSON pack.
 /// Null while loading and for the plain (no-skin) look.
-final skinSpecProvider =
-    NotifierProvider<SkinSpecController, SkinSpec?>(SkinSpecController.new);
+final skinSpecProvider = NotifierProvider<SkinSpecController, SkinSpec?>(
+  SkinSpecController.new,
+);
 
 class SkinSpecController extends Notifier<SkinSpec?> {
   @override
@@ -181,7 +217,9 @@ class SkinSpecController extends Notifier<SkinSpec?> {
 
   Future<void> _load(AvaSkin skin) async {
     try {
-      final text = await rootBundle.loadString('assets/skins/${skin.name}.json');
+      final text = await rootBundle.loadString(
+        'assets/skins/${skin.name}.json',
+      );
       // Guard against a skin switch racing the asset load.
       if (ref.read(effectiveSkinProvider) == skin) state = SkinSpec.parse(text);
     } catch (e) {
@@ -193,37 +231,50 @@ class SkinSpecController extends Notifier<SkinSpec?> {
 /// Light/dark preference for the plain look (system / dark / light).
 final brightnessModeProvider =
     NotifierProvider<BrightnessModeController, AvaBrightnessMode>(
-        BrightnessModeController.new);
+      BrightnessModeController.new,
+    );
 
 class BrightnessModeController
     extends PersistedSettingController<AvaBrightnessMode> {
   BrightnessModeController()
-      : super(
-          AvaBrightnessMode.system,
-          (s) async =>
-              _enumByName(AvaBrightnessMode.values, await s.loadBrightnessMode()),
-          (s, v) => s.saveBrightnessMode(v.name),
-        );
+    : super(
+        AvaBrightnessMode.system,
+        (s) async =>
+            _enumByName(AvaBrightnessMode.values, await s.loadBrightnessMode()),
+        (s, v) => s.saveBrightnessMode(v.name),
+      );
 
   Future<void> setMode(AvaBrightnessMode mode) => set(mode);
 }
 
 /// Wall clock, injectable for entitlement tests.
 final clockProvider = Provider<DateTime Function()>(
-    (ref) => () => DateTime.now().toUtc());
+  (ref) =>
+      () => DateTime.now().toUtc(),
+);
+
+/// No UI switch: the independent fork opens local features and never contacts
+/// the original author's Pro service. Only legacy protocol tests override this
+/// policy to keep their historical code paths covered.
+final upstreamProEnabledProvider = Provider<bool>((ref) => !kForkLocalFeatures);
 
 /// Entitlement worker HTTP client (overridden with a fake in tests).
-final entitlementApiProvider =
-    Provider<EntitlementApi>((ref) => DioEntitlementApi());
+final entitlementApiProvider = Provider<EntitlementApi>(
+  (ref) => ref.watch(upstreamProEnabledProvider)
+      ? DioEntitlementApi()
+      : const DisabledEntitlementApi(),
+);
 
 /// Ed25519 public key the app verifies entitlement tokens against.
-final entitlementPublicKeyProvider =
-    Provider<Uint8List>((ref) => entitlementPublicKeyBytes());
+final entitlementPublicKeyProvider = Provider<Uint8List>(
+  (ref) => entitlementPublicKeyBytes(),
+);
 
 /// The stored, signature-checked entitlement token (null = none/invalid).
 final entitlementTokenProvider =
     NotifierProvider<EntitlementTokenController, EntitlementToken?>(
-        EntitlementTokenController.new);
+      EntitlementTokenController.new,
+    );
 
 class EntitlementTokenController extends Notifier<EntitlementToken?> {
   Timer? _refreshTimer;
@@ -236,15 +287,21 @@ class EntitlementTokenController extends Notifier<EntitlementToken?> {
   @override
   EntitlementToken? build() {
     ref.onDispose(() => _refreshTimer?.cancel());
+    if (!ref.watch(upstreamProEnabledProvider)) return null;
     _load();
     return null;
   }
 
   Future<void> _load() async {
+    if (!ref.read(upstreamProEnabledProvider)) return;
     final raw = await ref.read(settingsStoreProvider).loadEntitlementToken();
-    if (!ref.mounted || raw == null) return;
-    final token = EntitlementToken.tryParse(raw,
-        publicKey: ref.read(entitlementPublicKeyProvider));
+    if (!ref.mounted || !ref.read(upstreamProEnabledProvider) || raw == null) {
+      return;
+    }
+    final token = EntitlementToken.tryParse(
+      raw,
+      publicKey: ref.read(entitlementPublicKeyProvider),
+    );
     state = token;
     if (token == null) {
       // Stored but locally unverifiable — never strand a paying user:
@@ -266,8 +323,11 @@ class EntitlementTokenController extends Notifier<EntitlementToken?> {
   /// sent garbage or the embedded public key is out of date; the previous
   /// token stays in place.
   Future<bool> adopt(String raw) async {
-    final token = EntitlementToken.tryParse(raw,
-        publicKey: ref.read(entitlementPublicKeyProvider));
+    if (!ref.read(upstreamProEnabledProvider)) return false;
+    final token = EntitlementToken.tryParse(
+      raw,
+      publicKey: ref.read(entitlementPublicKeyProvider),
+    );
     if (token == null) return false;
     // Never trade a longer entitlement for a shorter one. Every acquisition
     // path lands here, and without this guard the LAST action wins: watching
@@ -288,8 +348,10 @@ class EntitlementTokenController extends Notifier<EntitlementToken?> {
           token.proUntil ?? DateTime.fromMillisecondsSinceEpoch(1 << 52);
       final now = ref.read(clockProvider)();
       if (currentUntil.isAfter(now) && currentUntil.isAfter(newUntil)) {
-        dlog('entitlement: kept ${current.tier.name} until $currentUntil '
-            'over ${token.tier.name} until $newUntil');
+        dlog(
+          'entitlement: kept ${current.tier.name} until $currentUntil '
+          'over ${token.tier.name} until $newUntil',
+        );
         _scheduleDailyRefresh();
         return true;
       }
@@ -306,14 +368,16 @@ class EntitlementTokenController extends Notifier<EntitlementToken?> {
   /// covers those. Also retries a stored-but-unverifiable raw
   /// ([_pendingRaw]) so an embedded-key rotation can heal itself.
   Future<void> refreshNow() async {
+    if (!ref.read(upstreamProEnabledProvider)) return;
     final token = state;
     final raw = token?.raw ?? _pendingRaw;
     if (raw == null) return;
     try {
       final String deviceId =
           token?.deviceId ?? await ref.read(deviceIdProvider.future);
-      final fresh =
-          await ref.read(entitlementApiProvider).refresh(raw, deviceId);
+      final fresh = await ref
+          .read(entitlementApiProvider)
+          .refresh(raw, deviceId);
       if (await adopt(fresh)) _pendingRaw = null;
     } on EntitlementApiException catch (e) {
       if (e.isTerminal) {
@@ -328,12 +392,16 @@ class EntitlementTokenController extends Notifier<EntitlementToken?> {
 
   void _scheduleDailyRefresh() {
     _refreshTimer?.cancel();
-    _refreshTimer =
-        Timer.periodic(const Duration(hours: 24), (_) => refreshNow());
+    if (!ref.mounted || !ref.read(upstreamProEnabledProvider)) return;
+    _refreshTimer = Timer.periodic(
+      const Duration(hours: 24),
+      (_) => refreshNow(),
+    );
   }
 }
 
-/// Stable per-install device id for entitlement binding (created lazily).
+/// Stable per-install device id for WebDAV sync (created lazily). The legacy
+/// upstream protocol also used it, so preserve existing values during upgrades.
 final deviceIdProvider = FutureProvider<String>((ref) async {
   final settings = ref.read(settingsStoreProvider);
   // loadDeviceId throws on a read failure rather than returning null, so a
@@ -358,6 +426,9 @@ const _devProUnlock = bool.fromEnvironment('AVA_DEV_PRO') && kDebugMode;
 /// deadline, end of offline grace): a token expiring while the app runs
 /// must flip Pro off without waiting for a restart.
 final proStatusProvider = Provider<ProStatus>((ref) {
+  // Compatibility value for retained local UI consumers; no signed upstream
+  // token is minted, adopted, read, or sent. This grants no remote entitlement.
+  if (!ref.watch(upstreamProEnabledProvider)) return ProStatus.pro;
   if (_devProUnlock) return ProStatus.pro;
   final token = ref.watch(entitlementTokenProvider);
   final now = ref.read(clockProvider)();
@@ -372,8 +443,9 @@ final proStatusProvider = Provider<ProStatus>((ref) {
       // +1s so the re-evaluation lands strictly past the boundary
       // (evaluateEntitlement flips exactly at proUntil / after exp+grace).
       final timer = Timer(
-          next.difference(now) + const Duration(seconds: 1),
-          ref.invalidateSelf);
+        next.difference(now) + const Duration(seconds: 1),
+        ref.invalidateSelf,
+      );
       ref.onDispose(timer.cancel);
     }
   }
@@ -381,27 +453,38 @@ final proStatusProvider = Provider<ProStatus>((ref) {
 });
 
 /// Native play-flavor layer (billing / ads / sign-in).
-final playChannelProvider = Provider<PlayChannel>((ref) => const PlayChannel());
+final playChannelProvider = Provider<PlayChannel>(
+  (ref) => ref.watch(upstreamProEnabledProvider)
+      ? const PlayChannel()
+      : const DisabledPlayChannel(),
+);
 
 /// Whether settings must expose the UMP privacy-options re-entry point
 /// (play flavor, GDPR regions after a consent choice). Always false on cn.
 final privacyOptionsRequiredProvider = FutureProvider<bool>(
-    (ref) => ref.read(playChannelProvider).privacyOptionsRequired());
+  (ref) => ref.watch(upstreamProEnabledProvider)
+      ? ref.read(playChannelProvider).privacyOptionsRequired()
+      : Future.value(false),
+);
 
 /// Purchase / redeem / rewarded orchestration for the paywall UI.
-final proActionsProvider = Provider<ProActions>((ref) => ProActions(
-      api: ref.read(entitlementApiProvider),
-      play: ref.read(playChannelProvider),
-      deviceId: () => ref.read(deviceIdProvider.future),
-      adopt: (raw) => ref.read(entitlementTokenProvider.notifier).adopt(raw),
-      deviceClass: deviceClassForPlatform(),
-    ));
+final proActionsProvider = Provider<ProActions>(
+  (ref) => ProActions(
+    enabled: ref.watch(upstreamProEnabledProvider),
+    api: ref.read(entitlementApiProvider),
+    play: ref.read(playChannelProvider),
+    deviceId: () => ref.read(deviceIdProvider.future),
+    adopt: (raw) => ref.read(entitlementTokenProvider.notifier).adopt(raw),
+    deviceClass: deviceClassForPlatform(),
+  ),
+);
 
 /// The skin actually rendered: neon/pixel are Pro perks since 0.90, so free
 /// users fall back to the plain look. The stored selection is deliberately
 /// kept — subscribing brings the chosen skin straight back.
 final effectiveSkinProvider = Provider<AvaSkin>((ref) {
   final selected = ref.watch(skinProvider);
+  if (!ref.watch(upstreamProEnabledProvider)) return selected;
   if (selected == AvaSkin.none) return selected;
   return ref.watch(proStatusProvider) == ProStatus.free
       ? AvaSkin.none
@@ -413,7 +496,8 @@ final effectiveSkinProvider = Provider<AvaSkin>((ref) {
 /// banner while true; [SkinPaywallNoticeController.dismiss] persists.
 final skinPaywallNoticeProvider =
     NotifierProvider<SkinPaywallNoticeController, bool>(
-        SkinPaywallNoticeController.new);
+      SkinPaywallNoticeController.new,
+    );
 
 class SkinPaywallNoticeController extends Notifier<bool> {
   bool _flagLoaded = false;
@@ -421,7 +505,9 @@ class SkinPaywallNoticeController extends Notifier<bool> {
 
   @override
   bool build() {
-    final degraded = ref.watch(skinProvider) != AvaSkin.none &&
+    if (!ref.watch(upstreamProEnabledProvider)) return false;
+    final degraded =
+        ref.watch(skinProvider) != AvaSkin.none &&
         ref.watch(proStatusProvider) == ProStatus.free;
     if (!_flagLoaded) {
       _flagLoaded = true;
@@ -443,35 +529,37 @@ class SkinPaywallNoticeController extends Notifier<bool> {
 }
 
 /// User text-size step (small = pre-0.84 baseline), persisted.
-final textSizeProvider =
-    NotifierProvider<TextSizeController, AvaTextSize>(TextSizeController.new);
+final textSizeProvider = NotifierProvider<TextSizeController, AvaTextSize>(
+  TextSizeController.new,
+);
 
 class TextSizeController extends PersistedSettingController<AvaTextSize> {
   TextSizeController()
-      : super(
-          AvaTextSize.small,
-          (s) async => _enumByName(AvaTextSize.values, await s.loadTextSize()),
-          (s, v) => s.saveTextSize(v.name),
-        );
+    : super(
+        AvaTextSize.small,
+        (s) async => _enumByName(AvaTextSize.values, await s.loadTextSize()),
+        (s, v) => s.saveTextSize(v.name),
+      );
 
   Future<void> setSize(AvaTextSize size) => set(size);
 }
 
 /// The active UI locale (null = follow system).
-final localeProvider =
-    NotifierProvider<LocaleController, Locale?>(LocaleController.new);
+final localeProvider = NotifierProvider<LocaleController, Locale?>(
+  LocaleController.new,
+);
 
 class LocaleController extends PersistedSettingController<Locale?> {
   LocaleController()
-      : super(
-          // Follow the system until (and unless) a stored override loads.
-          null,
-          (s) async => localeFromTag(await s.loadLocale()),
-          // Persist the full BCP-47 tag. Storing only languageCode silently
-          // dropped the script subtag, so picking 繁體中文 came back as
-          // 简体中文 on the next launch — 'zh-Hant' collapsed to 'zh'.
-          (s, v) => s.saveLocale(v?.toLanguageTag()),
-        );
+    : super(
+        // Follow the system until (and unless) a stored override loads.
+        null,
+        (s) async => localeFromTag(await s.loadLocale()),
+        // Persist the full BCP-47 tag. Storing only languageCode silently
+        // dropped the script subtag, so picking 繁體中文 came back as
+        // 简体中文 on the next launch — 'zh-Hant' collapsed to 'zh'.
+        (s, v) => s.saveLocale(v?.toLanguageTag()),
+      );
 
   Future<void> setLocale(Locale? locale) => set(locale);
 }
@@ -492,8 +580,10 @@ class SelectableLocale {
 const kSelectableLocales = <SelectableLocale>[
   SelectableLocale('English', Locale('en')),
   SelectableLocale('简体中文', Locale('zh')),
-  SelectableLocale('繁體中文',
-      Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')),
+  SelectableLocale(
+    '繁體中文',
+    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+  ),
   SelectableLocale('Deutsch', Locale('de')),
   SelectableLocale('Français', Locale('fr')),
   SelectableLocale('Español', Locale('es')),
@@ -520,33 +610,39 @@ Locale? localeFromTag(String? tag) {
 }
 
 /// 长按确认开关（默认开），持久化到 app_settings.json。
-final holdConfirmProvider =
-    NotifierProvider<HoldConfirmController, bool>(HoldConfirmController.new);
+final holdConfirmProvider = NotifierProvider<HoldConfirmController, bool>(
+  HoldConfirmController.new,
+);
 
 class HoldConfirmController extends PersistedSettingController<bool> {
   HoldConfirmController()
-      : super(true, (s) => s.loadHoldConfirm(), (s, v) => s.saveHoldConfirm(v));
+    : super(true, (s) => s.loadHoldConfirm(), (s, v) => s.saveHoldConfirm(v));
 }
 
 /// Launch-time update check (default on; the check itself is a single GET
 /// against a no-logging endpoint — see update_service.dart).
 final updateCheckEnabledProvider =
     NotifierProvider<UpdateCheckEnabledController, bool>(
-        UpdateCheckEnabledController.new);
+      UpdateCheckEnabledController.new,
+    );
 
 class UpdateCheckEnabledController extends PersistedSettingController<bool> {
   UpdateCheckEnabledController()
-      : super(true, (s) => s.loadUpdateCheckEnabled(),
-            (s, v) => s.saveUpdateCheckEnabled(v));
+    : super(
+        true,
+        (s) => s.loadUpdateCheckEnabled(),
+        (s, v) => s.saveUpdateCheckEnabled(v),
+      );
 }
 
 /// 删除账号需长按确认（默认开），持久化到 app_settings.json。
-final deleteHoldProvider =
-    NotifierProvider<DeleteHoldController, bool>(DeleteHoldController.new);
+final deleteHoldProvider = NotifierProvider<DeleteHoldController, bool>(
+  DeleteHoldController.new,
+);
 
 class DeleteHoldController extends PersistedSettingController<bool> {
   DeleteHoldController()
-      : super(true, (s) => s.loadDeleteHold(), (s, v) => s.saveDeleteHold(v));
+    : super(true, (s) => s.loadDeleteHold(), (s, v) => s.saveDeleteHold(v));
 }
 
 /// steamId 集合：最近一次无头会话刷新以**凭据错误**（Steam 明确返回
@@ -555,7 +651,8 @@ class DeleteHoldController extends PersistedSettingController<bool> {
 /// 仅存内存：refreshSessions 每次启动/解锁都会重新得出结论。
 final sessionHealthProvider =
     NotifierProvider<SessionHealthController, Set<int>>(
-        SessionHealthController.new);
+      SessionHealthController.new,
+    );
 
 class SessionHealthController extends Notifier<Set<int>> {
   @override
@@ -568,8 +665,8 @@ class SessionHealthController extends Notifier<Set<int>> {
       case AutoLoginOutcome.ok:
         clear(steamId);
       case AutoLoginOutcome.needsPassword ||
-            AutoLoginOutcome.needsInteractive ||
-            AutoLoginOutcome.failed:
+          AutoLoginOutcome.needsInteractive ||
+          AutoLoginOutcome.failed:
         // Inconclusive — leave whatever verdict we already have.
         break;
     }
@@ -581,25 +678,28 @@ class SessionHealthController extends Notifier<Set<int>> {
 }
 
 /// 全局触觉反馈开关（默认开）。
-final hapticsProvider =
-    NotifierProvider<HapticsController, bool>(HapticsController.new);
+final hapticsProvider = NotifierProvider<HapticsController, bool>(
+  HapticsController.new,
+);
 
 class HapticsController extends PersistedSettingController<bool> {
   HapticsController()
-      : super(true, (s) => s.loadHaptics(), (s, v) => s.saveHaptics(v));
+    : super(true, (s) => s.loadHaptics(), (s, v) => s.saveHaptics(v));
 }
 
 /// 阻止截屏/录屏（Android FLAG_SECURE，**默认关**）。
-final blockScreenshotsProvider = NotifierProvider<BlockScreenshotsController,
-    bool>(BlockScreenshotsController.new);
+final blockScreenshotsProvider =
+    NotifierProvider<BlockScreenshotsController, bool>(
+      BlockScreenshotsController.new,
+    );
 
 class BlockScreenshotsController extends PersistedSettingController<bool> {
   BlockScreenshotsController()
-      : super(
-          kScreenSecurityDefault,
-          (s) => s.loadBlockScreenshots(),
-          (s, v) => s.saveBlockScreenshots(v),
-        );
+    : super(
+        kScreenSecurityDefault,
+        (s) => s.loadBlockScreenshots(),
+        (s, v) => s.saveBlockScreenshots(v),
+      );
 
   @override
   bool build() {
@@ -617,7 +717,8 @@ class BlockScreenshotsController extends PersistedSettingController<bool> {
 
 /// The installed app version (from the platform package info).
 final appVersionProvider = FutureProvider<String>(
-    (ref) async => (await PackageInfo.fromPlatform()).version);
+  (ref) async => (await PackageInfo.fromPlatform()).version,
+);
 
 final updateServiceProvider = Provider<UpdateService>((ref) => UpdateService());
 
@@ -641,10 +742,13 @@ class UpdateController extends Notifier<UpdateDecision> {
       // PackageInfo can throw where the plugin is absent (tests, exotic
       // embedders) — feedback_service hit the same thing. No version, no
       // check: the comparison would be meaningless.
-      final decision = await ref.read(updateServiceProvider).check(
+      final decision = await ref
+          .read(updateServiceProvider)
+          .check(
             currentVersion: await ref.read(appVersionProvider.future),
-            channelKey:
-                updateChannelKey(os: osOverride ?? Platform.operatingSystem),
+            channelKey: updateChannelKey(
+              os: osOverride ?? Platform.operatingSystem,
+            ),
           );
       if (decision.available && ref.mounted) state = decision;
     } catch (e) {
@@ -664,9 +768,9 @@ class UpdateController extends Notifier<UpdateDecision> {
 
 /// Bumped by settings → "replay tutorial"; the home screen re-arms its
 /// first-run gesture walkthrough when this changes.
-final tutorialReplayProvider =
-    NotifierProvider<TutorialReplayController, int>(
-        TutorialReplayController.new);
+final tutorialReplayProvider = NotifierProvider<TutorialReplayController, int>(
+  TutorialReplayController.new,
+);
 
 class TutorialReplayController extends Notifier<int> {
   @override
@@ -680,7 +784,8 @@ class TutorialReplayController extends Notifier<int> {
 /// explicitly confirms they copied them. Held in memory only, never persisted.
 final moveInRescueProvider =
     NotifierProvider<MoveInRescueController, ({String code, String secret})?>(
-        MoveInRescueController.new);
+      MoveInRescueController.new,
+    );
 
 class MoveInRescueController extends Notifier<({String code, String secret})?> {
   @override
@@ -722,6 +827,7 @@ class AppData {
   final PortableLibrary? portable;
 
   List<SteamGuardAccount> get visibleAccounts {
+    if (locked) return const [];
     final merged = {for (final account in accounts) account.steamId: account};
     for (final account in portable?.accounts ?? <SteamGuardAccount>[]) {
       if (portable!.enabled || !merged.containsKey(account.steamId)) {
@@ -730,6 +836,7 @@ class AppData {
     }
     return merged.values.toList(growable: false);
   }
+
   final bool locked; // encrypted and not yet unlocked
   final String? passKey; // held in memory only while unlocked
   /// Which revision of the Privacy Policy notice this install has accepted;
@@ -761,15 +868,14 @@ class AppData {
     bool? locked,
     String? passKey,
     int? privacyVersion,
-  }) =>
-      AppData(
-        store: store,
-        portable: portable,
-        accounts: accounts ?? this.accounts,
-        locked: locked ?? this.locked,
-        passKey: passKey ?? this.passKey,
-        privacyVersion: privacyVersion ?? this.privacyVersion,
-      );
+  }) => AppData(
+    store: store,
+    portable: portable,
+    accounts: accounts ?? this.accounts,
+    locked: locked ?? this.locked,
+    passKey: passKey ?? this.passKey,
+    privacyVersion: privacyVersion ?? this.privacyVersion,
+  );
 }
 
 /// Wipes an undecryptable vault back to a clean, unlocked store. Ordered so a
@@ -799,10 +905,16 @@ Future<void> performVaultReset({
 }
 
 /// Bootstraps and owns the account list / unlock state.
-final appControllerProvider =
-    AsyncNotifierProvider<AppController, AppData>(AppController.new);
+final appControllerProvider = AsyncNotifierProvider<AppController, AppData>(
+  AppController.new,
+);
 
 class AppController extends AsyncNotifier<AppData> {
+  bool _manuallyLocked = false;
+  bool get manuallyLocked => _manuallyLocked;
+  Future<bool>? _pinChange;
+  Future<void>? _vaultReset;
+
   @override
   Future<AppData> build() async {
     final storage = ref.read(storageProvider);
@@ -810,8 +922,9 @@ class AppController extends AsyncNotifier<AppData> {
     final portable = ref.read(portableLibraryProvider);
     await portable?.discover();
     ref.onDispose(() => portable?.lock());
-    final privacyVersion =
-        await ref.read(settingsStoreProvider).loadPrivacyAcceptedVersion();
+    final privacyVersion = await ref
+        .read(settingsStoreProvider)
+        .loadPrivacyAcceptedVersion();
     final privacyAccepted = privacyVersion >= kPrivacyNoticeVersion;
     // No network until the Privacy Policy is accepted.
     if (privacyAccepted) {
@@ -819,12 +932,40 @@ class AppController extends AsyncNotifier<AppData> {
     }
 
     if (store.encrypted) {
+      // Only the opted-in platform secure-store credential can skip the gate.
+      // Failure, absence and a stale PIN all fall through to manual unlock.
+      final pin = await ref.read(startupUnlockProvider).readPasskey();
+      if (pin != null) {
+        try {
+          final accounts = await _accountsWithPin(store, pin);
+          if (accounts != null) {
+            if (privacyAccepted) {
+              // Give AsyncNotifier time to publish the returned unlocked
+              // state before background refreshes check the lock gate.
+              Future<void>(refreshSessions);
+              Future<void>(refreshAvatars);
+            }
+            return AppData(
+              store: store,
+              portable: portable,
+              accounts: accounts,
+              locked: false,
+              passKey: pin,
+              privacyVersion: privacyVersion,
+            );
+          }
+          await ref.read(startupUnlockProvider).forget();
+        } catch (_) {
+          store.setDek(null);
+        }
+      }
       return AppData(
-          store: store,
-          portable: portable,
-          accounts: const [],
-          locked: true,
-          privacyVersion: privacyVersion);
+        store: store,
+        portable: portable,
+        accounts: const [],
+        locked: true,
+        privacyVersion: privacyVersion,
+      );
     }
     final accounts = await store.getAllAccounts();
     if (privacyAccepted) {
@@ -832,11 +973,12 @@ class AppController extends AsyncNotifier<AppData> {
       Future.microtask(refreshAvatars);
     }
     return AppData(
-        store: store,
-        portable: portable,
-        accounts: accounts,
-        locked: false,
-        privacyVersion: privacyVersion);
+      store: store,
+      portable: portable,
+      accounts: accounts,
+      locked: false,
+      privacyVersion: privacyVersion,
+    );
   }
 
   /// Last-resort escape hatch for a vault that can no longer be decrypted
@@ -845,13 +987,69 @@ class AppController extends AsyncNotifier<AppData> {
   /// passkey copy, the manifest and every maFile, then re-bootstraps into a
   /// clean, unlocked state. Settings survive. The user re-imports from their
   /// maFile backups; nothing on the Steam side is touched.
-  Future<void> resetVault() async {
+  Future<void> resetVault() =>
+      _vaultReset ??= _resetVault().whenComplete(() => _vaultReset = null);
+
+  Future<void> _resetVault() async {
+    // A platform key write cannot be cancelled by locking or changing routes.
+    // Finish it before clearing the old vault so it can never overwrite the
+    // key of a vault created after this reset. A failed change still permits
+    // recovery; the reset itself keeps its existing failure semantics.
+    try {
+      await _pinChange;
+    } catch (_) {}
     await performVaultReset(
       storage: ref.read(storageProvider),
       clearKeys: () => ref.read(vaultKeyStoreProvider).clear(),
       disableBiometric: () => ref.read(biometricUnlockProvider).disable(),
     );
+    // A leftover convenience credential is bound to the old PIN wrap and
+    // cannot open any fresh vault, even when the user reuses the same PIN.
+    try {
+      await ref.read(startupUnlockProvider).forget();
+    } catch (_) {}
+    ref.invalidate(startupVerificationEnabledProvider);
     ref.invalidateSelf();
+  }
+
+  Future<void> setStartupVerificationEnabled(bool required) async {
+    final data = state.value;
+    if (data == null ||
+        data.locked ||
+        !data.store.isVault ||
+        data.passKey == null) {
+      throw StateError('Unlock the vault before changing startup verification');
+    }
+    final startup = ref.read(startupUnlockProvider);
+    // Turning verification back on must not revive credentials left by an
+    // older version. Biometric unlock is explicitly enabled under this gate.
+    await ref.read(biometricUnlockProvider).disableVerified();
+    ref.invalidate(biometricUnlockEnabledProvider);
+    if (required) {
+      await startup.forget();
+    } else {
+      await startup.remember(data.passKey!);
+    }
+    ref.invalidate(startupVerificationEnabledProvider);
+  }
+
+  /// Locks this session; automatic unlock only runs once in [build]. Existing
+  /// refreshes cannot republish account data after the vault has been locked.
+  void lock() {
+    final data = state.value;
+    if (data == null || data.locked || !data.encrypted) return;
+    _manuallyLocked = true;
+    data.store.setDek(null);
+    data.portable?.lock();
+    state = AsyncData(
+      AppData(
+        store: data.store,
+        portable: data.portable,
+        accounts: const [],
+        locked: true,
+        privacyVersion: data.privacyVersion,
+      ),
+    );
   }
 
   /// Records acceptance of the current notice, then kicks off the network
@@ -862,9 +1060,11 @@ class AppController extends AsyncNotifier<AppData> {
     if (data != null) {
       state = AsyncData(data.copyWith(privacyVersion: kPrivacyNoticeVersion));
     }
-    unawaited(ref
-        .read(settingsStoreProvider)
-        .savePrivacyAcceptedVersion(kPrivacyNoticeVersion));
+    unawaited(
+      ref
+          .read(settingsStoreProvider)
+          .savePrivacyAcceptedVersion(kPrivacyNoticeVersion),
+    );
     unawaited(ref.read(timeAlignerProvider)());
     Future.microtask(refreshSessions);
     Future.microtask(refreshAvatars);
@@ -942,7 +1142,7 @@ class AppController extends AsyncNotifier<AppData> {
           }
         }
       }
-      if (changed && state.value != null) {
+      if (changed && state.value != null && !state.value!.locked) {
         if (!identical(state.value?.accounts, data.accounts)) {
           // A concurrent reload/unlock/import replaced the account list
           // mid-refresh: the renewed tokens live on the old instances (and
@@ -956,7 +1156,9 @@ class AppController extends AsyncNotifier<AppData> {
           // only re-decrypts what memory holds (and used to race the unlock
           // migration's file swap). Callers that truly need disk use
           // reload().
-          state = AsyncData(state.value!.copyWith(accounts: [...data.accounts]));
+          state = AsyncData(
+            state.value!.copyWith(accounts: [...data.accounts]),
+          );
         }
       }
     } finally {
@@ -983,21 +1185,37 @@ class AppController extends AsyncNotifier<AppData> {
       final targets = [
         for (final acc in target)
           if (acc.steamId != 0 && (only == null || only.contains(acc.steamId)))
-            acc,
+            _avatarAccountIdentity(acc),
       ];
-      // Accounts refresh in parallel — each is 2–3 HTTP round-trips, and the
-      // old sequential loop serialized ~3N of them behind the refresh
-      // overlay. saveAccount stays safe: the store's write lock serializes
-      // the actual disk mutations.
-      final results = await Future.wait(
-          [for (final acc in targets) _refreshOneAvatar(acc, svc, data)]);
-      if (results.any((changed) => changed) && state.value != null) {
+      // Keep optional cosmetics from flooding startup connections on large
+      // libraries. Four accounts make progress independently; each account's
+      // public profile and equipped-items request can run together.
+      var next = 0;
+      final results = <bool>[];
+      Future<void> worker() async {
+        while (next < targets.length) {
+          if (!ref.mounted || state.value?.locked != false) return;
+          final account = _liveAvatarAccount(targets[next++]);
+          if (account == null) continue;
+          results.add(await _refreshOneAvatar(account, svc));
+        }
+      }
+
+      await Future.wait([
+        for (var i = 0; i < 4 && i < targets.length; i++) worker(),
+      ]);
+      if (!ref.mounted) return;
+      if (results.any((changed) => changed) &&
+          state.value != null &&
+          !state.value!.locked) {
         if (!identical(state.value?.accounts, data.accounts)) {
           // Same concurrent-replacement hazard as refreshSessions above.
           await reload();
         } else {
           // Same republish-in-memory rationale as refreshSessions above.
-          state = AsyncData(state.value!.copyWith(accounts: [...data.accounts]));
+          state = AsyncData(
+            state.value!.copyWith(accounts: [...data.accounts]),
+          );
         }
       }
     } finally {
@@ -1010,56 +1228,142 @@ class AppController extends AsyncNotifier<AppData> {
   /// abort the rest of the batch (the old sequential loop died mid-way on
   /// the first throw, leaving later accounts stale).
   Future<bool> _refreshOneAvatar(
-      SteamGuardAccount acc, AvatarService svc, AppData data) async {
+    SteamGuardAccount acc,
+    AvatarService svc,
+  ) async {
+    final identity = _avatarAccountIdentity(acc);
+    final requestSession = SessionData.fromJson(acc.session.toJson());
+    final originalTokens = (
+      requestSession.accessToken,
+      requestSession.refreshToken,
+    );
+    // Reloads may replace instances without changing the account. Merge only
+    // cosmetics onto that equivalent live instance; never save an old account
+    // object over an import or a removed source entry. A normal concurrent
+    // token rotation does not invalidate the account's public cosmetics.
+    SteamGuardAccount? liveAccount() => _liveAvatarAccount(identity);
+    bool unchangedSession(SteamGuardAccount? account) =>
+        account != null &&
+        (account.session.accessToken, account.session.refreshToken) ==
+            originalTokens;
+
     try {
       var accChanged = false;
-      final profile = await svc.fetchProfile(acc.steamId);
-      if (profile.avatarUrl != null && profile.avatarUrl != acc.avatarUrl) {
-        acc.avatarUrl = profile.avatarUrl;
+      var sessionRefreshed = false;
+      var profile = const SteamProfile();
+      var items = const EquippedItems();
+      await Future.wait<void>([
+        svc.fetchProfile(acc.steamId).then((value) {
+          profile = value;
+        }),
+        () async {
+          try {
+            items = await svc.fetchEquippedItems(
+              acc.steamId,
+              requestSession.accessToken,
+            );
+          } on FrameUnauthorized {
+            if (!unchangedSession(liveAccount())) return;
+            final refreshed = await SessionManager(
+              ref.read(apiClientProvider),
+            ).refresh(requestSession);
+            if (refreshed && unchangedSession(liveAccount())) {
+              sessionRefreshed = true;
+              try {
+                items = await svc.fetchEquippedItems(
+                  acc.steamId,
+                  requestSession.accessToken,
+                );
+              } catch (_) {
+                // Keep cached cosmetics on a transient failure.
+              }
+            }
+          }
+        }(),
+      ]);
+      final target = liveAccount();
+      if (target == null) return false;
+      if (sessionRefreshed && unchangedSession(target)) {
+        target.session
+          ..accessToken = requestSession.accessToken
+          ..refreshToken = requestSession.refreshToken;
+        accChanged = true;
+      }
+      if (profile.avatarUrl != null && profile.avatarUrl != target.avatarUrl) {
+        target.avatarUrl = profile.avatarUrl;
         accChanged = true;
       }
       if (profile.personaName != null &&
-          profile.personaName != acc.personaName) {
-        acc.personaName = profile.personaName;
+          profile.personaName != target.personaName) {
+        target.personaName = profile.personaName;
         accChanged = true;
-      }
-      // The frame/animated avatar need a valid access token; on 401 refresh
-      // once and retry.
-      EquippedItems items;
-      try {
-        items =
-            await svc.fetchEquippedItems(acc.steamId, acc.session.accessToken);
-      } on FrameUnauthorized {
-        items = const EquippedItems();
-        final refreshed = await SessionManager(ref.read(apiClientProvider))
-            .refresh(acc.session);
-        if (refreshed) {
-          accChanged = true; // persist the new token
-          try {
-            items = await svc.fetchEquippedItems(
-                acc.steamId, acc.session.accessToken);
-          } catch (_) {/* leave items unchanged */}
-        }
       }
       // A null value means "not equipped / unresolved" — keep the cached one
       // rather than dropping a good value on a transient failure.
-      if (items.frameUrl != null && items.frameUrl != acc.avatarFrameUrl) {
-        acc.avatarFrameUrl = items.frameUrl;
+      if (items.frameUrl != null && items.frameUrl != target.avatarFrameUrl) {
+        target.avatarFrameUrl = items.frameUrl;
         accChanged = true;
       }
       if (items.animatedAvatarUrl != null &&
-          items.animatedAvatarUrl != acc.animatedAvatarUrl) {
-        acc.animatedAvatarUrl = items.animatedAvatarUrl;
+          items.animatedAvatarUrl != target.animatedAvatarUrl) {
+        target.animatedAvatarUrl = items.animatedAvatarUrl;
         accChanged = true;
       }
       if (accChanged) {
-        await _saveToSource(acc);
+        await _saveToSource(target);
       }
       return accChanged;
     } catch (e) {
       dlog('avatar refresh: ${acc.steamId} failed: $e');
       return false;
     }
+  }
+
+  SteamGuardAccount? _liveAvatarAccount(Record identity) {
+    if (!ref.mounted) return null;
+    final current = state.value;
+    if (current == null || current.locked) return null;
+    for (final account in current.visibleAccounts) {
+      if (_avatarAccountIdentity(account) != identity) continue;
+      final present = account.fromPortable
+          ? current.portable?.ids.contains(account.steamId) ?? false
+          : current.store.entries.any(
+              (entry) => entry.steamId == account.steamId,
+            );
+      return present ? account : null;
+    }
+    return null;
+  }
+
+  Record _avatarAccountIdentity(SteamGuardAccount account) => (
+    account.steamId,
+    account.fromPortable,
+    account.accountName,
+    account.sharedSecret,
+    account.identitySecret,
+    account.secret1,
+    account.revocationCode,
+    account.deviceId,
+    account.serialNumber,
+    account.tokenGid,
+    account.password,
+  );
+
+  Future<List<SteamGuardAccount>?> _accountsWithPin(
+    AccountStore store,
+    String pin,
+  ) async {
+    if (store.isVault) {
+      final dek = await ref.read(vaultKeyStoreProvider).unwrapWithPin(pin);
+      if (dek == null) return null;
+      store.setDek(dek);
+      return store.entries.isEmpty ? const [] : store.getAllAccounts();
+    }
+    if (store.entries.isEmpty) {
+      return await store.verifyPasskey(pin) ? const [] : null;
+    }
+    final accounts = await store.getAllAccounts(passKey: pin);
+    return accounts.isEmpty ? null : accounts;
   }
 
   /// Attempts to unlock an encrypted store with the 6-digit [pin].
@@ -1072,46 +1376,22 @@ class AppController extends AsyncNotifier<AppData> {
     if (data == null) return false;
     final store = data.store;
     final sw = Stopwatch()..start();
-
-    if (store.isVault) {
-      final dek = await ref.read(vaultKeyStoreProvider).unwrapWithPin(pin);
-      if (dek == null) return false; // wrong PIN (GCM tag fails)
-      store.setDek(dek);
-      final accounts = store.entries.isEmpty
-          ? const <SteamGuardAccount>[]
-          : await store.getAllAccounts();
-      if (store.entries.isNotEmpty && accounts.isEmpty) {
-        dlog('unlock(vault): DEK ok but 0/${store.entries.length} decoded');
-      }
-      dlog('unlock(vault): ${sw.elapsedMilliseconds}ms, '
-          '${accounts.length} accounts');
-      state = AsyncData(
-        data.copyWith(accounts: accounts, locked: false, passKey: pin),
-      );
-      Future.microtask(refreshSessions);
-      Future.microtask(refreshAvatars);
-      return true;
-    }
-
-    // Legacy (PIN-derived CBC) store.
-    List<SteamGuardAccount> accounts;
-    if (store.entries.isEmpty) {
-      if (!await store.verifyPasskey(pin)) return false;
-      accounts = const [];
-    } else {
-      // getAllAccounts validates the key (empty == wrong key).
-      accounts = await store.getAllAccounts(passKey: pin);
-      if (accounts.isEmpty) return false;
-    }
-    dlog('unlock(legacy): ${sw.elapsedMilliseconds}ms, '
-        '${accounts.length} accounts');
+    final accounts = await _accountsWithPin(store, pin);
+    if (accounts == null) return false;
+    _manuallyLocked = false;
+    dlog(
+      'unlock: ${sw.elapsedMilliseconds}ms, '
+      '${accounts.length} accounts',
+    );
     state = AsyncData(
       data.copyWith(accounts: accounts, locked: false, passKey: pin),
     );
-    Future.microtask(refreshSessions);
-    Future.microtask(refreshAvatars);
+    if (data.privacyAccepted) {
+      Future.microtask(refreshSessions);
+      Future.microtask(refreshAvatars);
+    }
     // One-time upgrade of the weak PIN-derived scheme to the Keystore DEK vault.
-    unawaited(_migrateToVault(pin, accounts));
+    if (!store.isVault) unawaited(_migrateToVault(pin, accounts));
     return true;
   }
 
@@ -1119,21 +1399,28 @@ class AppController extends AsyncNotifier<AppData> {
   /// re-encrypts every maFile under it. Used both to upgrade a legacy store and
   /// to set up a brand-new store's first PIN.
   Future<bool> _establishVault(
-      String pin, List<SteamGuardAccount> accounts) async {
+    String pin,
+    List<SteamGuardAccount> accounts,
+  ) async {
     final store = state.value?.store;
     if (store == null || store.isVault) return false;
     final dek = VaultCrypto.generateDek();
     await ref.read(vaultKeyStoreProvider).storePinWrap(pin, dek);
     await store.migrateToVault(dek, accounts);
+    if (state.value?.locked ?? true) store.setDek(null);
     return true;
   }
 
   Future<void> _migrateToVault(
-      String pin, List<SteamGuardAccount> accounts) async {
+    String pin,
+    List<SteamGuardAccount> accounts,
+  ) async {
     try {
       final sw = Stopwatch()..start();
       if (await _establishVault(pin, accounts)) {
-        dlog('migrated store to vault (DEK/GCM) in ${sw.elapsedMilliseconds}ms');
+        dlog(
+          'migrated store to vault (DEK/GCM) in ${sw.elapsedMilliseconds}ms',
+        );
       }
     } catch (e) {
       dlog('vault migrate failed: $e');
@@ -1142,8 +1429,9 @@ class AppController extends AsyncNotifier<AppData> {
 
   Future<void> reload() async {
     final data = state.value;
-    if (data == null) return;
+    if (data == null || data.locked) return;
     final accounts = await data.store.getAllAccounts(passKey: data.passKey);
+    if (state.value?.locked ?? true) return;
     state = AsyncData(data.copyWith(accounts: accounts));
   }
 
@@ -1155,12 +1443,15 @@ class AppController extends AsyncNotifier<AppData> {
   /// good for a display name but not for merge decisions.
   /// Throws [MaFileImportException] for unusable input, same as the import.
   ({SteamGuardAccount account, bool storedReadable})? findImportCollision(
-      String contents,
-      {String? sourceName}) {
+    String contents, {
+    String? sourceName,
+  }) {
     final data = state.value;
     if (data == null) return null;
-    final incoming =
-        data.store.parseMaFileContents(contents, sourceName: sourceName);
+    final incoming = data.store.parseMaFileContents(
+      contents,
+      sourceName: sourceName,
+    );
     if (!data.store.entries.any((e) => e.steamId == incoming.steamId) &&
         !(data.portable?.ids.contains(incoming.steamId) ?? false)) {
       return null;
@@ -1176,20 +1467,33 @@ class AppController extends AsyncNotifier<AppData> {
   /// Imports a maFile and returns the resulting account, so callers can act on
   /// it right away (e.g. reactivating its session) without re-scanning the
   /// freshly reloaded account list.
-  Future<SteamGuardAccount> importMaFile(String contents,
-      {String? sourceName, bool localOnly = false}) async {
+  Future<SteamGuardAccount> importMaFile(
+    String contents, {
+    String? sourceName,
+    bool localOnly = false,
+    bool syncPayload = false,
+  }) async {
     final data = state.value;
     if (data == null) {
       throw StateError('importMaFile called before the store is ready');
     }
-    final incoming = data.store.parseMaFileContents(contents, sourceName: sourceName);
-    final existingPortable = !data.store.entries.any((e) => e.steamId == incoming.steamId) &&
+    final incoming = data.store.parseMaFileContents(
+      contents,
+      sourceName: sourceName,
+    );
+    final existingPortable =
+        !data.store.entries.any((e) => e.steamId == incoming.steamId) &&
         (data.portable?.ids.contains(incoming.steamId) ?? false);
     if (!localOnly && ((data.portable?.enabled ?? false) || existingPortable)) {
-      final account = data.store.parseMaFileContents(contents, sourceName: sourceName);
+      final account = data.store.parseMaFileContents(
+        contents,
+        sourceName: sourceName,
+      );
       await data.portable!.save(account);
       await reload();
-      return data.portable!.accounts.firstWhere((a) => a.steamId == account.steamId);
+      return data.portable!.accounts.firstWhere(
+        (a) => a.steamId == account.steamId,
+      );
     }
     SteamGuardAccount? existing;
     final incomingId = data.store
@@ -1202,19 +1506,29 @@ class AppController extends AsyncNotifier<AppData> {
       }
     }
     final account = await data.store.importMaFileContents(
-        contents, data.passKey,
-        sourceName: sourceName, mergeExisting: existing);
+      contents,
+      data.passKey,
+      sourceName: sourceName,
+      mergeExisting: existing,
+      syncPayload: syncPayload,
+    );
     await reload();
-    unawaited(refreshAvatars());
+    if (!syncPayload) unawaited(refreshAvatars());
     return account;
   }
 
   /// Drops a code-only account's synthetic-id placeholder entry after it has
   /// been re-saved under a real SteamID (post sign-in).
-  Future<void> removeAccountBySteamId(int steamId, {bool localOnly = false}) async {
+  Future<void> removeAccountBySteamId(
+    int steamId, {
+    bool localOnly = false,
+  }) async {
     final data = state.value;
     if (data == null) return;
-    if (!localOnly && data.visibleAccounts.any((a) => a.steamId == steamId && a.fromPortable)) {
+    if (!localOnly &&
+        data.visibleAccounts.any(
+          (a) => a.steamId == steamId && a.fromPortable,
+        )) {
       await data.portable!.remove(steamId);
       await reload();
       return;
@@ -1257,8 +1571,10 @@ class AppController extends AsyncNotifier<AppData> {
     final beforeSteamId = insertAt + 1 < accounts.length
         ? accounts[insertAt + 1].steamId
         : null;
-    final movedInManifest = await data.store
-        .moveEntryById(moved.steamId, beforeSteamId: beforeSteamId);
+    final movedInManifest = await data.store.moveEntryById(
+      moved.steamId,
+      beforeSteamId: beforeSteamId,
+    );
     if (!movedInManifest) {
       // No manifest entry matches the dragged account's steamId (legacy
       // steamid-0 import, diverged entry): nothing was persisted, so resync
@@ -1298,7 +1614,8 @@ class AppController extends AsyncNotifier<AppData> {
     if (data == null) return false;
     SteamGuardAccount? target;
     for (final a in data.visibleAccounts) {
-      if (a.steamId == account.steamId && a.fromPortable == account.fromPortable) {
+      if (a.steamId == account.steamId &&
+          a.fromPortable == account.fromPortable) {
         target = a;
         break;
       }
@@ -1311,20 +1628,34 @@ class AppController extends AsyncNotifier<AppData> {
     return _saveToSource(target);
   }
 
-  Future<bool> _saveToSource(SteamGuardAccount account, {bool allowNew = false}) async {
+  Future<bool> _saveToSource(
+    SteamGuardAccount account, {
+    bool allowNew = false,
+  }) async {
     final data = state.value;
-    if (data == null) return false;
-    final isNew = !data.store.entries.any((e) => e.steamId == account.steamId) &&
+    if (data == null || data.locked) return false;
+    final isNew =
+        !data.store.entries.any((e) => e.steamId == account.steamId) &&
         !(data.portable?.ids.contains(account.steamId) ?? false);
-    if (account.fromPortable || (allowNew && isNew && (data.portable?.enabled ?? false))) {
+    if (account.fromPortable ||
+        (allowNew && isNew && (data.portable?.enabled ?? false))) {
       try {
-        if (!allowNew && !(data.portable?.ids.contains(account.steamId) ?? false)) return false;
+        if (!allowNew &&
+            !(data.portable?.ids.contains(account.steamId) ?? false)) {
+          return false;
+        }
         await data.portable!.save(account);
         account.fromPortable = true;
         return true;
-      } catch (_) { return false; }
+      } catch (_) {
+        return false;
+      }
     }
-    return data.store.saveAccount(account, data.store.encrypted, passKey: data.passKey);
+    return data.store.saveAccount(
+      account,
+      data.store.encrypted,
+      passKey: data.passKey,
+    );
   }
 
   /// Copies without replacing collisions; verifies target secrets before
@@ -1334,24 +1665,41 @@ class AppController extends AsyncNotifier<AppData> {
     final portable = data.portable!;
     var skipped = 0;
     if (migrate) {
-      if (portable.locked) throw StateError('Unlock the portable library first');
+      if (portable.locked) {
+        throw StateError('Unlock the portable library first');
+      }
       final source = enabled ? data.accounts : portable.accounts;
       for (final account in List<SteamGuardAccount>.of(source)) {
         if (enabled) {
-          if (portable.ids.contains(account.steamId)) { skipped++; continue; }
+          if (portable.ids.contains(account.steamId)) {
+            skipped++;
+            continue;
+          }
           await portable.save(account);
-          final check = portable.accounts.firstWhere((a) => a.steamId == account.steamId);
-          if (check.sharedSecret != account.sharedSecret || check.identitySecret != account.identitySecret) {
+          final check = portable.accounts.firstWhere(
+            (a) => a.steamId == account.steamId,
+          );
+          if (check.sharedSecret != account.sharedSecret ||
+              check.identitySecret != account.identitySecret) {
             throw StateError('Portable copy verification failed');
           }
         } else {
-          if (data.store.entries.any((e) => e.steamId == account.steamId)) { skipped++; continue; }
-          if (!await data.store.saveAccount(account, data.store.encrypted, passKey: data.passKey)) {
+          if (data.store.entries.any((e) => e.steamId == account.steamId)) {
+            skipped++;
+            continue;
+          }
+          if (!await data.store.saveAccount(
+            account,
+            data.store.encrypted,
+            passKey: data.passKey,
+          )) {
             throw StateError('Local copy failed');
           }
-          final check = (await data.store.getAllAccounts(passKey: data.passKey))
-              .firstWhere((a) => a.steamId == account.steamId);
-          if (check.sharedSecret != account.sharedSecret || check.identitySecret != account.identitySecret) {
+          final check = (await data.store.getAllAccounts(
+            passKey: data.passKey,
+          )).firstWhere((a) => a.steamId == account.steamId);
+          if (check.sharedSecret != account.sharedSecret ||
+              check.identitySecret != account.identitySecret) {
             throw StateError('Local copy verification failed');
           }
         }
@@ -1368,29 +1716,65 @@ class AppController extends AsyncNotifier<AppData> {
   /// - Changing the PIN on a vault store re-wraps the DEK under the new PIN.
   /// - Legacy encrypted stores rotate the CBC key (and migrate to vault on the
   ///   next unlock).
-  Future<bool> changePasskey(String? oldKey, String? newKey) async {
+  Future<bool> changePasskey(String? oldKey, String? newKey) {
+    if (_pinChange != null || _vaultReset != null) return Future.value(false);
+    final operation = _changePasskey(oldKey, newKey);
+    _pinChange = operation;
+    return operation.whenComplete(() {
+      if (identical(_pinChange, operation)) _pinChange = null;
+    });
+  }
+
+  Future<bool> _changePasskey(String? oldKey, String? newKey) async {
     final data = state.value;
-    if (data == null || newKey == null) return false;
+    if (data == null || data.locked || newKey == null) return false;
     final store = data.store;
+
+    // Re-read after every async key operation. In particular, settings can be
+    // closed and "Lock now" pressed while the platform key store is writing.
+    // Publishing the captured [data] would restore its accounts and unlocked
+    // state. Preserve the latest session, and never install a PIN into a
+    // manually locked session or a different (reset/reloaded) store.
+    Future<void> publishChangedPin() async {
+      // Every PIN-change entry point invalidates the old system credential.
+      await ref.read(biometricUnlockProvider).disable();
+      ref.invalidate(biometricUnlockEnabledProvider);
+      final current = state.value;
+      if (current == null || !identical(current.store, store)) return;
+      if (current.locked) {
+        store.setDek(null);
+        state = AsyncData(current.copyWith());
+      } else {
+        state = AsyncData(current.copyWith(passKey: newKey));
+      }
+    }
 
     if (store.isVault) {
       final ok = await ref
           .read(vaultKeyStoreProvider)
           .rewrapPin(oldKey ?? '', newKey);
-      if (ok) state = AsyncData(data.copyWith(passKey: newKey));
+      if (ok) {
+        await publishChangedPin();
+        // The new PIN wrap invalidates the convenience credential even if
+        // best-effort deletion fails. PIN changes restore verification.
+        try {
+          await ref.read(startupUnlockProvider).forget();
+        } catch (_) {}
+        ref.invalidate(startupVerificationEnabledProvider);
+      }
       return ok;
     }
 
     // First PIN on a brand-new store → go straight to the vault scheme.
     if (oldKey == null && !store.encrypted) {
       final ok = await _establishVault(newKey, data.accounts);
-      if (ok) state = AsyncData(data.copyWith(passKey: newKey));
+      if (ok) await publishChangedPin();
       return ok;
     }
 
     // Legacy rotate (migrates to vault on next unlock).
     final ok = await store.changeEncryptionKey(oldKey, newKey);
-    if (ok) state = AsyncData(data.copyWith(passKey: newKey));
+    if (ok) await publishChangedPin();
     return ok;
   }
 }

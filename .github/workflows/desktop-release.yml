@@ -57,7 +57,10 @@ jobs:
       - name: Read version
         id: ver
         shell: bash
-        run: echo "v=$(grep '^version:' pubspec.yaml | cut -d' ' -f2 | cut -d+ -f1)" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(grep '^version:' pubspec.yaml | cut -d' ' -f2)
+          echo "v=${version%%+*}" >> "$GITHUB_OUTPUT"
+          echo "full=$version" >> "$GITHUB_OUTPUT"
 
       # ---- scene-style installer (installer/): app Release becomes the
       # payload asset, the installer app is built around it, then NSIS
@@ -74,7 +77,7 @@ jobs:
         working-directory: installer
         run: |
           flutter pub get --enforce-lockfile
-          flutter build windows --release --dart-define=AVA_VERSION=${{ steps.ver.outputs.v }}
+          flutter build windows --release --dart-define=AVA_VERSION=${{ steps.ver.outputs.full }}
 
       # NSIS is NOT in the windows-latest (Server 2025) image — it was in
       # 2022, which is what an out-of-date reading of the image manifest will
@@ -91,7 +94,7 @@ jobs:
         working-directory: .
         run: |
           $src = (Resolve-Path installer/build/windows/x64/runner/Release).Path
-          $out = Join-Path (Get-Location).Path "AVA-v${{ steps.ver.outputs.v }}-windows-x64-setup.exe"
+          $out = Join-Path (Get-Location).Path "GooeSteamKit-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe"
           $ico = (Resolve-Path app/windows/runner/resources/app_icon.ico).Path
           # choco does not refresh this session's PATH, so look in the known
           # install location too before giving up.
@@ -107,57 +110,29 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "makensis exited $LASTEXITCODE" }
           if (-not (Test-Path $out)) { throw "makensis produced no output" }
           "packed {0:N1} MB" -f ((Get-Item $out).Length / 1MB)
+          $alias = Join-Path (Get-Location).Path "AVA-pc-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe"
+          Copy-Item -LiteralPath $out -Destination $alias
+          $hash = (Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ((Get-FileHash -LiteralPath $alias -Algorithm SHA256).Hash.ToLowerInvariant() -cne $hash) { throw 'Compatibility alias differs from the primary setup' }
+          $packages = @($out, $alias) | ForEach-Object {
+            @{ release_file = [IO.Path]::GetFileName($_); sha256 = $hash; size = (Get-Item -LiteralPath $_).Length }
+          }
+          @{ commit = $env:GITHUB_SHA; run_id = $env:GITHUB_RUN_ID; packages = @($packages) } | ConvertTo-Json -Depth 4 | Set-Content windows-provenance.json -Encoding utf8
+          $packages | ForEach-Object { "$($_.sha256)  $($_.release_file)" } | Set-Content windows-SHA256SUMS.txt -Encoding utf8
 
-      - name: E2E install test
+      - name: E2E installed-directory upgrade and uninstall test
         shell: pwsh
         working-directory: .
-        run: |
-          $setup = ".\AVA-v${{ steps.ver.outputs.v }}-windows-x64-setup.exe"
-          $p = Start-Process $setup -ArgumentList '--auto' -PassThru -Wait
-          if ($p.ExitCode -ne 0) { throw "auto-install exited $($p.ExitCode)" }
-          $dir = "$env:LOCALAPPDATA\Programs\AVA"
-          foreach ($f in @('ava.exe','uninstall.exe','data\icudtl.dat')) {
-            if (-not (Test-Path "$dir\$f")) { throw "missing $f after install" }
-          }
-          reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA /v UninstallString
-
-          # The installer reproduces itself by copying its own outer image.
-          # Under the NSIS wrapper that image is no longer the running
-          # process, so it arrives via --self= — and if that plumbing ever
-          # breaks, this is what breaks: uninstall.exe would be a copy of the
-          # unpacked launcher instead of the setup exe, and would not run.
-          $a = (Get-FileHash $setup -Algorithm SHA256).Hash
-          $b = (Get-FileHash "$dir\uninstall.exe" -Algorithm SHA256).Hash
-          if ($a -ne $b) { throw "uninstall.exe is not a copy of setup.exe ($b vs $a)" }
-          Write-Host "uninstall.exe matches setup.exe — $a"
-
-      # Uninstall is two-stage and detached (the uninstaller cannot delete
-      # itself), so this asserts the end state rather than an exit code.
-      - name: E2E uninstall test
-        shell: pwsh
-        working-directory: .
-        run: |
-          $dir = "$env:LOCALAPPDATA\Programs\AVA"
-          Start-Process "$dir\uninstall.exe" -ArgumentList '--auto'
-          $deadline = (Get-Date).AddMinutes(3)
-          while ((Test-Path $dir) -and (Get-Date) -lt $deadline) { Start-Sleep 3 }
-          if (Test-Path $dir) {
-            Get-ChildItem -Recurse $dir | Select-Object -First 20 FullName | Out-String | Write-Host
-            throw "install folder still present after uninstall"
-          }
-          # Test-Path over `reg query` on purpose: reg exits 1 when the key is
-          # missing, which is the result this step is hoping for — and the
-          # pwsh wrapper ends the step with `exit $LASTEXITCODE`, so a clean
-          # uninstall failed the job while printing that it had succeeded.
-          if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AVA') {
-            throw "uninstall registry entry survived"
-          }
-          Write-Host "uninstalled cleanly"
+        run: ./tool/test_windows_setup.ps1 -Setup "GooeSteamKit-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe" -PayloadDirectory app/build/windows/x64/runner/Release
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
-          name: AVA-v${{ steps.ver.outputs.v }}-windows-x64-setup
-          path: AVA-v${{ steps.ver.outputs.v }}-windows-x64-setup.exe
+          name: GooeSteamKit-v${{ steps.ver.outputs.full }}-windows-x64-setup
+          path: |
+            GooeSteamKit-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe
+            AVA-pc-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe
+            windows-provenance.json
+            windows-SHA256SUMS.txt
 
       - name: Extract changelog
         if: startsWith(github.ref, 'refs/tags/')
@@ -191,7 +166,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2
         with:
-          files: AVA-v${{ steps.ver.outputs.v }}-windows-x64-setup.exe
+          files: |
+            GooeSteamKit-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe
+            AVA-pc-v${{ steps.ver.outputs.full }}-windows-x64-setup.exe
+            windows-provenance.json
+            windows-SHA256SUMS.txt
           body_path: ${{ steps.notes.outputs.path }}
 
   linux-appimage:

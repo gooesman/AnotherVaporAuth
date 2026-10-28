@@ -21,8 +21,8 @@ class _ScanlineOverlayState extends ConsumerState<ScanlineOverlay>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1100),
-  )..repeat();
-  bool _animate = true;
+  );
+  bool _animate = false;
   bool _covered = false; // a pushed route is on top of this screen
 
   @override
@@ -32,6 +32,7 @@ class _ScanlineOverlayState extends ConsumerState<ScanlineOverlay>
     // transparent overlays — dialogs, sheets, menus — must not pause us).
     final route = ModalRoute.of(context);
     if (route is PageRoute<void>) routeObserver.subscribe(this, route);
+    _updateRunning();
   }
 
   @override
@@ -55,7 +56,7 @@ class _ScanlineOverlayState extends ConsumerState<ScanlineOverlay>
 
   // Animate only while visible and motion is allowed.
   void _updateRunning() {
-    if (_animate && !_covered) {
+    if (_animate && !_covered && TickerMode.valuesOf(context).enabled) {
       if (!_c.isAnimating) _c.repeat();
     } else if (_c.isAnimating) {
       _c.stop();

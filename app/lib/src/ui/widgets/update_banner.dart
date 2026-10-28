@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../app/providers.dart';
 import '../../app/theme.dart';
 import '../../core/channel.dart';
+import '../../core/fork_policy.dart';
 
 const _kPlayUrl =
     'https://play.google.com/store/apps/details?id=pro.dotslash.ava';
@@ -23,6 +24,7 @@ class UpdateBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (kForkLocalFeatures) return const SizedBox.shrink();
     final decision = ref.watch(updateDecisionProvider);
     final latest = decision.latest;
     if (!decision.available || latest == null) {

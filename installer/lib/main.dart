@@ -19,11 +19,24 @@ void main(List<String> args) async {
       p.basename(InstallEngine.selfImage).toLowerCase() == 'uninstall.exe';
   final auto =
       args.contains('--auto') || (staged && InstallEngine.stagedAuto);
+  String? initialInstallDir;
+  String? initializationError;
+  if (!uninstall) {
+    try {
+      initialInstallDir = await InstallEngine.resolveInstallDir(args);
+    } catch (error) {
+      initializationError = '$error';
+      if (auto) {
+        stderr.writeln('ERROR: $error');
+        exit(1);
+      }
+    }
+  }
   await windowManager.ensureInitialized();
   const options = WindowOptions(
     size: Size(760, 460),
     center: true,
-    title: 'AVA Setup',
+    title: '$appDisplayName Setup',
     titleBarStyle: TitleBarStyle.hidden,
   );
   windowManager.waitUntilReadyToShow(options, () async {
@@ -32,7 +45,13 @@ void main(List<String> args) async {
     await windowManager.show();
     await windowManager.focus();
   });
-  runApp(InstallerApp(uninstall: uninstall, auto: auto, staged: staged));
+  runApp(InstallerApp(
+    uninstall: uninstall,
+    auto: auto,
+    staged: staged,
+    initialInstallDir: initialInstallDir,
+    initializationError: initializationError,
+  ));
 }
 
 class InstallerApp extends StatelessWidget {
@@ -40,10 +59,14 @@ class InstallerApp extends StatelessWidget {
       {super.key,
       required this.uninstall,
       required this.auto,
-      required this.staged});
+      required this.staged,
+      this.initialInstallDir,
+      this.initializationError});
   final bool uninstall;
   final bool auto;
   final bool staged;
+  final String? initialInstallDir;
+  final String? initializationError;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -53,7 +76,11 @@ class InstallerApp extends StatelessWidget {
             scaffoldBackgroundColor: Fx.bg,
             fontFamily: Fx.font),
         home: InstallerScreen(
-            uninstall: uninstall, auto: auto, staged: staged),
+            uninstall: uninstall,
+            auto: auto,
+            staged: staged,
+            initialInstallDir: initialInstallDir,
+            initializationError: initializationError),
       );
 }
 
@@ -64,10 +91,14 @@ class InstallerScreen extends StatefulWidget {
       {super.key,
       required this.uninstall,
       required this.auto,
-      required this.staged});
+      required this.staged,
+      this.initialInstallDir,
+      this.initializationError});
   final bool uninstall;
   final bool auto;
   final bool staged;
+  final String? initialInstallDir;
+  final String? initializationError;
 
   @override
   State<InstallerScreen> createState() => _InstallerScreenState();
@@ -81,7 +112,8 @@ class _InstallerScreenState extends State<InstallerScreen>
   late final AnimationController _marquee = AnimationController(
       vsync: this, duration: const Duration(seconds: 22))
     ..repeat();
-  final _path = TextEditingController(text: InstallEngine.defaultInstallDir);
+  late final _path = TextEditingController(
+      text: widget.initialInstallDir ?? InstallEngine.defaultInstallDir);
   final _scroll = ScrollController();
   final _logs = <String>[];
   var _phase = Phase.ready;
@@ -89,7 +121,7 @@ class _InstallerScreenState extends State<InstallerScreen>
   var _desktopShortcut = true;
   String _error = '';
 
-  static const _greetz = ' *** AVA // ANOTHERVAPORAUTH *** OPEN SOURCE (MIT)'
+  static const _greetz = ' *** $appDisplayName // ANOTHERVAPORAUTH *** OPEN SOURCE (MIT)'
       ' *** STEAM AUTH ON YOUR OWN TERMS *** NO TELEMETRY - NO BACKEND'
       ' *** GITHUB.COM/FREEFRANK/ANOTHERVAPORAUTH *** GREETZ TO THE BETA CREW'
       ' *** ';
@@ -97,6 +129,11 @@ class _InstallerScreenState extends State<InstallerScreen>
   @override
   void initState() {
     super.initState();
+    if (!widget.uninstall && widget.initializationError != null) {
+      _phase = Phase.error;
+      _error = widget.initializationError!;
+      return;
+    }
     // The staged cleanup copy always starts immediately — the user already
     // confirmed in stage 1.
     if (widget.auto || widget.staged) {
@@ -215,7 +252,7 @@ class _InstallerScreenState extends State<InstallerScreen>
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                    widget.uninstall ? 'AVA.UNINSTALL.EXE' : 'AVA.SETUP.EXE',
+                    widget.uninstall ? '$appDisplayName UNINSTALL' : '$appDisplayName SETUP',
                     style: Fx.text(11, color: Fx.dim)),
               ),
             ),
@@ -244,10 +281,21 @@ class _InstallerScreenState extends State<InstallerScreen>
     final header = Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        GlitchTitle('AVA', t: _fx.value),
-        const SizedBox(width: 6),
-        BlinkCursor(t: _fx.value),
-        const Spacer(),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GlitchTitle(appDisplayName, t: _fx.value),
+                const SizedBox(width: 6),
+                BlinkCursor(t: _fx.value),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
@@ -330,7 +378,7 @@ class _InstallerScreenState extends State<InstallerScreen>
 
   Widget _readyUninstall() {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('REMOVE AVA FROM THIS MACHINE?',
+      Text('REMOVE $appDisplayName FROM THIS MACHINE?',
           style: Fx.text(16, color: Fx.magenta)),
       const SizedBox(height: 10),
       Text(InstallEngine.selfDir, style: Fx.text(12, color: Fx.dim)),
@@ -399,7 +447,7 @@ class _InstallerScreenState extends State<InstallerScreen>
         PixelButton('EXIT', color: Fx.dim, onTap: () => exit(0)),
         if (!uninstall && !InstallEngine.isDryRun) ...[
           const SizedBox(width: 12),
-          PixelButton('LAUNCH AVA', color: Fx.green, onTap: _launchAndExit),
+          PixelButton('LAUNCH $appDisplayName', color: Fx.green, onTap: _launchAndExit),
         ],
       ]),
     ]);

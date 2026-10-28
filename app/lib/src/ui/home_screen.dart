@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,27 +7,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../app/account_name_mode.dart';
 import '../app/providers.dart';
+import '../app/steam_notifications_provider.dart';
 import '../app/responsive.dart';
 import '../app/theme.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/steam_totp.dart';
 import '../services/steam_time.dart';
 import 'widgets/animated_steam_image.dart';
+import 'widgets/account_identity_menu.dart';
 import 'widgets/app_logo.dart';
 import 'widgets/countdown_ring.dart';
 import 'widgets/flip_code.dart';
 import 'widgets/hold_button.dart';
 import 'widgets/motion.dart';
 import '../skins/skin_engine.dart';
-import '../skins/skin_spec.dart';
 import 'widgets/scanline_overlay.dart';
 import 'widgets/update_banner.dart';
 import 'widgets/steam_image_provider.dart';
+import 'widgets/steam_acceleration_status.dart';
+import 'widgets/steam_notifications_button.dart';
+import 'widgets/pending_confirmation_badge.dart';
+import 'notifications/notifications_screen.dart';
 import 'approve_login_screen.dart';
-import 'paywall_screen.dart';
+import 'account_dashboard.dart';
+import 'backup_codes_screen.dart';
+import 'friends/friends_screen.dart';
+import 'steam_client_screen.dart';
 import 'pending/pending_screen.dart';
-import 'widgets/ava_banner.dart';
 import 'import_helper.dart';
 import 'pending_login.dart';
 import 'device_sessions_screen.dart';
@@ -56,6 +64,13 @@ String _initial(SteamGuardAccount a) {
 Color _avatarColor(SteamGuardAccount a) =>
     _palette[a.steamId.hashCode.abs() % _palette.length];
 
+bool _hasInlineDashboard(BuildContext context) {
+  final platform = Theme.of(context).platform;
+  return platform != TargetPlatform.android &&
+      platform != TargetPlatform.iOS &&
+      MediaQuery.sizeOf(context).width >= 640;
+}
+
 String _codeFor(SteamGuardAccount a, int tick) {
   try {
     return a.generateCode(tick);
@@ -64,35 +79,83 @@ String _codeFor(SteamGuardAccount a, int tick) {
   }
 }
 
-/// How an account's primary label is shown — tapping the panel name cycles it.
-enum _NameMode { username, persona, id }
+/// The 30-second token and 1-second countdown have separate subscriptions.
+/// Keeping the clock at these leaves avoids rebuilding avatars, swipe panes,
+/// the account list and the desktop dashboard on every second.
+class _AccountCode extends ConsumerStatefulWidget {
+  final SteamGuardAccount account;
+  final Widget Function(BuildContext context, String code) builder;
 
-String _displayName(SteamGuardAccount a, _NameMode mode) {
+  const _AccountCode({required this.account, required this.builder});
+
+  @override
+  ConsumerState<_AccountCode> createState() => _AccountCodeState();
+}
+
+class _AccountCodeState extends ConsumerState<_AccountCode> {
+  int? _window;
+  String? _secret;
+  String? _code;
+
+  @override
+  Widget build(BuildContext context) {
+    final window = ref.watch(
+      tickProvider.select(
+        (tick) => (tick.value ?? SteamTime.currentSteamTime) ~/ 30,
+      ),
+    );
+    // Accounts are mutable. Include the current secret in the cache key so
+    // replacing/re-enrolling an account within the same window is immediate.
+    if (_window != window ||
+        _secret != widget.account.sharedSecret ||
+        _code == null) {
+      _window = window;
+      _secret = widget.account.sharedSecret;
+      _code = _codeFor(widget.account, window * 30);
+    }
+    return RepaintBoundary(child: widget.builder(context, _code!));
+  }
+}
+
+class _LiveCountdown extends ConsumerWidget {
+  final bool wide;
+
+  const _LiveCountdown({required this.wide});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tick = ref.watch(tickProvider).value ?? SteamTime.currentSteamTime;
+    return RepaintBoundary(
+      child: CountdownRing(
+        remaining: SteamTotp.secondsRemaining(tick),
+        size: context.r(wide ? 52 : 42),
+        stroke: context.r(6),
+      ),
+    );
+  }
+}
+
+String _displayName(SteamGuardAccount a, AccountNameMode mode) {
   switch (mode) {
-    case _NameMode.username:
+    case AccountNameMode.username:
       return a.accountName ?? '${a.steamId}';
-    case _NameMode.persona:
+    case AccountNameMode.persona:
       final p = a.personaName;
       return (p != null && p.isNotEmpty) ? p : (a.accountName ?? '${a.steamId}');
-    case _NameMode.id:
+    case AccountNameMode.id:
       return '${a.steamId}';
   }
 }
 
-/// Fade + scale + full-height vertical slide used when an account label changes
-/// (mode toggle or switching the selected account) — deliberately pronounced.
+/// A short crossfade with a small vertical movement when an account changes.
 Widget _nameTransition(Widget child, Animation<double> anim) {
-  final slide = Tween(begin: const Offset(0, 1.0), end: Offset.zero)
+  final slide = Tween(begin: const Offset(0, 0.12), end: Offset.zero)
       .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
   return FadeTransition(
     opacity: anim,
     child: SlideTransition(
       position: slide,
-      child: ScaleTransition(
-        scale: Tween(begin: 0.7, end: 1.0).animate(anim),
-        alignment: Alignment.centerLeft,
-        child: child,
-      ),
+      child: child,
     ),
   );
 }
@@ -100,23 +163,23 @@ Widget _nameTransition(Widget child, Animation<double> anim) {
 /// An account label that animates whenever its text changes.
 class _AnimatedName extends StatelessWidget {
   final SteamGuardAccount account;
-  final _NameMode mode;
+  final AccountNameMode mode;
   final TextStyle style;
   const _AnimatedName(
       {required this.account, required this.mode, required this.style});
 
   @override
   Widget build(BuildContext context) {
-    // Respect "reduce motion": plain crossfade instead of slide + scale.
+    // Respect "reduce motion": update immediately instead of sliding.
     final reduce = MediaQuery.disableAnimationsOf(context);
     return AnimatedSwitcher(
-      duration: Duration(milliseconds: reduce ? 150 : 420),
+      duration: Duration(milliseconds: reduce ? 0 : 180),
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
       transitionBuilder: reduce
           ? (child, anim) => FadeTransition(opacity: anim, child: child)
           : _nameTransition,
-      // Clip so the full-height slide doesn't bleed into neighbours.
+      // Clip the outgoing label so it doesn't bleed into neighbours.
       layoutBuilder: (current, previous) => Stack(
         alignment: Alignment.centerLeft,
         clipBehavior: Clip.hardEdge,
@@ -152,7 +215,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _checkedLogins = false;
   bool _checkedTutorial = false;
   int _lastTutorialReplay = 0;
-  _NameMode _nameMode = _NameMode.username;
 
   // First-run gesture tutorial hooks: spotlight targets + a controller that
   // lets the tutorial physically open the first row's swipe panes. The targets
@@ -161,14 +223,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // the compositing layer handles the transform, no manual coordinate math.
   final _codeLink = LayerLink();
   final _firstRowLink = LayerLink();
-  late final _demoSlidable = SlidableController(this);
+  late final SlidableController _demoSlidable;
 
-  // Custom neon pull-to-refresh state.
-  double _pull = 0; // accumulated finger travel while pulling, in logical px
+  // Pointer movement only rebuilds the small refresh indicator, not the home.
+  final _pull = ValueNotifier<double>(0);
   bool _refreshing = false;
   // Account-list manual sort mode (toggled by the sidebar's sort button).
   bool _sortMode = false;
-  // Whether the running refresh should drive the full-screen pull overlay
+  // Whether the running refresh should show the pull indicator
   // (true for the pull gesture, false for the desktop refresh button).
   bool _pullVisual = false;
   // Measured in finger travel (logical px), not scroll pixels: the list uses
@@ -181,9 +243,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   static const double _pullThreshold = 130;
 
   @override
+  void initState() {
+    super.initState();
+    // Empty libraries never build a row. Initialize while mounted instead of
+    // letting the first lazy access create a ticker during disposal.
+    _demoSlidable = SlidableController(this);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _demoSlidable.dispose();
+    _pull.dispose();
     super.dispose();
   }
 
@@ -201,7 +272,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (!mounted) return;
       // Only over the home screen itself — the first account may appear while
       // a login/finalize screen is still on top (revocation code!). Re-arm and
-      // retry on a later build (the 1s tick rebuilds us) once we're current.
+      // retry from the clock listener once we're current.
       if (ModalRoute.of(context)?.isCurrent != true) {
         _checkedTutorial = false;
         return;
@@ -218,10 +289,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  void _cycleNameMode() => setState(() {
-        _nameMode =
-            _NameMode.values[(_nameMode.index + 1) % _NameMode.values.length];
-      });
+  void _cycleNameMode() =>
+      unawaited(ref.read(accountNameModeProvider.notifier).cycle());
 
   /// Accumulates the finger's real vertical travel while the list is
   /// overscrolled at the top (dy > 0 pulls further; dy < 0 — dragging back
@@ -230,41 +299,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// sizes (see `_pullThreshold`).
   void _onPullDelta(double dy) {
     if (_refreshing) return;
-    final p = (_pull + dy).clamp(0.0, _pullThreshold * 1.5);
-    if (p == _pull) return;
+    final p = (_pull.value + dy).clamp(0.0, _pullThreshold * 1.5);
+    if (p == _pull.value) return;
     // Haptic "click" the moment the pull charges past the trigger threshold.
-    if (_pull < _pullThreshold && p >= _pullThreshold) {
+    if (_pull.value < _pullThreshold && p >= _pullThreshold) {
       if (ref.read(hapticsProvider)) HapticFeedback.mediumImpact();
     }
-    setState(() => _pull = p);
+    _pull.value = p;
   }
 
   /// The list scrolled back into its normal (non-overscrolled) region — any
   /// accumulated pull is stale and must be cleared immediately.
   void _onPullReset() {
-    if (_refreshing || _pull == 0) return;
-    setState(() => _pull = 0);
+    if (_refreshing || _pull.value == 0) return;
+    _pull.value = 0;
   }
 
   void _onPullEnd() {
     if (_refreshing) return;
-    if (_pull >= _pullThreshold) {
+    if (_pull.value >= _pullThreshold) {
       _startRefresh();
-    } else if (_pull != 0) {
-      setState(() => _pull = 0);
+    } else if (_pull.value != 0) {
+      _pull.value = 0;
     }
   }
 
   /// Refreshes avatars/frames and polls the selected account's sign-ins. Shared
-  /// by the neon pull overlay and the pixel-theme RefreshIndicator.
+  /// by the pull gesture and the desktop refresh button.
   Future<void> _runRefresh() async {
     final accounts =
         ref.read(appControllerProvider).value?.visibleAccounts ?? const [];
-    await ref.read(appControllerProvider.notifier).refreshAvatars();
-    if (mounted && accounts.isNotEmpty) {
-      await checkPendingLogins(context, ref, accounts[_selected],
-          silent: false);
-    }
+    // Freeze the account before either request starts: the user can change
+    // selection while avatars load. Independent reads need not queue up.
+    final selectedAccount =
+        _selected < accounts.length ? accounts[_selected] : null;
+    // Counts update independently; an offline account must not hold the home
+    // refresh animation open while other accounts wait in the read queue.
+    unawaited(ref.read(steamNotificationCountsProvider.notifier)
+        .refreshAll(accounts, force: true));
+    await Future.wait<void>([
+      ref.read(appControllerProvider.notifier).refreshAvatars(),
+      if (selectedAccount != null)
+        checkPendingLogins(context, ref, selectedAccount, silent: false),
+    ]);
   }
 
   Future<void> _startRefresh({bool visual = true}) async {
@@ -280,7 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         setState(() {
           _refreshing = false;
           _pullVisual = false;
-          _pull = 0;
+          _pull.value = 0;
         });
       }
     }
@@ -289,20 +366,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    // Ambience / HUD / scanlines / pull wash all come from the active skin's
-    // effect spec; the engine widgets render nothing for the plain themes.
-    final pullSpec = ref.watch(skinSpecProvider)?.pull;
+    final nameMode = ref.watch(accountNameModeProvider);
     // Row glow / border styling still keys off the resolved variant.
     final neon = Theme.of(context).extension<AvaTokens>()?.variant ==
         AvaThemeVariant.neon;
     final accounts =
         ref.watch(appControllerProvider).value?.visibleAccounts ??
             const <SteamGuardAccount>[];
-    final tick =
-        ref.watch(tickProvider).value ?? SteamTime.currentSteamTime;
     final haptics = ref.watch(hapticsProvider);
     if (_selected >= accounts.length) _selected = 0;
     final hasAccounts = accounts.isNotEmpty;
+    // A first account can be added while the login screen is still above us.
+    // Retain the tutorial retry without subscribing the whole home to time.
+    ref.listen(tickProvider, (_, _) {
+      if (hasAccounts && !_checkedTutorial) _maybeShowTutorial();
+    });
 
     // Auto-check the selected account for pending sign-in requests once on open.
     if (hasAccounts && !_checkedLogins) {
@@ -320,35 +398,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
     if (hasAccounts) _maybeShowTutorial();
 
-    // One-time 0.90 migration notice: the stored skin moved behind Pro.
-    ref.listen(skinPaywallNoticeProvider, (_, active) {
-      if (active != true) return;
-      final messenger = ScaffoldMessenger.of(context);
-      void close() {
-        messenger.hideCurrentMaterialBanner();
-        ref.read(skinPaywallNoticeProvider.notifier).dismiss();
-      }
-
-      messenger.showMaterialBanner(MaterialBanner(
-        content: Text(l.skinProNotice),
-        actions: [
-          TextButton(
-            onPressed: () {
-              close();
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const PaywallScreen()));
-            },
-            child: Text(l.proOpen),
-          ),
-          TextButton(onPressed: close, child: Text(l.skinProNoticeDismiss)),
-        ],
-      ));
-    });
-
-    return Scaffold(
-      // Banner ad slot: play flavor, free tier only; collapses to nothing
-      // everywhere else. Never rendered on screens with confirm actions.
-      bottomNavigationBar: const AvaBannerSlot(),
+    return NotificationCountsRefresh(
+      accounts: accounts,
+      child: Scaffold(
       // Header removed — settings is a floating button in the bottom-right.
       // endFloat already lifts the FAB clear of minViewPadding.bottom, so the
       // gesture pill is handled — but it sits in the bottom-*right* corner,
@@ -356,11 +408,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       // the corner the system inset doesn't already cover.
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: context.cornerOvershoot),
-        child: _SettingsFab(
-          label: l.navSettings,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Flexible(child: SteamAccelerationStatusChip()),
+            SizedBox(width: context.r(12)),
+            _SettingsFab(
+              label: l.navSettings,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              ),
+            ),
+          ],
         ),
       ),
       body: Column(children: [
@@ -390,7 +449,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           onSearchChanged: (_) =>
                               setState(() => _sortMode = false),
                           selected: _selected,
-                    tick: tick,
                     onSelect: (i) {
                       setState(() => _selected = i);
                       // Tapping an account polls its pending sign-in requests.
@@ -398,18 +456,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           silent: true);
                     },
                     onAdd: () => _addMenu(context),
-                    nameMode: _nameMode,
+                    nameMode: nameMode,
                     neon: neon,
                     haptics: haptics,
                     // Per-account swipe actions (the old overflow menu).
                     onAction: (acc, action) => _onAction(context, acc, action),
-                    // Custom pull drives the full-screen overlay below (neon fill
-                    // or pixel blocks).
+                    // Pull feedback stays in the account-list header, clear of
+                    // the selected account's name, token and QR button.
+                    pullIndicator: ValueListenableBuilder<double>(
+                      valueListenable: _pull,
+                      builder: (_, pull, _) {
+                        final busy = _refreshing && _pullVisual;
+                        if (!busy && pull <= 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return IgnorePointer(
+                          child: _HomeRefreshIndicator(
+                            progress: (pull / _pullThreshold).clamp(0.0, 1.0),
+                            refreshing: busy,
+                          ),
+                        );
+                      },
+                    ),
                     onPullDelta: _onPullDelta,
                     onPullReset: _onPullReset,
                     onPullEnd: _onPullEnd,
                     // Desktop has no touch pull-to-refresh — the sidebar shows
-                    // a refresh button there instead (no full-screen overlay).
+                    // a refresh button there instead (no floating indicator).
                     onRefresh: () => _startRefresh(visual: false),
                     refreshing: _refreshing,
                     firstRowLink: _firstRowLink,
@@ -433,13 +506,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   );
                   final panel = _MainPanel(
                     account: accounts[_selected],
-                    tick: tick,
                     onCopy: _copy,
                     wide: c.maxWidth >= 640,
-                    nameMode: _nameMode,
+                    nameMode: nameMode,
                     onTapName: _cycleNameMode,
                     onRelogin: () =>
                         _onAction(context, accounts[_selected], 'login'),
+                    onAction: (action) => _onAction(context, accounts[_selected], action),
+                    onOpenDashboard: () => _openDashboard(accounts[_selected]),
                     codeLink: _codeLink,
                   );
                   final Widget content = SafeArea(
@@ -454,19 +528,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           )
                         : Column(
                             children: [
-                              panel,
+                              // Preserve room for accounts on short screens.
+                              ConstrainedBox(
+                                constraints: BoxConstraints(maxHeight: c.maxHeight * 0.56),
+                                child: SingleChildScrollView(child: panel),
+                              ),
                               Divider(height: context.r(1)),
                               Expanded(child: sidebar),
                             ],
                           ),
                   );
-                  final pull01 = _refreshing && _pullVisual
-                      ? 1.0
-                      : (_pull / _pullThreshold).clamp(0.0, 1.0);
                   return Stack(
                     children: [
-                      // Skin ambience behind, HUD above, pull wash on top —
-                      // all driven by the active skin's effect spec.
+                      // Skin ambience behind the content and HUD above it.
                       const Positioned.fill(child: SkinAmbient()),
                       content,
                       const Positioned.fill(child: SkinOverlay()),
@@ -490,20 +564,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                         ),
                       ),
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(end: pull01),
-                            duration: const Duration(milliseconds: 150),
-                            curve: Curves.easeOut,
-                            builder: (_, v, _) => v <= 0.001
-                                ? const SizedBox.shrink()
-                                : pullSpec?.style == 'pixel'
-                                    ? _PixelPull(progress: v, spec: pullSpec)
-                                    : _NeonPull(progress: v, spec: pullSpec),
-                          ),
-                        ),
-                      ),
                     ],
                   );
                 },
@@ -511,6 +571,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
       ]),
+      ),
     );
   }
 
@@ -622,10 +683,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  void _openDashboard(SteamGuardAccount account) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => AccountDashboardScreen(
+        account: account,
+        onAction: (action) => _onAction(context, account, action),
+      ),
+    ));
+  }
+
   Future<void> _onAction(
       BuildContext context, SteamGuardAccount account, String value) async {
     final l = AppLocalizations.of(context);
     switch (value) {
+      case 'notifications':
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => NotificationsScreen(account: account),
+        ));
+        break;
+      case 'dashboard':
+        _openDashboard(account);
+        break;
+      case 'friends':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => FriendsScreen(account: account)));
+        break;
+      case 'backup-codes':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => BackupCodesScreen(account: account)));
+        break;
+      case 'listings':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MarketScreen(account: account, initialTab: 1)));
+        break;
+      case 'favorites':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MarketScreen(account: account, initialTab: 2)));
+        break;
+      case 'steam-client':
+        if (Platform.isWindows) {
+          await Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => SteamClientScreen(initialAccount: account)));
+        }
+        break;
       case 'confirm':
         Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => PendingScreen(account: account)));
@@ -718,14 +814,14 @@ class _Sidebar extends StatelessWidget {
   }
 
   final int selected;
-  final int tick;
   final void Function(int index) onSelect;
   final VoidCallback onAdd;
   final void Function(double dy) onPullDelta;
   final VoidCallback onPullReset;
   final VoidCallback onPullEnd;
+  final Widget pullIndicator;
   final void Function(SteamGuardAccount account, String action) onAction;
-  final _NameMode nameMode;
+  final AccountNameMode nameMode;
   final bool neon;
   final bool haptics;
   final VoidCallback? onRefresh;
@@ -742,7 +838,6 @@ class _Sidebar extends StatelessWidget {
     required this.onToggleSearch,
     required this.onSearchChanged,
     required this.selected,
-    required this.tick,
     required this.onSelect,
     required this.onAdd,
     required this.nameMode,
@@ -752,6 +847,7 @@ class _Sidebar extends StatelessWidget {
     required this.onPullDelta,
     required this.onPullReset,
     required this.onPullEnd,
+    required this.pullIndicator,
     this.onRefresh,
     this.refreshing = false,
     this.firstRowLink,
@@ -784,7 +880,6 @@ class _Sidebar extends StatelessWidget {
           final i = indices[visibleIndex];
           final row = _SidebarRow(
             account: accounts[i],
-            code: _codeFor(accounts[i], tick),
             selected: i == selected,
             nameMode: nameMode,
             neon: neon,
@@ -826,7 +921,6 @@ class _Sidebar extends StatelessWidget {
           IgnorePointer(
             child: _SidebarRow(
               account: accounts[i],
-              code: _codeFor(accounts[i], tick),
               selected: i == selected,
               nameMode: nameMode,
               neon: neon,
@@ -874,6 +968,7 @@ class _Sidebar extends StatelessWidget {
             // Fixed 48dp-tall header so the add button gets a full-size touch
             // target; the 24px visual is unchanged.
             child: SizedBox(
+              key: const ValueKey('home-account-list-header'),
               height: context.r(48),
               child: Row(
                 children: [
@@ -886,6 +981,7 @@ class _Sidebar extends StatelessWidget {
                           letterSpacing: context.r(1)),
                     ),
                   ),
+                  pullIndicator,
                   IconButton(
                     tooltip: l.accountSearchHint,
                     onPressed: onToggleSearch,
@@ -905,6 +1001,7 @@ class _Sidebar extends StatelessWidget {
                         _ => false,
                       })
                     InkWell(
+                      key: const ValueKey('home-refresh-button'),
                       onTap: refreshing ? null : onRefresh,
                       borderRadius: BorderRadius.circular(t.radiusSm),
                       child: SizedBox(
@@ -924,8 +1021,14 @@ class _Sidebar extends StatelessWidget {
                                 ? SizedBox(
                                     width: context.r(13),
                                     height: context.r(13),
-                                    child: const CircularProgressIndicator(
-                                        strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: t.accent,
+                                      semanticsLabel: l.commonRefresh,
+                                      value: MediaQuery.disableAnimationsOf(context)
+                                          ? 0.75
+                                          : null,
+                                    ),
                                   )
                                 : Icon(Icons.refresh,
                                     size: context.r(15), color: t.accent),
@@ -1015,6 +1118,7 @@ class _Sidebar extends StatelessWidget {
           Expanded(
             child: Listener(
               onPointerUp: (_) => onPullEnd(),
+              onPointerCancel: (_) => onPullReset(),
               // Trackpads (macOS) scroll via pan-zoom events, not pointer up.
               onPointerPanZoomEnd: (_) => onPullEnd(),
               child: NotificationListener<ScrollNotification>(
@@ -1052,9 +1156,8 @@ class _Sidebar extends StatelessWidget {
 
 class _SidebarRow extends ConsumerWidget {
   final SteamGuardAccount account;
-  final String code;
   final bool selected;
-  final _NameMode nameMode;
+  final AccountNameMode nameMode;
   final bool neon;
   final bool haptics;
   final VoidCallback onTap;
@@ -1062,7 +1165,6 @@ class _SidebarRow extends ConsumerWidget {
   final SlidableController? controller;
   const _SidebarRow({
     required this.account,
-    required this.code,
     required this.selected,
     required this.nameMode,
     required this.neon,
@@ -1076,7 +1178,7 @@ class _SidebarRow extends ConsumerWidget {
   /// context menu.
   ///
   /// Deliberately still lists the swipe actions (confirmations / refresh /
-  /// export / remove) that the touch sheet drops — with a mouse this menu is
+  /// export / remove) that touch users reach by swiping — with a mouse this menu is
   /// the *only* discoverable way to reach them. The sidebar's refresh button
   /// is a global avatar refresh, not this account's re-login.
   Future<void> _contextMenu(BuildContext context, Offset at) async {
@@ -1093,7 +1195,10 @@ class _SidebarRow extends ConsumerWidget {
             children: [
               Icon(icon, size: 18, color: color ?? t.muted),
               const SizedBox(width: 10),
-              Text(label, style: color != null ? TextStyle(color: color) : null),
+              Flexible(
+                child: Text(label,
+                    style: color != null ? TextStyle(color: color) : null),
+              ),
             ],
           ),
         );
@@ -1103,6 +1208,13 @@ class _SidebarRow extends ConsumerWidget {
       position: RelativeRect.fromRect(
           at & const Size(1, 1), Offset.zero & overlay.size),
       items: [
+        if (!_hasInlineDashboard(context))
+          item('dashboard', Icons.dashboard_outlined, l.dashboardTitle),
+        item('notifications', Icons.notifications_outlined, l.notificationsTitle),
+        item('friends', Icons.people_outline, l.friendsTitle),
+        item('backup-codes', Icons.key_outlined, l.backupCodesTitle),
+        if (Platform.isWindows)
+          item('steam-client', Icons.switch_account_outlined, l.steamSwitchTitle),
         item('confirm', Icons.verified_user_outlined, l.actionConfirmations),
         item('market', Icons.inventory_2_outlined, l.actionMarket),
         item('family', Icons.family_restroom, l.famAccountAction),
@@ -1116,107 +1228,6 @@ class _SidebarRow extends ConsumerWidget {
     if (action != null && context.mounted) onAction(account, action);
   }
 
-  /// Touch path for the long-press menu: a centered, phone-friendly sheet (big
-  /// tappable rows) instead of the desktop cursor popup.
-  ///
-  /// Only lists what the swipe panes *don't* already offer. Confirmations
-  /// (swipe right), refresh / export / remove (swipe left) used to be repeated
-  /// here, which made the sheet long enough to bury the actions that have no
-  /// other touch entry point. [_contextMenu] still carries the full set —
-  /// see the note there.
-  Future<void> _actionSheet(BuildContext context) async {
-    final l = AppLocalizations.of(context);
-    final t = Theme.of(context).extension<AvaTokens>()!;
-
-    Widget row(IconData icon, String label, String result, {Color? color}) {
-      final c = color ?? t.accent;
-      return InkWell(
-        onTap: () => Navigator.pop(context, result),
-        borderRadius: BorderRadius.circular(t.radiusSm),
-        child: Padding(
-          padding: context.rInsets(h: 16, v: 12),
-          child: Row(
-            children: [
-              Container(
-                width: context.r(34),
-                height: context.r(34),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: c.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(t.radiusSm),
-                  border: Border.all(
-                      color: c.withValues(alpha: 0.55), width: t.borderWidth),
-                ),
-                child: Icon(icon, color: c, size: context.r(18)),
-              ),
-              SizedBox(width: context.r(14)),
-              Text(label,
-                  style: TextStyle(
-                      color: color ?? t.text, fontSize: context.r(14.5))),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: context.rInsets(h: 32, v: 24),
-        child: Container(
-          padding: context.rInsets(v: 8),
-          decoration: BoxDecoration(
-            color: t.isPixel ? t.panel2 : t.panel2.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(t.isPixel ? 0 : t.radius),
-            border: Border.all(
-              color: t.isPixel ? t.borderColor : t.accent.withValues(alpha: 0.5),
-              width: t.borderWidth,
-            ),
-            boxShadow: t.isPixel
-                ? t.cardShadow()
-                : [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10)),
-                    ...t.glowShadow(blur: context.r(18), opacity: 0.18),
-                  ],
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: context.rInsets(h: 16, top: 6, bottom: 8),
-                  child: Text(
-                    account.accountName ??
-                        account.personaName ??
-                        '${account.steamId}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: t.muted,
-                        fontSize: context.r(12.5),
-                        letterSpacing: 0.5),
-                  ),
-                ),
-                row(Icons.inventory_2_outlined, l.actionMarket, 'market'),
-                row(Icons.family_restroom, l.famAccountAction, 'family'),
-                row(Icons.devices_outlined, l.deviceSessionsAction, 'devices'),
-                row(Icons.vpn_key_outlined, l.keyRedeemAction, 'redeem'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    if (action != null && context.mounted) onAction(account, action);
-  }
-
-  /// Long-press menu: manage the stored auto-login password.
   Widget _action(
     BuildContext context, {
     required IconData icon,
@@ -1227,12 +1238,13 @@ class _SidebarRow extends ConsumerWidget {
     final r = context.r(1);
     final t = Theme.of(context).extension<AvaTokens>()!;
     final neon = t.glow;
+    final pixel = t.variant == AvaThemeVariant.pixel;
     // Neon theme: dark glassy pill + neon border/inset glow (HUD look).
     // Pixel theme: chunky retro button — bright fill, hard 2px border, hard
     // offset shadow, dark text (no blur, radius 0).
     const ink = Color(0xFF15111F);
-    final fill = neon ? color.withValues(alpha: 0.16) : color;
-    final fg = neon ? color : ink;
+    final fill = pixel ? color : color.withValues(alpha: neon ? 0.16 : 0.08);
+    final fg = neon ? color : pixel ? ink : t.text;
     return CustomSlidableAction(
       backgroundColor: Colors.transparent,
       padding: EdgeInsets.zero,
@@ -1247,11 +1259,12 @@ class _SidebarRow extends ConsumerWidget {
             horizontal: neon ? 3 * r : 4 * r, vertical: 12 * r),
         decoration: BoxDecoration(
           color: fill,
-          borderRadius: BorderRadius.circular(neon ? t.radiusSm : 0),
+          borderRadius: BorderRadius.circular(t.radiusSm),
           border: neon
               ? Border.all(
                   color: color.withValues(alpha: 0.9), width: t.borderWidth)
-              : Border.all(color: ink, width: 2),
+              : Border.all(color: pixel ? ink : t.line,
+                  width: pixel ? 2 : t.borderWidth),
           boxShadow: neon
               ? [
                   BoxShadow(
@@ -1259,7 +1272,9 @@ class _SidebarRow extends ConsumerWidget {
                       blurRadius: 5,
                       blurStyle: BlurStyle.inner),
                 ]
-              : [BoxShadow(color: ink, offset: Offset(3 * r, 3 * r))],
+              : pixel
+                  ? [BoxShadow(color: ink, offset: Offset(3 * r, 3 * r))]
+                  : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1286,13 +1301,23 @@ class _SidebarRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final l = AppLocalizations.of(context);
-    final sessionInvalid =
-        ref.watch(sessionHealthProvider).contains(account.steamId);
+    final sessionInvalid = ref.watch(sessionHealthProvider.select(
+      (invalidAccounts) => invalidAccounts.contains(account.steamId),
+    ));
     return Padding(
       padding: context.rInsets(bottom: 8),
       child: Slidable(
         key: ValueKey((account.steamId, account.fromPortable)),
         controller: controller,
+        // Desktop rows select accounts or expose actions through right-click.
+        // Keep phone gestures even in a wide/foldable layout, and disable them
+        // on desktop even when the window is narrow or the screen has touch.
+        enabled: switch (Theme.of(context).platform) {
+          TargetPlatform.windows ||
+          TargetPlatform.macOS ||
+          TargetPlatform.linux => false,
+          _ => true,
+        },
         // Swipe RIGHT → enter the pending center (full swipe enters directly).
         startActionPane: ActionPane(
           motion: const BehindMotion(),
@@ -1336,14 +1361,13 @@ class _SidebarRow extends ConsumerWidget {
           ],
         ),
         child: _PressableCard(
-          // The account menu (market / family / devices / …) has no swipe
-          // action of its own: long-press (touch) opens the centered sheet,
-          // right-click (mouse) the cursor popup. Holding also scales the card
-          // down so the long-press affordance is discoverable.
-          haptics: haptics,
+          // Hold an account to open its overview directly; swipe panes
+          // hold the remaining management actions. Desktop keeps right-click.
           radius: t.radiusSm,
           onTap: onTap,
-          onMenu: () => _actionSheet(context),
+          onLongPress: _hasInlineDashboard(context)
+              ? null
+              : () => onAction(account, 'dashboard'),
           onSecondaryMenu: (pos) => _contextMenu(context, pos),
           child: Container(
             padding: context.rInsets(all: 8),
@@ -1368,15 +1392,15 @@ class _SidebarRow extends ConsumerWidget {
                     : null,
               )
             : BoxDecoration(
-                // Pixel theme: retro "sticker" — chunky 2px border + a hard
-                // offset shadow on the selected row (no blur, radius 0).
+                // Plain themes use flat rounded cards; only the pixel skin
+                // keeps its intentional offset shadow.
                 color: selected ? t.panel2 : t.panel.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(t.radiusSm),
                 border: Border.all(
                   color: selected ? t.accent : t.line,
                   width: t.borderWidth,
                 ),
-                boxShadow: selected
+                boxShadow: selected && t.variant == AvaThemeVariant.pixel
                     ? [
                         BoxShadow(
                           color: t.borderColor,
@@ -1418,14 +1442,25 @@ class _SidebarRow extends ConsumerWidget {
                               size: context.r(15), color: t.bad),
                         ),
                       ],
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: InkWell(
+                          key: ValueKey('account-pending-${account.steamId}'),
+                          onTap: () => onAction(account, 'confirm'),
+                          child: PendingConfirmationBadge(account: account),
+                        ),
+                      ),
                     ],
                   ),
-                  Text(
-                    code,
-                    style: TextStyle(
-                      color: t.accent,
-                      fontSize: context.r(18),
-                      letterSpacing: context.r(3),
+                  _AccountCode(
+                    account: account,
+                    builder: (context, code) => Text(
+                      code,
+                      style: TextStyle(
+                        color: t.accent,
+                        fontSize: context.r(18),
+                        letterSpacing: context.r(3),
+                      ),
                     ),
                   ),
                 ],
@@ -1440,98 +1475,52 @@ class _SidebarRow extends ConsumerWidget {
   }
 }
 
-/// Wraps an account card with press feedback: a short hold scales it down
-/// (a delayed timer so a scroll's brief touch never triggers it) and, at the
-/// long-press threshold, fires a haptic and opens the menu. Kept stateful so
-/// the pressed scale survives the home list's per-second code-tick rebuilds.
-class _PressableCard extends StatefulWidget {
+/// Tapping selects the token; holding opens its overview without a second menu.
+/// Desktop retains its right-click context menu.
+class _PressableCard extends StatelessWidget {
   final Widget child;
-  final bool haptics;
   final double radius;
   final VoidCallback onTap;
-  final VoidCallback onMenu; // touch long-press → centered sheet
-  final void Function(Offset) onSecondaryMenu; // mouse right-click → popup
+  final VoidCallback? onLongPress;
+  final void Function(Offset) onSecondaryMenu;
   const _PressableCard({
     required this.child,
-    required this.haptics,
     required this.radius,
     required this.onTap,
-    required this.onMenu,
+    required this.onLongPress,
     required this.onSecondaryMenu,
   });
 
   @override
-  State<_PressableCard> createState() => _PressableCardState();
-}
-
-class _PressableCardState extends State<_PressableCard> {
-  bool _pressed = false;
-  Timer? _hold;
-
-  void _reset() {
-    _hold?.cancel();
-    if (_pressed && mounted) {
-      setState(() => _pressed = false);
-    } else {
-      _pressed = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _hold?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) => GestureDetector(
-        // onLongPressDown fires the instant a finger lands. Wait ~140ms before
-        // scaling so a scroll (which moves and cancels well within that) never
-        // flickers the card; a deliberate hold does scale, cueing the menu.
-        onLongPressDown: (_) {
-          _hold?.cancel();
-          _hold = Timer(const Duration(milliseconds: 140), () {
-            if (mounted) setState(() => _pressed = true);
-          });
-        },
-        onLongPressCancel: _reset,
-        onLongPressEnd: (_) => _reset(),
-        onLongPressStart: (_) {
-          _reset(); // pop back as the menu opens
-          if (widget.haptics) HapticFeedback.mediumImpact();
-          widget.onMenu();
-        },
-        onSecondaryTapDown: (d) => widget.onSecondaryMenu(d.globalPosition),
-        child: AnimatedScale(
-          scale: _pressed ? 0.96 : 1.0,
-          duration: const Duration(milliseconds: 110),
-          curve: Curves.easeOut,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(widget.radius),
-            child: widget.child,
-          ),
+        onSecondaryTapDown: (d) => onSecondaryMenu(d.globalPosition),
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(radius),
+          child: child,
         ),
       );
 }
 
-/// Main panel for the selected account.
 class _MainPanel extends ConsumerWidget {
   final SteamGuardAccount account;
-  final int tick;
   final void Function(String code) onCopy;
   final bool wide; // two-pane (tablet/desktop) layout
-  final _NameMode nameMode;
+  final AccountNameMode nameMode;
   final VoidCallback onTapName;
   final VoidCallback onRelogin; // invalid-session status line → re-login
+  final ValueChanged<String> onAction;
+  final VoidCallback onOpenDashboard;
   final LayerLink? codeLink; // tutorial spotlight anchor
   const _MainPanel(
       {required this.account,
-      required this.tick,
       required this.onCopy,
       required this.nameMode,
       required this.onTapName,
       required this.onRelogin,
+      required this.onAction,
+      required this.onOpenDashboard,
       this.codeLink,
       this.wide = false});
 
@@ -1542,36 +1531,36 @@ class _MainPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final t = Theme.of(context).extension<AvaTokens>()!;
-    final code = _codeFor(account, tick);
-    final remaining = SteamTotp.secondsRemaining(tick);
-    final sessionInvalid =
-        ref.watch(sessionHealthProvider).contains(account.steamId);
+    final platform = Theme.of(context).platform;
+    final mobile = platform == TargetPlatform.android ||
+        platform == TargetPlatform.iOS;
+    final sessionInvalid = ref.watch(sessionHealthProvider.select(
+      (invalidAccounts) => invalidAccounts.contains(account.steamId),
+    ));
 
-    return Padding(
-      padding: context.rInsets(all: 26),
+    final header = Padding(
+      padding: context.rInsets(h: 16, v: wide ? 24 : 10),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Avatar(account: account, size: context.r(104)),
+              InkWell(
+                key: const ValueKey('selected-account-avatar'),
+                onLongPress: mobile ? onOpenDashboard : null,
+                child: _Avatar(account: account, size: context.r(wide ? 76 : 56)),
+              ),
               SizedBox(width: context.r(18)),
               Flexible(
                 child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tap to cycle username / persona / id; long-press to copy.
-                  GestureDetector(
+                  // Tap still cycles the remembered display mode.
+                  AccountIdentityMenu(
+                    key: const ValueKey('selected-account-name'),
+                    account: account,
                     onTap: onTapName,
-                    onLongPress: () {
-                      final text = _displayName(account, nameMode);
-                      Clipboard.setData(ClipboardData(text: text));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l.copied)),
-                      );
-                    },
-                    behavior: HitTestBehavior.opaque,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
                           maxWidth: MediaQuery.sizeOf(context).width * 0.6),
@@ -1630,7 +1619,7 @@ class _MainPanel extends ConsumerWidget {
               ),
             ],
           ),
-          SizedBox(height: context.r(26)),
+          SizedBox(height: context.r(wide ? 20 : 12)),
           // Code + countdown ring on one row. Tap the code to copy it (the
           // explicit copy button is gone). Phone: scale the code relative to the
           // viewport; tablet / two-pane: keep the fixed design size.
@@ -1643,36 +1632,65 @@ class _MainPanel extends ConsumerWidget {
                 // tracks the code's real painted position in every layout.
                 child: _linkTarget(
                   codeLink,
-                  _TapScale(
-                    onTap: () => onCopy(code),
-                    child: wide
-                        ? FlipCode(code: code, fontSize: t.codeSize)
-                        : SizedBox(
-                            width: (MediaQuery.sizeOf(context).width * 0.46)
-                                .clamp(120.0, 260.0),
-                            child: FittedBox(
-                              fit: BoxFit.fitWidth,
-                              child: FlipCode(code: code, fontSize: 56),
+                  _AccountCode(
+                    account: account,
+                    builder: (context, code) => _TapScale(
+                      onTap: () => onCopy(code),
+                      child: wide
+                          ? FlipCode(code: code, fontSize: 42)
+                          : SizedBox(
+                              width: (MediaQuery.sizeOf(context).width * 0.40)
+                                  .clamp(110.0, 200.0),
+                              child: FittedBox(
+                                fit: BoxFit.fitWidth,
+                                child: FlipCode(code: code, fontSize: 56),
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                 ),
               ),
               SizedBox(width: context.r(18)),
-              CountdownRing(
-                  remaining: remaining,
-                  size: context.r(wide ? 64 : 70),
-                  stroke: context.r(6)),
+              _LiveCountdown(wide: wide),
+              if (mobile || !wide) ...[
+                const SizedBox(width: 8),
+                SteamNotificationsButton(
+                  account: account,
+                  compact: true,
+                  onPressed: () => onAction('notifications'),
+                ),
+              ],
             ],
           ),
         ],
       ),
     );
+    // The phone home stays a token and account picker. Its richer account
+    // tools are opened explicitly from the avatar or account action menu.
+    final touchPlatform = switch (Theme.of(context).platform) {
+      TargetPlatform.android || TargetPlatform.iOS => true,
+      _ => false,
+    };
+    if (!wide || touchPlatform) return header;
+    final dashboard = AccountDashboard(
+      key: ValueKey(('dashboard', account.steamId, account.fromPortable, wide)),
+      account: account,
+      onAction: onAction,
+    );
+    return ListView(
+      padding: context.rSafeInsets(left: 28, right: 96, top: 52, bottom: 96),
+      children: [
+        Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1120), child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [header, const SizedBox(height: 12), dashboard],
+        ))),
+      ],
+    );
   }
 }
 
-/// Shared chrome for the floating corner buttons: neon glass disc with an
-/// accent glow, or a chunky pixel square with a hard offset shadow. The two
+/// Shared chrome for the floating corner buttons: flat rounded plain themes,
+/// a neon glass disc, or the pixel skin's square with an offset shadow. The two
 /// call sites deliberately differ in size and emphasis — those constants are
 /// explicit arguments here instead of drifting copies.
 class _AvaFab extends StatelessWidget {
@@ -1707,6 +1725,7 @@ class _AvaFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final neon = t.glow;
+    final pixel = t.variant == AvaThemeVariant.pixel;
     final side = context.r(size);
     Widget button = Material(
       color: Colors.transparent,
@@ -1734,13 +1753,15 @@ class _AvaFab extends StatelessWidget {
                 )
               : BoxDecoration(
                   color: t.panel2,
-                  border: Border.all(color: t.accent, width: 2),
-                  boxShadow: [
+                  borderRadius: BorderRadius.circular(t.radiusSm),
+                  border: Border.all(color: pixel ? t.accent : t.line,
+                      width: pixel ? 2 : t.borderWidth),
+                  boxShadow: pixel ? [
                     BoxShadow(
                         color: t.borderColor,
                         offset: Offset(context.r(pixelShadowOffset),
                             context.r(pixelShadowOffset))),
-                  ],
+                  ] : null,
                 ),
           child: Icon(icon, color: t.accent, size: context.r(iconSize)),
         ),
@@ -1820,8 +1841,9 @@ class _TapScaleState extends State<_TapScale> {
       onTapCancel: () => _set(false),
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
-        scale: _down ? 0.94 : 1.0,
-        duration: const Duration(milliseconds: 90),
+        scale: _down && !MediaQuery.disableAnimationsOf(context) ? 0.98 : 1.0,
+        duration: Duration(milliseconds:
+            MediaQuery.disableAnimationsOf(context) ? 0 : 90),
         curve: Curves.easeOut,
         child: widget.child,
       ),
@@ -1829,298 +1851,47 @@ class _TapScaleState extends State<_TapScale> {
   }
 }
 
-/// Full-screen animated red/blue neon fill that grows from the top as the user
-/// pulls down — moving scanlines, a cyber grid and a pulsing glowing edge, with
-/// a white-hot "charged" state once the trigger threshold is reached.
-class _NeonPull extends StatefulWidget {
-  final double progress; // 0..1
-  final PullSpec? spec; // colors; null (plain themes) falls back to tokens
-  const _NeonPull({required this.progress, this.spec});
-
-  @override
-  State<_NeonPull> createState() => _NeonPullState();
-}
-
-class _NeonPullState extends State<_NeonPull>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ac = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _ac.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Respect "reduce motion": keep the neon fill but freeze the sweeps.
-    final reduce = MediaQuery.disableAnimationsOf(context);
-    if (reduce) {
-      if (_ac.isAnimating) _ac.stop();
-    } else if (!_ac.isAnimating) {
-      _ac.repeat();
-    }
-    return Align(
-      alignment: Alignment.topCenter,
-      child: FractionallySizedBox(
-        widthFactor: 1,
-        heightFactor: widget.progress.clamp(0.0, 1.0),
-        child: AnimatedBuilder(
-          animation: _ac,
-          builder: (_, _) {
-            final tokens = Theme.of(context).extension<AvaTokens>()!;
-            final spec = widget.spec;
-            return CustomPaint(
-              size: Size.infinite,
-              painter: _NeonPainter(
-                progress: widget.progress,
-                t: reduce ? 0 : _ac.value,
-                charged: widget.progress >= 0.97,
-                colorA: spec?.colorA.resolve(tokens) ?? tokens.accent,
-                colorB: spec?.colorB.resolve(tokens) ?? tokens.accent2,
-                lineA: spec?.lineA.resolve(tokens) ?? tokens.accent,
-                lineB: spec?.lineB.resolve(tokens) ?? tokens.accent2,
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _NeonPainter extends CustomPainter {
+/// Bounded refresh feedback shared by every skin. Only the ring animates while
+/// work is pending; pulling never paints a wash over the account list.
+class _HomeRefreshIndicator extends StatelessWidget {
   final double progress;
-  final double t; // 0..1 animation phase
-  final bool charged;
-  final Color colorA; // wash start (was neon blue)
-  final Color colorB; // wash end (was neon red)
-  final Color lineA; // sweep line pair (was cyan / magenta)
-  final Color lineB;
-  _NeonPainter({
+  final bool refreshing;
+
+  const _HomeRefreshIndicator({
     required this.progress,
-    required this.t,
-    required this.charged,
-    required this.colorA,
-    required this.colorB,
-    required this.lineA,
-    required this.lineB,
+    required this.refreshing,
   });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    final rect = Offset.zero & size;
-    final pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi);
-
-    // Base red↔blue wash, intensifying with the pull.
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorA.withValues(alpha: 0.05 + 0.32 * progress),
-            colorB.withValues(alpha: 0.06 + 0.40 * progress),
-          ],
-        ).createShader(rect),
-    );
-
-    // Faint vertical cyber grid.
-    final grid = Paint()
-      ..color = lineA.withValues(alpha: 0.07 * progress)
-      ..strokeWidth = 1;
-    for (var x = 0.0; x < w; x += 26) {
-      canvas.drawLine(Offset(x, 0), Offset(x, h), grid);
-    }
-
-    // Moving neon scanlines sweeping downward.
-    const n = 5;
-    for (var i = 0; i < n; i++) {
-      final y = ((t + i / n) % 1.0) * h;
-      final c = i.isEven ? lineA : lineB;
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(w, y),
-        Paint()
-          ..color = c.withValues(alpha: 0.45 * progress)
-          ..strokeWidth = 3
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-      );
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(w, y),
-        Paint()
-          ..color = c.withValues(alpha: 0.85 * progress)
-          ..strokeWidth = 1.4,
-      );
-    }
-
-    // Pulsing glowing leading edge at the bottom of the fill.
-    final edgeY = h - 2;
-    final edgeRect = Rect.fromLTWH(0, edgeY - 3, w, 6);
-    final edgeShader =
-        LinearGradient(colors: [colorB, lineB, colorA]).createShader(edgeRect);
-    canvas.drawLine(
-      Offset(0, edgeY),
-      Offset(w, edgeY),
-      Paint()
-        ..shader = edgeShader
-        ..strokeWidth = charged ? 7 : 5
-        ..maskFilter = MaskFilter.blur(
-            BlurStyle.normal, (charged ? 22 : 14) * (0.6 + 0.4 * pulse)),
-    );
-    canvas.drawLine(
-      Offset(0, edgeY),
-      Offset(w, edgeY),
-      Paint()
-        ..shader = edgeShader
-        ..strokeWidth = charged ? 4 : 2.5,
-    );
-
-    // Charged: white-hot flash pulse across the whole fill.
-    if (charged) {
-      canvas.drawRect(
-        rect,
-        Paint()..color = Colors.white.withValues(alpha: 0.05 + 0.10 * pulse),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_NeonPainter old) =>
-      old.t != t ||
-      old.progress != progress ||
-      old.charged != charged ||
-      old.colorA != colorA ||
-      old.colorB != colorB;
-}
-
-/// Pixel-theme pull-to-refresh: a blocky retro fill that grows from the top with
-/// a chunky pixel leading bar and a blinking "LOADING" once charged.
-class _PixelPull extends StatefulWidget {
-  final double progress; // 0..1
-  final PullSpec? spec; // fill/bar color; null falls back to tokens.accent
-  const _PixelPull({required this.progress, this.spec});
-
-  @override
-  State<_PixelPull> createState() => _PixelPullState();
-}
-
-class _PixelPullState extends State<_PixelPull>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 640),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).extension<AvaTokens>()!;
     final reduce = MediaQuery.disableAnimationsOf(context);
-    if (reduce) {
-      if (_c.isAnimating) _c.stop();
-    } else if (!_c.isAnimating) {
-      _c.repeat();
-    }
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (_, _) {
-        final blinkOn = reduce ? true : _c.value < 0.5;
-        final charged = widget.progress >= 0.97;
-        return Align(
-          alignment: Alignment.topCenter,
-          child: FractionallySizedBox(
-            widthFactor: 1,
-            heightFactor: widget.progress.clamp(0.0, 1.0),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CustomPaint(
-                  painter: _PixelPullPainter(
-                    color: widget.spec?.colorA.resolve(t) ?? t.accent,
-                    progress: widget.progress,
-                    blinkOn: blinkOn,
-                  ),
-                ),
-                if (charged)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Opacity(
-                        opacity: blinkOn ? 1 : 0.2,
-                        child: Text(
-                          '▼ LOADING ▼',
-                          style: TextStyle(
-                            color: t.accent,
-                            fontSize: 13,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+    return RepaintBoundary(
+      child: Container(
+        key: const ValueKey('home-pull-refresh-indicator'),
+        width: context.r(44),
+        height: context.r(44),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: t.panel2,
+          border: Border.all(color: t.line),
+          borderRadius: BorderRadius.circular(t.isPixel ? 8 : 22),
+        ),
+        child: SizedBox(
+          width: context.r(22),
+          height: context.r(22),
+          child: CircularProgressIndicator(
+            value: refreshing ? (reduce ? 0.75 : null) : progress,
+            strokeWidth: 2.5,
+            color: t.accent,
+            backgroundColor: t.line,
+            semanticsLabel: AppLocalizations.of(context).commonRefresh,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
-
-class _PixelPullPainter extends CustomPainter {
-  final Color color;
-  final double progress;
-  final bool blinkOn;
-  _PixelPullPainter(
-      {required this.color, required this.progress, required this.blinkOn});
-
-  static const double _cell = 12;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width, h = size.height;
-    // Flat blocky wash.
-    canvas.drawRect(Offset.zero & size,
-        Paint()..color = color.withValues(alpha: 0.08 + 0.12 * progress));
-    // Checkerboard pixel texture.
-    final tex = Paint()..color = color.withValues(alpha: 0.07);
-    for (var y = 0.0, ry = 0; y < h; y += _cell, ry++) {
-      for (var x = 0.0, rx = 0; x < w; x += _cell, rx++) {
-        if ((rx + ry).isEven) {
-          canvas.drawRect(Rect.fromLTWH(x, y, _cell, _cell), tex);
-        }
-      }
-    }
-    // Chunky leading bar: two rows of hard pixel blocks at the bottom.
-    for (var x = 0.0, rx = 0; x < w; x += _cell, rx++) {
-      final lit = blinkOn ? true : rx.isEven; // marching blocks
-      canvas.drawRect(
-          Rect.fromLTWH(x + 1, h - _cell + 1, _cell - 2, _cell - 2),
-          Paint()..color = color.withValues(alpha: lit ? 0.9 : 0.5));
-      canvas.drawRect(
-          Rect.fromLTWH(x + 1, h - _cell * 2 + 1, _cell - 2, _cell - 2),
-          Paint()..color = color.withValues(alpha: 0.35));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PixelPullPainter old) =>
-      old.progress != progress || old.blinkOn != blinkOn;
-}
-
 class _Avatar extends StatelessWidget {
   final SteamGuardAccount account;
   final double size;

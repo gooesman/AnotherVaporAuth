@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'route_surface.dart';
 
 /// The visual themes: the two styled ones from the AVA motion design spec
 /// (neon / pixel) and two plain ones (dark / light) — quiet palettes, system
@@ -44,14 +45,18 @@ class _SteppedTextScaler extends TextScaler {
 /// Resolves the two user settings (+ the OS brightness) into the concrete
 /// theme variant the widget tree renders.
 AvaThemeVariant resolveThemeVariant(
-    AvaSkin skin, AvaBrightnessMode mode, Brightness platform) {
+  AvaSkin skin,
+  AvaBrightnessMode mode,
+  Brightness platform,
+) {
   switch (skin) {
     case AvaSkin.neon:
       return AvaThemeVariant.neon;
     case AvaSkin.pixel:
       return AvaThemeVariant.pixel;
     case AvaSkin.none:
-      final light = mode == AvaBrightnessMode.light ||
+      final light =
+          mode == AvaBrightnessMode.light ||
           (mode == AvaBrightnessMode.system && platform == Brightness.light);
       return light ? AvaThemeVariant.light : AvaThemeVariant.dark;
   }
@@ -135,26 +140,29 @@ class AvaTokens extends ThemeExtension<AvaTokens> {
   /// Glow shadow used around accented elements (empty in pixel theme).
   List<BoxShadow> glowShadow({double blur = 16, double opacity = 0.45}) {
     if (!glow) return const [];
-    return [BoxShadow(color: accent.withValues(alpha: opacity), blurRadius: blur)];
+    return [
+      BoxShadow(
+        color: accent.withValues(alpha: opacity),
+        blurRadius: blur,
+      ),
+    ];
   }
 
-  /// Card shadow: soft neon halo vs hard pixel offset vs plain elevation.
+  /// Plain cards are flat; depth belongs to sheets/dialogs. Styled skins keep
+  /// their original silhouette.
   List<BoxShadow> cardShadow() {
-    if (plain) {
-      final light = brightness == Brightness.light;
+    if (plain) return const [];
+    if (isPixel) {
       return [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: light ? 0.08 : 0.40),
-          blurRadius: 20,
-          offset: const Offset(0, 6),
-        ),
+        BoxShadow(color: const Color(0xFF15111F), offset: const Offset(5, 5)),
       ];
     }
-    if (isPixel) {
-      return [BoxShadow(color: const Color(0xFF15111F), offset: const Offset(5, 5))];
-    }
     return [
-      BoxShadow(color: Colors.black.withValues(alpha: 0.55), blurRadius: 60, offset: const Offset(0, 20)),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.55),
+        blurRadius: 60,
+        offset: const Offset(0, 20),
+      ),
       BoxShadow(color: accent.withValues(alpha: 0.10), blurRadius: 50),
     ];
   }
@@ -229,8 +237,8 @@ class AvaTokens extends ThemeExtension<AvaTokens> {
     good: Color(0xFF34C77B),
     bad: Color(0xFFEF4E5E),
     warn: Color(0xFFF0B429),
-    radius: 14,
-    radiusSm: 10,
+    radius: 16,
+    radiusSm: 12,
     radiusLg: 24,
     borderWidth: 1,
     borderColor: Color(0xFF2A303B),
@@ -253,8 +261,8 @@ class AvaTokens extends ThemeExtension<AvaTokens> {
     good: Color(0xFF15803D),
     bad: Color(0xFFDC2626),
     warn: Color(0xFFB45309),
-    radius: 14,
-    radiusSm: 10,
+    radius: 16,
+    radiusSm: 12,
     radiusLg: 24,
     borderWidth: 1,
     borderColor: Color(0xFFE2E6EC),
@@ -264,11 +272,11 @@ class AvaTokens extends ThemeExtension<AvaTokens> {
   );
 
   static AvaTokens of(AvaThemeVariant v) => switch (v) {
-        AvaThemeVariant.neon => _neon,
-        AvaThemeVariant.pixel => _pixel,
-        AvaThemeVariant.dark => _dark,
-        AvaThemeVariant.light => _light,
-      };
+    AvaThemeVariant.neon => _neon,
+    AvaThemeVariant.pixel => _pixel,
+    AvaThemeVariant.dark => _dark,
+    AvaThemeVariant.light => _light,
+  };
 
   @override
   AvaTokens copyWith() => this;
@@ -289,10 +297,12 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
   // Latin and CJK (single pixel family); neon uses Latin display/code fonts
   // with Noto Sans SC as the CJK fallback; plain themes keep the platform
   // default font (null family) with the bundled Noto as CJK safety net.
-  final String? codeFamily =
-      t.plain ? null : (t.isPixel ? 'FusionPixel' : 'JetBrainsMono');
-  final String? displayFamily =
-      t.plain ? null : (t.isPixel ? 'FusionPixel' : 'ChakraPetch');
+  final String? codeFamily = t.plain
+      ? null
+      : (t.isPixel ? 'FusionPixel' : 'JetBrainsMono');
+  final String? displayFamily = t.plain
+      ? null
+      : (t.isPixel ? 'FusionPixel' : 'ChakraPetch');
   final cjkFallback = t.isPixel
       ? const ['FusionPixel', 'NotoSansSC']
       : const ['NotoSansSC'];
@@ -301,31 +311,50 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
   final onAccent = t.plain ? Colors.white : const Color(0xFF06060F);
 
   TextTheme displayCode(TextTheme base) => base.apply(
-        fontFamily: codeFamily,
-        fontFamilyFallback: cjkFallback,
-        bodyColor: t.text,
-        displayColor: t.text,
-      );
-
-  final scheme = ColorScheme.fromSeed(
-    seedColor: t.accent,
-    brightness: t.brightness,
-  ).copyWith(
-    primary: t.accent,
-    secondary: t.accent2,
-    surface: t.panel2,
-    error: t.bad,
-    onPrimary: onAccent,
+    fontFamily: codeFamily,
+    fontFamilyFallback: cjkFallback,
+    bodyColor: t.text,
+    displayColor: t.text,
   );
 
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: t.accent,
+        brightness: t.brightness,
+      ).copyWith(
+        primary: t.accent,
+        secondary: t.accent2,
+        surface: t.panel2,
+        error: t.bad,
+        onPrimary: onAccent,
+      );
+
   final base = ThemeData(useMaterial3: true, brightness: t.brightness);
-  final displayFont =
-      TextStyle(fontFamily: displayFamily, fontFamilyFallback: cjkFallback);
+  final displayFont = TextStyle(
+    fontFamily: displayFamily,
+    fontFamilyFallback: cjkFallback,
+  );
 
   return base.copyWith(
     colorScheme: scheme,
     // Transparent so the app-level backdrop (bg + neon gradient) shows through.
     scaffoldBackgroundColor: Colors.transparent,
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: {
+        for (final platform in TargetPlatform.values)
+          platform: AvaPageTransitionsBuilder(
+            delegate:
+                platform == TargetPlatform.android ||
+                    platform == TargetPlatform.windows ||
+                    platform == TargetPlatform.linux
+                ? const AvaFadePageTransitionsBuilder()
+                : base.pageTransitionsTheme.builders[platform] ??
+                      const ZoomPageTransitionsBuilder(),
+            color: t.bg,
+            gradient: t.bgGradient,
+          ),
+      },
+    ),
     canvasColor: t.bg,
     textTheme: displayCode(base.textTheme),
     extensions: [t],
@@ -333,6 +362,8 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
       backgroundColor: t.chrome,
       foregroundColor: t.text,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       titleTextStyle: displayFont.copyWith(
         color: t.text,
         fontSize: t.isPixel ? 12 : 16,
@@ -361,6 +392,7 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
       style: FilledButton.styleFrom(
         backgroundColor: t.accent,
         foregroundColor: onAccent,
+        animationDuration: const Duration(milliseconds: 140),
         textStyle: displayFont.copyWith(
           fontSize: t.isPixel ? 11 : 13,
           letterSpacing: 0.5,
@@ -373,6 +405,7 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: t.text,
+        animationDuration: const Duration(milliseconds: 140),
         side: BorderSide(color: t.borderColor, width: t.borderWidth),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(t.radiusSm),
@@ -381,6 +414,8 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
     ),
     cardTheme: CardThemeData(
       color: t.panel,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(t.radius),
         side: BorderSide(color: t.borderColor, width: t.borderWidth),
@@ -388,9 +423,10 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: t.panel2,
+      elevation: t.plain ? 3 : null,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(t.radius),
+        borderRadius: BorderRadius.circular(t.plain ? t.radiusLg : t.radius),
         side: BorderSide(color: t.borderColor, width: t.borderWidth),
       ),
       titleTextStyle: displayFont.copyWith(
@@ -422,21 +458,25 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: t.panel2,
+      elevation: t.plain ? 2 : null,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(t.radiusSm),
         side: BorderSide(color: t.borderColor, width: t.borderWidth),
       ),
       // M3 menu items read labelTextStyle (textStyle is the M2 path).
-      labelTextStyle: WidgetStatePropertyAll(TextStyle(
-        color: t.text,
-        fontSize: 13.5,
-        fontFamily: codeFamily,
-        fontFamilyFallback: cjkFallback,
-      )),
+      labelTextStyle: WidgetStatePropertyAll(
+        TextStyle(
+          color: t.text,
+          fontSize: 13.5,
+          fontFamily: codeFamily,
+          fontFamilyFallback: cjkFallback,
+        ),
+      ),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: t.panel2,
+      elevation: t.plain ? 0 : null,
       contentTextStyle: TextStyle(color: t.text),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(t.radiusSm),
@@ -445,6 +485,14 @@ ThemeData buildAvaTheme(AvaThemeVariant variant) {
       behavior: SnackBarBehavior.floating,
     ),
     dividerColor: t.line,
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(t.radiusSm),
+        ),
+        animationDuration: const Duration(milliseconds: 140),
+      ),
+    ),
     iconTheme: IconThemeData(color: t.muted),
     listTileTheme: ListTileThemeData(textColor: t.text, iconColor: t.muted),
     progressIndicatorTheme: ProgressIndicatorThemeData(

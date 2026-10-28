@@ -616,11 +616,30 @@ class AccountStore {
   /// passkey when the store is encrypted. When [mergeExisting] is the stored
   /// account this import overwrites, [mergeImportedAccount]'s policy keeps
   /// AVA-local enrichment the file doesn't carry.
+  /// [syncPayload] instead applies every explicitly supplied field (including
+  /// null/empty values), retaining omitted fields and the device-local session.
   Future<SteamGuardAccount> importMaFileContents(
       String contents, String? passKey,
-      {String? sourceName, SteamGuardAccount? mergeExisting}) async {
-    final account = parseMaFileContents(contents, sourceName: sourceName);
-    if (mergeExisting != null && mergeExisting.steamId == account.steamId) {
+      {String? sourceName,
+      SteamGuardAccount? mergeExisting,
+      bool syncPayload = false}) async {
+    var account = parseMaFileContents(contents, sourceName: sourceName);
+    final sameAccount = mergeExisting != null &&
+        mergeExisting.steamId == account.steamId;
+    if (syncPayload) {
+      // Merge a new object before the atomic save. Do not clear fields on the
+      // live account: a failed write must leave the visible local data intact.
+      final fields = MaFileNormalizer.normalize(
+          jsonDecode(contents) as Map<String, dynamic>,
+          sourceName: sourceName);
+      account = SteamGuardAccount.fromJson({
+        if (sameAccount) ...mergeExisting.toJson(),
+        ...fields,
+        'Session': sameAccount
+            ? mergeExisting.session.toJson()
+            : {'SteamID': account.steamId},
+      });
+    } else if (sameAccount) {
       mergeImportedAccount(account, mergeExisting);
     }
     final ok = await saveAccount(account, manifest.encrypted, passKey: passKey);
