@@ -195,6 +195,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           _listSessions[index] = readSession;
           _writeNeedsRefresh[index] = false;
         });
+        ref
+            .read(steamNotificationCountsProvider.notifier)
+            .recordFriendRequestCount(account, requests.length);
       }
     } catch (error) {
       if (mounted) {
@@ -230,9 +233,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       await action();
       if (_session == session) {
         counts.invalidate(widget.account);
-        // A visible inbox reload supplies its own counters; after leaving,
-        // or after a friend action, only the lightweight counters are read.
-        if (!mounted || index == 1) {
+        // Visible lists supply their own counts; after leaving, read only
+        // the lightweight counters.
+        if (!mounted) {
           unawaited(counts.refresh(widget.account, force: true));
         }
       }
@@ -376,6 +379,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final snapshot = ref.watch(
+      steamNotificationCountsProvider.select(
+        (counts) => counts[widget.account.steamId],
+      ),
+    );
+    final requestCount = _requests != null && _listSessions[1] == _session
+        ? _requests!.length
+        : snapshot?.matches(widget.account) == true
+        ? snapshot!.pendingFriendCount
+        : null;
     ref.watch(steamNotificationCountsEnabledProvider);
     ref.listen(steamNotificationCountsEnabledProvider, (_, enabled) {
       if (!enabled) _cancelDetails();
@@ -402,7 +415,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
           controller: _tabs,
           tabs: [
             Tab(text: l.notificationsInboxTab),
-            Tab(text: l.notificationsRequestsTab),
+            Tab(
+              child: Badge(
+                isLabelVisible: (requestCount ?? 0) > 0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(l.notificationsRequestsTab),
+                ),
+              ),
+            ),
           ],
         ),
       ),

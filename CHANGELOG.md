@@ -5,6 +5,16 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.19] — 2026-10-28 · Fork
+
+### Fixed
+- The home notification dot now indicates unread notifications only. Pending friend requests have their own dot beside the Friend requests tab, so reading all notifications clears the home dot without accepting or dismissing invitations.
+- Loading or responding to friend requests updates their shared count directly from the refreshed list, without an extra counter request. Older in-flight reads cannot restore a cleared count.
+
+### 修复
+- 首页通知红点只表示未读通知；好友申请在通知页的“好友申请”标签旁单独显示红点。通知全部已读后首页红点消失，不会自动同意或忽略好友申请。
+- 查看、同意或拒绝好友申请后，从刷新后的列表更新计数，全部处理完即清除申请红点，不增加额外计数请求；旧请求不能把已清除的计数写回来。
+
 ## [v1.5.18] — 2026-10-23 · Fork
 
 ### Changed

@@ -271,6 +271,55 @@ void main() {
     expect(client.calls, isEmpty);
   });
 
+  test(
+    'friend list clears only its count and discards an older refresh',
+    () async {
+      final old = Completer<SteamNotificationCounts>();
+      final client = _Client()..answer = (_) => old.future;
+      final container = _container(client);
+      addTearDown(container.dispose);
+      final controller = container.read(
+        steamNotificationCountsProvider.notifier,
+      );
+      final account = _account();
+      controller.recordCounts(
+        account,
+        const SteamNotificationCounts(
+          confirmationCount: 3,
+          pendingFriendCount: 2,
+          unreadCount: 1,
+        ),
+      );
+      final refresh = controller.refresh(account, force: true);
+      await Future<void>.delayed(Duration.zero);
+      controller.recordFriendRequestCount(account, 0);
+      await refresh;
+      old.complete(const SteamNotificationCounts(pendingFriendCount: 2));
+      await Future<void>.delayed(Duration.zero);
+      final counts = container.read(steamNotificationCountsProvider)[1]!;
+      expect(counts.pendingFriendCount, 0);
+      expect(counts.unreadCount, 1);
+      expect(counts.confirmationCount, 3);
+      expect(counts.confirmationStale, isFalse);
+      expect(client.calls, hasLength(1));
+    },
+  );
+
+  test('friend counts do not carry notification counts across sessions', () {
+    final container = _container(_Client());
+    addTearDown(container.dispose);
+    final controller = container.read(steamNotificationCountsProvider.notifier);
+    controller.recordCounts(
+      _account(1, 'old'),
+      const SteamNotificationCounts(confirmationCount: 3, unreadCount: 2),
+    );
+    controller.recordFriendRequestCount(_account(1, 'new'), 0);
+    final counts = container.read(steamNotificationCountsProvider)[1]!;
+    expect(counts.pendingFriendCount, 0);
+    expect(counts.unreadCount, isNull);
+    expect(counts.confirmationCount, isNull);
+  });
+
   test('accounts without an access token issue no network read', () async {
     final client = _Client();
     final container = _container(client);

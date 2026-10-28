@@ -225,6 +225,63 @@ Finder _inCard(String id, String label) =>
     find.descendant(of: find.byKey(ValueKey(id)), matching: find.text(label));
 
 void main() {
+  testWidgets(
+    'friend tab dot clears after requests while notifications are read',
+    (tester) async {
+      final api = _NoNetwork();
+      final notifications = _Notifications(api)
+        ..items = [const SteamNotification(id: '1', type: 10, read: true)];
+      final friends = _Friends(api);
+      final account = _account();
+      await tester.pumpWidget(_app(notifications, friends, account: account));
+      await tester.pumpAndSettle();
+      final dot = find.descendant(
+        of: find.byType(Tab),
+        matching: find.byType(Badge),
+      );
+      expect(find.text('No unread notifications.'), findsOneWidget);
+      expect(tester.widget<Badge>(dot).isLabelVisible, isTrue);
+      expect(friends.reads, 0);
+      await _openRequests(tester);
+      await tester.tap(_inCard('friend-request-76561198000000002', 'Accept'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Badge>(dot).isLabelVisible, isTrue);
+      await tester.tap(_inCard('friend-request-76561198000000003', 'Decline'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Badge>(dot).isLabelVisible, isFalse);
+      final counts = ProviderScope.containerOf(
+        tester.element(find.byType(NotificationsScreen)),
+      ).read(steamNotificationCountsProvider)[account.steamId];
+      expect(counts?.pendingFriendCount, 0);
+      expect(counts?.unreadCount, 0);
+      expect(notifications.readWrites, isEmpty);
+      expect(notifications.countReads, 0);
+      expect(api.calls, isEmpty);
+    },
+  );
+
+  testWidgets('opening an empty request list clears a stale friend dot', (
+    tester,
+  ) async {
+    final api = _NoNetwork();
+    final notifications = _Notifications(api);
+    final friends = _Friends(api)..requests.clear();
+    final account = _account();
+    await tester.pumpWidget(_app(notifications, friends, account: account));
+    await tester.pumpAndSettle();
+    await _openRequests(tester);
+    final dot = find.descendant(
+      of: find.byType(Tab),
+      matching: find.byType(Badge),
+    );
+    expect(tester.widget<Badge>(dot).isLabelVisible, isFalse);
+    final counts = ProviderScope.containerOf(
+      tester.element(find.byType(NotificationsScreen)),
+    ).read(steamNotificationCountsProvider)[account.steamId];
+    expect(counts?.pendingFriendCount, 0);
+    expect(counts?.unreadCount, 2);
+  });
+
   testWidgets('loads inbox once and friend requests only when opened', (
     tester,
   ) async {

@@ -281,4 +281,27 @@ class SteamNotificationCountsController
       ),
     );
   }
+
+  /// The request list is authoritative after accepting/rejecting an invite.
+  /// Keep unread notifications and confirmations independent of this count.
+  void recordFriendRequestCount(SteamGuardAccount account, int count) {
+    if (!ref.mounted || !_enabled) return;
+    _advance(account.steamId);
+    final cached = state[account.steamId];
+    final previous = cached?.matches(account) == true ? cached : null;
+    _set(
+      account.steamId,
+      AccountNotificationCounts._(
+        _key(account),
+        counts: SteamNotificationCounts(
+          confirmationCount: previous?.confirmationCount,
+          pendingFriendCount: count,
+          unreadCount: previous?.unreadCount,
+        ),
+        stale: previous?.stale ?? true,
+        confirmationStale: previous?.confirmationStale ?? true,
+        lastAttempt: previous?.lastAttempt,
+      ),
+    );
+  }
 }
