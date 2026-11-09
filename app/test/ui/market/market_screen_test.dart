@@ -114,9 +114,16 @@ class _Inventory extends InventoryClient {
 
 class _Market extends MarketClient {
   _Market() : super(SteamApiClient());
-  int cancellations = 0;
+  int get cancellations => cancelledIds.length;
   int listingsCalls = 0;
   final priceQueries = <(int, String, int)>[];
+  final cancelledIds = <String>[];
+  final listings = [
+    _listing('1', 'Active item', MarketListingState.active),
+    _listing('2', 'Held item', MarketListingState.onHold),
+    _listing('3', 'Pending item', MarketListingState.pendingConfirmation),
+  ];
+  Future<bool> Function(String)? cancelResult;
 
   @override
   Future<MarketPrice?> priceOverview(
@@ -134,11 +141,7 @@ class _Market extends MarketClient {
     int count = 100,
   }) async {
     listingsCalls++;
-    return [
-      _listing('1', 'Active item', MarketListingState.active),
-      _listing('2', 'Held item', MarketListingState.onHold),
-      _listing('3', 'Pending item', MarketListingState.pendingConfirmation),
-    ];
+    return List.of(listings);
   }
 
   @override
@@ -151,8 +154,10 @@ class _Market extends MarketClient {
 
   @override
   Future<bool> cancel(SteamGuardAccount account, String listingId) async {
-    cancellations++;
-    return true;
+    cancelledIds.add(listingId);
+    final ok = await cancelResult?.call(listingId) ?? true;
+    if (ok) listings.removeWhere((item) => item.listingId == listingId);
+    return ok;
   }
 }
 
@@ -213,11 +218,12 @@ Future<(_Market, _Inventory, AppLocalizations)> _show(
   double cornerRadius = 0,
   EdgeInsets? systemPadding,
   List<InventoryGame> games = _defaultGames,
+  _Market? marketClient,
   _AutoLogin? autoLogin,
   Future<InventoryOverview>? pendingOverview,
   bool settle = true,
 }) async {
-  final market = _Market();
+  final market = marketClient ?? _Market();
   final inventory = _Inventory(
     inventoryItems: items,
     walletInfo: wallet,
@@ -1086,7 +1092,59 @@ void main() {
     await tester.pumpAndSettle();
     expect(market.cancellations, 0);
     expect(find.text('Active item'), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, l.marketCancelAll));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, l.commonCancel));
+    await tester.pumpAndSettle();
+    expect(market.cancelledIds, isEmpty);
   });
+
+  testWidgets(
+    'cancel all reaches every open listing and reports partial failure',
+    (tester) async {
+      final first = Completer<bool>();
+      final market = _Market()
+        ..listings.add(
+          _listing('4', 'Inactive item', MarketListingState.inactive),
+        )
+        ..cancelResult = (id) async => id == '1' ? first.future : id != '2';
+      final (_, _, l) = await _show(tester, marketClient: market);
+      await tester.tap(
+        find.widgetWithText(ChoiceChip, '${l.marketListingOnHold} (1)'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(OutlinedButton, l.marketCancelAll));
+      await tester.pumpAndSettle();
+      expect(find.text(l.marketCancelAllConfirm(3)), findsOneWidget);
+      expect(market.cancelledIds, isEmpty);
+      await tester.tap(find.widgetWithText(FilledButton, l.commonConfirm));
+      await tester.pumpAndSettle();
+      expect(market.cancelledIds, ['1']);
+      expect(find.text(l.marketCancelAllProgress(0, 3)), findsOneWidget);
+      expect(
+        tester.widget<IconButton>(find.byWidgetPredicate(
+          (widget) => widget is IconButton && widget.tooltip == l.marketCancel,
+        )).onPressed,
+        isNull,
+      );
+      await tester.tap(find.byTooltip(l.commonRefresh));
+      await tester.pumpAndSettle();
+      expect(market.listingsCalls, 1);
+
+      first.complete(true);
+      await tester.pumpAndSettle();
+      expect(market.cancelledIds, ['1', '2', '3']);
+      expect(market.listingsCalls, 2);
+      expect(find.text('Active item'), findsNothing);
+      expect(find.text('Pending item'), findsNothing);
+      expect(find.text('Held item'), findsOneWidget);
+      expect(find.text('Inactive item'), findsOneWidget);
+      expect(find.text(l.marketCancelAllResult(2, 3)), findsOneWidget);
+      await tester.tap(find.text(l.marketCancelAllUnconfirmed));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AlertDialog, 'Held item'), findsOneWidget);
+    },
+  );
 
   testWidgets('same game contexts have distinct labels and selection paths', (
     tester,

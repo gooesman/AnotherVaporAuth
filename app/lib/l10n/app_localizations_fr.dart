@@ -2348,6 +2348,27 @@ class AppLocalizationsFr extends AppLocalizations {
   String get marketCancelConfirm => 'Annuler cette annonce sur le marché ?';
 
   @override
+  String get marketCancelAll => 'Annuler toutes les annonces';
+
+  @override
+  String marketCancelAllConfirm(int count) {
+    return 'Annuler les $count annonces du marché de ce compte, y compris celles retenues ou en attente de confirmation ? Tous les filtres sont concernés.';
+  }
+
+  @override
+  String marketCancelAllProgress(int done, int total) {
+    return 'Annulation $done/$total';
+  }
+
+  @override
+  String marketCancelAllResult(int count, int total) {
+    return 'Annulations confirmées : $count/$total.';
+  }
+
+  @override
+  String get marketCancelAllUnconfirmed => 'Non confirmés';
+
+  @override
   String get settingsStartupVerification => 'Vérifier l’identité au démarrage';
 
   @override

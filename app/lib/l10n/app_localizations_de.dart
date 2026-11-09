@@ -2333,6 +2333,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get marketCancelConfirm => 'Dieses Marktangebot zurückziehen?';
 
   @override
+  String get marketCancelAll => 'Alle Angebote stornieren';
+
+  @override
+  String marketCancelAllConfirm(int count) {
+    return 'Alle $count Marktangebote dieses Kontos stornieren, einschließlich zurückgehaltener und noch nicht bestätigter Angebote? Dies gilt für alle Filter.';
+  }
+
+  @override
+  String marketCancelAllProgress(int done, int total) {
+    return 'Stornierung $done/$total';
+  }
+
+  @override
+  String marketCancelAllResult(int count, int total) {
+    return 'Bestätigte Stornierungen: $count/$total.';
+  }
+
+  @override
+  String get marketCancelAllUnconfirmed => 'Nicht bestätigt';
+
+  @override
   String get settingsStartupVerification => 'Identität beim Start prüfen';
 
   @override

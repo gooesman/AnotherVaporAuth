@@ -1177,6 +1177,28 @@
   "marketHoldUntil": "On hold until {date}",
   "marketListingsAll": "All",
   "marketCancelConfirm": "Cancel this market listing?",
+  "marketCancelAll": "Cancel all listings",
+  "marketCancelAllConfirm": "Cancel all {count} market listings for this account, including listings on hold or awaiting confirmation? This applies across all filters.",
+  "@marketCancelAllConfirm": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "marketCancelAllProgress": "Cancelling {done}/{total}",
+  "@marketCancelAllProgress": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "marketCancelAllResult": "Confirmed cancellations: {count}/{total}.",
+  "@marketCancelAllResult": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "marketCancelAllUnconfirmed": "Unconfirmed items",
   "settingsStartupVerification": "Verify identity at startup",
   "settingsStartupVerificationDesc": "When enabled, opening GooeSteamKit requires your PIN or system authentication. When disabled, anyone using this device can open GooeSteamKit; local account files remain encrypted.",
   "settingsStartupVerificationError": "Could not save the startup verification setting. Check device secure storage and try again.",

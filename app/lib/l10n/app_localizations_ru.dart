@@ -2396,6 +2396,27 @@ class AppLocalizationsRu extends AppLocalizations {
       'Отменить это предложение на Торговой площадке?';
 
   @override
+  String get marketCancelAll => 'Отменить все лоты';
+
+  @override
+  String marketCancelAllConfirm(int count) {
+    return 'Отменить все лоты аккаунта ($count), включая удерживаемые и ожидающие подтверждения? Действие применяется при любых фильтрах.';
+  }
+
+  @override
+  String marketCancelAllProgress(int done, int total) {
+    return 'Отмена $done/$total';
+  }
+
+  @override
+  String marketCancelAllResult(int count, int total) {
+    return 'Подтверждено отмен: $count/$total.';
+  }
+
+  @override
+  String get marketCancelAllUnconfirmed => 'Не подтверждено';
+
+  @override
   String get settingsStartupVerification => 'Проверять личность при запуске';
 
   @override

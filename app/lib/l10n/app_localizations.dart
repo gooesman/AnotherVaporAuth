@@ -4097,6 +4097,36 @@ abstract class AppLocalizations {
   /// **'Cancel this market listing?'**
   String get marketCancelConfirm;
 
+  /// No description provided for @marketCancelAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel all listings'**
+  String get marketCancelAll;
+
+  /// No description provided for @marketCancelAllConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel all {count} market listings for this account, including listings on hold or awaiting confirmation? This applies across all filters.'**
+  String marketCancelAllConfirm(int count);
+
+  /// No description provided for @marketCancelAllProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelling {done}/{total}'**
+  String marketCancelAllProgress(int done, int total);
+
+  /// No description provided for @marketCancelAllResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed cancellations: {count}/{total}.'**
+  String marketCancelAllResult(int count, int total);
+
+  /// No description provided for @marketCancelAllUnconfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unconfirmed items'**
+  String get marketCancelAllUnconfirmed;
+
   /// No description provided for @settingsStartupVerification.
   ///
   /// In en, this message translates to:

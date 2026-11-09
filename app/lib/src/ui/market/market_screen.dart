@@ -843,6 +843,7 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
   bool _loading = false;
   MarketListingState? _filter;
   final _cancelling = <String>{};
+  int? _batchProcessed;
 
   @override
   bool get wantKeepAlive => true;
@@ -879,7 +880,9 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
   }
 
   Future<void> _refresh() async {
-    if (!mounted || !widget.active || _loading) return;
+    if (!mounted || !widget.active || _loading || _batchProcessed != null) {
+      return;
+    }
     _loading = true;
     _loadedReload = widget.reload;
     final future = _load();
@@ -912,14 +915,14 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
     ),
   );
 
-  Future<void> _cancel(MarketListing l) async {
-    if (_cancelling.contains(l.listingId)) return;
+  Future<bool?> _confirmCancel(String title, String body) {
     final loc = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(loc.marketCancel),
-        content: Text('${l.name}\n\n${loc.marketCancelConfirm}'),
+        scrollable: true,
+        title: Text(title),
+        content: Text(body),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -932,7 +935,16 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+  }
+
+  Future<void> _cancel(MarketListing l) async {
+    if (_batchProcessed != null || _cancelling.contains(l.listingId)) return;
+    final loc = AppLocalizations.of(context);
+    final confirmed = await _confirmCancel(
+      loc.marketCancel,
+      '${l.name}\n\n${loc.marketCancelConfirm}',
+    );
+    if (confirmed != true || !mounted || _batchProcessed != null) return;
     setState(() => _cancelling.add(l.listingId));
     final ok = await ref
         .read(marketClientProvider)
@@ -946,6 +958,77 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
       _loadedReload = null;
       _refresh();
     }
+  }
+
+  Future<void> _cancelAll(List<MarketListing> listings) async {
+    if (_batchProcessed != null || _cancelling.isNotEmpty) return;
+    final loc = AppLocalizations.of(context);
+    final source = _future;
+    final confirmed = await _confirmCancel(
+      loc.marketCancelAll,
+      loc.marketCancelAllConfirm(listings.length),
+    );
+    if (confirmed != true ||
+        !mounted ||
+        !widget.active ||
+        source != _future ||
+        _batchProcessed != null ||
+        _cancelling.isNotEmpty) {
+      return;
+    }
+
+    final client = ref.read(marketClientProvider);
+    final account = widget.account;
+    final unconfirmed = <MarketListing>[];
+    setState(() => _batchProcessed = 0);
+    for (var i = 0; i < listings.length; i++) {
+      final listing = listings[i];
+      final ok = await client.cancel(account, listing.listingId);
+      if (!mounted) return;
+      if (!ok) unconfirmed.add(listing);
+      setState(() => _batchProcessed = i + 1);
+    }
+    setState(() {
+      _batchProcessed = null;
+      _filter = null;
+    });
+    _loadedReload = null;
+    _refresh();
+    final names = unconfirmed
+        .map((item) => item.name.isEmpty ? '#${item.listingId}' : item.name)
+        .join('\n');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          loc.marketCancelAllResult(
+            listings.length - unconfirmed.length,
+            listings.length,
+          ),
+        ),
+        action: unconfirmed.isEmpty
+            ? null
+            : SnackBarAction(
+                label: loc.marketCancelAllUnconfirmed,
+                onPressed: () {
+                  if (!mounted) return;
+                  showDialog<void>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      scrollable: true,
+                      title: Text(loc.marketCancelAllUnconfirmed),
+                      content: Text(names),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(loc.commonClose),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
+    );
   }
 
   @override
@@ -983,6 +1066,10 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
         final visible = _filter == null
             ? listings
             : listings.where((item) => item.state == _filter).toList();
+        final cancellable = listings
+            .where((item) => item.state != MarketListingState.inactive)
+            .toList();
+        final processed = _batchProcessed;
         return Column(
           children: [
             Padding(
@@ -1006,6 +1093,20 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
                         selected: _filter == state,
                         onSelected: (_) => setState(() => _filter = state),
                       ),
+                  if (cancellable.isNotEmpty)
+                    OutlinedButton(
+                      onPressed: processed != null || _cancelling.isNotEmpty
+                          ? null
+                          : () => _cancelAll(cancellable),
+                      child: Text(
+                        processed == null
+                            ? l.marketCancelAll
+                            : l.marketCancelAllProgress(
+                                processed,
+                                cancellable.length,
+                              ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1057,7 +1158,9 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
                       trailing: IconButton(
                         tooltip: l.marketCancel,
                         icon: Icon(Icons.close, color: t.bad),
-                        onPressed: _cancelling.contains(lst.listingId)
+                        onPressed:
+                            processed != null ||
+                                _cancelling.contains(lst.listingId)
                             ? null
                             : () => _cancel(lst),
                       ),

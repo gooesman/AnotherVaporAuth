@@ -2341,6 +2341,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get marketCancelConfirm => '¿Cancelar este anuncio del mercado?';
 
   @override
+  String get marketCancelAll => 'Cancelar todos los anuncios';
+
+  @override
+  String marketCancelAllConfirm(int count) {
+    return '¿Cancelar los $count anuncios de este mercado para la cuenta, incluidos los retenidos y los pendientes de confirmación? Se incluyen todos los filtros.';
+  }
+
+  @override
+  String marketCancelAllProgress(int done, int total) {
+    return 'Cancelando $done/$total';
+  }
+
+  @override
+  String marketCancelAllResult(int count, int total) {
+    return 'Cancelaciones confirmadas: $count/$total.';
+  }
+
+  @override
+  String get marketCancelAllUnconfirmed => 'Sin confirmar';
+
+  @override
   String get settingsStartupVerification => 'Verificar identidad al iniciar';
 
   @override

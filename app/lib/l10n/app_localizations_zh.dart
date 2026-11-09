@@ -2201,6 +2201,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get marketCancelConfirm => '确定取消这件物品的市场上架？';
 
   @override
+  String get marketCancelAll => '全部下架';
+
+  @override
+  String marketCancelAllConfirm(int count) {
+    return '确定取消当前账号的 $count 条市场上架吗？包括在售、暂挂和待确认的物品，不受当前筛选影响。';
+  }
+
+  @override
+  String marketCancelAllProgress(int done, int total) {
+    return '正在下架 $done/$total';
+  }
+
+  @override
+  String marketCancelAllResult(int count, int total) {
+    return '已确认下架 $count/$total 件物品。';
+  }
+
+  @override
+  String get marketCancelAllUnconfirmed => '未确认下架';
+
+  @override
   String get settingsStartupVerification => '启动时验证身份';
 
   @override
@@ -5584,6 +5605,27 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get marketCancelConfirm => '要取消這筆市場上架嗎？';
+
+  @override
+  String get marketCancelAll => '全部下架';
+
+  @override
+  String marketCancelAllConfirm(int count) {
+    return '確定取消此帳戶的 $count 筆市集上架嗎？包括在售、保留中及等待確認的物品，不受目前的篩選影響。';
+  }
+
+  @override
+  String marketCancelAllProgress(int done, int total) {
+    return '正在下架 $done/$total';
+  }
+
+  @override
+  String marketCancelAllResult(int count, int total) {
+    return '已確認下架 $count/$total 件物品。';
+  }
+
+  @override
+  String get marketCancelAllUnconfirmed => '未確認下架';
 
   @override
   String get settingsStartupVerification => '啟動時驗證身分';

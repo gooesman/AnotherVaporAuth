@@ -5,6 +5,14 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.21] — 2026-11-09 · Fork
+
+### Added
+- Cancel all market listings for the current account from My listings. Confirm the scope once, follow the progress, and review any unconfirmed cancellations after the list refreshes.
+
+### 新增
+- 「我的出售」支持全部下架。确认后逐件取消当前账号的在售、暂挂和待确认上架，显示进度并刷新列表，可查看未确认下架的物品。
+
 ## [v1.5.20] — 2026-10-28 · Fork
 
 ### Fixed
