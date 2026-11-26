@@ -37,15 +37,12 @@ class MarketSearchItem {
     }
     final appid = _integer(asset['appid'], 'appid', minimum: 1);
     final hash = _text(
-      asset['market_hash_name'] ?? json['hash_name'],
+      asset['market_hash_name'] ?? json['strHash'],
       'market_hash_name',
       required: true,
     );
-    final name = _text(json['name'] ?? asset['name'], 'name');
-    final listings = _integer(json['sell_listings'], 'sell_listings');
-    final rawPrice = json['sell_price'];
-    final price = rawPrice == null ? null : _integer(rawPrice, 'sell_price');
-    final rawText = _text(json['sell_price_text'], 'sell_price_text');
+    final name = _text(asset['market_name'] ?? asset['name'], 'name');
+    final listings = _integer(json['cSellOrders'] ?? 0, 'cSellOrders');
     final color = asset['name_color'];
     final rawIcon = asset['icon_url'];
     // Steam returns an opaque image key. Build the URL ourselves: response
@@ -66,8 +63,6 @@ class MarketSearchItem {
           color is String && RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(color)
           ? color
           : '',
-      lowestPriceMinor: listings > 0 ? price : null,
-      priceText: listings > 0 && rawText.isNotEmpty ? rawText : null,
       listingCount: listings,
     );
   }
@@ -101,21 +96,15 @@ class MarketSearchPage {
     required int maximumPageSize,
   }) {
     final start = _integer(json['start'], 'start');
-    final size = _integer(
-      json['pagesize'],
-      'pagesize',
-      maximum: maximumPageSize,
-    );
     final total = _integer(json['total_count'], 'total_count');
     final results = json['results'];
-    if (start != expectedStart ||
-        results is! List ||
-        results.length > size ||
-        results.length > total) {
+    if (start != expectedStart || results is! List || results.length > total) {
       throw const FormatException('Invalid market search page');
     }
     final items = <MarketSearchItem>[];
-    for (final result in results) {
+    // Steam chooses the response size. Continue at the first unconsumed row
+    // even when it returned more than our UI requested.
+    for (final result in results.take(maximumPageSize)) {
       if (result is! Map<String, dynamic>) {
         throw const FormatException('Invalid market search result');
       }
@@ -124,7 +113,7 @@ class MarketSearchPage {
     return MarketSearchPage(
       items: List.unmodifiable(items),
       start: start,
-      pageSize: size,
+      pageSize: items.length,
       total: total,
     );
   }

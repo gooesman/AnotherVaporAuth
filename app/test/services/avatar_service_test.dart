@@ -21,6 +21,33 @@ class _Adapter implements HttpClientAdapter {
 }
 
 void main() {
+  test(
+    'Steam explicitly returns empty objects for unequipped cosmetics',
+    () async {
+      for (final (body, resolved) in [
+        ('{"response":{"animated_avatar":{},"avatar_frame":{}}}', true),
+        ('{"response":{}}', false),
+        ('{}', false),
+      ]) {
+        final dio = Dio()
+          ..httpClientAdapter = _Adapter(
+            (_) async => ResponseBody.fromString(
+              body,
+              200,
+              headers: {
+                Headers.contentTypeHeader: ['application/json'],
+              },
+            ),
+          );
+        addTearDown(() => dio.close(force: true));
+        final result = await AvatarService(
+          dio: dio,
+        ).fetchEquippedItems(123, 'test');
+        expect(result.resolved, resolved);
+        expect(result.animatedAvatarUrl, isNull);
+      }
+    },
+  );
   for (final equipped in [false, true]) {
     test(
       '${equipped ? 'equipped items' : 'profile'} timeout cancels transfer',

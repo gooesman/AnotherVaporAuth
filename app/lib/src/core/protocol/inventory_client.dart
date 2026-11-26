@@ -99,16 +99,16 @@ class InventoryClient {
     return InventoryOverview(games, wallet);
   }
 
-  /// Read-only wallet fetch for account dashboards. This reads Steam's own
-  /// market page and never opens a purchase/listing flow. A missing balance is
-  /// returned as null, so a locked/unavailable wallet cannot look like zero.
+  /// The inventory page still publishes the signed-in wallet and fee data
+  /// after Steam's November 2026 market home redesign.
   Future<WalletInfo> wallet(SteamGuardAccount account) async {
+    final path = '/profiles/${_ownerId(account, null)}/inventory/';
     final html = await api.communityGetText(
-      '/market/',
+      path,
       query: {'l': api.steamLanguage},
       cookies: communityCookies(account),
     );
-    _ensureLoggedIn(html, '/market/');
+    _ensureLoggedIn(html, path);
     final data = _extractJsonObject(html, 'g_rgWalletInfo');
     if (data == null) {
       throw const FormatException('Steam wallet information is unavailable.');
@@ -119,7 +119,7 @@ class InventoryClient {
   static void _ensureLoggedIn(String html, String path) {
     // The market is also a public page: an expired cookie can return HTTP 200
     // with an anonymous page rather than redirecting to login.
-    if (RegExp(r'\bg_bLoggedIn\s*=\s*false\b').hasMatch(html)) {
+    if (RegExp(r'\b(?:g_bLoggedIn|g_steamID)\s*=\s*false\b').hasMatch(html)) {
       throw CommunityAuthException(401, path);
     }
   }

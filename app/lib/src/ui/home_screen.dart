@@ -228,6 +228,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // Pointer movement only rebuilds the small refresh indicator, not the home.
   final _pull = ValueNotifier<double>(0);
   bool _refreshing = false;
+  int _avatarRefresh = 0;
   // Account-list manual sort mode (toggled by the sidebar's sort button).
   bool _sortMode = false;
   // Whether the running refresh should show the pull indicator
@@ -356,6 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (mounted) {
         setState(() {
           _refreshing = false;
+          _avatarRefresh++;
           _pullVisual = false;
           _pull.value = 0;
         });
@@ -438,6 +440,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             : LayoutBuilder(
                 builder: (context, c) {
                   final sidebar = _Sidebar(
+                    avatarRefresh: _avatarRefresh,
                     accounts: accounts,
                     searchController: _searchController,
                           searchOpen: _searchOpen,
@@ -505,6 +508,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     },
                   );
                   final panel = _MainPanel(
+                    avatarRefresh: _avatarRefresh,
                     account: accounts[_selected],
                     onCopy: _copy,
                     wide: c.maxWidth >= 640,
@@ -795,6 +799,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
 /// Left/bottom account list. Each row shows the account's own live code.
 class _Sidebar extends StatelessWidget {
+  final int avatarRefresh;
   final List<SteamGuardAccount> accounts;
   final TextEditingController searchController;
   final bool searchOpen;
@@ -832,6 +837,7 @@ class _Sidebar extends StatelessWidget {
   final VoidCallback? onToggleSort;
   final void Function(int from, int to)? onReorder;
   const _Sidebar({
+    required this.avatarRefresh,
     required this.accounts,
     required this.searchController,
     required this.searchOpen,
@@ -879,6 +885,7 @@ class _Sidebar extends StatelessWidget {
         itemBuilder: (context, visibleIndex) {
           final i = indices[visibleIndex];
           final row = _SidebarRow(
+            avatarRefresh: avatarRefresh,
             account: accounts[i],
             selected: i == selected,
             nameMode: nameMode,
@@ -920,6 +927,7 @@ class _Sidebar extends StatelessWidget {
         children: [
           IgnorePointer(
             child: _SidebarRow(
+              avatarRefresh: avatarRefresh,
               account: accounts[i],
               selected: i == selected,
               nameMode: nameMode,
@@ -1155,6 +1163,7 @@ class _Sidebar extends StatelessWidget {
 }
 
 class _SidebarRow extends ConsumerWidget {
+  final int avatarRefresh;
   final SteamGuardAccount account;
   final bool selected;
   final AccountNameMode nameMode;
@@ -1164,6 +1173,7 @@ class _SidebarRow extends ConsumerWidget {
   final void Function(SteamGuardAccount account, String action) onAction;
   final SlidableController? controller;
   const _SidebarRow({
+    required this.avatarRefresh,
     required this.account,
     required this.selected,
     required this.nameMode,
@@ -1411,7 +1421,7 @@ class _SidebarRow extends ConsumerWidget {
               ),
         child: Row(
           children: [
-            _Avatar(account: account, size: context.r(70)),
+            _Avatar(key: ValueKey(avatarRefresh), account: account, size: context.r(70)),
             SizedBox(width: context.r(15)),
             Expanded(
               child: Column(
@@ -1504,6 +1514,7 @@ class _PressableCard extends StatelessWidget {
 }
 
 class _MainPanel extends ConsumerWidget {
+  final int avatarRefresh;
   final SteamGuardAccount account;
   final void Function(String code) onCopy;
   final bool wide; // two-pane (tablet/desktop) layout
@@ -1515,6 +1526,7 @@ class _MainPanel extends ConsumerWidget {
   final LayerLink? codeLink; // tutorial spotlight anchor
   const _MainPanel(
       {required this.account,
+      required this.avatarRefresh,
       required this.onCopy,
       required this.nameMode,
       required this.onTapName,
@@ -1549,7 +1561,7 @@ class _MainPanel extends ConsumerWidget {
               InkWell(
                 key: const ValueKey('selected-account-avatar'),
                 onLongPress: mobile ? onOpenDashboard : null,
-                child: _Avatar(account: account, size: context.r(wide ? 76 : 56)),
+                child: _Avatar(key: ValueKey(avatarRefresh), account: account, size: context.r(wide ? 76 : 56)),
               ),
               SizedBox(width: context.r(18)),
               Flexible(
@@ -1895,7 +1907,7 @@ class _HomeRefreshIndicator extends StatelessWidget {
 class _Avatar extends StatelessWidget {
   final SteamGuardAccount account;
   final double size;
-  const _Avatar({required this.account, required this.size});
+  const _Avatar({super.key, required this.account, required this.size});
 
   @override
   Widget build(BuildContext context) {
@@ -1928,35 +1940,27 @@ class _Avatar extends StatelessWidget {
     // natively) and fall back to the static avatar. SteamImageProvider serves
     // bytes from the disk cache, so a relaunch shows avatars instantly; the
     // background profile refresh swaps the URL when the avatar changes.
-    final displayUrl =
-        (animUrl != null && animUrl.isNotEmpty) ? animUrl : url;
-    final Widget avatar = (displayUrl == null || displayUrl.isEmpty)
-        ? fallback(avatarSize)
-        : ClipRRect(
-            borderRadius: radius,
-            child: Image(
-              // Decode at display size (animated GIFs keep animating), in
-              // 32px buckets so desktop window resizes don't re-decode.
-              image: ResizeImage.resizeIfNeeded(
-                (((avatarSize * MediaQuery.devicePixelRatioOf(context))
-                                .ceil() +
-                            31) ~/
-                        32) *
-                    32,
-                null,
-                SteamImageProvider(displayUrl),
-              ),
-              width: avatarSize,
-              height: avatarSize,
-              fit: BoxFit.cover,
-              gaplessPlayback: true,
-              errorBuilder: (_, _, _) => fallback(avatarSize),
-              frameBuilder: (ctx, child, frame, syncLoaded) =>
-                  (frame == null && !syncLoaded)
-                      ? fallback(avatarSize)
-                      : child,
-            ),
-          );
+    final pixels = (avatarSize * MediaQuery.devicePixelRatioOf(context)).ceil();
+    Widget picture(String imageUrl, Widget Function() placeholder) => Image(
+      image: ResizeImage.resizeIfNeeded(
+        ((pixels + 31) ~/ 32) * 32, null, SteamImageProvider(imageUrl),
+      ),
+      width: avatarSize,
+      height: avatarSize,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => placeholder(),
+      frameBuilder: (_, child, frame, syncLoaded) =>
+          frame == null && !syncLoaded ? placeholder() : child,
+    );
+    Widget staticAvatar() => url != null && url.isNotEmpty
+        ? picture(url, () => fallback(avatarSize))
+        : fallback(avatarSize);
+    final avatar = ClipRRect(
+      borderRadius: radius,
+      child: animUrl != null && animUrl.isNotEmpty && animUrl != url
+          ? picture(animUrl, staticAvatar)
+          : staticAvatar(),
+    );
     if (!hasFrame) return avatar;
     return SizedBox(
       width: size,

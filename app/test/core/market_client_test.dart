@@ -70,6 +70,7 @@ void main() {
     });
 
     test('success:false with a message is still a failure', () {
+      expect(MarketClient.isCancelSuccess({'message': 'Unable to remove'}), isFalse);
       expect(
         MarketClient.isCancelSuccess(const {
           'success': false,

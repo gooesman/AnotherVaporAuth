@@ -189,6 +189,11 @@ void main() {
   }
 
   group('communityGetText auth detection', () {
+    test('a rate limited inventory page with anonymous markup stays a rate limit', () async {
+      final adapter = _SeqAdapter([(429, 'var g_steamID = false;', {})]);
+      await expectLater(_seqClient(adapter).communityGetText('/profiles/123/inventory/'),
+          throwsA(isA<SteamApiException>().having((e) => e.eresult, 'eresult', 84)));
+    });
     test('302 to the login page throws CommunityAuthException', () async {
       final adapter = _SeqAdapter([
         (302, '', {'location': ['/login/home/?goto=%2Fmarket%2F']}),
@@ -221,6 +226,15 @@ void main() {
       expect(adapter.urls, hasLength(2));
       expect(adapter.urls[1], contains('/market/eligibilitycheck'));
     });
+  });
+
+  test('listing removals require a successful status and a known reply', () async {
+    const path = '/market/removelisting/123';
+    for (final body in ['{}', '{"success":true}']) {
+      expect((await _client(400, body).communityPostJson(path, {}))['success'], false);
+    }
+    await expectLater(_client(200, 'false').communityPostJson(path, {}), throwsFormatException);
+    expect(await _client(200, '[]').communityPostJson(path, {}), isEmpty);
   });
 
   group('callProtobuf httpStatus', () {

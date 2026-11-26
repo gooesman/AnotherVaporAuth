@@ -5,6 +5,16 @@ block followed by a 中文 block. The format follows
 [Keep a Changelog](https://keepachangelog.com/). This fork promotes verified
 preview builds through its [manual release process](docs/fork-releases.md).
 
+## [v1.5.22] — 2026-11-26 · Fork
+
+### Fixed
+- Read the wallet from the signed-in inventory page and use Steam's new market search. Favorites still quote the selected currency. A removal error message now counts as an unconfirmed cancellation.
+- Use the static profile picture while an animated avatar loads or fails, clear unequipped cosmetics after a successful refresh, and retry images on a manual home refresh.
+
+### 修复
+- 适配 Steam 新版市场。账户概览从已登录的库存页读取钱包，搜索接入新版市场，收藏继续按所选币种查价。下架时若 Steam 只返回错误提示，会计入未确认。
+- 动态头像加载中或失败时显示静态头像，成功刷新后清除已卸下的头像装饰。手动刷新首页会重试头像。
+
 ## [v1.5.21] — 2026-11-09 · Fork
 
 ### Added

@@ -467,7 +467,8 @@ void main() {
           'wallet_currency_increment': '1',
         });
       final result = await InventoryClient(api).wallet(_account());
-      expect(api.requestedPath, startsWith('/market/'));
+      expect(api.requestedPath, '/profiles/${_account().steamId}/inventory/');
+      expect(api.requestedCookies?['steamLoginSecure'], contains('fake-token'));
       expect(result.currency, 23);
       expect(result.balance, 12345);
       expect(result.delayedBalance, 678);
@@ -493,11 +494,13 @@ void main() {
   });
 
   test('anonymous HTTP 200 wallet page triggers session renewal', () async {
-    final api = _InventoryApi()..html = 'var g_bLoggedIn = false; ${_page({})}';
-    await expectLater(
-      InventoryClient(api).wallet(_account()),
-      throwsA(isA<CommunityAuthException>()),
-    );
+    for (final marker in ['g_bLoggedIn', 'g_steamID']) {
+      final api = _InventoryApi()..html = 'var $marker = false; ${_page({})}';
+      await expectLater(
+        InventoryClient(api).wallet(_account()),
+        throwsA(isA<CommunityAuthException>()),
+      );
+    }
   });
 
   test(

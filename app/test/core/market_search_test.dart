@@ -58,16 +58,15 @@ class _SearchAdapter implements HttpClientAdapter {
   return (MarketClient(api), adapter);
 }
 
-// Synthetic protocol fixtures, not captured account data or a claim of a
-// successful live response. The anonymous live probe was rate-limited (429).
+// The public Market home also embeds Search pages with this row shape.
 Map<String, dynamic> _item({String hash = 'AK-47 | Redline (Field-Tested)'}) =>
     {
-      'name': 'AK-47 | 红线 (久经沙场)',
-      'hash_name': hash,
-      'sell_listings': 235,
-      'sell_price': 12345,
-      'sell_price_text': '¥ 123.45',
+      'strHash': hash,
+      'cSellOrders': 235,
+      'strMinSellSubtotal': r'HK$123.45',
+      'eCurrency': 29,
       'asset_description': {
+        'name': 'AK-47 | 红线 (久经沙场)',
         'appid': 730,
         'market_hash_name': hash,
         'icon_url': 'Steam_image-Key123',
@@ -79,14 +78,13 @@ Map<String, dynamic> _item({String hash = 'AK-47 | Redline (Field-Tested)'}) =>
 Map<String, dynamic> _page({
   int start = 0,
   int total = 41,
-  int size = 20,
   List<dynamic>? items,
 }) => {
-  'success': true,
-  'start': start,
-  'pagesize': size,
-  'total_count': total,
-  'results': items ?? [_item()],
+  'data': {
+    'start': start,
+    'total_count': total,
+    'results': items ?? [_item()],
+  },
 };
 
 void main() {
@@ -155,19 +153,20 @@ void main() {
       final request = adapter.requests.single;
       expect(request.method, 'GET');
       expect(request.uri.host, 'steamcommunity.com');
-      expect(request.uri.path, '/market/search/render/');
-      expect(request.uri.queryParameters, {
-        'query': '红线 & Blue',
-        'appid': '730',
-        'start': '0',
-        'count': '20',
-        'search_descriptions': '0',
-        'sort_column': 'popular',
-        'sort_dir': 'desc',
-        'norender': '1',
-        'currency': '23',
-        'l': 'schinese',
-      });
+      expect(request.uri.path, '/market/actions');
+      expect(request.headers['x-valve-request-type'], 'queryAction');
+      expect(request.uri.queryParameters['q'], 'Search');
+      expect(request.uri.queryParameters['l'], 'schinese');
+      expect(jsonDecode(request.uri.queryParameters['qp']!), [
+        {
+          'strQuery': '红线 & Blue',
+          'appid': 730,
+          'start': 0,
+          'filters': {},
+          'accessoryFilters': {},
+          'price': {'eCurrency': 23},
+        },
+      ]);
       expect(
         request.headers.keys.map((e) => e.toLowerCase()),
         isNot(contains('cookie')),
@@ -176,8 +175,8 @@ void main() {
       expect(item.appid, 730);
       expect(item.name, 'AK-47 | 红线 (久经沙场)');
       expect(item.marketHashName, 'AK-47 | Redline (Field-Tested)');
-      expect(item.lowestPriceMinor, 12345);
-      expect(item.priceText, '¥ 123.45');
+      expect(item.lowestPriceMinor, isNull);
+      expect(item.priceText, isNull);
       expect(item.listingCount, 235);
       expect(item.type, '保密级 步枪');
       expect(item.rarityColor, 'd2d2d2');
@@ -185,26 +184,30 @@ void main() {
         item.iconUrl,
         'https://community.fastly.steamstatic.com/economy/image/Steam_image-Key123/128fx128f',
       );
-      expect(page.nextStart, 20);
+      expect(page.nextStart, 1);
       expect(page.hasMore, isTrue);
       expect(() => page.items.clear(), throwsUnsupportedError);
     },
   );
 
   test(
-    'integer success/string counts and final partial page are supported',
+    'partial pages advance by consumed rows and omit an unspecified game',
     () async {
-      final (client, adapter) = _client({
-        ..._page(start: 40),
-        'success': 1,
-        'start': '40',
-        'pagesize': '20',
-        'total_count': '41',
-      });
+      final (client, adapter) = _client(_page(start: 40));
       final page = await client.search(query: '', currency: 1, start: 40);
       expect(page.hasMore, isFalse);
-      expect(page.nextStart, 60);
-      expect(adapter.requests.single.queryParameters, isNot(contains('appid')));
+      expect(page.nextStart, 41);
+      expect(
+        jsonDecode(adapter.requests.single.queryParameters['qp']).single,
+        isNot(contains('appid')),
+      );
+      adapter.body = _page(
+        items: List.generate(30, (i) => _item(hash: 'item$i')),
+      );
+      final chunk = await client.search(query: '', currency: 1, count: 3);
+      expect(chunk.items, hasLength(3));
+      expect(chunk.nextStart, 3);
+      expect(chunk.hasMore, isTrue);
     },
   );
 
@@ -223,10 +226,8 @@ void main() {
   test(
     'no listings or absent price never becomes a fake zero quotation',
     () async {
-      final noListings = _item()..['sell_listings'] = 0;
-      final missingPrice = _item()
-        ..remove('sell_price')
-        ..remove('sell_price_text');
+      final noListings = _item()..['cSellOrders'] = 0;
+      final missingPrice = _item()..remove('strMinSellSubtotal');
       final (client, _) = _client(_page(items: [noListings, missingPrice]));
       final page = await client.search(query: '', currency: 1);
       for (final item in page.items) {
@@ -259,10 +260,10 @@ void main() {
   );
 
   test(
-    'failure or non-boolean/non-integer success cannot become empty success',
+    'missing or malformed Search data cannot become empty success',
     () async {
-      for (final success in [false, 0, '1', 1.0, null]) {
-        final (client, _) = _client({..._page(items: []), 'success': success});
+      for (final data in [false, 0, '1', [], null]) {
+        final (client, _) = _client({'data': data});
         await expectLater(
           client.search(query: '', currency: 1),
           throwsA(isA<SteamApiException>()),
@@ -276,8 +277,8 @@ void main() {
     () async {
       for (final changes in <Map<String, dynamic>>[
         {'start': 20},
-        {'pagesize': 21},
-        {'pagesize': -1},
+        {'start': -1},
+        {'total_count': 0},
         {'total_count': -1},
         {'total_count': 1.5},
         {'total_count': true},
@@ -286,9 +287,10 @@ void main() {
         {
           'results': [null],
         },
-        {'pagesize': 0},
       ]) {
-        final (client, _) = _client({..._page(), ...changes});
+        final (client, _) = _client({
+          'data': {..._page()['data'] as Map, ...changes},
+        });
         await expectLater(
           client.search(query: '', currency: 1),
           throwsFormatException,
@@ -298,13 +300,13 @@ void main() {
   );
 
   test(
-    'invalid item identity and fractional/negative prices are rejected',
+    'invalid item identity and fractional/negative listing counts are rejected',
     () async {
       final cases = <Map<String, dynamic>>[
         _item()..['asset_description'] = null,
-        _item()..['sell_price'] = -1,
-        _item()..['sell_price'] = 123.45,
-        _item()..['sell_listings'] = true,
+        _item()..['cSellOrders'] = -1,
+        _item()..['cSellOrders'] = 123.45,
+        _item()..['cSellOrders'] = true,
       ];
       for (final changes in [
         {'appid': 0},

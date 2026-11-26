@@ -189,6 +189,7 @@ class SteamApiClient {
           responseType: ResponseType.plain,
           headers: {
             if (cookies != null) 'Cookie': _cookieHeader(cookies),
+            if (path == '/market/actions') 'x-valve-request-type': 'queryAction',
             'X-Requested-With': 'com.valvesoftware.android.steam.community',
           },
         ),
@@ -209,12 +210,20 @@ class SteamApiClient {
     final body = resp.data ?? '';
     dlog('← $path  HTTP ${resp.statusCode}  ${body.length}B');
     final diagnostic = _gateCommunityStatus(resp, path);
-    if (diagnostic != null) return diagnostic;
+    final removal = path.startsWith('/market/removelisting/');
+    if (diagnostic != null) {
+      return removal ? {...diagnostic, 'success': false} : diagnostic;
+    }
     if (body.isEmpty) return const {};
     final decoded = jsonDecode(body);
     // Some write endpoints (e.g. removelisting) reply 200 with a bare `[]` —
     // treat a non-object body as a plain success.
-    if (decoded is! Map<String, dynamic>) return const {};
+    if (decoded is! Map<String, dynamic>) {
+      if (removal && !(decoded is List && decoded.isEmpty)) {
+        throw const FormatException('Unexpected Steam listing removal response.');
+      }
+      return const {};
+    }
     if (decoded['success'] != true) {
       dlog('  ⚠ $path success=${decoded['success']} '
           '${decoded['message'] ?? decoded['needauth'] ?? ''}');
@@ -360,6 +369,10 @@ class SteamApiClient {
     if (status == 401 || status == 403) {
       dlog('  ✗ $path HTTP $status (stale session?)');
       throw CommunityAuthException(status, path);
+    }
+    if (status >= 400) {
+      throw SteamApiException(status == 429 ? 84 : 2, 'HTTP $status', path,
+          httpStatus: status);
     }
     final body = resp.data ?? '';
     dlog('← $path  HTTP ${resp.statusCode}  ${body.length}B');

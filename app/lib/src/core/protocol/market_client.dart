@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../services/debug_log.dart';
 import '../../services/steam_api_client.dart';
 import '../json_coerce.dart';
@@ -54,20 +56,23 @@ class MarketClient {
       throw ArgumentError.value(query, 'query');
     }
     final pageSize = count.clamp(1, 20);
-    final json = await api.communityGetJson('/market/search/render/', {
-      'query': query.trim(),
-      'start': '$start',
-      'count': '$pageSize',
-      'search_descriptions': '0',
-      'sort_column': 'popular',
-      'sort_dir': 'desc',
-      if (appid != null) 'appid': '$appid',
-      'norender': '1',
-      'currency': '$currency',
+    const path = '/market/actions';
+    final json = await api.communityGetJson(path, {
+      'q': 'Search',
+      'qp': jsonEncode([
+        {
+          'appid': ?appid,
+          'strQuery': query.trim(),
+          'filters': const {},
+          'accessoryFilters': const {},
+          'price': {'eCurrency': currency},
+          'start': start,
+        },
+      ]),
       'l': api.steamLanguage,
     });
-    if (json['success'] != true &&
-        !(json['success'] is int && json['success'] == 1)) {
+    final data = json['data'];
+    if (data is! Map<String, dynamic>) {
       // HTTP 429 already throws in the shared transport. Also retain an
       // explicit RateLimitExceeded in a 2xx JSON response, without guessing
       // from arbitrary message text.
@@ -78,11 +83,11 @@ class MarketClient {
         rateLimited
             ? 'Steam market search rate limited'
             : 'Steam market search failed',
-        '/market/search/render/',
+        path,
       );
     }
     return MarketSearchPage.fromJson(
-      json,
+      data,
       expectedStart: start,
       maximumPageSize: pageSize,
     );
@@ -333,7 +338,6 @@ class MarketClient {
   /// unit-testable without a network stack.
   static bool isCancelSuccess(Map<String, dynamic> json) {
     if (json['needauth'] == true || json['needsauth'] == true) return false;
-    if (!json.containsKey('success')) return true;
-    return json['success'] == true;
+    return json.isEmpty || json['success'] == true;
   }
 }

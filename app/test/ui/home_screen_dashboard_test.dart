@@ -21,6 +21,7 @@ import 'package:ava/src/ui/account_dashboard.dart';
 import 'package:ava/src/ui/home_screen.dart';
 import 'package:ava/src/ui/notifications/notifications_screen.dart';
 import 'package:ava/src/ui/widgets/pending_confirmation_badge.dart';
+import 'package:ava/src/ui/widgets/steam_image_provider.dart';
 import 'package:ava/src/ui/widgets/steam_notifications_button.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -244,6 +245,24 @@ Future<void> pumpDashboardHome(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('an unavailable animated avatar falls back to the static picture', (tester) async {
+    const animated = 'https://cdn.fastly.steamstatic.com/example.gif';
+    const still = 'https://avatars.fastly.steamstatic.com/example_full.jpg';
+    final account = SteamGuardAccount.fromJson(homePreviewAccounts.first.toJson())
+      ..animatedAvatarUrl = animated
+      ..avatarUrl = still;
+    await tester.pumpWidget(dashboardHomePreviewApp(
+      variant: AvaThemeVariant.light, accounts: [account],
+    ));
+    await pumpDashboardHome(tester);
+    final animatedImage = find.byWidgetPredicate((w) => w is Image &&
+        w.image is ResizeImage &&
+        (w.image as ResizeImage).imageProvider == const SteamImageProvider(animated));
+    final image = tester.widget<Image>(animatedImage.first);
+    final fallback = image.errorBuilder!(tester.element(animatedImage.first), StateError('unavailable'), null);
+    expect(((fallback as Image).image as ResizeImage).imageProvider, const SteamImageProvider(still));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   for (final mobile in [false, true]) {
     testWidgets('home shows pending counts and opens notifications on ${mobile ? 'phone' : 'desktop'}', (tester) async {
       tester.view.physicalSize = mobile ? const Size(393, 852) : const Size(1400, 900);

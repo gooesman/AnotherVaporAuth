@@ -163,6 +163,28 @@ Future<_Harness> _setup({int count = 1, _Avatars? avatars}) async {
 
 void main() {
   test(
+    'only a resolved equipment read clears a removed animated avatar',
+    () async {
+      for (final resolved in [false, true]) {
+        final h = await _setup();
+        h.account
+          ..avatarUrl = 'static-avatar'
+          ..avatarFrameUrl = 'old-frame'
+          ..animatedAvatarUrl = 'old-animation';
+        final refresh = h.controller.refreshAvatars();
+        h.avatars.profile.complete(const SteamProfile());
+        h.avatars.equipped.complete(EquippedItems(resolved: resolved));
+        await refresh;
+        expect(h.account.avatarUrl, 'static-avatar');
+        expect(h.account.avatarFrameUrl, resolved ? isNull : 'old-frame');
+        expect(
+          h.account.animatedAvatarUrl,
+          resolved ? isNull : 'old-animation',
+        );
+      }
+    },
+  );
+  test(
     'normal concurrent token rotation preserves successful cosmetics',
     () async {
       final h = await _setup();

@@ -969,8 +969,9 @@ class AppController extends AsyncNotifier<AppData> {
     }
     final accounts = await store.getAllAccounts();
     if (privacyAccepted) {
-      Future.microtask(refreshSessions);
-      Future.microtask(refreshAvatars);
+      // As with a remembered unlock, let build publish the accounts first.
+      Future<void>(refreshSessions);
+      Future<void>(refreshAvatars);
     }
     return AppData(
       store: store,
@@ -1298,13 +1299,12 @@ class AppController extends AsyncNotifier<AppData> {
         target.personaName = profile.personaName;
         accChanged = true;
       }
-      // A null value means "not equipped / unresolved" — keep the cached one
-      // rather than dropping a good value on a transient failure.
-      if (items.frameUrl != null && items.frameUrl != target.avatarFrameUrl) {
+      if ((items.resolved || items.frameUrl != null) &&
+          items.frameUrl != target.avatarFrameUrl) {
         target.avatarFrameUrl = items.frameUrl;
         accChanged = true;
       }
-      if (items.animatedAvatarUrl != null &&
+      if ((items.resolved || items.animatedAvatarUrl != null) &&
           items.animatedAvatarUrl != target.animatedAvatarUrl) {
         target.animatedAvatarUrl = items.animatedAvatarUrl;
         accChanged = true;

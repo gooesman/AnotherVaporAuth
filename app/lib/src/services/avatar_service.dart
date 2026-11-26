@@ -13,7 +13,12 @@ class FrameUnauthorized implements Exception {}
 class EquippedItems {
   final String? frameUrl; // avatar frame (often animated APNG)
   final String? animatedAvatarUrl; // animated avatar (APNG)
-  const EquippedItems({this.frameUrl, this.animatedAvatarUrl});
+  final bool resolved;
+  const EquippedItems({
+    this.frameUrl,
+    this.animatedAvatarUrl,
+    this.resolved = false,
+  });
 }
 
 /// Public profile bits resolved from the community XML.
@@ -125,8 +130,9 @@ class AvatarService {
         ),
       );
       final response = resp.data?['response'] as Map<String, dynamic>?;
-      final frame = response?['avatar_frame'] as Map<String, dynamic>?;
-      final anim = response?['animated_avatar'] as Map<String, dynamic>?;
+      if (response == null) return const EquippedItems();
+      final frame = response['avatar_frame'] as Map<String, dynamic>?;
+      final anim = response['animated_avatar'] as Map<String, dynamic>?;
       // Steam's convention is counter-intuitive: image_small is the ANIMATED
       // asset (APNG frame / GIF avatar), image_large is the static poster.
       final frameRaw =
@@ -139,7 +145,11 @@ class AvatarService {
         'equipped: $steamId frame=${frameUrl ?? 'none'} '
         'anim=${animUrl ?? 'none'}',
       );
-      return EquippedItems(frameUrl: frameUrl, animatedAvatarUrl: animUrl);
+      return EquippedItems(
+        frameUrl: frameUrl,
+        animatedAvatarUrl: animUrl,
+        resolved: frame != null && anim != null,
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         dlog('equipped: $steamId -> 401 (token stale, will refresh)');
