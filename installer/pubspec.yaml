@@ -1,5 +1,5 @@
 name: ava_installer
-description: "Scene-style installer for AVA (AnotherVaporAuth)"
+description: "Installer for GooeSteamKit (based on AnotherVaporAuth)"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   window_manager: ^0.4.3
   archive: ^3.6.1
+  # Already used by archive and locked; validate the packaged icon cache key.
+  crypto: 3.0.7
   path: ^1.9.0
 
 dev_dependencies:

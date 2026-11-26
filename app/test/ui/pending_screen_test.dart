@@ -386,7 +386,7 @@ SteamGuardAccount _account() => SteamGuardAccount(
     );
 
 Widget _app(SteamApiClient api, SteamGuardAccount account,
-        {List<Override> overrides = const []}) =>
+        {List<Override> overrides = const [], int initialTab = 0}) =>
     ProviderScope(
       overrides: [
         apiClientProvider.overrideWithValue(api),
@@ -398,11 +398,24 @@ Widget _app(SteamApiClient api, SteamGuardAccount account,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
-        home: PendingScreen(account: account),
+        home: PendingScreen(account: account, initialTab: initialTab),
       ),
     );
 
 void main() {
+  testWidgets('notification opens offers without loading confirmations',
+      (tester) async {
+    final api = _FakeApiWithOffer();
+    await tester.pumpWidget(_app(api, _account(), initialTab: 1));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TabBar>(find.byType(TabBar)).controller!.index, 1);
+    expect(find.byType(OfferCard), findsOneWidget);
+    expect(api.getlistCalls, 0);
+    await tester.tap(find.text('Confirmations'));
+    await tester.pumpAndSettle();
+    expect(api.getlistCalls, 1);
+  });
+
   testWidgets('pending screen renders both tabs and switches', (tester) async {
     final api = _FakeApi();
     await tester.pumpWidget(_app(api, _account()));

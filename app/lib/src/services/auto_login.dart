@@ -21,13 +21,18 @@ enum AutoLoginOutcome {
 /// TOTP secret (which satisfies the device-code guard automatically).
 class AutoLogin {
   final SteamApiClient api;
+  // A local and a portable copy can share a Steam ID but have different
+  // credentials. Only coalesce requests for this exact account object/client.
+  final _ensuring = Map<SteamGuardAccount, Future<AutoLoginOutcome>>.identity();
   AutoLogin(this.api);
 
   /// Re-establishes [account]'s session from scratch using [password] and the
   /// account's own Steam Guard (TOTP) secret. Mutates `account.session` in place
   /// on success.
   Future<AutoLoginOutcome> reloginWithPassword(
-      SteamGuardAccount account, String password) async {
+    SteamGuardAccount account,
+    String password,
+  ) async {
     final username = account.accountName;
     if (username == null || username.isEmpty) return AutoLoginOutcome.failed;
     try {
@@ -52,8 +57,9 @@ class AutoLogin {
         if (r.complete) {
           final data = s.toSessionData(r);
           account.session
-            ..steamId =
-                data.steamId != 0 ? data.steamId : account.session.steamId
+            ..steamId = data.steamId != 0
+                ? data.steamId
+                : account.session.steamId
             ..accessToken = data.accessToken
             ..refreshToken = data.refreshToken;
           dlog('auto-login: ${account.accountName} re-logged in headlessly');
@@ -79,8 +85,10 @@ class AutoLogin {
 
   /// True when the access-token JWT is absent, unparseable, or expires within
   /// [skew] — i.e. worth refreshing proactively.
-  static bool accessTokenStale(String? jwt,
-      {Duration skew = const Duration(minutes: 15)}) {
+  static bool accessTokenStale(
+    String? jwt, {
+    Duration skew = const Duration(minutes: 15),
+  }) {
     final payload = decodeJwtPayload(jwt);
     if (payload == null) return true;
     final exp = payload['exp'];
@@ -90,12 +98,29 @@ class AutoLogin {
   }
 
   /// Ensures [account] has a usable access token. Tries the refresh token first;
-  /// if that fails, falls back to a full headless re-login using the password
-  /// stored on the account (in the maFile).
+  /// only a missing or explicitly rejected refresh token permits a full
+  /// headless re-login. A temporary outage leaves the stored tokens intact.
   Future<AutoLoginOutcome> ensureSession(SteamGuardAccount account) async {
-    if (account.session.hasTokens &&
-        await SessionManager(api).refresh(account.session)) {
-      return AutoLoginOutcome.ok;
+    final active = _ensuring[account];
+    if (active != null) return active;
+    final operation = _ensureSession(account);
+    _ensuring[account] = operation;
+    try {
+      return await operation;
+    } finally {
+      if (identical(_ensuring[account], operation)) _ensuring.remove(account);
+    }
+  }
+
+  Future<AutoLoginOutcome> _ensureSession(SteamGuardAccount account) async {
+    switch (await SessionManager(api).refreshResult(account.session)) {
+      case SessionRefreshOutcome.refreshed:
+        return AutoLoginOutcome.ok;
+      case SessionRefreshOutcome.failed:
+        return AutoLoginOutcome.failed;
+      case SessionRefreshOutcome.missingRefreshToken:
+      case SessionRefreshOutcome.rejected:
+        break;
     }
     final pwd = account.password;
     if (pwd == null || pwd.isEmpty) return AutoLoginOutcome.needsPassword;

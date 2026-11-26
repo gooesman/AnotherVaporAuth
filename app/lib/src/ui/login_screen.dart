@@ -11,6 +11,7 @@ import '../app/responsive.dart';
 import '../app/theme.dart';
 import '../core/models/steam_guard_account.dart';
 import '../core/protocol/steam_auth_session.dart';
+import '../core/protocol/login_identity.dart';
 import '../services/steam_api_client.dart';
 import '../services/steam_time.dart';
 import 'widgets/cooldown_button.dart';
@@ -37,7 +38,9 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  late final SteamAuthSession _session;
+  late SteamAuthSession _session;
+  late final int? _expectedSteamId;
+  int _attempt = 0;
   final _username = TextEditingController();
   final _password = TextEditingController();
   final _code = TextEditingController();
@@ -63,6 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
     _session = SteamAuthSession(ref.read(apiClientProvider));
+    _expectedSteamId = widget.account?.steamId;
     if (widget.account?.accountName != null) {
       _username.text = widget.account!.accountName!;
     }
@@ -95,34 +99,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _startPassword() async {
+    _pollTimer?.cancel();
+    final attempt = ++_attempt;
+    final session = _session = SteamAuthSession(ref.read(apiClientProvider));
     setState(() {
       _busy = true;
       _error = null;
       _status = null;
     });
     try {
-      await _session.beginWithCredentials(_username.text, _password.text);
+      await session.beginWithCredentials(_username.text, _password.text);
+      if (!mounted || attempt != _attempt) return;
       _afterBegin();
     } catch (e) {
-      _fail(e);
+      if (attempt == _attempt) _fail(e);
     }
   }
 
   Future<void> _startQr() async {
+    _pollTimer?.cancel();
+    final attempt = ++_attempt;
+    final session = _session = SteamAuthSession(ref.read(apiClientProvider));
     setState(() {
       _qrMode = true;
       _busy = true;
       _error = null;
     });
     try {
-      final url = await _session.beginWithQr();
+      final url = await session.beginWithQr();
+      if (!mounted || attempt != _attempt) return;
       setState(() {
         _qrUrl = url;
         _busy = false;
       });
       _beginPolling();
     } catch (e) {
-      _fail(e);
+      if (attempt == _attempt) _fail(e);
     }
   }
 
@@ -133,8 +145,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
     // The account can also be approved by tapping "allow" in the Steam mobile
     // app (device/email confirmation) — no code required.
-    final canConfirm = _session.allowedConfirmations.any((g) =>
-        g == GuardType.deviceConfirmation || g == GuardType.emailConfirmation);
+    final canConfirm = _session.allowedConfirmations.any(
+      (g) =>
+          g == GuardType.deviceConfirmation || g == GuardType.emailConfirmation,
+    );
     // The device (TOTP) code lives in this very app — if we already hold the
     // account's secret (e.g. a session refresh), generate and submit it
     // automatically instead of asking the user to read a covered-up code.
@@ -195,6 +209,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _beginPolling() {
+    final session = _session;
+    final attempt = _attempt;
+    var inFlight = false;
     final l = AppLocalizations.of(context);
     setState(() {
       _status = l.loginWaiting;
@@ -202,8 +219,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (inFlight || !mounted || attempt != _attempt) return;
+      inFlight = true;
       try {
-        final result = await _session.poll();
+        final result = await session.poll();
+        if (!mounted || attempt != _attempt) return;
         if (result.newChallengeUrl != null &&
             result.newChallengeUrl!.isNotEmpty &&
             _qrMode) {
@@ -211,23 +231,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         }
         if (result.complete) {
           _pollTimer?.cancel();
-          await _onLoggedIn(result);
+          await _onLoggedIn(result, session);
         }
       } catch (e) {
+        if (!mounted || attempt != _attempt) return;
         _pollTimer?.cancel();
         _fail(e);
+      } finally {
+        inFlight = false;
       }
     });
   }
 
-  Future<void> _onLoggedIn(PollResult result) async {
+  Future<void> _onLoggedIn(
+    PollResult result,
+    SteamAuthSession authSession,
+  ) async {
     // Let the platform password manager offer to save the credentials.
     TextInput.finishAutofillContext();
-    final session = _session.toSessionData(result);
+    final session = authSession.toSessionData(result);
     if (!mounted) return;
 
     if (widget.reason == LoginReason.refresh && widget.account != null) {
       final account = widget.account!;
+      validateRefreshIdentity(
+        expectedSteamId: _expectedSteamId!,
+        currentSteamId: account.steamId,
+        session: session,
+      );
       // A code-only import (no SteamID) carries a synthetic negative id; capture
       // it so the placeholder entry can be dropped once the real one is saved.
       final oldSteamId = account.steamId;
@@ -249,7 +280,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // screen without waiting for the next background refresh.
       ref.read(sessionHealthProvider.notifier).clear(account.steamId);
       // Now stored under the real SteamID — remove the code-only placeholder.
-      if (oldSteamId < 0 && account.steamId > 0 && account.steamId != oldSteamId) {
+      if (oldSteamId < 0 &&
+          account.steamId > 0 &&
+          account.steamId != oldSteamId) {
         await ref
             .read(appControllerProvider.notifier)
             .removeAccountBySteamId(oldSteamId);
@@ -261,14 +294,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // reason == add: proceed to authenticator linking, carrying the password
     // so the new account can save it if requested.
     if (mounted) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => AddAuthenticatorScreen(
-          session: session,
-          password: _savePassword && _password.text.isNotEmpty
-              ? _password.text
-              : null,
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => AddAuthenticatorScreen(
+            session: session,
+            password: _savePassword && _password.text.isNotEmpty
+                ? _password.text
+                : null,
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -285,6 +320,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// Users shouldn't be reading raw SteamApiException dumps — map the
   /// common sign-in EResults to human messages, fall back to the dump.
   String _friendlyError(Object e, AppLocalizations l) {
+    if (e is LoginAccountMismatch) return l.loginAccountMismatch;
     // A malformed Steam payload (ProtoParseException, any FormatException) is
     // a transport failure — show the network copy, never the parser dump.
     if (e is FormatException) return l.proErrNetwork;
@@ -355,19 +391,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         SpinnerRing(
           size: context.r(96),
-          child: Icon(Icons.phone_android, color: t.accent, size: context.r(34)),
+          child: Icon(
+            Icons.phone_android,
+            color: t.accent,
+            size: context.r(34),
+          ),
         ),
         SizedBox(height: context.r(22)),
-        Text(l.loginWaiting,
-            style: TextStyle(color: t.text, fontSize: context.r(15)),
-            textAlign: TextAlign.center),
+        Text(
+          l.loginWaiting,
+          style: TextStyle(color: t.text, fontSize: context.r(15)),
+          textAlign: TextAlign.center,
+        ),
         SizedBox(height: context.r(8)),
-        Text(l.loginWaitingDesc,
-            style: TextStyle(color: t.muted, fontSize: context.r(13), height: 1.5),
-            textAlign: TextAlign.center),
+        Text(
+          l.loginWaitingDesc,
+          style: TextStyle(
+            color: t.muted,
+            fontSize: context.r(13),
+            height: 1.5,
+          ),
+          textAlign: TextAlign.center,
+        ),
         SizedBox(height: context.r(18)),
-        if (_error != null)
-          Text(_error!, style: TextStyle(color: t.bad)),
+        if (_error != null) Text(_error!, style: TextStyle(color: t.bad)),
       ],
     );
   }
@@ -381,13 +428,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Text(isEmail ? l.loginNeedEmailCode : l.loginNeedGuardCode),
           if (_canConfirm) ...[
             SizedBox(height: context.r(6)),
-            Text(l.loginOrApprove,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: context.r(12.5),
-                    color: Theme.of(context)
-                        .extension<AvaTokens>()
-                        ?.muted)),
+            Text(
+              l.loginOrApprove,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: context.r(12.5),
+                color: Theme.of(context).extension<AvaTokens>()?.muted,
+              ),
+            ),
           ],
           SizedBox(height: context.r(12)),
           TextField(
@@ -447,9 +495,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     tooltip: _showPassword
                         ? l.loginHidePassword
                         : l.loginShowPassword,
-                    icon: Icon(_showPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined),
+                    icon: Icon(
+                      _showPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
                     onPressed: () =>
                         setState(() => _showPassword = !_showPassword),
                   ),
@@ -462,8 +512,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 value: _savePassword,
                 onChanged: (v) => setState(() => _savePassword = v ?? false),
                 title: Text(l.loginSavePassword),
-                subtitle: Text(l.loginSavePasswordHint,
-                    style: TextStyle(fontSize: context.r(11))),
+                subtitle: Text(
+                  l.loginSavePasswordHint,
+                  style: TextStyle(fontSize: context.r(11)),
+                ),
               ),
             ],
           ),
@@ -477,7 +529,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ? SizedBox(
                     height: context.r(18),
                     width: context.r(18),
-                    child: CircularProgressIndicator(strokeWidth: context.r(2)))
+                    child: CircularProgressIndicator(strokeWidth: context.r(2)),
+                  )
                 : Text(l.loginButton),
           ),
         ),
@@ -513,7 +566,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (_status != null) Text(_status!),
         TextButton(
           onPressed: () => setState(() {
+            _attempt++;
             _qrMode = false;
+            _waiting = false;
+            _needGuard = null;
             _pollTimer?.cancel();
           }),
           child: Text(l.loginViaCredentials),

@@ -10,6 +10,7 @@ Run from the repo root:  python3 tool/docs_lint.py
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -31,14 +32,17 @@ failures: list[str] = []
 
 def docs() -> list[Path]:
     out = []
-    for p in ROOT.rglob('*.md'):
-        if any(part in SKIP_DIRS for part in p.parts):
-            continue
-        if p.name in SKIP_FILES:
-            continue
-        if any(s in p.name.lower() for s in SKIP_PATTERNS):
-            continue
-        out.append(p)
+    # Prune excluded trees before traversing them: distribution directories can
+    # contain private signing material and must not be enumerated for doc lint.
+    for directory, children, files in os.walk(ROOT, followlinks=False):
+        children[:] = [name for name in children if name not in SKIP_DIRS
+                       and not (Path(directory) / name).is_symlink()]
+        for name in files:
+            if not name.endswith('.md') or name in SKIP_FILES:
+                continue
+            if any(s in name.lower() for s in SKIP_PATTERNS):
+                continue
+            out.append(Path(directory) / name)
     return sorted(out)
 
 

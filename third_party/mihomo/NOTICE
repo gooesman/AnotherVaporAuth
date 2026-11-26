@@ -1,0 +1,25 @@
+AVA optional Steam acceleration component
+
+This distribution includes an unmodified ARM64 executable of Mihomo v1.19.32,
+copyright the Mihomo and Clash contributors, licensed under GNU GPL version 3.
+Windows downloads the matching unmodified official executable only on demand.
+Mihomo is a separate process; AVA does not change its code or use its name as
+the product name. This fork is not affiliated with the Mihomo project.
+
+The complete component license is in LICENSE (also included in the APK).
+Upstream source commit: 88dcbf7f1614a67c3b36b848ee3592dfa92ada36
+https://github.com/MetaCubeX/mihomo/tree/88dcbf7f1614a67c3b36b848ee3592dfa92ada36
+The matching source snapshot, including go.mod, go.sum and upstream build
+instructions, is supplied alongside this AVA release as
+mihomo-v1.19.32-source.tar.gz. Source and individual dependency licenses retain
+their original terms. The AVA repository's MIT license does not relicense the
+core or remove obligations arising from distributing that component.
+
+Build/download pins and hashes: core.json in this directory. The original
+release uses the upstream Makefile and with_gvisor build tag; consult its
+Makefile and .github/workflows for target-specific toolchain and flags.
+
+The integration uses a local authenticated listener for AVA requests only.
+It does not configure system proxy, TUN/VPN, system DNS or root certificates.
+Subscription providers and server access are independently supplied by users;
+no public third-party relay or Steam++ service is bundled or implicitly used.

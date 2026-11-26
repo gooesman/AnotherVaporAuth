@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android-only, flat rendition of the approved goose-and-shield artwork.
+     No baked-in tile, outer shadow or raster alpha fringe. The 64dp-high
+     artwork fits inside the central 66dp safe zone of the 108dp layer. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.0673"
+        android:scaleY="0.0673"
+        android:translateX="11.6"
+        android:translateY="11.47">
+        <!-- The goose's neck flows into the shield's white outline. -->
+        <path
+            android:fillColor="#FFFAFAFA"
+            android:pathData="M605,214 C584,150 515,153 473,169 C382,202 319,294 291,405 C276,464 276,531 282,593 C292,694 316,770 349,836 C414,965 506,1055 615,1096 C628,1101 637,1102 650,1097 C826,1032 934,884 968,686 C981,610 984,542 976,482 C973,456 962,444 940,438 C855,419 784,395 722,366 C694,353 678,345 649,355 C590,378 527,406 458,425 C442,429 434,420 436,402 C440,367 465,341 498,331 C524,323 552,333 576,325 C560,316 558,300 566,283 C574,266 569,250 576,235 C582,223 592,217 605,214 Z" />
+        <path
+            android:fillColor="#FF174A6C"
+            android:pathData="M365,632 C351,570 363,523 398,494 C425,472 447,470 473,463 C539,446 602,426 653,405 C672,397 679,394 697,402 C762,433 832,453 913,474 C931,479 937,493 938,520 C943,627 923,731 882,822 C830,936 745,1010 635,1059 C507,1009 412,910 362,744 C351,706 353,666 365,632 Z" />
+        <!-- Steam-style mechanical link, kept broad enough for small icons. -->
+        <path
+            android:fillColor="#FFFAFAFA"
+            android:pathData="M669,601 C669,537 721,486 785,486 C849,486 902,537 902,601 C902,666 850,718 786,718 C776,718 766,717 757,714 L646,779 C642,823 606,857 559,857 C515,857 481,827 476,788 L359,722 L365,632 L511,715 C528,700 550,690 575,690 L669,604 Z" />
+        <path
+            android:fillColor="#FF174A6C"
+            android:pathData="M864,601 C864,643.5 829.5,678 787,678 C744.5,678 710,643.5 710,601 C710,558.5 744.5,524 787,524 C829.5,524 864,558.5 864,601 Z" />
+        <path
+            android:fillColor="#FFFAFAFA"
+            android:pathData="M841,601 C841,631.4 816.4,656 786,656 C755.6,656 731,631.4 731,601 C731,570.6 755.6,546 786,546 C816.4,546 841,570.6 841,601 Z" />
+        <path
+            android:fillColor="#FF174A6C"
+            android:pathData="M540,713 C570,702 603,714 618,742 C637,777 622,817 589,832 C557,847 522,834 504,810 C499,804 499,798 505,796 C511,793 516,799 521,805 C535,820 557,823 575,816 C598,807 609,784 601,762 C594,741 573,728 551,732 C543,734 535,734 532,727 C530,721 534,716 540,713 Z" />
+        <!-- Orange bill and subtle nostril; a dark eye needs no tiny outline. -->
+        <path
+            android:fillColor="#FFFFA000"
+            android:pathData="M600,228 C610,227 615,231 623,239 C642,257 664,269 687,276 C697,279 702,282 702,289 C702,298 689,303 674,308 C650,315 620,318 597,316 C581,315 574,310 574,302 C574,295 580,286 583,275 C587,259 583,249 589,237 C592,232 595,229 600,228 Z" />
+        <path
+            android:fillColor="#FF202020"
+            android:pathData="M538,251 C538,262.6 528.6,272 517,272 C505.4,272 496,262.6 496,251 C496,239.4 505.4,230 517,230 C528.6,230 538,239.4 538,251 Z M620,264 L630,270 C634,272 635,276 632,280 C630,283 626,283 622,281 L613,275 C609,273 609,269 612,266 C614,263 617,263 620,264 Z" />
+        <!-- Rounded orange check within the shield. -->
+        <path
+            android:fillColor="#FFFFA000"
+            android:pathData="M559,891 C570,881 584,883 595,894 L632,927 L715,846 C726,835 742,835 753,846 C763,856 763,872 752,883 L651,977 C640,987 625,987 614,977 L559,927 C548,917 548,902 559,891 Z" />
+    </group>
+</vector>

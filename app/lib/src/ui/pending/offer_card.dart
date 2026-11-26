@@ -153,7 +153,12 @@ class OfferCard extends StatelessWidget {
                         // 走 SteamImageProvider 的磁盘缓存:Steam 资产 URL
                         // 内容寻址,同一 URL 的字节永不变,重启零网络。
                         : Image(
-                            image: SteamImageProvider(a.iconUrl),
+                            image: steamThumbnailProvider(
+                              a.iconUrl,
+                              logicalSize: Size.square(context.r(40)),
+                              devicePixelRatio:
+                                  MediaQuery.devicePixelRatioOf(context),
+                            ),
                             fit: BoxFit.contain,
                             errorBuilder: (_, _, _) => Icon(
                                 Icons.inventory_2_outlined,

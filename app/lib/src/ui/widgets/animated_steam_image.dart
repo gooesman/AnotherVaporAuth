@@ -17,8 +17,28 @@ class SteamImageFrames {
   final List<int> delaysMs;
   final int totalMs;
   SteamImageFrames(this.frames, this.delaysMs)
-      : totalMs = delaysMs.fold(0, (a, b) => a + b);
+    : totalMs = delaysMs.fold(0, (a, b) => a + b);
   bool get animated => frames.length > 1;
+  int get byteSize =>
+      frames.fold(0, (sum, frame) => sum + frame.width * frame.height * 4);
+
+  // A clone owns separate engine handles while sharing the pixel allocation.
+  // Cache eviction can then release its handles without invalidating a widget.
+  SteamImageFrames clone() =>
+      SteamImageFrames([for (final frame in frames) frame.clone()], delaysMs);
+
+  void dispose() {
+    for (final frame in frames) {
+      frame.dispose();
+    }
+  }
+}
+
+class _SteamImageCacheEntry {
+  final Future<SteamImageFrames?> pending;
+  SteamImageFrames? frames;
+  int readers = 0;
+  _SteamImageCacheEntry(this.pending);
 }
 
 /// Raw frame data crossing the isolate boundary (ui.Image is not sendable).
@@ -56,8 +76,12 @@ img.Image premultiplyAlpha(img.Image f) {
       p.setRgba(0, 0, 0, 0);
       continue;
     }
-    p.setRgba((p.r.toInt() * a + 127) ~/ 255, (p.g.toInt() * a + 127) ~/ 255,
-        (p.b.toInt() * a + 127) ~/ 255, a);
+    p.setRgba(
+      (p.r.toInt() * a + 127) ~/ 255,
+      (p.g.toInt() * a + 127) ~/ 255,
+      (p.b.toInt() * a + 127) ~/ 255,
+      a,
+    );
   }
   return out;
 }
@@ -68,30 +92,82 @@ img.Image premultiplyAlpha(img.Image f) {
 /// relaunch); decoding runs in a background isolate; the resulting frames are
 /// shared across every widget that shows the same URL.
 class SteamImageCache {
-  SteamImageCache._();
+  SteamImageCache._()
+    : _loader = _fetchAndDecode,
+      maximumBytes = 32 * 1024 * 1024,
+      maximumEntries = 16;
+
+  @visibleForTesting
+  SteamImageCache.withLoader(
+    this._loader, {
+    this.maximumBytes = 32 * 1024 * 1024,
+    this.maximumEntries = 16,
+  });
+
   static final SteamImageCache instance = SteamImageCache._();
+  final Future<SteamImageFrames?> Function(String) _loader;
+  final int maximumBytes;
+  final int maximumEntries;
+  final Map<String, _SteamImageCacheEntry> _cache = {};
 
-  final Map<String, Future<SteamImageFrames?>> _cache = {};
-
-  Future<SteamImageFrames?> load(String url) {
-    return _cache.putIfAbsent(url, () => _fetchAndDecode(url));
+  /// Returns owned handles; the caller must dispose them after displaying.
+  /// Concurrent requests share decode work, and only inactive cache handles
+  /// are evicted. Displayed frames survive eviction via their cloned handles.
+  Future<SteamImageFrames?> load(String url) async {
+    final entry = _cache.remove(url) ?? _SteamImageCacheEntry(_loader(url));
+    _cache[url] = entry;
+    entry.readers++;
+    try {
+      final frames = await entry.pending;
+      entry.frames = frames;
+      if (frames == null) {
+        if (identical(_cache[url], entry)) _cache.remove(url);
+        return null;
+      }
+      return frames.clone();
+    } catch (_) {
+      if (identical(_cache[url], entry)) _cache.remove(url);
+      rethrow;
+    } finally {
+      entry.readers--;
+      _trim();
+    }
   }
 
-  Future<SteamImageFrames?> _fetchAndDecode(String url) async {
+  /// Drop retained frames on memory pressure; active widgets own their copies.
+  void clear() => _trim(clearAll: true);
+
+  void _trim({bool clearAll = false}) {
+    var bytes = _cache.values.fold(
+      0,
+      (sum, entry) => sum + (entry.frames?.byteSize ?? 0),
+    );
+    for (final url in _cache.keys.toList(growable: false)) {
+      if (!clearAll && _cache.length <= maximumEntries && bytes <= maximumBytes) {
+        break;
+      }
+      final entry = _cache[url]!;
+      // A pending reader has not cloned its handles yet.
+      if (entry.readers > 0 || entry.frames == null) continue;
+      _cache.remove(url);
+      bytes -= entry.frames!.byteSize;
+      entry.frames!.dispose();
+    }
+  }
+
+  static Future<SteamImageFrames?> _fetchAndDecode(String url) async {
+    final frames = <ui.Image>[];
     try {
       final bytes = await DiskImageCache.instance.load(url);
       if (bytes == null || bytes.isEmpty) {
-        _cache.remove(url); // allow a later retry
         return null;
       }
       final raw = await Isolate.run(() => _decode(bytes));
       if (raw == null || raw.isEmpty) {
         // Decoded nothing out of real bytes: likely a corrupt cache entry.
         unawaited(DiskImageCache.instance.evict(url));
-        _cache.remove(url);
         return null;
       }
-      final frames = <ui.Image>[];
       final delays = <int>[];
       for (final f in raw) {
         frames.add(await _toUiImage(f));
@@ -101,7 +177,9 @@ class SteamImageCache {
       return SteamImageFrames(frames, delays);
     } catch (e) {
       dlog('steam-image decode failed ($url): $e');
-      _cache.remove(url); // allow a later retry
+      for (final frame in frames) {
+        frame.dispose();
+      }
       return null;
     }
   }
@@ -109,7 +187,12 @@ class SteamImageCache {
   static Future<ui.Image> _toUiImage(_RawFrame f) {
     final c = Completer<ui.Image>();
     ui.decodeImageFromPixels(
-        f.rgba, f.width, f.height, ui.PixelFormat.rgba8888, c.complete);
+      f.rgba,
+      f.width,
+      f.height,
+      ui.PixelFormat.rgba8888,
+      c.complete,
+    );
     return c.future;
   }
 
@@ -124,10 +207,7 @@ class SteamImageCache {
     // the image package mishandles offset sub-frames and they flicker.
     final apng = decodeApngFrames(bytes);
     if (apng != null) {
-      return [
-        for (final fr in apng)
-          _rawFrom(_prepare(fr.image), fr.delayMs),
-      ];
+      return [for (final fr in apng) _rawFrom(_prepare(fr.image), fr.delayMs)];
     }
     final decoded = img.decodeImage(bytes);
     if (decoded == null) return null;
@@ -143,13 +223,19 @@ class SteamImageCache {
     final m = f.width > f.height ? f.width : f.height;
     if (m <= _maxDim) return f;
     final scale = _maxDim / m;
-    return img.copyResize(f,
-        width: (f.width * scale).round(),
-        height: (f.height * scale).round());
+    return img.copyResize(
+      f,
+      width: (f.width * scale).round(),
+      height: (f.height * scale).round(),
+    );
   }
 
   static _RawFrame _rawFrom(img.Image f, int delayMs) => _RawFrame(
-      f.getBytes(order: img.ChannelOrder.rgba), f.width, f.height, delayMs);
+    f.getBytes(order: img.ChannelOrder.rgba),
+    f.width,
+    f.height,
+    delayMs,
+  );
 }
 
 /// Renders a Steam profile image at [size], animating it if it is an animated
@@ -160,6 +246,7 @@ class AnimatedSteamImage extends StatefulWidget {
   final BoxFit fit;
   final BorderRadius? borderRadius;
   final Widget? fallback;
+  final SteamImageCache? cache;
   const AnimatedSteamImage({
     super.key,
     required this.url,
@@ -167,6 +254,7 @@ class AnimatedSteamImage extends StatefulWidget {
     this.fit = BoxFit.cover,
     this.borderRadius,
     this.fallback,
+    this.cache,
   });
 
   @override
@@ -174,21 +262,57 @@ class AnimatedSteamImage extends StatefulWidget {
 }
 
 class _AnimatedSteamImageState extends State<AnimatedSteamImage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   SteamImageFrames? _frames;
   Ticker? _ticker;
   int _frameIndex = 0;
+  bool _animationsAllowed = true;
+  bool _resumed = true;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _resumed = lifecycle == null || lifecycle == AppLifecycleState.resumed;
     _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _animationsAllowed =
+        TickerMode.valuesOf(context).enabled &&
+        !MediaQuery.disableAnimationsOf(context);
+    _syncTicker();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _resumed = state == AppLifecycleState.resumed;
+    _syncTicker();
+  }
+
+  @override
+  void didHaveMemoryPressure() {
+    (widget.cache ?? SteamImageCache.instance).clear();
+  }
+
+  void _syncTicker() {
+    final ticker = _ticker;
+    if (ticker == null) return;
+    if (_resumed && _animationsAllowed) {
+      if (!ticker.isActive) ticker.start();
+    } else {
+      ticker.stop();
+    }
   }
 
   @override
   void didUpdateWidget(AnimatedSteamImage old) {
     super.didUpdateWidget(old);
-    if (old.url != widget.url) {
+    if (old.url != widget.url || old.cache != widget.cache) {
       _ticker?.dispose();
       _ticker = null;
       // Keep showing the old frames until the replacement is ready — an
@@ -198,22 +322,28 @@ class _AnimatedSteamImageState extends State<AnimatedSteamImage>
   }
 
   Future<void> _load() async {
-    final url = widget.url;
-    final f = await SteamImageCache.instance.load(url);
-    // Drop stale completions if the URL changed again while loading.
-    if (!mounted || f == null || url != widget.url) return;
+    final generation = ++_loadGeneration;
+    final f = await (widget.cache ?? SteamImageCache.instance).load(widget.url);
+    // Release obsolete handles even if the original URL changed away and back.
+    if (!mounted || generation != _loadGeneration) {
+      f?.dispose();
+      return;
+    }
+    if (f == null) return;
     _ticker?.dispose();
     _ticker = null;
+    final previous = _frames;
     setState(() {
       _frames = f;
       _frameIndex = 0;
     });
+    previous?.dispose();
     if (f.animated && f.totalMs > 0) {
       _ticker = createTicker((elapsed) {
         final idx = _indexAt(f, elapsed.inMilliseconds % f.totalMs);
         if (idx != _frameIndex) setState(() => _frameIndex = idx);
-      })
-        ..start();
+      });
+      _syncTicker();
     }
   }
 
@@ -228,7 +358,9 @@ class _AnimatedSteamImageState extends State<AnimatedSteamImage>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.dispose();
+    _frames?.dispose();
     super.dispose();
   }
 
@@ -249,8 +381,15 @@ class _AnimatedSteamImageState extends State<AnimatedSteamImage>
             height: widget.size,
             fit: widget.fit,
           );
-    final sized = SizedBox(width: widget.size, height: widget.size, child: child);
-    if (widget.borderRadius == null) return sized;
-    return ClipRRect(borderRadius: widget.borderRadius!, child: sized);
+    final sized = SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: child,
+    );
+    return RepaintBoundary(
+      child: widget.borderRadius == null
+          ? sized
+          : ClipRRect(borderRadius: widget.borderRadius!, child: sized),
+    );
   }
 }

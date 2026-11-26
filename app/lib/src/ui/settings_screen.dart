@@ -1,18 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../app/dashboard_sections.dart';
 import '../app/providers.dart';
 import '../app/responsive.dart';
 import '../app/theme.dart';
 import '../core/entitlement.dart';
+import '../core/fork_policy.dart';
+import '../services/update_service.dart';
 import '../services/feedback_service.dart';
 import '../services/debug_log.dart';
 import '../services/screen_security.dart';
 import '../app/sync_providers.dart';
 import 'debug_log_screen.dart';
+import 'fork_update_screen.dart';
 import 'portable_mode_card.dart';
+import 'steam_client_screen.dart';
+import 'steam_acceleration_screen.dart';
 import 'paywall_screen.dart';
 import 'sync/sync_screen.dart';
 import 'sync/sync_setup_screen.dart';
@@ -20,12 +28,14 @@ import 'widgets/pin_field.dart';
 import 'widgets/scanline_overlay.dart';
 import 'widgets/ava_panel.dart';
 
-const _repoUrl = 'https://github.com/freefrank/AnotherVaporAuth';
+const _repoUrl = kForkLocalFeatures
+    ? 'https://github.com/gooesman/AnotherVaporAuth'
+    : 'https://github.com/freefrank/AnotherVaporAuth';
 const _authorUrl = 'https://dotslash.pro';
-const _licenseUrl =
-    'https://github.com/freefrank/AnotherVaporAuth/blob/main/LICENSE';
-const _privacyUrl =
-    'https://github.com/freefrank/AnotherVaporAuth/blob/main/PRIVACY.md';
+const _licenseUrl = '$_repoUrl/blob/main/LICENSE';
+const _privacyUrl = kForkLocalFeatures
+    ? 'https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy.md'
+    : 'https://github.com/freefrank/AnotherVaporAuth/blob/main/PRIVACY.md';
 
 /// Design screen 08 — settings. Each option is a panel card with a title, a
 /// short description and its control. Theme + language are selectable chips.
@@ -36,6 +46,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final t = Theme.of(context).extension<AvaTokens>()!;
+    final appName = l.appTitle;
     final data = ref.watch(appControllerProvider).value;
     final manifest = data?.store.manifest;
     final skin = ref.watch(skinProvider);
@@ -65,21 +76,65 @@ class SettingsScreen extends ConsumerWidget {
               padding: context.rSafeInsets(all: 16),
               children: [
                 const PortableModeCard(),
+                if (Platform.isWindows)
+                  _Card(
+                    title: l.steamSwitchTitle,
+                    description: l.steamSwitchHelp,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SteamClientScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.switch_account_outlined),
+                      label: Text(l.steamSwitchTitle),
+                    ),
+                  ),
                 // Encryption
                 _Card(
                   title: l.settingsEncryption,
                   description: l.settingsEncryptionDesc,
                   trailing: OutlinedButton(
                     onPressed: () => _changePasskey(context, ref),
-                    child: Text((data?.encrypted ?? false)
-                        ? l.settingsChange
-                        : l.settingsSet),
+                    child: Text(
+                      (data?.encrypted ?? false)
+                          ? l.settingsChange
+                          : l.settingsSet,
+                    ),
                   ),
                 ),
-                // Biometric / device-credential unlock
-                const _BiometricCard(),
+                const _StartupVerificationCard(),
+                if (kForkLocalFeatures)
+                  _Card(
+                    title: l.steamAccelerationTitle,
+                    description: l.steamAccelerationDesc,
+                    trailing: OutlinedButton.icon(
+                      key: const ValueKey('steam-acceleration-settings-open'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SteamAccelerationScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.speed_outlined),
+                      label: Text(l.commonOpen),
+                    ),
+                  ),
                 // Account-library sync (WebDAV; spec 2026-08-12)
                 const _SyncCard(),
+                if (kForkLocalFeatures)
+                  _Card(
+                    title: l.forkUpdateTitle,
+                    trailing: OutlinedButton.icon(
+                      key: const ValueKey('fork-update-settings-open'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ForkUpdateScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.system_update_outlined),
+                      label: Text(l.commonOpen),
+                    ),
+                  ),
                 // Hold-to-confirm safety gate for irreversible accepts.
                 _Card(
                   title: l.settingsHoldConfirm,
@@ -107,21 +162,21 @@ class SettingsScreen extends ConsumerWidget {
                   description: l.settingsHapticsDesc,
                   trailing: Switch(
                     value: ref.watch(hapticsProvider),
-                    onChanged: (v) =>
-                        ref.read(hapticsProvider.notifier).set(v),
+                    onChanged: (v) => ref.read(hapticsProvider.notifier).set(v),
                   ),
                 ),
                 // Launch-time update check (v1.3, inform-only). Default on;
                 // the description spells out what one check sends.
-                _Card(
-                  title: l.settingsUpdateCheck,
-                  description: l.settingsUpdateCheckDesc,
-                  trailing: Switch(
-                    value: ref.watch(updateCheckEnabledProvider),
-                    onChanged: (v) =>
-                        ref.read(updateCheckEnabledProvider.notifier).set(v),
+                if (!kForkLocalFeatures && kUpdateVersionUrl.isNotEmpty)
+                  _Card(
+                    title: l.settingsUpdateCheck,
+                    description: l.settingsUpdateCheckDesc,
+                    trailing: Switch(
+                      value: ref.watch(updateCheckEnabledProvider),
+                      onChanged: (v) =>
+                          ref.read(updateCheckEnabledProvider.notifier).set(v),
+                    ),
                   ),
-                ),
                 // Block screenshots / screen recording (Android FLAG_SECURE).
                 // Off by default and hidden where the platform can't honour
                 // it — showing a dead switch is worse than showing none.
@@ -152,29 +207,38 @@ class SettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ),
-                // AVA Pro (subscription status + paywall entry)
-                _Card(
-                  title: l.settingsPro,
-                  description: _proStatusLine(l, ref),
-                  child: Wrap(
-                    spacing: context.r(8),
-                    children: [
-                      _choice(context, t, l.proOpen, false,
-                          () => Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => const PaywallScreen()))),
-                      // UMP compliance: consent re-entry, shown only where
-                      // the SDK says it is required (GDPR regions, play).
-                      if (ref.watch(privacyOptionsRequiredProvider).value ??
-                          false)
-                        _choice(context, t, l.privacyOptions, false, () {
-                          ref
-                              .read(playChannelProvider)
-                              .showPrivacyOptions()
-                              .catchError((_) => true);
-                        }),
-                    ],
+                // Retained only for explicitly injected upstream compatibility tests.
+                if (ref.watch(upstreamProEnabledProvider))
+                  _Card(
+                    title: l.settingsPro,
+                    description: _proStatusLine(l, ref),
+                    child: Wrap(
+                      spacing: context.r(8),
+                      children: [
+                        _choice(
+                          context,
+                          t,
+                          l.proOpen,
+                          false,
+                          () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const PaywallScreen(),
+                            ),
+                          ),
+                        ),
+                        // UMP compliance: consent re-entry, shown only where
+                        // the SDK says it is required (GDPR regions, play).
+                        if (ref.watch(privacyOptionsRequiredProvider).value ??
+                            false)
+                          _choice(context, t, l.privacyOptions, false, () {
+                            ref
+                                .read(playChannelProvider)
+                                .showPrivacyOptions()
+                                .catchError((_) => true);
+                          }),
+                      ],
+                    ),
                   ),
-                ),
                 // Appearance (light/dark for the plain look)
                 _Card(
                   title: l.settingsAppearance,
@@ -182,24 +246,37 @@ class SettingsScreen extends ConsumerWidget {
                   child: Wrap(
                     spacing: context.r(8),
                     children: [
-                      _choice(context, t, l.themeSystem,
-                          mode == AvaBrightnessMode.system,
-                          () => ref
-                              .read(brightnessModeProvider.notifier)
-                              .setMode(AvaBrightnessMode.system)),
-                      _choice(context, t, l.themeDark,
-                          mode == AvaBrightnessMode.dark,
-                          () => ref
-                              .read(brightnessModeProvider.notifier)
-                              .setMode(AvaBrightnessMode.dark)),
-                      _choice(context, t, l.themeLight,
-                          mode == AvaBrightnessMode.light,
-                          () => ref
-                              .read(brightnessModeProvider.notifier)
-                              .setMode(AvaBrightnessMode.light)),
+                      _choice(
+                        context,
+                        t,
+                        l.themeSystem,
+                        mode == AvaBrightnessMode.system,
+                        () => ref
+                            .read(brightnessModeProvider.notifier)
+                            .setMode(AvaBrightnessMode.system),
+                      ),
+                      _choice(
+                        context,
+                        t,
+                        l.themeDark,
+                        mode == AvaBrightnessMode.dark,
+                        () => ref
+                            .read(brightnessModeProvider.notifier)
+                            .setMode(AvaBrightnessMode.dark),
+                      ),
+                      _choice(
+                        context,
+                        t,
+                        l.themeLight,
+                        mode == AvaBrightnessMode.light,
+                        () => ref
+                            .read(brightnessModeProvider.notifier)
+                            .setMode(AvaBrightnessMode.light),
+                      ),
                     ],
                   ),
                 ),
+                const DashboardCardsSettingsCard(),
                 // Text size (small = the pre-0.84 baseline)
                 _Card(
                   title: l.settingsTextSize,
@@ -207,21 +284,33 @@ class SettingsScreen extends ConsumerWidget {
                   child: Wrap(
                     spacing: context.r(8),
                     children: [
-                      _choice(context, t, l.textSizeSmall,
-                          textSize == AvaTextSize.small,
-                          () => ref
-                              .read(textSizeProvider.notifier)
-                              .setSize(AvaTextSize.small)),
-                      _choice(context, t, l.textSizeMedium,
-                          textSize == AvaTextSize.medium,
-                          () => ref
-                              .read(textSizeProvider.notifier)
-                              .setSize(AvaTextSize.medium)),
-                      _choice(context, t, l.textSizeLarge,
-                          textSize == AvaTextSize.large,
-                          () => ref
-                              .read(textSizeProvider.notifier)
-                              .setSize(AvaTextSize.large)),
+                      _choice(
+                        context,
+                        t,
+                        l.textSizeSmall,
+                        textSize == AvaTextSize.small,
+                        () => ref
+                            .read(textSizeProvider.notifier)
+                            .setSize(AvaTextSize.small),
+                      ),
+                      _choice(
+                        context,
+                        t,
+                        l.textSizeMedium,
+                        textSize == AvaTextSize.medium,
+                        () => ref
+                            .read(textSizeProvider.notifier)
+                            .setSize(AvaTextSize.medium),
+                      ),
+                      _choice(
+                        context,
+                        t,
+                        l.textSizeLarge,
+                        textSize == AvaTextSize.large,
+                        () => ref
+                            .read(textSizeProvider.notifier)
+                            .setSize(AvaTextSize.large),
+                      ),
                     ],
                   ),
                 ),
@@ -232,24 +321,30 @@ class SettingsScreen extends ConsumerWidget {
                   child: Wrap(
                     spacing: context.r(8),
                     children: [
-                      _choice(context, t, l.skinNone, skin == AvaSkin.none,
-                          () => ref
-                              .read(skinProvider.notifier)
-                              .setSkin(AvaSkin.none)),
-                      // neon/pixel are Pro perks since 0.90: free users see a
-                      // lock and land on the paywall instead of selecting.
                       _choice(
-                          context,
-                          t,
-                          _skinLabel(l.themeNeon, ref),
-                          skin == AvaSkin.neon,
-                          () => _pickProSkin(context, ref, AvaSkin.neon)),
+                        context,
+                        t,
+                        l.skinNone,
+                        skin == AvaSkin.none,
+                        () => ref
+                            .read(skinProvider.notifier)
+                            .setSkin(AvaSkin.none),
+                      ),
+                      // All local skins are directly selectable in this fork.
                       _choice(
-                          context,
-                          t,
-                          _skinLabel(l.themePixel, ref),
-                          skin == AvaSkin.pixel,
-                          () => _pickProSkin(context, ref, AvaSkin.pixel)),
+                        context,
+                        t,
+                        _skinLabel(l.themeNeon, ref),
+                        skin == AvaSkin.neon,
+                        () => _pickProSkin(context, ref, AvaSkin.neon),
+                      ),
+                      _choice(
+                        context,
+                        t,
+                        _skinLabel(l.themePixel, ref),
+                        skin == AvaSkin.pixel,
+                        () => _pickProSkin(context, ref, AvaSkin.pixel),
+                      ),
                     ],
                   ),
                 ),
@@ -266,25 +361,28 @@ class SettingsScreen extends ConsumerWidget {
                     spacing: context.r(8),
                     runSpacing: context.r(8),
                     children: [
-                      _choice(context, t, l.settingsLanguageSystem,
-                          locale == null,
-                          () => ref
-                              .read(localeProvider.notifier)
-                              .setLocale(null)),
+                      _choice(
+                        context,
+                        t,
+                        l.settingsLanguageSystem,
+                        locale == null,
+                        () => ref.read(localeProvider.notifier).setLocale(null),
+                      ),
                       for (final entry in kSelectableLocales)
                         _choice(
-                            context,
-                            t,
-                            entry.label,
-                            // Compare the full subtags, not just the language:
-                            // both Chinese entries are 'zh', so a
-                            // languageCode-only test would light up whichever
-                            // came first no matter which is actually selected.
-                            locale?.languageCode == entry.locale.languageCode &&
-                                locale?.scriptCode == entry.locale.scriptCode,
-                            () => ref
-                                .read(localeProvider.notifier)
-                                .setLocale(entry.locale)),
+                          context,
+                          t,
+                          entry.label,
+                          // Compare the full subtags, not just the language:
+                          // both Chinese entries are 'zh', so a
+                          // languageCode-only test would light up whichever
+                          // came first no matter which is actually selected.
+                          locale?.languageCode == entry.locale.languageCode &&
+                              locale?.scriptCode == entry.locale.scriptCode,
+                          () => ref
+                              .read(localeProvider.notifier)
+                              .setLocale(entry.locale),
+                        ),
                     ],
                   ),
                 ),
@@ -293,8 +391,7 @@ class SettingsScreen extends ConsumerWidget {
                 if (switch (Theme.of(context).platform) {
                   TargetPlatform.android ||
                   TargetPlatform.iOS ||
-                  TargetPlatform.fuchsia =>
-                    true,
+                  TargetPlatform.fuchsia => true,
                   _ => false,
                 })
                   _Card(
@@ -323,16 +420,23 @@ class SettingsScreen extends ConsumerWidget {
                     child: Text(l.commonOpen),
                   ),
                 ),
-                // Feedback (user-initiated relay to the developer's mailbox)
+                // Fork feedback is a plain public issue link; no account data
+                // or diagnostic logs are assembled or sent to the original author.
                 _Card(
                   title: l.feedbackTitle,
-                  description: l.feedbackDesc,
+                  description: kForkLocalFeatures
+                      ? 'github.com/gooesman/AnotherVaporAuth/issues'
+                      : l.feedbackDesc,
                   trailing: OutlinedButton(
-                    onPressed: () => showDialog(
-                      context: context,
-                      builder: (_) => const _FeedbackDialog(),
+                    onPressed: kForkLocalFeatures
+                        ? () => _openUrl('$_repoUrl/issues')
+                        : () => showDialog(
+                            context: context,
+                            builder: (_) => const _FeedbackDialog(),
+                          ),
+                    child: Text(
+                      kForkLocalFeatures ? l.commonOpen : l.feedbackSend,
                     ),
-                    child: Text(l.feedbackSend),
                   ),
                 ),
                 // About
@@ -342,31 +446,57 @@ class SettingsScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                          'AVA · AnotherVaporAuth  v${ref.watch(appVersionProvider).value ?? '…'}',
-                          style:
-                              TextStyle(color: t.text, fontSize: context.r(14))),
+                        '$appName  v${ref.watch(appVersionProvider).value ?? '…'}',
+                        style: TextStyle(
+                          color: t.text,
+                          fontSize: context.r(14),
+                        ),
+                      ),
                       SizedBox(height: context.r(4)),
-                      Text(l.aboutTagline,
-                          style: TextStyle(
-                              color: t.muted, fontSize: context.r(12.5))),
+                      Text(
+                        l.aboutTagline,
+                        style: TextStyle(
+                          color: t.muted,
+                          fontSize: context.r(12.5),
+                        ),
+                      ),
                       SizedBox(height: context.r(10)),
-                      _aboutRow(context, t, Icons.code, l.aboutSourceCode,
-                          'github.com/freefrank/AnotherVaporAuth',
-                          () => _openUrl(_repoUrl), external: true),
-                      _aboutRow(context, t, Icons.person_outline, l.aboutAuthor,
-                          'dotslash.pro', () => _openUrl(_authorUrl),
-                          external: true),
-                      _aboutRow(context, t, Icons.gavel_outlined,
-                          l.aboutLicense, 'MIT', () => _openUrl(_licenseUrl),
-                          external: true),
                       _aboutRow(
-                          context,
-                          t,
-                          Icons.privacy_tip_outlined,
-                          l.aboutPrivacy,
-                          null,
-                          () => _openUrl(_privacyUrl),
-                          external: true),
+                        context,
+                        t,
+                        Icons.code,
+                        l.aboutSourceCode,
+                        _repoUrl.replaceFirst('https://', ''),
+                        () => _openUrl(_repoUrl),
+                        external: true,
+                      ),
+                      _aboutRow(
+                        context,
+                        t,
+                        Icons.person_outline,
+                        l.aboutAuthor,
+                        'dotslash.pro',
+                        () => _openUrl(_authorUrl),
+                        external: true,
+                      ),
+                      _aboutRow(
+                        context,
+                        t,
+                        Icons.gavel_outlined,
+                        l.aboutLicense,
+                        'MIT',
+                        () => _openUrl(_licenseUrl),
+                        external: true,
+                      ),
+                      _aboutRow(
+                        context,
+                        t,
+                        Icons.privacy_tip_outlined,
+                        l.aboutPrivacy,
+                        null,
+                        () => _openUrl(_privacyUrl),
+                        external: true,
+                      ),
                       _aboutRow(
                         context,
                         t,
@@ -375,20 +505,28 @@ class SettingsScreen extends ConsumerWidget {
                         null,
                         () => showLicensePage(
                           context: context,
-                          applicationName: 'AVA · AnotherVaporAuth',
+                          applicationName: appName,
                           applicationVersion:
                               'v${ref.read(appVersionProvider).value ?? ''}',
                           applicationLegalese: '© 2026 freefrank · MIT',
                         ),
                       ),
                       SizedBox(height: context.r(10)),
-                      Text(l.aboutCredits,
-                          style: TextStyle(
-                              color: t.text, fontSize: context.r(13.5))),
+                      Text(
+                        l.aboutCredits,
+                        style: TextStyle(
+                          color: t.text,
+                          fontSize: context.r(13.5),
+                        ),
+                      ),
                       SizedBox(height: context.r(4)),
-                      Text(l.aboutCreditsBody,
-                          style: TextStyle(
-                              color: t.muted, fontSize: context.r(12.5))),
+                      Text(
+                        l.aboutCreditsBody,
+                        style: TextStyle(
+                          color: t.muted,
+                          fontSize: context.r(12.5),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -403,12 +541,20 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _openUrl(String url) async {
     try {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } catch (_) {/* no browser / launch failed — ignore */}
+    } catch (_) {
+      /* no browser / launch failed — ignore */
+    }
   }
 
-  Widget _aboutRow(BuildContext context, AvaTokens t, IconData icon,
-      String label, String? value, VoidCallback onTap,
-      {bool external = false}) {
+  Widget _aboutRow(
+    BuildContext context,
+    AvaTokens t,
+    IconData icon,
+    String label,
+    String? value,
+    VoidCallback onTap, {
+    bool external = false,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(t.radiusSm),
@@ -419,26 +565,31 @@ class SettingsScreen extends ConsumerWidget {
             Icon(icon, size: context.r(18), color: t.accent),
             SizedBox(width: context.r(12)),
             Expanded(
-              child: Text(label,
-                  style: TextStyle(color: t.text, fontSize: context.r(14))),
+              child: Text(
+                label,
+                style: TextStyle(color: t.text, fontSize: context.r(14)),
+              ),
             ),
             if (value != null)
               Flexible(
-                child: Text(value,
-                    textAlign: TextAlign.right,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        TextStyle(color: t.muted, fontSize: context.r(12.5))),
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: t.muted, fontSize: context.r(12.5)),
+                ),
               ),
             SizedBox(width: context.r(6)),
-            Icon(external ? Icons.open_in_new : Icons.chevron_right,
-                size: context.r(16), color: t.muted),
+            Icon(
+              external ? Icons.open_in_new : Icons.chevron_right,
+              size: context.r(16),
+              color: t.muted,
+            ),
           ],
         ),
       ),
     );
   }
-
 
   String _proStatusLine(AppLocalizations l, WidgetRef ref) {
     final token = ref.watch(entitlementTokenProvider);
@@ -452,26 +603,37 @@ class SettingsScreen extends ConsumerWidget {
     return switch (ref.watch(proStatusProvider)) {
       ProStatus.free => l.proStatusFree,
       ProStatus.vip => l.proStatusVip(date(token?.proUntil)),
-      ProStatus.pro => token?.proUntil == null
-          ? l.proStatusLifetime
-          : l.proStatusPro(date(token?.proUntil)),
+      ProStatus.pro =>
+        token?.proUntil == null
+            ? l.proStatusLifetime
+            : l.proStatusPro(date(token?.proUntil)),
     };
   }
 
   String _skinLabel(String name, WidgetRef ref) =>
-      ref.watch(proStatusProvider) == ProStatus.free ? '🔒 $name' : name;
+      ref.watch(upstreamProEnabledProvider) &&
+          ref.watch(proStatusProvider) == ProStatus.free
+      ? '🔒 $name'
+      : name;
 
   void _pickProSkin(BuildContext context, WidgetRef ref, AvaSkin skin) {
-    if (ref.read(proStatusProvider) == ProStatus.free) {
-      Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PaywallScreen()));
+    if (ref.read(upstreamProEnabledProvider) &&
+        ref.read(proStatusProvider) == ProStatus.free) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const PaywallScreen()));
     } else {
       ref.read(skinProvider.notifier).setSkin(skin);
     }
   }
 
-  Widget _choice(BuildContext context, AvaTokens t, String label, bool selected,
-      VoidCallback onTap) {
+  Widget _choice(
+    BuildContext context,
+    AvaTokens t,
+    String label,
+    bool selected,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(t.radiusSm),
@@ -481,7 +643,9 @@ class SettingsScreen extends ConsumerWidget {
           color: selected ? t.accent : t.panel2,
           borderRadius: BorderRadius.circular(t.radiusSm),
           border: Border.all(
-              color: selected ? t.accent : t.borderColor, width: t.borderWidth),
+            color: selected ? t.accent : t.borderColor,
+            width: t.borderWidth,
+          ),
           boxShadow: selected ? t.glowShadow(blur: context.r(10)) : null,
         ),
         child: Text(
@@ -509,8 +673,9 @@ class SettingsScreen extends ConsumerWidget {
     final newKey = entered.next;
     if (newKey.length != 6) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l.pinSixDigits)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l.pinSixDigits)));
       }
       return;
     }
@@ -518,11 +683,6 @@ class SettingsScreen extends ConsumerWidget {
     final success = await ref
         .read(appControllerProvider.notifier)
         .changePasskey(data.encrypted ? oldKey : null, newKey);
-    if (success) {
-      // The stored biometric passkey is now stale — clear it so the user
-      // re-enables with the new passkey.
-      await ref.read(biometricUnlockProvider).disable();
-    }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(success ? l.commonOk : l.unlockInvalid)),
@@ -681,10 +841,14 @@ class _FeedbackDialogState extends ConsumerState<_FeedbackDialog> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              title: Text(l.feedbackAttachLog,
-                  style: const TextStyle(fontSize: 13)),
-              subtitle: Text(l.feedbackAttachLogHint,
-                  style: TextStyle(color: t.muted, fontSize: 11)),
+              title: Text(
+                l.feedbackAttachLog,
+                style: const TextStyle(fontSize: 13),
+              ),
+              subtitle: Text(
+                l.feedbackAttachLogHint,
+                style: TextStyle(color: t.muted, fontSize: 11),
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -700,13 +864,13 @@ class _FeedbackDialogState extends ConsumerState<_FeedbackDialog> {
           child: Text(l.commonCancel),
         ),
         FilledButton(
-          onPressed:
-              _sending || _message.text.trim().isEmpty ? null : _send,
+          onPressed: _sending || _message.text.trim().isEmpty ? null : _send,
           child: _sending
               ? SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : Text(l.feedbackSend),
         ),
       ],
@@ -763,7 +927,10 @@ class _PasskeyDialogState extends State<_PasskeyDialog> {
           children: [
             if (widget.askOld) ...[
               PinField(
-                  controller: _old, label: l.pinCurrentLabel, autofocus: true),
+                controller: _old,
+                label: l.pinCurrentLabel,
+                autofocus: true,
+              ),
               const SizedBox(height: 12),
             ],
             PinField(
@@ -786,8 +953,9 @@ class _PasskeyDialogState extends State<_PasskeyDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l.commonCancel)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.commonCancel),
+        ),
         FilledButton(onPressed: _submit, child: Text(l.commonOk)),
       ],
     );
@@ -807,14 +975,16 @@ class _SyncCard extends ConsumerWidget {
     final String description;
     if (!status.configured) {
       description = l.syncSettingsDesc;
-    } else if (status.conflicts.isNotEmpty) {
-      description = l.syncStatusConflicts(status.conflicts.length);
+    } else if (status.syncing) {
+      description = l.syncStatusSyncing;
     } else if (status.needsPassphrase) {
       description = l.syncNeedsPassphrase;
     } else if (status.hasError) {
       description = l.syncStatusErrorShort;
-    } else if (status.syncing) {
-      description = l.syncStatusSyncing;
+    } else if (status.settingsConflict) {
+      description = l.syncCompareSettingsConflict;
+    } else if (status.conflicts.isNotEmpty) {
+      description = l.syncStatusConflicts(status.conflicts.length);
     } else {
       description = l.syncStatusOk;
     }
@@ -823,31 +993,141 @@ class _SyncCard extends ConsumerWidget {
       title: l.syncTitle,
       description: description,
       trailing: OutlinedButton(
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => status.configured
-              ? const SyncScreen()
-              : const SyncSetupScreen(),
-        )),
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => status.configured
+                ? const SyncScreen()
+                : const SyncSetupScreen(),
+          ),
+        ),
         child: Text(status.configured ? l.commonOpen : l.settingsSet),
       ),
     );
   }
 }
 
-/// Toggle for system-credential (biometric / device PIN) unlock. Hidden when the
-/// device has no biometrics/lock set up. Enabling stores the current encryption
-/// passkey in the keystore (the store must be encrypted + unlocked first).
-class _BiometricCard extends ConsumerStatefulWidget {
-  const _BiometricCard();
+class _StartupVerificationCard extends ConsumerStatefulWidget {
+  const _StartupVerificationCard();
 
   @override
-  ConsumerState<_BiometricCard> createState() => _BiometricCardState();
+  ConsumerState<_StartupVerificationCard> createState() =>
+      _StartupVerificationCardState();
 }
 
-class _BiometricCardState extends ConsumerState<_BiometricCard> {
+class _StartupVerificationCardState
+    extends ConsumerState<_StartupVerificationCard> {
+  bool _busy = false;
+  bool _biometricBusy = false;
+
+  Future<void> _toggle(bool required) async {
+    if (_busy || _biometricBusy) return;
+    final l = AppLocalizations.of(context);
+    setState(() => _busy = true);
+    try {
+      if (!required) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l.settingsStartupVerificationDisable),
+            content: Text(l.settingsStartupVerificationDesc),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(l.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(l.commonOk),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true || !mounted) return;
+      }
+      await ref
+          .read(appControllerProvider.notifier)
+          .setStartupVerificationEnabled(required);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.settingsStartupVerificationError)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final required = ref.watch(startupVerificationEnabledProvider);
+    final data = ref.watch(appControllerProvider).value;
+    final available = data != null && !data.locked && data.store.isVault;
+    return _Card(
+      title: l.settingsStartupVerification,
+      description:
+          '${l.settingsStartupVerificationDesc}\n'
+          '${l.settingsStartupVerificationPinChanged}',
+      trailing: Switch(
+        key: const ValueKey('startup-verification-switch'),
+        value: required.value ?? true,
+        onChanged: _busy || _biometricBusy || required.isLoading || !available
+            ? null
+            : _toggle,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _BiometricSetting(
+            verificationRequired: required.value == true && !required.isLoading,
+            disabled: _busy || !available,
+            onBusyChanged: (busy) {
+              if (mounted) setState(() => _biometricBusy = busy);
+            },
+          ),
+          OutlinedButton.icon(
+            onPressed: _busy || _biometricBusy || data == null || data.locked
+                ? null
+                : () {
+                    final controller = ref.read(appControllerProvider.notifier);
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    controller.lock();
+                  },
+            icon: const Icon(Icons.lock_outline),
+            label: Text(l.settingsLockNow),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A subordinate unlock method, available only while startup verification is
+/// enabled. Unsupported devices omit the row rather than show a dead switch.
+class _BiometricSetting extends ConsumerStatefulWidget {
+  const _BiometricSetting({
+    required this.verificationRequired,
+    required this.disabled,
+    required this.onBusyChanged,
+  });
+
+  final bool verificationRequired;
+  final bool disabled;
+  final ValueChanged<bool> onBusyChanged;
+
+  @override
+  ConsumerState<_BiometricSetting> createState() => _BiometricSettingState();
+}
+
+class _BiometricSettingState extends ConsumerState<_BiometricSetting> {
   bool _supported = false;
-  bool _enabled = false;
   bool _loading = true;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -858,45 +1138,184 @@ class _BiometricCardState extends ConsumerState<_BiometricCard> {
   Future<void> _load() async {
     final bio = ref.read(biometricUnlockProvider);
     final supported = await bio.isSupported;
-    final enabled = await bio.isEnabled;
     if (!mounted) return;
     setState(() {
       _supported = supported;
-      _enabled = enabled;
       _loading = false;
     });
   }
 
   Future<void> _toggle(bool value) async {
+    if (_busy || widget.disabled || !widget.verificationRequired) return;
     final l = AppLocalizations.of(context);
     final bio = ref.read(biometricUnlockProvider);
+    final startup = ref.read(startupUnlockProvider);
     final messenger = ScaffoldMessenger.of(context);
-    if (!value) {
-      await bio.disable();
-      if (mounted) setState(() => _enabled = false);
-      return;
-    }
     final passKey = ref.read(appControllerProvider).value?.passKey;
-    if (passKey == null || passKey.isEmpty) {
+    setState(() => _busy = true);
+    widget.onBusyChanged(true);
+    try {
+      if (!await startup.verificationRequired) return;
+      if (!value) {
+        await bio.disableVerified();
+        if (mounted) ref.invalidate(biometricUnlockEnabledProvider);
+        return;
+      }
+      if (passKey == null || passKey.isEmpty) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(content: Text(l.settingsBiometricNeedPasskey)),
+          );
+        }
+        return;
+      }
+      final ok = await bio.enable(passKey, l.unlockBiometricReason);
+      // System prompts may resume after settings were closed, the vault was
+      // locked, or its PIN changed. Never keep a credential from that session.
+      final stillRequired = await startup.verificationRequired;
+      if (!mounted) {
+        await bio.disableVerified();
+        return;
+      }
+      final current = ref.read(appControllerProvider).value;
+      if (current == null ||
+          current.locked ||
+          current.passKey != passKey ||
+          !stillRequired) {
+        await bio.disableVerified();
+        if (mounted) ref.invalidate(biometricUnlockEnabledProvider);
+        return;
+      }
+      if (!ok) return;
+      ref.invalidate(biometricUnlockEnabledProvider);
       messenger.showSnackBar(
-          SnackBar(content: Text(l.settingsBiometricNeedPasskey)));
-      return;
+        SnackBar(content: Text(l.settingsBiometricEnabled)),
+      );
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l.settingsStartupVerificationError)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        widget.onBusyChanged(false);
+      }
     }
-    final ok = await bio.enable(passKey, l.unlockBiometricReason);
-    if (!mounted || !ok) return;
-    setState(() => _enabled = true);
-    messenger
-        .showSnackBar(SnackBar(content: Text(l.settingsBiometricEnabled)));
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading || !_supported) return const SizedBox.shrink();
     final l = AppLocalizations.of(context);
+    final t = Theme.of(context).extension<AvaTokens>()!;
+    final enabled = ref.watch(biometricUnlockEnabledProvider);
+    return Padding(
+      padding: context.rInsets(left: 12, bottom: 12),
+      child: Row(
+        children: [
+          Icon(Icons.fingerprint, color: t.muted, size: context.r(20)),
+          SizedBox(width: context.r(10)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.settingsBiometric,
+                  style: TextStyle(color: t.text, fontSize: context.r(14)),
+                ),
+                SizedBox(height: context.r(4)),
+                Text(
+                  l.settingsBiometricDesc,
+                  style: TextStyle(color: t.muted, fontSize: context.r(12.5)),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            key: const ValueKey('biometric-unlock-switch'),
+            value: widget.verificationRequired && enabled.value == true,
+            onChanged:
+                _busy ||
+                    enabled.isLoading ||
+                    widget.disabled ||
+                    !widget.verificationRequired
+                ? null
+                : _toggle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DashboardCardsSettingsCard extends ConsumerWidget {
+  const DashboardCardsSettingsCard({super.key});
+
+  Future<void> _save(BuildContext context, Future<void> save) async {
+    try {
+      await save;
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).dashboardSaveFailed),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final sections = ref.watch(dashboardSectionsProvider);
+    final notifier = ref.read(dashboardSectionsProvider.notifier);
+    final layout = ref.watch(dashboardLayoutProvider);
+    final layoutController = ref.read(dashboardLayoutProvider.notifier);
+    final labels = {
+      'wallet': l.dashboardWallet,
+      'listings': l.marketTabListings,
+      'tools': l.dashboardTools,
+      'friends': l.dashboardFriends,
+      'inventory': l.dashboardInventory,
+      'favorites': l.dashboardFavorites,
+    };
     return _Card(
-      title: l.settingsBiometric,
-      description: l.settingsBiometricDesc,
-      trailing: Switch(value: _enabled, onChanged: _toggle),
+      title: l.dashboardCustomize,
+      description: l.dashboardCardsDescription,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l.dashboardLayoutSettingsHint),
+            const SizedBox(height: 8),
+            for (final section in layout.order)
+              SwitchListTile(
+                key: ValueKey('dashboard-section-$section'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(labels[section]!),
+                value: sections.contains(section),
+                onChanged: !notifier.ready
+                    ? null
+                    : (_) => _save(context, notifier.toggle(section)),
+              ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                key: const ValueKey('dashboard-settings-reset-layout'),
+                onPressed: layoutController.ready
+                    ? () => _save(context, layoutController.reset())
+                    : null,
+                icon: const Icon(Icons.restart_alt),
+                label: Text(l.dashboardResetLayout),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -931,14 +1350,22 @@ class _Card extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style:
-                              TextStyle(color: t.text, fontSize: context.r(15))),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: t.text,
+                          fontSize: context.r(15),
+                        ),
+                      ),
                       if (description != null) ...[
                         SizedBox(height: context.r(4)),
-                        Text(description!,
-                            style: TextStyle(
-                                color: t.muted, fontSize: context.r(12.5))),
+                        Text(
+                          description!,
+                          style: TextStyle(
+                            color: t.muted,
+                            fontSize: context.r(12.5),
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -946,10 +1373,7 @@ class _Card extends StatelessWidget {
                 ?trailing,
               ],
             ),
-            if (child != null) ...[
-              SizedBox(height: context.r(14)),
-              child!,
-            ],
+            if (child != null) ...[SizedBox(height: context.r(14)), child!],
           ],
         ),
       ),

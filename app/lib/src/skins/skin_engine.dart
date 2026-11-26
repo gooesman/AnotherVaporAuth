@@ -109,6 +109,7 @@ class _SkinAmbientState extends ConsumerState<SkinAmbient>
   final ValueNotifier<int> _frame = ValueNotifier<int>(0);
   bool _covered = false;
   bool _reduce = false;
+  bool _tickerEnabled = true;
   SkinSpec? _spec;
 
   @override
@@ -136,6 +137,7 @@ class _SkinAmbientState extends ConsumerState<SkinAmbient>
   void _updateRunning() {
     final shouldRun = !_covered &&
         !_reduce &&
+        _tickerEnabled &&
         _spec != null &&
         _spec!.ambient.isNotEmpty &&
         mounted;
@@ -177,6 +179,7 @@ class _SkinAmbientState extends ConsumerState<SkinAmbient>
       _rain.clear();
     }
     _reduce = MediaQuery.disableAnimationsOf(context);
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
     _updateRunning();
     if (spec == null || spec.ambient.isEmpty) return const SizedBox.shrink();
     final tokens = Theme.of(context).extension<AvaTokens>()!;
@@ -500,6 +503,8 @@ class _SkinOverlayState extends ConsumerState<SkinOverlay>
   );
   bool _covered = false;
   bool _hasRecDot = false;
+  bool _reduce = false;
+  bool _tickerEnabled = true;
   SkinSpec? _spec;
   // Label painters live on the state so they survive frames; rebuilt when the
   // spec changes (same idea as the file-level _glyphCache, but per spec).
@@ -527,7 +532,8 @@ class _SkinOverlayState extends ConsumerState<SkinOverlay>
   // The 1.4s tick only drives the blinking REC dot. Specs without one keep
   // the controller parked, so a static HUD paints once and never repaints.
   void _updateRunning() {
-    final shouldRun = !_covered && _hasRecDot && mounted;
+    final shouldRun =
+        !_covered && !_reduce && _tickerEnabled && _hasRecDot && mounted;
     if (shouldRun && !_c.isAnimating) {
       _c.repeat();
     } else if (!shouldRun && _c.isAnimating) {
@@ -550,6 +556,8 @@ class _SkinOverlayState extends ConsumerState<SkinOverlay>
       _hasRecDot = spec?.overlay.any((l) => l is RecDotSpec) ?? false;
       _labelCache.clear();
     }
+    _reduce = MediaQuery.disableAnimationsOf(context);
+    _tickerEnabled = TickerMode.valuesOf(context).enabled;
     _updateRunning();
     if (spec == null || spec.overlay.isEmpty) return const SizedBox.shrink();
     final tokens = Theme.of(context).extension<AvaTokens>()!;

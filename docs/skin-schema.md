@@ -29,7 +29,7 @@
   },
   "overlay": { "layers": [ ... ] },   // 内容上面的 HUD 层(安全区内)
   "scanline": { "gap": 3, "color": "#0D00F0FF", "animated": true },  // CRT 叠加,可省略
-  "pull": {                 // 下拉刷新色染(引擎内置两种绘制风格,颜色是数据)
+  "pull": {                 // 兼容旧皮肤包保留；当前简洁刷新圆环不消费这些纹理参数
     "style": "neon|pixel",
     "colorA": "#18E0FF", "colorB": "#FF1B6B",   // 主色染对
     "lineA": "#00FFFF",  "lineB": "#FF2BD6"     // 扫线对(neon 风格用)

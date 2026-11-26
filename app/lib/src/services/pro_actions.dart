@@ -25,17 +25,20 @@ class ProResult {
   final String? boundHint;
 
   const ProResult.success()
-      : ok = true,
-        code = null,
-        activations = null,
-        boundHint = null;
+    : ok = true,
+      code = null,
+      activations = null,
+      boundHint = null;
   const ProResult.fail(this.code, {this.activations, this.boundHint})
-      : ok = false;
+    : ok = false;
 }
 
 /// Orchestrates purchase / redeem / rewarded flows: native play channel →
 /// entitlement worker → token adoption. Pure DI, no riverpod imports.
 class ProActions {
+  /// Legacy purchase workflows are opt-in for compatibility tests only. This
+  /// fork never enables them in its production provider graph.
+  final bool enabled;
   final EntitlementApi api;
   final PlayChannel play;
   final Future<String> Function() deviceId;
@@ -49,6 +52,7 @@ class ProActions {
   final int vipClaimAttempts;
 
   ProActions({
+    this.enabled = false,
     required this.api,
     required this.play,
     required this.deviceId,
@@ -59,6 +63,7 @@ class ProActions {
   });
 
   Future<ProResult> _guard(Future<ProResult> Function() body) async {
+    if (!enabled) return const ProResult.fail('local_edition');
     try {
       return await body();
     } on PlayChannelUnavailable {
@@ -66,84 +71,97 @@ class ProActions {
     } on PlatformException catch (e) {
       return ProResult.fail(e.code);
     } on EntitlementApiException catch (e) {
-      return ProResult.fail(e.code,
-          activations: e.activations, boundHint: e.boundHint);
+      return ProResult.fail(
+        e.code,
+        activations: e.activations,
+        boundHint: e.boundHint,
+      );
     } catch (e) {
       dlog('pro: action failed: $e');
       return const ProResult.fail('network');
     }
   }
 
-  Future<ProResult> _adoptFrom(String raw) async =>
-      await adopt(raw) ? const ProResult.success() : const ProResult.fail('bad_token');
+  Future<ProResult> _adoptFrom(String raw) async => await adopt(raw)
+      ? const ProResult.success()
+      : const ProResult.fail('bad_token');
 
   /// Play: sign in first (identifies the entitlement owner), THEN run the
   /// billing flow. Sign-in failing after an acknowledged purchase would
   /// strand the user charged-but-unentitled.
   Future<ProResult> subscribeViaPlay() => _guard(() async {
-        if (!play.signInConfigured) return const ProResult.fail('not_configured');
-        final idToken = await play.signInIdToken();
-        final purchaseToken = await play.subscribe();
-        return _adoptFrom(await api.verifyPlay(
-          idToken: idToken,
-          purchaseToken: purchaseToken,
-          deviceId: await deviceId(),
-          deviceClass: deviceClass,
-        ));
-      });
+    if (!play.signInConfigured) return const ProResult.fail('not_configured');
+    final idToken = await play.signInIdToken();
+    final purchaseToken = await play.subscribe();
+    return _adoptFrom(
+      await api.verifyPlay(
+        idToken: idToken,
+        purchaseToken: purchaseToken,
+        deviceId: await deviceId(),
+        deviceClass: deviceClass,
+      ),
+    );
+  });
 
   /// Play: restore an existing subscription on this device. Restore runs
   /// before sign-in (it charges nothing and avoids an account-picker just to
   /// learn "no subscription"); the configured-guard keeps the native
   /// acknowledge from running when sign-in is guaranteed to fail.
   Future<ProResult> restoreViaPlay() => _guard(() async {
-        if (!play.signInConfigured) return const ProResult.fail('not_configured');
-        final purchaseToken = await play.restore();
-        if (purchaseToken == null) return const ProResult.fail('no_subscription');
-        final idToken = await play.signInIdToken();
-        return _adoptFrom(await api.verifyPlay(
-          idToken: idToken,
-          purchaseToken: purchaseToken,
-          deviceId: await deviceId(),
-          deviceClass: deviceClass,
-        ));
-      });
+    if (!play.signInConfigured) return const ProResult.fail('not_configured');
+    final purchaseToken = await play.restore();
+    if (purchaseToken == null) return const ProResult.fail('no_subscription');
+    final idToken = await play.signInIdToken();
+    return _adoptFrom(
+      await api.verifyPlay(
+        idToken: idToken,
+        purchaseToken: purchaseToken,
+        deviceId: await deviceId(),
+        deviceClass: deviceClass,
+      ),
+    );
+  });
 
   /// cn: unlock with an Afdian order number.
   Future<ProResult> redeemAfdian(String orderNo) => _guard(() async {
-        return _adoptFrom(await api.redeemAfdian(
-          orderNo: orderNo.trim(),
-          deviceId: await deviceId(),
-          deviceClass: deviceClass,
-        ));
-      });
+    return _adoptFrom(
+      await api.redeemAfdian(
+        orderNo: orderNo.trim(),
+        deviceId: await deviceId(),
+        deviceClass: deviceClass,
+      ),
+    );
+  });
 
   /// Beta lifetime code (both channels).
   Future<ProResult> redeemBeta(String code) => _guard(() async {
-        return _adoptFrom(await api.redeemBeta(
-          code: code.trim(),
-          deviceId: await deviceId(),
-          deviceClass: deviceClass,
-        ));
-      });
+    return _adoptFrom(
+      await api.redeemBeta(
+        code: code.trim(),
+        deviceId: await deviceId(),
+        deviceClass: deviceClass,
+      ),
+    );
+  });
 
   /// Play: rewarded ad → 3-day VIP. The reward lands server-side via SSV,
   /// so after the ad we poll claimVip until the entitlement shows up.
   Future<ProResult> watchRewarded() => _guard(() async {
-        if (!await play.ensureConsent()) return const ProResult.fail('consent');
-        final dev = await deviceId();
-        if (!await play.showRewarded(dev)) {
-          return const ProResult.fail('not_earned');
-        }
-        for (var i = 0; i < vipClaimAttempts; i++) {
-          try {
-            return _adoptFrom(
-                await api.claimVip(deviceId: dev, deviceClass: deviceClass));
-          } on EntitlementApiException catch (e) {
-            if (e.status != 404) rethrow;
-            await Future<void>.delayed(vipClaimDelay);
-          }
-        }
-        return const ProResult.fail('no_vip');
-      });
+    if (!await play.ensureConsent()) return const ProResult.fail('consent');
+    final dev = await deviceId();
+    if (!await play.showRewarded(dev)) {
+      return const ProResult.fail('not_earned');
+    }
+    for (var i = 0; i < vipClaimAttempts; i++) {
+      try {
+        return _adoptFrom(
+          await api.claimVip(deviceId: dev, deviceClass: deviceClass),
+        );
+      } on EntitlementApiException catch (e) {
+        if (e.status != 404) rethrow;
+        await Future<void>.delayed(vipClaimDelay);
+      }
+    }
+    return const ProResult.fail('no_vip');
+  });
 }

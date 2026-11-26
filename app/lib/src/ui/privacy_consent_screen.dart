@@ -6,14 +6,17 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../app/providers.dart';
 import '../app/responsive.dart';
+import '../core/fork_policy.dart';
 import 'widgets/app_logo.dart';
 import 'widgets/motion.dart';
 import 'widgets/scanline_overlay.dart';
 
-const _privacyUrlEn =
-    'https://github.com/freefrank/AnotherVaporAuth/blob/main/PRIVACY.md';
-const _privacyUrlZh =
-    'https://github.com/freefrank/AnotherVaporAuth/blob/main/PRIVACY_ZH.md';
+const _privacyUrlEn = kForkLocalFeatures
+    ? 'https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy.md'
+    : 'https://github.com/freefrank/AnotherVaporAuth/blob/main/PRIVACY.md';
+const _privacyUrlZh = kForkLocalFeatures
+    ? 'https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy-zh.md'
+    : 'https://github.com/freefrank/AnotherVaporAuth/blob/main/PRIVACY_ZH.md';
 
 /// Consent gate: the current Privacy Policy notice must be accepted before the
 /// app is usable, and before it touches the network.
@@ -98,7 +101,9 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
                     Text(
                       isUpdate ? l.privacyUpdateTitle : l.privacyConsentTitle,
                       style: TextStyle(
-                          fontSize: context.r(22), fontWeight: FontWeight.bold),
+                        fontSize: context.r(22),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: context.r(14)),
                     if (isUpdate) ...[
@@ -107,7 +112,12 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
                       const Divider(),
                       SizedBox(height: context.r(12)),
                     ],
-                    Text(l.privacyConsentBody, textAlign: TextAlign.center),
+                    Text(
+                      kForkLocalFeatures
+                          ? l.forkPrivacyConsentBody
+                          : l.privacyConsentBody,
+                      textAlign: TextAlign.center,
+                    ),
                     SizedBox(height: context.r(12)),
                     TextButton.icon(
                       onPressed: () => launchUrl(
@@ -136,8 +146,8 @@ class _PrivacyConsentScreenState extends ConsumerState<PrivacyConsentScreen> {
                       child: FilledButton(
                         onPressed: _reachedEnd
                             ? () => ref
-                                .read(appControllerProvider.notifier)
-                                .acceptPrivacy()
+                                  .read(appControllerProvider.notifier)
+                                  .acceptPrivacy()
                             : null,
                         child: Text(l.privacyConsentAgree),
                       ),

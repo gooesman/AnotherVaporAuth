@@ -7,6 +7,8 @@ import '../core/models/steam_guard_account.dart';
 import '../core/protocol/qr_approval_client.dart';
 import '../services/auto_login.dart';
 import '../services/debug_log.dart';
+import '../services/session_manager.dart';
+import 'error_text.dart';
 
 /// Polls [account]'s pending login sessions (GetAuthSessionsForAccount) and, for
 /// each, shows an approve/deny dialog like the official app — no push needed.
@@ -26,35 +28,52 @@ Future<void> checkPendingLogins(
     }
   }
 
-  dlog('pendingLogins: check ${account.accountName} '
-      'token=${(account.session.accessToken ?? '').isNotEmpty} silent=$silent');
+  dlog(
+    'pendingLogins: check ${account.accountName} '
+    'token=${(account.session.accessToken ?? '').isNotEmpty} silent=$silent',
+  );
   if ((account.session.accessToken ?? '').isEmpty) {
     if (!silent) toast(l.loginNeedSession);
     return;
   }
 
   final client = QrApprovalClient(ref.read(apiClientProvider));
+  final autoLogin = ref.read(autoLoginProvider);
+  String? failure;
 
   Future<List<int>?> fetch() async {
     try {
       return await client.pendingLoginClientIds(account);
-    } catch (_) {
-      // Stale session — refresh once (refresh token, or a headless password
-      // re-login) and retry.
-      final outcome = await ref.read(autoLoginProvider).ensureSession(account);
-      if (outcome != AutoLoginOutcome.ok) return null;
+    } catch (error) {
+      if (!SessionManager.isAuthenticationError(error)) {
+        failure = describeError(l, error);
+        return null;
+      }
+      // Only a definite authentication error gets one renewal and retry.
+      final outcome = await autoLogin.ensureSession(account);
+      if (outcome != AutoLoginOutcome.ok) {
+        failure = outcome == AutoLoginOutcome.failed
+            ? l.netErrUnreachable
+            : l.loginNeedSession;
+        return null;
+      }
       try {
         return await client.pendingLoginClientIds(account);
-      } catch (_) {
+      } catch (error) {
+        failure = SessionManager.isAuthenticationError(error)
+            ? l.loginNeedSession
+            : describeError(l, error);
         return null;
       }
     }
   }
 
   final ids = await fetch();
-  dlog('pendingLogins: ${ids == null ? 'fetch failed' : '${ids.length} pending'}');
+  dlog(
+    'pendingLogins: ${ids == null ? 'fetch failed' : '${ids.length} pending'}',
+  );
   if (ids == null) {
-    if (!silent) toast(l.loginNeedSession);
+    if (!silent) toast(failure ?? l.netErrUnreachable);
     return;
   }
   if (ids.isEmpty) {
@@ -70,23 +89,31 @@ Future<void> checkPendingLogins(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l.loginRequestTitle),
-        content: Text(l.loginRequestBody(
-          info.deviceName.isEmpty ? 'Steam' : info.deviceName,
-          info.location.isEmpty ? info.ip : info.location,
-        )),
+        content: Text(
+          l.loginRequestBody(
+            info.deviceName.isEmpty ? 'Steam' : info.deviceName,
+            info.location.isEmpty ? info.ip : info.location,
+          ),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l.loginRequestDeny)),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.loginRequestDeny),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l.loginRequestApprove)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.loginRequestApprove),
+          ),
         ],
       ),
     );
     if (approve == null) continue; // dismissed — leave it pending
-    final ok = await client.respondToSession(account,
-        version: info.version, clientId: id, approve: approve);
+    final ok = await client.respondToSession(
+      account,
+      version: info.version,
+      clientId: id,
+      approve: approve,
+    );
     if (ok) toast(approve ? l.loginApproved : l.loginDenied);
   }
 }

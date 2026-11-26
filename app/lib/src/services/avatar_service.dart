@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import 'debug_log.dart';
+import 'steam_network.dart';
 
 /// Thrown by [AvatarService.fetchEquippedItems] when the account's access
 /// token is stale (HTTP 401); the caller should refresh the session and retry.
@@ -10,7 +13,12 @@ class FrameUnauthorized implements Exception {}
 class EquippedItems {
   final String? frameUrl; // avatar frame (often animated APNG)
   final String? animatedAvatarUrl; // animated avatar (APNG)
-  const EquippedItems({this.frameUrl, this.animatedAvatarUrl});
+  final bool resolved;
+  const EquippedItems({
+    this.frameUrl,
+    this.animatedAvatarUrl,
+    this.resolved = false,
+  });
 }
 
 /// Public profile bits resolved from the community XML.
@@ -31,20 +39,41 @@ class SteamProfile {
 ///   the frame, so this is the only keyless source.
 class AvatarService {
   final Dio _dio;
-  AvatarService({Dio? dio})
-      : _dio = dio ??
-            Dio(BaseOptions(
+  final Duration _requestTimeout;
+  AvatarService({Dio? dio, this._requestTimeout = const Duration(seconds: 10)})
+    : _dio =
+          dio ??
+          SteamNetwork.createDio(
+            BaseOptions(
               connectTimeout: const Duration(seconds: 15),
               receiveTimeout: const Duration(seconds: 15),
-            ));
+            ),
+          );
 
-  static final RegExp _full =
-      RegExp(r'<avatarFull>(?:<!\[CDATA\[)?\s*(http[^\]<]+?)\s*(?:\]\]>)?</avatarFull>');
-  static final RegExp _medium =
-      RegExp(r'<avatarMedium>(?:<!\[CDATA\[)?\s*(http[^\]<]+?)\s*(?:\]\]>)?</avatarMedium>');
+  // Profile cosmetics are optional. Bound the entire request, including
+  // routing initialization, rather than stacking connect/receive timeouts.
+  // Cancel the underlying transfer as well as releasing the refresh caller.
+  Future<T> _bounded<T>(Future<T> Function(CancelToken) request) {
+    final cancel = CancelToken();
+    return request(cancel).timeout(
+      _requestTimeout,
+      onTimeout: () {
+        cancel.cancel('Avatar request timed out');
+        throw TimeoutException('Avatar request timed out');
+      },
+    );
+  }
+
+  static final RegExp _full = RegExp(
+    r'<avatarFull>(?:<!\[CDATA\[)?\s*(http[^\]<]+?)\s*(?:\]\]>)?</avatarFull>',
+  );
+  static final RegExp _medium = RegExp(
+    r'<avatarMedium>(?:<!\[CDATA\[)?\s*(http[^\]<]+?)\s*(?:\]\]>)?</avatarMedium>',
+  );
   static final RegExp _persona = RegExp(
-      r'<steamID>(?:<!\[CDATA\[)?\s*(.*?)\s*(?:\]\]>)?</steamID>',
-      dotAll: true);
+    r'<steamID>(?:<!\[CDATA\[)?\s*(.*?)\s*(?:\]\]>)?</steamID>',
+    dotAll: true,
+  );
 
   /// Resolves the public avatar URL + persona (display) name for [steamId] from
   /// the community profile XML. Fields are null if the profile is private /
@@ -52,15 +81,20 @@ class AvatarService {
   Future<SteamProfile> fetchProfile(int steamId) async {
     if (steamId == 0) return const SteamProfile();
     try {
-      final resp = await _dio.get<String>(
-        'https://steamcommunity.com/profiles/$steamId',
-        queryParameters: const {'xml': '1'},
-        options: Options(responseType: ResponseType.plain),
+      final resp = await _bounded(
+        (cancel) => _dio.get<String>(
+          'https://steamcommunity.com/profiles/$steamId',
+          queryParameters: const {'xml': '1'},
+          options: Options(responseType: ResponseType.plain),
+          cancelToken: cancel,
+        ),
       );
       final xml = resp.data ?? '';
       final url = (_full.firstMatch(xml) ?? _medium.firstMatch(xml))?.group(1);
       final persona = _persona.firstMatch(xml)?.group(1)?.trim();
-      dlog('profile: $steamId avatar=${url ?? 'none'} persona="${persona ?? ''}"');
+      dlog(
+        'profile: $steamId avatar=${url ?? 'none'} persona="${persona ?? ''}"',
+      );
       return SteamProfile(
         avatarUrl: (url != null && url.startsWith('http')) ? url : null,
         personaName: (persona != null && persona.isNotEmpty) ? persona : null,
@@ -76,23 +110,29 @@ class AvatarService {
   /// [accessToken]; returns empty when no token is available. Throws
   /// [FrameUnauthorized] on HTTP 401 so the caller can refresh and retry.
   Future<EquippedItems> fetchEquippedItems(
-      int steamId, String? accessToken) async {
+    int steamId,
+    String? accessToken,
+  ) async {
     if (steamId == 0 || accessToken == null || accessToken.isEmpty) {
       return const EquippedItems();
     }
     try {
-      final resp = await _dio.get<Map<String, dynamic>>(
-        'https://api.steampowered.com/IPlayerService/GetProfileItemsEquipped/v1/',
-        queryParameters: {
-          'access_token': accessToken,
-          'steamid': '$steamId',
-          'language': 'english',
-        },
-        options: Options(responseType: ResponseType.json),
+      final resp = await _bounded(
+        (cancel) => _dio.get<Map<String, dynamic>>(
+          'https://api.steampowered.com/IPlayerService/GetProfileItemsEquipped/v1/',
+          queryParameters: {
+            'access_token': accessToken,
+            'steamid': '$steamId',
+            'language': 'english',
+          },
+          options: Options(responseType: ResponseType.json),
+          cancelToken: cancel,
+        ),
       );
       final response = resp.data?['response'] as Map<String, dynamic>?;
-      final frame = response?['avatar_frame'] as Map<String, dynamic>?;
-      final anim = response?['animated_avatar'] as Map<String, dynamic>?;
+      if (response == null) return const EquippedItems();
+      final frame = response['avatar_frame'] as Map<String, dynamic>?;
+      final anim = response['animated_avatar'] as Map<String, dynamic>?;
       // Steam's convention is counter-intuitive: image_small is the ANIMATED
       // asset (APNG frame / GIF avatar), image_large is the static poster.
       final frameRaw =
@@ -101,9 +141,15 @@ class AvatarService {
           (anim?['image_small'] ?? anim?['image_large']) as String? ?? '';
       final frameUrl = _itemImageUrl(frameRaw);
       final animUrl = _itemImageUrl(animRaw);
-      dlog('equipped: $steamId frame=${frameUrl ?? 'none'} '
-          'anim=${animUrl ?? 'none'}');
-      return EquippedItems(frameUrl: frameUrl, animatedAvatarUrl: animUrl);
+      dlog(
+        'equipped: $steamId frame=${frameUrl ?? 'none'} '
+        'anim=${animUrl ?? 'none'}',
+      );
+      return EquippedItems(
+        frameUrl: frameUrl,
+        animatedAvatarUrl: animUrl,
+        resolved: frame != null && anim != null,
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         dlog('equipped: $steamId -> 401 (token stale, will refresh)');

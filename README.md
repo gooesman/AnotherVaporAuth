@@ -36,12 +36,14 @@ in this fork. This is a community project, unaffiliated with Valve or Steam.
 
 | Platform | Download from this fork | File to choose |
 |---|---|---|
-| **Windows x64** | [Windows installer](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-pc-…-windows-x64-setup.exe` |
+| **Windows x64** | [Windows installer](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `GooeSteamKit-…-windows-x64-setup.exe` |
 | **Android ARM64** | [Android APK](https://github.com/gooesman/AnotherVaporAuth/releases/latest) | `AVA-Fork-…-android-arm64.apk` |
 
-Both apps are named **GooeSteamKit**. Download filenames retain their earlier
-prefixes so existing in-app updaters can recognize them. This fork currently
-publishes Windows and Android packages.
+Both apps are named **GooeSteamKit**. Windows also provides a byte-identical
+`AVA-pc-…` compatibility package for older updaters; new versions prefer the
+GooeSteamKit filename. Updates reuse the running app's directory, standalone
+setup discovers existing installations, and fresh installs default to
+`Programs\GooeSteamKit`. This fork publishes Windows and Android packages.
 
 Already installed? Open **Settings → Software updates**. Both platforms offer
 automatic download acceleration through third-party GH-Proxy routes, with GitHub
@@ -57,20 +59,25 @@ depend on your network. See the [update and release guide][releases-guide].
 | Feature | What it provides |
 |---|---|
 | **Accounts and Steam Guard** | Multiple accounts, offline codes, countdowns, copy, maFile import/export and a remembered username/nickname/Steam ID display choice. |
-| **Account overview** | Wallet balance, pending funds and market activity. Desktop has room for overview cards; the phone home screen stays focused on codes and accounts. |
-| **Windows Steam sign-in** | Open Steam, switch accounts and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
-| **Friends and trades** | Friends list, received/sent offers, both sides' inventories, offer review and trade confirmations. |
-| **Inventory and listings** | Game/context selection, name search, type/rarity filters, subtle rarity borders, batch listing, and active/held/pending listings. |
-| **Market prices** | Search by item, game and currency; view reference prices and item details, or open the Steam market page. |
+| **Account overview** | Wallet balance, pending funds, market activity, and optional friends, inventory and market-favorite previews. Choose cards in Settings or Overview layout, then move and resize them; the phone home screen stays focused on codes and accounts. |
+| **Windows Steam sign-in** | Select an imported account and use either sign-in button to open/switch Steam and approve this attempt's verified local sign-in QR. Manual screen-region QR selection is also available. |
+| **Friends and trades** | Friends list, friend-request acceptance/decline, received/sent offers, both sides' inventories, offer review and trade confirmations. |
+| **Notifications and pending counts** | Home account rows show pending confirmations. Notifications and friend requests load when opened; unread messages appear first and read history is collapsed by default. Visible inventory notifications fetch individual item names and thumbnails on demand. Inventory, trade-offer and friend-request actions open the relevant in-app page; other types link to Steam's notification center. Notifications can be marked read or ignored. |
+| **Inventory and listings** | Game/context selection, name search, type/rarity filters, subtle rarity borders, Steam-provided cooldown details, batch listing, and active/held/pending listings. |
+| **Market prices** | Search by item, game and currency; save favorites for direct price viewing in your selected currency, view item details, or open the Steam market page. |
 | **Backup login codes** | Request and verify Steam's SMS code inside the app, then display the one-time backup login codes. |
 | **Optional connectivity** | Follow detected external proxy routes first, with a built-in fallback using your Clash subscription and a visible current-route status. |
-| **App lock and sync** | Optional startup PIN verification and system unlock; encrypted account and settings sync to your own WebDAV server, including optional subscription sync. |
+| **App lock and sync** | Optional startup PIN verification and system unlock; encrypted WebDAV account/settings sync, including market favorites, currency and acceleration subscriptions, with local/remote comparison and explicit upload/pull. |
 | **Appearance and other tools** | Light/dark/system appearance, skins, compact refresh indicators, device sessions, Steam key redemption and seven languages. |
 
 ### Everyday controls
 
 - **Phone:** tap an account to select its home-screen code; long-press to open its overview for inventory, market, friends and backup codes.
-- **Desktop:** select an account from the list; use its overview or right-click menu for actions. Account rows do not use left/right swipe actions.
+- **Desktop:** select an account from the list and use the inline overview or right-click menu. The avatar does not open a duplicate full-screen overview; a narrow window retains an overview menu entry. Account rows do not use left/right swipe actions.
+- **Overview layout:** open the overview's **Overview layout** menu and choose **Adjust position and size**. Drag a handle to move a card on the grid, or its bottom-right corner to resize it. Desktop supports horizontal and vertical positions and up to three columns; phones keep one column with vertical movement and adjustable heights. Colliding cards move down, gaps are allowed, and overflow scrolls inside each card. Choose **Done adjusting** from the same menu to finish.
+- **Remembered layouts:** positions and sizes stay on this device, separately for one-, two- and three-column window widths. A width without a saved layout uses a fitted preview until you edit it, preserving other saved layouts. Hiding and re-enabling a card keeps its layout. Settings provides card switches and **Reset layout**, which restores the default arrangement without changing enabled cards.
+- **Copy account information:** right-click the selected name on desktop or long-press it on a phone to copy the exact Steam nickname, login name or SteamID. A normal tap still cycles the remembered display choice.
+- **Device sessions:** revoke other device authorizations after reviewing the listed targets, while retaining this GooeSteamKit session and the authenticator. Unconfirmed or failed operations are reported rather than retried silently.
 - **App lock:** system unlock is an option under startup verification. Turning startup verification off also turns system unlock off; local account files remain encrypted.
 
 ### Market prices in your selected currency
@@ -80,11 +87,37 @@ Visible results automatically request the **lowest asking price in that currency
 you do not need to refresh each item. Changing currency updates visible quotes.
 Item details show recent median sale prices separately from asking prices.
 
+Use the star beside a result to save it. **Favorites** opens your saved products
+without another search and remembers the selected currency. Only visible rows
+load quotes; hidden favorites do not make background price requests.
+The optional overview card previews up to four favorites in the same currency,
+with a shortcut to the complete list. New preview cards are off by default.
+
 Searches are explicit, results are paged, and recent quotes are cached. The app
 does not continuously poll prices or convert an unverified USD search result into
 a CNY label. If Steam limits requests or a quote is unavailable, it shows the
 unavailable state and lets you retry. Prices are references, not a promise of a
 trade at that price.
+
+Inventory and trade selections also show Steam's restriction notes. When Steam
+provides a recognizable expiry time, details show local time and the remaining
+duration when opened. An unavailable expiry is not guessed from the item type.
+
+### Compare and synchronize devices
+
+In **Settings → Sync**, **Sync now** uploads the selected local content to the
+remote library. **Pull now** downloads and merges the selected remote content,
+retaining accounts and favorite items found only on this device.
+**Advanced settings** remembers separate upload and pull selections for accounts,
+app preferences, market favorites/currency and acceleration subscriptions/nodes.
+Changing a selection saves it without starting a transfer.
+
+Connecting a library does not transfer data automatically. Optional automatic
+sync uploads local changes; a pull does not trigger an upload in response.
+Use **Compare local and remote** to inspect differences and explicitly resolve
+conflicts. Account secrets and subscription credentials remain hidden, and an
+outdated comparison must be refreshed before applying it. Cached market prices
+and live Steam sessions are not synchronized. See the [sync behavior][sync-guide].
 
 ### Optional Steam connectivity
 
@@ -162,6 +195,7 @@ to the original project's paid online services.
 [build-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/app/README.md
 [releases-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-releases.md
 [switch-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md
+[sync-guide]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/specs/2026-08-12-config-sync-design.md
 [connectivity]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#optional-steam-connectivity
 [migration]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/windows-steam-switch.md#android-installation-and-migration
 [privacy]: https://github.com/gooesman/AnotherVaporAuth/blob/feature/windows-steam-account-switch/docs/fork-privacy.md

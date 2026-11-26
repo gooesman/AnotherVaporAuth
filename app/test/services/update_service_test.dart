@@ -19,25 +19,54 @@ class _ClosureAdapter implements HttpClientAdapter {
   final Future<ResponseBody> Function() answer;
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options,
-          Stream<Uint8List>? requestStream, Future<void>? cancelFuture) =>
-      answer();
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) => answer();
 
   @override
   void close({bool force = false}) {}
 }
 
-ResponseBody _json(String body, {int status = 200}) =>
-    ResponseBody.fromString(body, status,
-        headers: {'content-type': ['application/json']});
+ResponseBody _json(String body, {int status = 200}) => ResponseBody.fromString(
+  body,
+  status,
+  headers: {
+    'content-type': ['application/json'],
+  },
+);
 
 void main() {
+  test('fork without its own update table makes no network request', () async {
+    var requests = 0;
+    final svc = UpdateService(
+      dio: _fakeDio(() async {
+        requests++;
+        return _json('{"channels":{"linux-appimage":{"version":"9.9.9"}}}');
+      }),
+    );
+    expect(kUpdateVersionUrl, isEmpty);
+    final decision = await svc.check(
+      currentVersion: '1.5.1',
+      channelKey: 'linux-appimage',
+    );
+    expect(decision, UpdateDecision.none);
+    expect(requests, 0);
+  });
+
   test('a newer version in the table comes back available', () async {
     final svc = UpdateService(
-        dio: _fakeDio(() async =>
-            _json('{"channels":{"linux-appimage":{"version":"9.9.9"}}}')));
+      url: 'https://unit.test/version',
+      dio: _fakeDio(
+        () async =>
+            _json('{"channels":{"linux-appimage":{"version":"9.9.9"}}}'),
+      ),
+    );
     final d = await svc.check(
-        currentVersion: '1.2.0', channelKey: 'linux-appimage');
+      currentVersion: '1.2.0',
+      channelKey: 'linux-appimage',
+    );
     expect(d.available, isTrue);
     expect(d.latest, '9.9.9');
   });
@@ -46,34 +75,56 @@ void main() {
     // The check runs at every launch; offline is the normal case, not an
     // error case. Anything escaping here would surface during startup.
     final svc = UpdateService(
-        dio: _fakeDio(() async => throw const SocketException('offline')));
+      url: 'https://unit.test/version',
+      dio: _fakeDio(() async => throw const SocketException('offline')),
+    );
     final d = await svc.check(
-        currentVersion: '1.2.0', channelKey: 'linux-appimage');
+      currentVersion: '1.2.0',
+      channelKey: 'linux-appimage',
+    );
     expect(d, UpdateDecision.none);
   });
 
   test('non-200 and non-JSON both read as no information', () async {
     for (final answer in [
       () async => _json('{"error":"nope"}', status: 503),
-      () async => ResponseBody.fromString('<html>captive portal</html>', 200,
-          headers: {'content-type': ['text/html']}),
+      () async => ResponseBody.fromString(
+        '<html>captive portal</html>',
+        200,
+        headers: {
+          'content-type': ['text/html'],
+        },
+      ),
     ]) {
-      final svc = UpdateService(dio: _fakeDio(answer));
+      final svc = UpdateService(
+        url: 'https://unit.test/version',
+        dio: _fakeDio(answer),
+      );
       final d = await svc.check(
-          currentVersion: '1.2.0', channelKey: 'linux-appimage');
+        currentVersion: '1.2.0',
+        channelKey: 'linux-appimage',
+      );
       expect(d.available, isFalse);
     }
   });
 
-  test('a hung endpoint resolves within the service timeout, silently',
-      () async {
-    // Never completes — the service's own receive timeout must cut it off.
-    final svc = UpdateService(
-        dio: _fakeDio(() => Completer<ResponseBody>().future
-          ..timeout(const Duration(seconds: 30))));
-    final d = await svc
-        .check(currentVersion: '1.2.0', channelKey: 'linux-appimage')
-        .timeout(const Duration(seconds: 15));
-    expect(d, UpdateDecision.none);
-  }, timeout: const Timeout(Duration(seconds: 20)));
+  test(
+    'a hung endpoint resolves within the service timeout, silently',
+    () async {
+      // Never completes — the service's own receive timeout must cut it off.
+      final svc = UpdateService(
+        url: 'https://unit.test/version',
+        dio: _fakeDio(
+          () =>
+              Completer<ResponseBody>().future
+                ..timeout(const Duration(seconds: 30)),
+        ),
+      );
+      final d = await svc
+          .check(currentVersion: '1.2.0', channelKey: 'linux-appimage')
+          .timeout(const Duration(seconds: 15));
+      expect(d, UpdateDecision.none);
+    },
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
 }

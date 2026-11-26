@@ -17,13 +17,47 @@ val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseSigning = keystorePropertiesFile.exists()
 if (hasReleaseSigning) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+}
+
+// Fork previews have a separate identity and a persistent private signing key,
+// so installing future previews can update them without touching AVA/dev data.
+val avaForkPreview = (project.findProperty("avaForkPreview") as String?) == "true"
+if (avaForkPreview) {
+    val requiredSigningFields = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    if (!hasReleaseSigning ||
+        requiredSigningFields.any { keystoreProperties.getProperty(it).isNullOrBlank() }
+    ) {
+        throw GradleException(
+            "AVA Fork previews require android/key.properties with storeFile, " +
+                "storePassword, keyAlias and keyPassword; debug-key fallback is disabled."
+        )
+    }
+    if (!file(keystoreProperties.getProperty("storeFile")).isFile) {
+        throw GradleException("AVA Fork preview signing keystore does not exist.")
+    }
 }
 
 android {
     namespace = "pro.dotslash.ava"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+
+    // AGP disables generated values unless requested; the debug/fork labels
+    // below are deliberately resource-backed so their manifest stays shared.
+    buildFeatures {
+        resValues = true
+    }
+
+    // The optional ARM64 core must be installed by Android into nativeLibraryDir,
+    // never copied to/exec'd from writable app storage. It is an unchanged ELF
+    // executable packaged with a .so name, not a library to dlopen or strip.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols += "**/libava_steam_core.so"
+        }
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -32,13 +66,24 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "pro.dotslash.ava"
+        applicationId = if (avaForkPreview) "pro.dotslash.ava.fork" else "pro.dotslash.ava"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        resValue("string", "ava_app_label", if (avaForkPreview) "GooeSteamKit" else "AVA")
+        resValue("string", "ava_launcher_label", if (avaForkPreview) "GooeSteamKit" else "AVA")
+        if (avaForkPreview) {
+            // --target-platform limits Flutter's own binaries, while plugins
+            // may still contribute other ABIs. Match the bundled ARM64 core
+            // and avoid shipping unusable native libraries in this preview.
+            ndk {
+                abiFilters.clear()
+                abiFilters += "arm64-v8a"
+            }
+        }
     }
 
     // Distribution channels. Same applicationId on purpose: play and cn have
@@ -58,6 +103,7 @@ android {
                 keyPassword = keystoreProperties["keyPassword"] as String
                 storeFile = (keystoreProperties["storeFile"] as String).let { file(it) }
                 storePassword = keystoreProperties["storePassword"] as String
+                keystoreProperties.getProperty("storeType")?.let { storeType = it }
             }
         }
     }
@@ -71,10 +117,20 @@ android {
             // uninstall, which wipes the user's maFiles/keystore. A suffixed
             // id sidesteps that entirely: the dev copy is its own app with its
             // own (empty) data. Release builds keep the real id untouched.
-            applicationIdSuffix = ".dev"
-            versionNameSuffix = "-dev"
+            applicationIdSuffix = if (avaForkPreview) null else ".dev"
+            versionNameSuffix = if (avaForkPreview) "-fork" else "-dev"
+            resValue("string", "ava_app_label", if (avaForkPreview) "GooeSteamKit" else "AVA dev")
+            resValue("string", "ava_launcher_label", if (avaForkPreview) "GooeSteamKit" else "AVA dev")
+            if (avaForkPreview) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         release {
+            // The optimized fork keeps the installed preview's package,
+            // signing identity and version-name suffix for in-place updates.
+            if (avaForkPreview) {
+                versionNameSuffix = "-fork"
+            }
             // Use the real upload key when key.properties is present; otherwise
             // fall back to debug signing so release builds still run locally/CI.
             signingConfig = if (hasReleaseSigning)

@@ -37,6 +37,9 @@ class AvaBannerSlot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(upstreamProEnabledProvider)) {
+      return const SizedBox.shrink();
+    }
     if (avaChannel != AvaChannel.play ||
         defaultTargetPlatform != TargetPlatform.android) {
       return const SizedBox.shrink();
@@ -81,40 +84,39 @@ class _BannerState extends ConsumerState<_Banner> {
   @override
   Widget build(BuildContext context) {
     if (_failed) return const SizedBox.shrink();
-    return LayoutBuilder(builder: (context, constraints) {
-      final widthDp = constraints.maxWidth.floor();
-      if (widthDp <= 0) return const SizedBox.shrink();
-      if (_widthDp != widthDp) {
-        _widthDp = widthDp;
-        _heightDp = null;
-        _measure(widthDp);
-      }
-      final height = _heightDp;
-      if (height == null || height <= 0) return const SizedBox.shrink();
-      final view = AndroidView(
-        viewType: 'ava/banner',
-        creationParams: {'adUnitId': kBannerAdUnitId, 'widthDp': widthDp},
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: (id) {
-          _viewId = id;
-          _BannerEvents.instance.listen(id, (loaded) {
-            if (!mounted) return;
-            setState(() {
-              _loaded = loaded;
-              _failed = !loaded;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final widthDp = constraints.maxWidth.floor();
+        if (widthDp <= 0) return const SizedBox.shrink();
+        if (_widthDp != widthDp) {
+          _widthDp = widthDp;
+          _heightDp = null;
+          _measure(widthDp);
+        }
+        final height = _heightDp;
+        if (height == null || height <= 0) return const SizedBox.shrink();
+        final view = AndroidView(
+          viewType: 'ava/banner',
+          creationParams: {'adUnitId': kBannerAdUnitId, 'widthDp': widthDp},
+          creationParamsCodec: const StandardMessageCodec(),
+          onPlatformViewCreated: (id) {
+            _viewId = id;
+            _BannerEvents.instance.listen(id, (loaded) {
+              if (!mounted) return;
+              setState(() {
+                _loaded = loaded;
+                _failed = !loaded;
+              });
             });
-          });
-        },
-      );
-      // Keep the view alive (it has to load to report success) but collapse
-      // the visible slot until the ad is actually there.
-      return SafeArea(
-        top: false,
-        child: SizedBox(
-          height: _loaded ? height.toDouble() : 1,
-          child: view,
-        ),
-      );
-    });
+          },
+        );
+        // Keep the view alive (it has to load to report success) but collapse
+        // the visible slot until the ad is actually there.
+        return SafeArea(
+          top: false,
+          child: SizedBox(height: _loaded ? height.toDouble() : 1, child: view),
+        );
+      },
+    );
   }
 }

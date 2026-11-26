@@ -8,6 +8,8 @@ import '../core/protocol/community_session.dart'
 import '../core/protocol/eresult.dart';
 import '../core/proto/protobuf_wire.dart';
 import 'debug_log.dart';
+import 'steam_network.dart';
+import 'steam_request_scope.dart';
 
 /// Thin HTTP client for Steam's web APIs.
 ///
@@ -60,7 +62,7 @@ class SteamApiClient {
 
   SteamApiClient({Dio? dio})
       : _dio = dio ??
-            Dio(BaseOptions(
+            SteamNetwork.createDio(BaseOptions(
               connectTimeout: const Duration(seconds: 20),
               receiveTimeout: const Duration(seconds: 30),
               followRedirects: false,
@@ -98,6 +100,7 @@ class SteamApiClient {
           url,
           queryParameters: {...query, 'input_protobuf_encoded': encoded},
           options: Options(responseType: ResponseType.bytes),
+          cancelToken: SteamRequestScope.currentCancelToken,
         );
       } else {
         resp = await _dio.post<List<int>>(
@@ -105,6 +108,7 @@ class SteamApiClient {
           queryParameters: query,
           data: FormData.fromMap({'input_protobuf_encoded': encoded}),
           options: Options(responseType: ResponseType.bytes),
+          cancelToken: SteamRequestScope.currentCancelToken,
         );
       }
 
@@ -180,10 +184,12 @@ class SteamApiClient {
       final resp = await _dio.get<String>(
         '$communityBase$path',
         queryParameters: query,
+        cancelToken: SteamRequestScope.currentCancelToken,
         options: Options(
           responseType: ResponseType.plain,
           headers: {
             if (cookies != null) 'Cookie': _cookieHeader(cookies),
+            if (path == '/market/actions') 'x-valve-request-type': 'queryAction',
             'X-Requested-With': 'com.valvesoftware.android.steam.community',
           },
         ),
@@ -204,12 +210,20 @@ class SteamApiClient {
     final body = resp.data ?? '';
     dlog('← $path  HTTP ${resp.statusCode}  ${body.length}B');
     final diagnostic = _gateCommunityStatus(resp, path);
-    if (diagnostic != null) return diagnostic;
+    final removal = path.startsWith('/market/removelisting/');
+    if (diagnostic != null) {
+      return removal ? {...diagnostic, 'success': false} : diagnostic;
+    }
     if (body.isEmpty) return const {};
     final decoded = jsonDecode(body);
     // Some write endpoints (e.g. removelisting) reply 200 with a bare `[]` —
     // treat a non-object body as a plain success.
-    if (decoded is! Map<String, dynamic>) return const {};
+    if (decoded is! Map<String, dynamic>) {
+      if (removal && !(decoded is List && decoded.isEmpty)) {
+        throw const FormatException('Unexpected Steam listing removal response.');
+      }
+      return const {};
+    }
     if (decoded['success'] != true) {
       dlog('  ⚠ $path success=${decoded['success']} '
           '${decoded['message'] ?? decoded['needauth'] ?? ''}');
@@ -229,10 +243,17 @@ class SteamApiClient {
   ///    that decodes to an object is returned so the message reaches the
   ///    caller (which already handles `success != true`); anything else
   ///    → [SteamApiException].
+  ///  - HTTP 429 always throws [SteamApiException] with its status retained,
+  ///    including JSON bodies without eresult, so read queues can cool down.
   static Map<String, dynamic>? _gateCommunityStatus(
       Response<String> resp, String path) {
     final status = resp.statusCode ?? 0;
     if (status >= 200 && status < 300) return null;
+    // Retain rate limiting even when Steam's JSON body omits eresult. Otherwise
+    // a quote queue would mistake HTTP 429 for a missing price and keep going.
+    if (status == 429) {
+      throw SteamApiException(84, 'HTTP 429', path, httpStatus: 429);
+    }
     if (status == 401 || status == 403) {
       dlog('  ✗ $path HTTP $status (stale session?)');
       throw CommunityAuthException(status, path);
@@ -314,7 +335,8 @@ class SteamApiClient {
       throw ArgumentError.value(path, 'path', 'not a Steam origin');
     }
     dlog('→ GET(text) $path');
-    var resp = await _dio.get<String>(url, queryParameters: query, options: opts());
+    var resp = await _dio.get<String>(url, queryParameters: query, options: opts(),
+        cancelToken: SteamRequestScope.currentCancelToken);
     absorb(resp);
     var hops = 0;
     while ((resp.statusCode ?? 0) >= 300 &&
@@ -337,7 +359,8 @@ class SteamApiClient {
         break;
       }
       dlog('  ↪ redirect $url');
-      resp = await _dio.get<String>(url, options: opts());
+      resp = await _dio.get<String>(url, options: opts(),
+          cancelToken: SteamRequestScope.currentCancelToken);
       absorb(resp);
     }
     // A bare 401/403 (initial or post-redirect) is a stale session too —
@@ -346,6 +369,10 @@ class SteamApiClient {
     if (status == 401 || status == 403) {
       dlog('  ✗ $path HTTP $status (stale session?)');
       throw CommunityAuthException(status, path);
+    }
+    if (status >= 400) {
+      throw SteamApiException(status == 429 ? 84 : 2, 'HTTP $status', path,
+          httpStatus: status);
     }
     final body = resp.data ?? '';
     dlog('← $path  HTTP ${resp.statusCode}  ${body.length}B');
@@ -367,6 +394,9 @@ class SteamApiClient {
         '$communityBase$path',
         data: form,
         options: Options(
+          // Writes must never be transparently replayed at a redirect target.
+          // Keep this explicit even when a caller supplies its own Dio options.
+          followRedirects: false,
           responseType: ResponseType.plain,
           contentType: Headers.formUrlEncodedContentType,
           listFormat: ListFormat.multi,
@@ -382,6 +412,38 @@ class SteamApiClient {
       dlog('  ✗ $path network: ${e.type.name} ${e.response?.statusCode ?? ''}');
       rethrow;
     }
+  }
+
+  /// The new market uses Valve's JSON mutation action protocol. Never replay a
+  /// price change after a redirect or interpret an HTTP error as acceptance.
+  Future<Map<String, dynamic>> updateSellListingPrice(
+    String listingId, int unitPrice, int currencyId, Map<String, String> cookies,
+  ) async {
+    const path = '/market/actions';
+    final resp = await _dio.post<String>(
+      '$communityBase$path',
+      data: {'m': 'UpdateSellListingPrice', 'mp': [listingId, unitPrice, currencyId]},
+      options: Options(
+        followRedirects: false,
+        responseType: ResponseType.plain,
+        contentType: Headers.jsonContentType,
+        headers: {
+          'Cookie': _cookieHeader(cookies),
+          'Origin': communityBase,
+          'Referer': '$communityBase/market/activelistings',
+          'x-valve-request-type': 'mutationAction',
+        },
+      ),
+    );
+    final diagnostic = _gateCommunityStatus(resp, path);
+    if (diagnostic != null) {
+      throw SteamApiException(2, 'HTTP ${resp.statusCode}', path, httpStatus: resp.statusCode);
+    }
+    final body = jsonDecode(resp.data ?? '');
+    if (body is! Map || body['data'] is! Map<String, dynamic>) {
+      throw const FormatException('Missing Steam price update result.');
+    }
+    return body['data'] as Map<String, dynamic>;
   }
 
   /// Warms up a `store.steampowered.com` session and returns the cookie jar to

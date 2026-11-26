@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 
-/// Displays the Steam Guard code in the code font with the design's neon glow,
-/// flipping in (perspective rotateX -90°→0° + fade, 550ms) whenever the code
-/// value changes — i.e. once per 30s window.
+/// Changes codes with a short fade in plain themes and a restrained flip in
+/// the neon skin. Reduced motion replaces the text immediately.
 class FlipCode extends StatelessWidget {
   final String code;
   final double fontSize;
@@ -34,18 +33,19 @@ class FlipCode extends StatelessWidget {
           ? [Shadow(color: t.accent.withValues(alpha: 0.6), blurRadius: 22)]
           : null,
     );
-    // Respect the OS "reduce motion" setting: swap the code with a plain fade.
     final reduce = MediaQuery.disableAnimationsOf(context);
+    final text = Text(code, key: ValueKey(code), style: style);
+    if (reduce) return text;
     return AnimatedSwitcher(
-      duration: Duration(milliseconds: reduce ? 120 : 550),
+      duration: Duration(milliseconds: t.glow ? 240 : 140),
       switchInCurve: const Cubic(0.2, 0.75, 0.25, 1),
       transitionBuilder: (child, anim) {
-        if (reduce) return FadeTransition(opacity: anim, child: child);
+        if (!t.glow) return FadeTransition(opacity: anim, child: child);
         return AnimatedBuilder(
           animation: anim,
           builder: (context, _) {
             final v = anim.value;
-            final angle = (1 - v) * (math.pi / 2); // -90°→0°
+            final angle = (1 - v) * (math.pi / 6);
             return Opacity(
               opacity: v.clamp(0.0, 1.0),
               child: Transform(
@@ -59,7 +59,7 @@ class FlipCode extends StatelessWidget {
           },
         );
       },
-      child: Text(code, key: ValueKey(code), style: style),
+      child: text,
     );
   }
 }

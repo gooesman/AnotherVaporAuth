@@ -2,8 +2,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
+
+/// Ambient motion belongs to the neon skin, never to the quiet/plain look.
+/// Stopping the controller (rather than just hiding its output) lets an idle
+/// screen stop scheduling frames. TickerMode also covers routes off screen.
+bool ambientMotionAllowed(BuildContext context) =>
+    (Theme.of(context).extension<AvaTokens>()?.glow ?? false) &&
+    !MediaQuery.disableAnimationsOf(context) &&
+    TickerMode.valuesOf(context).enabled;
+
 /// Horizontal shake, triggered by bumping [trigger] (e.g. on a wrong passkey).
-/// 400ms damped oscillation, matching the design's `shake` keyframe.
+/// Brief damped feedback; the error text remains when motion is disabled.
 class ShakeWidget extends StatefulWidget {
   final int trigger;
   final Widget child;
@@ -17,13 +27,22 @@ class _ShakeWidgetState extends State<ShakeWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 400),
+    duration: const Duration(milliseconds: 240),
   );
 
   @override
   void didUpdateWidget(ShakeWidget old) {
     super.didUpdateWidget(old);
-    if (widget.trigger != old.trigger) _c.forward(from: 0);
+    if (widget.trigger != old.trigger &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _c.forward(from: 0);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _c.reset();
   }
 
   @override
@@ -37,7 +56,7 @@ class _ShakeWidgetState extends State<ShakeWidget>
     return AnimatedBuilder(
       animation: _c,
       builder: (context, child) {
-        final dx = math.sin(_c.value * math.pi * 4) * 10 * (1 - _c.value);
+        final dx = math.sin(_c.value * math.pi * 4) * 6 * (1 - _c.value);
         return Transform.translate(offset: Offset(dx, 0), child: child);
       },
       child: widget.child,
@@ -60,7 +79,19 @@ class _PulsingDotState extends State<PulsingDot>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1600),
-  )..repeat(reverse: true);
+  );
+  bool _animate = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _animate = ambientMotionAllowed(context);
+    if (_animate) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -70,25 +101,38 @@ class _PulsingDotState extends State<PulsingDot>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final glow = 4 + _c.value * 8;
-        return Container(
-          width: widget.size,
-          height: widget.size,
+    if (!_animate) {
+      return SizedBox.square(
+        dimension: widget.size,
+        child: DecoratedBox(
           decoration: BoxDecoration(
             color: widget.color,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.4 + _c.value * 0.4),
-                blurRadius: glow,
-              ),
-            ],
           ),
-        );
-      },
+        ),
+      );
+    }
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final glow = 4 + _c.value * 8;
+          return Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: 0.4 + _c.value * 0.4),
+                  blurRadius: glow,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -107,7 +151,19 @@ class _FloatingLogoState extends State<FloatingLogo>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 3500),
-  )..repeat(reverse: true);
+  );
+  bool _animate = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _animate = ambientMotionAllowed(context);
+    if (_animate) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -117,13 +173,14 @@ class _FloatingLogoState extends State<FloatingLogo>
 
   @override
   Widget build(BuildContext context) {
+    if (!_animate) return widget.child;
     return AnimatedBuilder(
       animation: _c,
       builder: (context, child) {
-        final dy = -7 * math.sin(_c.value * math.pi);
+        final dy = -4 * math.sin(_c.value * math.pi);
         return Transform.translate(offset: Offset(0, dy), child: child);
       },
-      child: widget.child,
+      child: RepaintBoundary(child: widget.child),
     );
   }
 }

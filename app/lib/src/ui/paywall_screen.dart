@@ -25,9 +25,10 @@ String paywallErrorText(AppLocalizations l, String code, {String? boundHint}) =>
       // account, the sign-in sheet listed every account on the device, and a
       // different one got picked. Name the bound account when the worker
       // could tell us (masked); the copy's job is "retry, pick that one".
-      'purchase_token_bound' => boundHint != null
-          ? l.proErrPurchaseBoundKnown(boundHint)
-          : l.proErrPurchaseBound,
+      'purchase_token_bound' =>
+        boundHint != null
+            ? l.proErrPurchaseBoundKnown(boundHint)
+            : l.proErrPurchaseBound,
       'canceled' => l.proErrCanceled,
       'network' => l.proErrNetwork,
       'not_configured' || 'unavailable' => l.proErrNotConfigured,
@@ -37,8 +38,9 @@ String paywallErrorText(AppLocalizations l, String code, {String? boundHint}) =>
       'already_owned' => l.proErrAlreadyOwned,
       'order_bound' => l.proErrOrderBound,
       // The worker emits order_invalid; the other two names predate it.
-      'order_invalid' || 'order_not_found' || 'plan_mismatch' =>
-        l.proErrOrderNotFound,
+      'order_invalid' ||
+      'order_not_found' ||
+      'plan_mismatch' => l.proErrOrderNotFound,
       'device_revoked' => l.proErrDeviceRevoked,
       'no_vip' || 'not_earned' => l.proErrNoVip,
       'code_invalid' => l.proErrCodeInvalid,
@@ -52,22 +54,26 @@ String paywallErrorText(AppLocalizations l, String code, {String? boundHint}) =>
     };
 
 String _deviceClassName(AppLocalizations l, String cls) => switch (cls) {
-      'android' => l.proDeviceClassAndroid,
-      'windows' => l.proDeviceClassWindows,
-      'linux' => l.proDeviceClassLinux,
-      'macos' => l.proDeviceClassMacos,
-      // Unknown class (newer worker vocabulary): the raw slug beats hiding
-      // an occupied slot.
-      _ => cls,
-    };
+  'android' => l.proDeviceClassAndroid,
+  'windows' => l.proDeviceClassWindows,
+  'linux' => l.proDeviceClassLinux,
+  'macos' => l.proDeviceClassMacos,
+  // Unknown class (newer worker vocabulary): the raw slug beats hiding
+  // an occupied slot.
+  _ => cls,
+};
 
 /// "已激活：Android · Windows（本机）" — the status card's activation row.
 @visibleForTesting
 String paywallActivationsLine(
-    AppLocalizations l, List<EntitlementActivation> activations) {
-  final parts = activations.map((a) => a.thisDevice
-      ? l.proStatusClassThisDevice(_deviceClassName(l, a.deviceClass))
-      : _deviceClassName(l, a.deviceClass));
+  AppLocalizations l,
+  List<EntitlementActivation> activations,
+) {
+  final parts = activations.map(
+    (a) => a.thisDevice
+        ? l.proStatusClassThisDevice(_deviceClassName(l, a.deviceClass))
+        : _deviceClassName(l, a.deviceClass),
+  );
   return l.proStatusActivations(parts.join(' · '));
 }
 
@@ -75,15 +81,20 @@ String paywallActivationsLine(
 /// refusal so the user sees which class holds the slot and since when,
 /// instead of only the static "switched devices too often" copy.
 @visibleForTesting
-String paywallSlotOccupiedLine(AppLocalizations l,
-    List<EntitlementActivation> activations, DateTime now) {
+String paywallSlotOccupiedLine(
+  AppLocalizations l,
+  List<EntitlementActivation> activations,
+  DateTime now,
+) {
   String when(DateTime at) {
     final days = now.difference(at).inDays;
     return days <= 0 ? l.proSlotToday : l.proSlotDaysAgo(days);
   }
 
   final parts = activations.map(
-      (a) => l.proSlotEntry(_deviceClassName(l, a.deviceClass), when(a.activatedAt)));
+    (a) =>
+        l.proSlotEntry(_deviceClassName(l, a.deviceClass), when(a.activatedAt)),
+  );
   return l.proErrSlotOccupied(parts.join(' · '));
 }
 
@@ -112,10 +123,13 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(_loadActivations);
+    if (ref.read(upstreamProEnabledProvider)) {
+      Future.microtask(_loadActivations);
+    }
   }
 
   Future<void> _loadActivations() async {
+    if (!mounted || !ref.read(upstreamProEnabledProvider)) return;
     if (_loadingActivations) return;
     _loadingActivations = true;
     try {
@@ -151,15 +165,17 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       final l = AppLocalizations.of(context);
       var text = result.ok
           ? l.proResultSuccess
-          : paywallErrorText(l, result.code ?? 'unknown',
-              boundHint: result.boundHint);
+          : paywallErrorText(
+              l,
+              result.code ?? 'unknown',
+              boundHint: result.boundHint,
+            );
       // code_activation_limit carries the occupied slots — show them.
       if (!result.ok && (result.activations?.isNotEmpty ?? false)) {
-        text = '$text\n${paywallSlotOccupiedLine(
-            l, result.activations!, ref.read(clockProvider)())}';
+        text =
+            '$text\n${paywallSlotOccupiedLine(l, result.activations!, ref.read(clockProvider)())}';
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(text)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -175,7 +191,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         return l.proStatusVip(_date(token?.proUntil));
       case ProStatus.pro:
         final until = token?.proUntil;
-        return until == null ? l.proStatusLifetime : l.proStatusPro(_date(until));
+        return until == null
+            ? l.proStatusLifetime
+            : l.proStatusPro(_date(until));
     }
   }
 
@@ -188,6 +206,16 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ref.watch(upstreamProEnabledProvider)) {
+      final l = AppLocalizations.of(context);
+      return Scaffold(
+        appBar: AppBar(title: Text(l.forkLocalFeaturesTitle)),
+        body: ListView(
+          padding: context.rSafeInsets(all: 24),
+          children: [Text(l.forkLocalFeaturesBody)],
+        ),
+      );
+    }
     // _loadActivations bails while free — a later flip to a pro tier
     // (in-screen redeem, background refresh) must re-trigger the fetch.
     ref.listen(proStatusProvider, (prev, next) {
@@ -205,96 +233,157 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         child: ListView(
           padding: context.rSafeInsets(h: 16, v: 12),
           children: [
-            _card(context, t,
-                title: _statusLine(l),
-                description: l.paywallPerksTitle,
+            _card(
+              context,
+              t,
+              title: _statusLine(l),
+              description: l.paywallPerksTitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_activations?.isNotEmpty ?? false)
+                    Padding(
+                      padding: context.rInsets(v: 3),
+                      child: Text(
+                        paywallActivationsLine(l, _activations!),
+                        style: TextStyle(
+                          fontSize: context.r(12.5),
+                          color: t.muted,
+                        ),
+                      ),
+                    ),
+                  _perk(context, t, l.paywallPerkSkins),
+                  if (isPlay) _perk(context, t, l.paywallPerkNoAds),
+                  _perk(context, t, l.paywallPerkFuture),
+                ],
+              ),
+            ),
+            if (isPlay)
+              _card(
+                context,
+                t,
+                title: l.paywallPlayTitle,
+                child: Wrap(
+                  spacing: context.r(8),
+                  runSpacing: context.r(8),
+                  children: [
+                    _button(
+                      context,
+                      t,
+                      l.paywallSubscribe,
+                      _busy,
+                      () => _run((a) => a.subscribeViaPlay()),
+                    ),
+                    _button(
+                      context,
+                      t,
+                      l.paywallWatchAd,
+                      _busy,
+                      () => _run((a) => a.watchRewarded()),
+                    ),
+                    _button(
+                      context,
+                      t,
+                      l.paywallRestore,
+                      _busy,
+                      () => _run((a) => a.restoreViaPlay()),
+                      filled: false,
+                    ),
+                  ],
+                ),
+              )
+            else
+              _card(
+                context,
+                t,
+                title: l.paywallCnTitle,
+                description: l.paywallAfdianIntro,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_activations?.isNotEmpty ?? false)
-                      Padding(
-                        padding: context.rInsets(v: 3),
-                        child: Text(paywallActivationsLine(l, _activations!),
-                            style: TextStyle(
-                                fontSize: context.r(12.5), color: t.muted)),
-                      ),
-                    _perk(context, t, l.paywallPerkSkins),
-                    if (isPlay) _perk(context, t, l.paywallPerkNoAds),
-                    _perk(context, t, l.paywallPerkFuture),
+                    _button(context, t, l.paywallOpenAfdian, false, () {
+                      launchUrl(
+                        Uri.parse(kAfdianPageUrl),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }, filled: false),
+                    SizedBox(height: context.r(10)),
+                    _redeemRow(
+                      context,
+                      t,
+                      _orderCtrl,
+                      l.paywallOrderHint,
+                      l.paywallRedeem,
+                      () => _run((a) => a.redeemAfdian(_orderCtrl.text)),
+                    ),
                   ],
-                )),
-            if (isPlay)
-              _card(context, t,
-                  title: l.paywallPlayTitle,
-                  child: Wrap(
-                    spacing: context.r(8),
-                    runSpacing: context.r(8),
-                    children: [
-                      _button(context, t, l.paywallSubscribe, _busy,
-                          () => _run((a) => a.subscribeViaPlay())),
-                      _button(context, t, l.paywallWatchAd, _busy,
-                          () => _run((a) => a.watchRewarded())),
-                      _button(context, t, l.paywallRestore, _busy,
-                          () => _run((a) => a.restoreViaPlay()),
-                          filled: false),
-                    ],
-                  ))
-            else
-              _card(context, t,
-                  title: l.paywallCnTitle,
-                  description: l.paywallAfdianIntro,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _button(context, t, l.paywallOpenAfdian, false, () {
-                        launchUrl(Uri.parse(kAfdianPageUrl),
-                            mode: LaunchMode.externalApplication);
-                      }, filled: false),
-                      SizedBox(height: context.r(10)),
-                      _redeemRow(context, t, _orderCtrl, l.paywallOrderHint,
-                          l.paywallRedeem,
-                          () => _run((a) => a.redeemAfdian(_orderCtrl.text))),
-                    ],
-                  )),
-            _card(context, t,
-                title: l.paywallBetaTitle,
-                description: l.paywallBetaIntro,
-                child: _redeemRow(context, t, _betaCtrl, l.paywallBetaHint,
-                    l.paywallBetaRedeem,
-                    () => _run((a) => a.redeemBeta(_betaCtrl.text)))),
+                ),
+              ),
+            _card(
+              context,
+              t,
+              title: l.paywallBetaTitle,
+              description: l.paywallBetaIntro,
+              child: _redeemRow(
+                context,
+                t,
+                _betaCtrl,
+                l.paywallBetaHint,
+                l.paywallBetaRedeem,
+                () => _run((a) => a.redeemBeta(_betaCtrl.text)),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _redeemRow(BuildContext context, AvaTokens t,
-      TextEditingController ctrl, String hint, String label, VoidCallback go) {
-    return Row(children: [
-      Expanded(
-        child: TextField(
-          controller: ctrl,
-          decoration: InputDecoration(hintText: hint, isDense: true),
+  Widget _redeemRow(
+    BuildContext context,
+    AvaTokens t,
+    TextEditingController ctrl,
+    String hint,
+    String label,
+    VoidCallback go,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: ctrl,
+            decoration: InputDecoration(hintText: hint, isDense: true),
+          ),
         ),
-      ),
-      SizedBox(width: context.r(8)),
-      _button(context, t, label, _busy, go),
-    ]);
+        SizedBox(width: context.r(8)),
+        _button(context, t, label, _busy, go),
+      ],
+    );
   }
 
   Widget _perk(BuildContext context, AvaTokens t, String text) => Padding(
-        padding: context.rInsets(v: 3),
-        child: Row(children: [
-          Icon(Icons.check, size: context.r(16), color: t.accent),
-          SizedBox(width: context.r(8)),
-          Expanded(
-              child: Text(text,
-                  style: TextStyle(fontSize: context.r(13), color: t.text))),
-        ]),
-      );
+    padding: context.rInsets(v: 3),
+    child: Row(
+      children: [
+        Icon(Icons.check, size: context.r(16), color: t.accent),
+        SizedBox(width: context.r(8)),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: context.r(13), color: t.text),
+          ),
+        ),
+      ],
+    ),
+  );
 
-  Widget _card(BuildContext context, AvaTokens t,
-      {required String title, String? description, required Widget child}) {
+  Widget _card(
+    BuildContext context,
+    AvaTokens t, {
+    required String title,
+    String? description,
+    required Widget child,
+  }) {
     return Container(
       margin: context.rInsets(v: 6),
       padding: context.rInsets(h: 14, v: 12),
@@ -306,16 +395,20 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: context.r(15),
-                  fontWeight: FontWeight.w600,
-                  color: t.text)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: context.r(15),
+              fontWeight: FontWeight.w600,
+              color: t.text,
+            ),
+          ),
           if (description != null) ...[
             SizedBox(height: context.r(4)),
-            Text(description,
-                style:
-                    TextStyle(fontSize: context.r(12.5), color: t.muted)),
+            Text(
+              description,
+              style: TextStyle(fontSize: context.r(12.5), color: t.muted),
+            ),
           ],
           SizedBox(height: context.r(10)),
           child,
@@ -324,9 +417,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     );
   }
 
-  Widget _button(BuildContext context, AvaTokens t, String label, bool busy,
-      VoidCallback onTap,
-      {bool filled = true}) {
+  Widget _button(
+    BuildContext context,
+    AvaTokens t,
+    String label,
+    bool busy,
+    VoidCallback onTap, {
+    bool filled = true,
+  }) {
     return InkWell(
       onTap: busy ? null : onTap,
       borderRadius: BorderRadius.circular(t.radiusSm),
@@ -336,7 +434,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           color: filled ? t.accent : t.panel2,
           borderRadius: BorderRadius.circular(t.radiusSm),
           border: Border.all(
-              color: filled ? t.accent : t.borderColor, width: t.borderWidth),
+            color: filled ? t.accent : t.borderColor,
+            width: t.borderWidth,
+          ),
         ),
         child: Text(
           label,

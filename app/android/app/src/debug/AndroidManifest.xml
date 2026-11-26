@@ -12,6 +12,6 @@
          picking the wrong icon is how an irreversible action lands on the wrong
          data. -->
     <application
-        android:label="AVA dev"
+        android:label="@string/ava_app_label"
         tools:replace="android:label" />
 </manifest>

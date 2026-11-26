@@ -79,6 +79,15 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
+# Shell caches icons by their source location. A content-addressed standalone
+# icon lets upgraded shortcuts pick up changed artwork without clearing the
+# user's global icon cache. Ship it in every Windows payload and its manifest.
+set(STEAMKIT_ICON "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${STEAMKIT_ICON}")
+file(SHA256 "${STEAMKIT_ICON}" STEAMKIT_ICON_SHA256)
+install(FILES "${STEAMKIT_ICON}" DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  RENAME "gooesteamkit-icon-${STEAMKIT_ICON_SHA256}.ico" COMPONENT Runtime)
+
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 

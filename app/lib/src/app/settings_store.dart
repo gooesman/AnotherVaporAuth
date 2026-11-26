@@ -102,7 +102,10 @@ class SettingsStore {
   // drops the first one's value.
   Future<void> _chain = Future.value();
 
-  Future<void> _update(void Function(Map<String, dynamic> data) mutate) {
+  Future<void> _update(
+    void Function(Map<String, dynamic> data) mutate, {
+    bool requireWrite = false,
+  }) {
     final task = _chain.then((_) async {
       // Establish the current file contents strictly: if the read failed we
       // must NOT write, or a single-key mutation over a fabricated {} would
@@ -112,6 +115,7 @@ class SettingsStore {
       try {
         base = await _readStrict();
       } on SettingsReadException {
+        if (requireWrite) rethrow;
         return;
       }
       // Mutate a copy and publish it to the cache only after the write, so
@@ -125,6 +129,9 @@ class SettingsStore {
         // to the still-intact file instead of serving (and later persisting)
         // a mutation that only ever existed in memory.
         _cache = null;
+        if (requireWrite) {
+          throw const FileSystemException('Could not save app settings');
+        }
       }
     });
     // Keep the chain alive even if this update fails.
@@ -133,6 +140,57 @@ class SettingsStore {
   }
 
   Future<String?> loadLocale() async => (await _read())['locale'] as String?;
+
+  /// Home account labels; a device-local display preference, not account data.
+  Future<String?> loadAccountNameMode() async {
+    final value = (await _read())['account_name_mode'];
+    return value is String ? value : null;
+  }
+
+  Future<void> saveAccountNameMode(String mode) =>
+      _update((data) => data['account_name_mode'] = mode);
+
+  /// Optional account-overview cards. Device-local appearance preference.
+  Future<List<String>?> loadDashboardSections() async {
+    final value = (await _read())['dashboard_sections'];
+    return value is List ? value.whereType<String>().toList() : null;
+  }
+
+  Future<void> saveDashboardSections(List<String> sections) =>
+      _update((data) => data['dashboard_sections'] = List<String>.of(sections));
+
+  /// Card geometry is device-local and separate from card visibility.
+  Future<Object?> loadDashboardLayout() async =>
+      (await _read())['dashboard_layout'];
+
+  Future<void> saveDashboardLayout(
+    List<String> order,
+    Map<String, int> spans, {
+    Map<String, Map<String, int>> rects = const {},
+    Map<int, Map<String, Map<String, int>>> responsiveRects = const {},
+  }) {
+    final layout = {
+      'order': List<String>.of(order),
+      'spans': Map<String, int>.of(spans),
+      if (rects.isNotEmpty)
+        'rects': {
+          for (final entry in rects.entries)
+            entry.key: Map<String, int>.of(entry.value),
+        },
+      if (responsiveRects.isNotEmpty)
+        'responsiveRects': {
+          for (final profile in responsiveRects.entries)
+            '${profile.key}': {
+              for (final entry in profile.value.entries)
+                entry.key: Map<String, int>.of(entry.value),
+            },
+        },
+    };
+    return _update(
+      (data) => data['dashboard_layout'] = layout,
+      requireWrite: true,
+    );
+  }
 
   Future<void> saveLocale(String? code) => _update((data) {
         if (code == null) {
@@ -215,6 +273,13 @@ class SettingsStore {
 
   Future<void> saveWindowGeometry(Map<String, dynamic> value) =>
       _update((d) => d['window_geometry'] = value);
+
+  /// This computer's Steam installation; intentionally excluded from sync.
+  Future<String?> loadSteamClientPath() async =>
+      (await _read())['steam_client_path'] as String?;
+
+  Future<void> saveSteamClientPath(String value) =>
+      _update((d) => d['steam_client_path'] = value);
 
   Future<String?> loadSkin() async {
     final data = await _read();

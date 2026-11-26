@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/responsive.dart';
 import '../../app/theme.dart';
+import 'motion.dart';
 
 /// A horizontal step indicator (design screens 04/05). [current] is the active
 /// step index; earlier steps render as done (✓), the active step pulses, later
@@ -20,7 +21,31 @@ class _Stepper3State extends State<Stepper3>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1600),
-  )..repeat(reverse: true);
+  );
+  bool _animate = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _animate = ambientMotionAllowed(context);
+    _updateRunning();
+  }
+
+  @override
+  void didUpdateWidget(Stepper3 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updateRunning();
+  }
+
+  void _updateRunning() {
+    if (_animate &&
+        widget.current >= 0 &&
+        widget.current < widget.labels.length) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -37,58 +62,72 @@ class _Stepper3State extends State<Stepper3>
       final active = i == widget.current;
       children.add(_badge(t, i, done, active));
       children.add(SizedBox(width: context.r(7)));
-      children.add(Flexible(
-        child: Text(
-          widget.labels[i],
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: (done || active) ? t.text : t.muted,
-            fontSize: context.r(12),
+      children.add(
+        Flexible(
+          child: Text(
+            widget.labels[i],
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: (done || active) ? t.text : t.muted,
+              fontSize: context.r(12),
+            ),
           ),
         ),
-      ));
+      );
       if (i < widget.labels.length - 1) {
-        children.add(Expanded(
-          child: Container(
-            height: context.r(2),
-            margin: context.rInsets(h: 8),
-            color: i < widget.current ? t.accent : t.line,
+        children.add(
+          Expanded(
+            child: Container(
+              height: context.r(2),
+              margin: context.rInsets(h: 8),
+              color: i < widget.current ? t.accent : t.line,
+            ),
           ),
-        ));
+        );
       }
     }
     return Row(children: children);
   }
 
   Widget _badge(AvaTokens t, int i, bool done, bool active) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final glow = active ? t.glowShadow(blur: context.r(4 + _c.value * 10)) : const <BoxShadow>[];
-        final bg = done ? t.good : (active ? t.accent : t.panel2);
-        return Container(
-          width: context.r(22),
-          height: context.r(22),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(t.radiusSm),
-            border: (done || active) ? null : Border.all(color: t.borderColor),
-            boxShadow: glow,
-          ),
-          child: done
-              ? Icon(Icons.check, size: context.r(13), color: const Color(0xFF06060F))
-              : Text(
-                  '${i + 1}',
-                  style: TextStyle(
-                    color: active ? const Color(0xFF06060F) : t.muted,
-                    fontSize: context.r(11),
-                    fontWeight: FontWeight.bold,
-                  ),
+    Widget badge(double progress) {
+      final glow = active && _animate
+          ? t.glowShadow(blur: context.r(4 + progress * 6))
+          : const <BoxShadow>[];
+      final bg = done ? t.good : (active ? t.accent : t.panel2);
+      final ink = t.plain && (!done || t.brightness == Brightness.light)
+          ? Colors.white
+          : const Color(0xFF06060F);
+      return Container(
+        width: context.r(22),
+        height: context.r(22),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(t.radiusSm),
+          border: (done || active) ? null : Border.all(color: t.borderColor),
+          boxShadow: glow,
+        ),
+        child: done
+            ? Icon(Icons.check, size: context.r(13), color: ink)
+            : Text(
+                '${i + 1}',
+                style: TextStyle(
+                  color: active ? ink : t.muted,
+                  fontSize: context.r(11),
+                  fontWeight: FontWeight.bold,
                 ),
-        );
-      },
+              ),
+      );
+    }
+
+    if (!active || !_animate) return badge(0);
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) => badge(_c.value),
+      ),
     );
   }
 }
@@ -108,7 +147,18 @@ class _SpinnerRingState extends State<SpinnerRing>
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1500),
-  )..repeat();
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!MediaQuery.disableAnimationsOf(context) &&
+        TickerMode.valuesOf(context).enabled) {
+      if (!_c.isAnimating) _c.repeat();
+    } else {
+      _c.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -125,11 +175,17 @@ class _SpinnerRingState extends State<SpinnerRing>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          RotationTransition(
-            turns: _c,
-            child: CustomPaint(
-              size: Size.square(widget.size),
-              painter: _ArcPainter(color: t.accent, track: t.line, glow: t.glow),
+          RepaintBoundary(
+            child: RotationTransition(
+              turns: _c,
+              child: CustomPaint(
+                size: Size.square(widget.size),
+                painter: _ArcPainter(
+                  color: t.accent,
+                  track: t.line,
+                  glow: t.glow,
+                ),
+              ),
             ),
           ),
           widget.child,
@@ -150,12 +206,13 @@ class _ArcPainter extends CustomPainter {
     final c = size.center(Offset.zero);
     final r = (size.width - 4) / 2;
     canvas.drawCircle(
-        c,
-        r,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..color = track);
+      c,
+      r,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = track,
+    );
     final arc = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
@@ -166,5 +223,6 @@ class _ArcPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ArcPainter old) => old.color != color;
+  bool shouldRepaint(_ArcPainter old) =>
+      old.color != color || old.track != track || old.glow != glow;
 }

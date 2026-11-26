@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../app/providers.dart';
 import '../../app/responsive.dart';
+import '../../app/steam_notifications_provider.dart';
 import '../../app/theme.dart';
 import '../../core/models/confirmation.dart';
 import '../../core/models/steam_guard_account.dart';
@@ -50,7 +51,7 @@ class ConfirmationsTabState extends ConsumerState<ConfirmationsTab>
   @override
   void initState() {
     super.initState();
-    _client = ConfirmationsClient(ref.read(apiClientProvider));
+    _client = ref.read(confirmationsClientProvider);
     refresh();
   }
 
@@ -61,13 +62,24 @@ class ConfirmationsTabState extends ConsumerState<ConfirmationsTab>
       _error = null;
       _needsLogin = false;
     });
+    final counts = ref.read(steamNotificationCountsProvider.notifier);
+    String? accessToken;
+    String? refreshToken;
     try {
       // A stale session (`needauth` → ConfirmationAuthException) transparently
       // refreshes the token and retries once; only a dead refresh token
       // surfaces as an error. Other failures skip the token exchange.
       final list = await fetchWithAutoRefresh(
-          widget.account, () => _client.fetch(widget.account),
+          widget.account, () {
+            accessToken = widget.account.session.accessToken;
+            refreshToken = widget.account.session.refreshToken;
+            return _client.fetch(widget.account);
+          },
           retryOnAnyError: false);
+      if (widget.account.session.accessToken == accessToken &&
+          widget.account.session.refreshToken == refreshToken) {
+        counts.recordConfirmationCount(widget.account, list.length);
+      }
       if (!mounted) return;
       setState(() {
         _confs = list;
@@ -104,6 +116,7 @@ class ConfirmationsTabState extends ConsumerState<ConfirmationsTab>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l.confProcessing(confs.length))),
     );
+    ref.read(steamNotificationCountsProvider.notifier).invalidate(widget.account);
     final result = await _client.respondMultiple(widget.account, confs, accept);
     if (!mounted) return;
     setState(() => _busy = false);

@@ -1,0 +1,180 @@
+[
+  {
+    "appid": 730,
+    "response": {
+      "success": 1,
+      "assets": [
+        {
+          "appid": 730,
+          "contextid": "2",
+          "assetid": "100",
+          "classid": "200",
+          "instanceid": "0",
+          "amount": "1"
+        },
+        {
+          "appid": 730,
+          "contextid": "2",
+          "assetid": "101",
+          "classid": "201",
+          "instanceid": "0",
+          "amount": "1"
+        },
+        {
+          "appid": 730,
+          "contextid": "2",
+          "assetid": "102",
+          "classid": "202",
+          "instanceid": "0",
+          "amount": "1"
+        }
+      ],
+      "descriptions": [
+        {
+          "classid": "200",
+          "instanceid": "0",
+          "name": "Fixture 步枪",
+          "market_hash_name": "Fixture CSGO_Type_Rifle",
+          "type": "fixture type",
+          "tradable": 1,
+          "marketable": 1,
+          "tags": [
+            {
+              "category": "Type",
+              "internal_name": "CSGO_Type_Rifle",
+              "localized_category_name": "类型",
+              "localized_tag_name": "步枪"
+            },
+            {
+              "category": "Rarity",
+              "internal_name": "Rarity_Rare_Weapon",
+              "localized_tag_name": "军规级"
+            }
+          ]
+        },
+        {
+          "classid": "201",
+          "instanceid": "0",
+          "name": "Fixture 喷漆",
+          "market_hash_name": "Fixture CSGO_Type_Spray",
+          "type": "fixture type",
+          "tradable": 1,
+          "marketable": 1,
+          "tags": [
+            {
+              "category": "Type",
+              "internal_name": "CSGO_Type_Spray",
+              "localized_category_name": "类型",
+              "localized_tag_name": "喷漆"
+            },
+            {
+              "category": "Rarity",
+              "internal_name": "Rarity_Common",
+              "localized_tag_name": "普通级"
+            }
+          ]
+        },
+        {
+          "classid": "202",
+          "instanceid": "0",
+          "name": "Fixture 音乐盒",
+          "market_hash_name": "Fixture CSGO_Type_MusicKit",
+          "type": "fixture type",
+          "tradable": 1,
+          "marketable": 1,
+          "tags": [
+            {
+              "category": "Type",
+              "internal_name": "CSGO_Type_MusicKit",
+              "localized_category_name": "类型",
+              "localized_tag_name": "音乐盒"
+            },
+            {
+              "category": "Rarity",
+              "internal_name": "Rarity_Rare",
+              "localized_tag_name": "高级"
+            }
+          ]
+        }
+      ],
+      "more_items": 0
+    }
+  },
+  {
+    "appid": 570,
+    "response": {
+      "success": 1,
+      "assets": [
+        {
+          "appid": 570,
+          "contextid": "2",
+          "assetid": "100",
+          "classid": "200",
+          "instanceid": "0",
+          "amount": "1"
+        }
+      ],
+      "descriptions": [
+        {
+          "classid": "200",
+          "instanceid": "0",
+          "name": "Fixture Wearable",
+          "market_hash_name": "Fixture wearable",
+          "type": "fixture type",
+          "tradable": 1,
+          "marketable": 1,
+          "tags": [
+            {
+              "category": "Type",
+              "internal_name": "wearable",
+              "localized_category_name": "Type",
+              "localized_tag_name": "Wearable"
+            },
+            {
+              "category": "Rarity",
+              "internal_name": "Rarity_Immortal",
+              "localized_tag_name": "Immortal"
+            }
+          ]
+        }
+      ],
+      "more_items": 0
+    }
+  },
+  {
+    "appid": 753,
+    "response": {
+      "success": 1,
+      "assets": [
+        {
+          "appid": 753,
+          "contextid": "2",
+          "assetid": "100",
+          "classid": "200",
+          "instanceid": "0",
+          "amount": "1"
+        }
+      ],
+      "descriptions": [
+        {
+          "classid": "200",
+          "instanceid": "0",
+          "name": "Fixture Trading Card",
+          "market_hash_name": "Fixture item_class_2",
+          "type": "fixture type",
+          "tradable": 1,
+          "marketable": 1,
+          "tags": [
+            {
+              "category": "item_class",
+              "internal_name": "item_class_2",
+              "localized_category_name": "Type",
+              "localized_tag_name": "Trading Card"
+            }
+          ]
+        }
+      ],
+      "more_items": 0
+    }
+  }
+]

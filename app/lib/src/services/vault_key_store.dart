@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../core/crypto/vault_crypto.dart';
@@ -29,10 +30,11 @@ class VaultKeyStore {
   final FlutterSecureStorage _store;
 
   VaultKeyStore({FlutterSecureStorage? store})
-      : _store = store ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-            );
+    : _store =
+          store ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+          );
 
   static const _kRecord = 'ava.vault.pinWrap';
   // Legacy split-key layout (pre-atomic-record installs).
@@ -41,6 +43,19 @@ class VaultKeyStore {
   static const _kLegacyIterations = 'ava.vault.pinKdfIter';
   // Installs from before the round count was recorded were always 100k.
   static const _legacyDefaultIterations = 100000;
+
+  /// Non-secret identity of this PIN wrap. A PIN change/reset creates a new
+  /// identity, so a leftover convenience credential can never silently open
+  /// a newly-created vault that happens to reuse the same PIN.
+  Future<String?> get binding async {
+    final wrap = await _readWrap();
+    if (wrap == null) return null;
+    return sha256
+        .convert(
+          utf8.encode(jsonEncode([wrap.salt, wrap.iterations, wrap.blob])),
+        )
+        .toString();
+  }
 
   /// Whether a wrapped DEK is present (i.e. the vault has been set up).
   Future<bool> get exists async {
@@ -60,8 +75,11 @@ class VaultKeyStore {
   /// them. The same-PIN opportunistic migration passes false — its legacy
   /// wrap is equivalent (same DEK, same PIN), and keeping it lets a
   /// downgraded install still unlock instead of rejecting the correct PIN.
-  Future<void> storePinWrap(String pin, Uint8List dek,
-      {bool dropLegacy = true}) async {
+  Future<void> storePinWrap(
+    String pin,
+    Uint8List dek, {
+    bool dropLegacy = true,
+  }) async {
     final salt = VaultCrypto.randomSaltB64();
     const iterations = VaultCrypto.pinKdfIterations;
     final blob = await compute(_wrapJob, (pin, salt, dek, iterations));
@@ -88,8 +106,12 @@ class VaultKeyStore {
     try {
       final wrap = await _readWrap();
       if (wrap == null) return null;
-      final dek = await compute(
-          _unwrapJob, (pin, wrap.salt, wrap.blob, wrap.iterations));
+      final dek = await compute(_unwrapJob, (
+        pin,
+        wrap.salt,
+        wrap.blob,
+        wrap.iterations,
+      ));
       if (dek == null) return null;
       // Opportunistic upgrade: legacy layout or an out-of-date KDF cost gets
       // re-wrapped under the current parameters. Safe to fail — the write is
@@ -147,7 +169,7 @@ class VaultKeyStore {
     if (salt == null || blob == null) return null;
     final iterations =
         int.tryParse(await _store.read(key: _kLegacyIterations) ?? '') ??
-            _legacyDefaultIterations;
+        _legacyDefaultIterations;
     return (salt: salt, iterations: iterations, blob: blob, legacy: true);
   }
 
