@@ -2341,6 +2341,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get marketCancelConfirm => '¿Cancelar este anuncio del mercado?';
 
   @override
+  String get marketReprice => 'Cambiar precio';
+
+  @override
+  String get marketReceivePerUnit => 'Recibes por unidad';
+
+  @override
+  String get marketRepriceDecrease =>
+      'Steam puede pedir confirmación si bajas el precio.';
+
+  @override
+  String get marketRepriced => 'Precio del anuncio actualizado.';
+
+  @override
+  String get marketRepriceMobile =>
+      'Confirma el cambio de precio en Steam Guard.';
+
+  @override
+  String get marketRepriceEmail =>
+      'Confirma el cambio de precio por correo electrónico.';
+
+  @override
+  String get marketRepriceCooldown =>
+      'Steam limita los cambios de precio. Inténtalo más tarde.';
+
+  @override
+  String get marketRepriceUnconfirmed =>
+      'Cambio sin confirmar. Revisa el anuncio antes de volver a intentarlo.';
+
+  @override
   String get marketCancelAll => 'Cancelar todos los anuncios';
 
   @override

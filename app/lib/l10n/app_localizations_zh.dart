@@ -2201,6 +2201,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get marketCancelConfirm => '确定取消这件物品的市场上架？';
 
   @override
+  String get marketReprice => '修改定价';
+
+  @override
+  String get marketReceivePerUnit => '每件实收';
+
+  @override
+  String get marketRepriceDecrease => '降价可能需要 Steam 确认。';
+
+  @override
+  String get marketRepriced => '挂单价格已更新。';
+
+  @override
+  String get marketRepriceMobile => '请在 Steam 令牌的待确认列表中确认改价。';
+
+  @override
+  String get marketRepriceEmail => '请通过 Steam 邮件确认改价。';
+
+  @override
+  String get marketRepriceCooldown => 'Steam 暂时限制改价，请稍后再试。';
+
+  @override
+  String get marketRepriceUnconfirmed => '尚未确认改价成功，请核对挂单后再试。';
+
+  @override
   String get marketCancelAll => '全部下架';
 
   @override
@@ -5605,6 +5629,30 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get marketCancelConfirm => '要取消這筆市場上架嗎？';
+
+  @override
+  String get marketReprice => '修改定價';
+
+  @override
+  String get marketReceivePerUnit => '每件實收';
+
+  @override
+  String get marketRepriceDecrease => '降價可能需要 Steam 確認。';
+
+  @override
+  String get marketRepriced => '刊登價格已更新。';
+
+  @override
+  String get marketRepriceMobile => '請在 Steam Guard 的確認清單中確認改價。';
+
+  @override
+  String get marketRepriceEmail => '請透過 Steam 電子郵件確認改價。';
+
+  @override
+  String get marketRepriceCooldown => 'Steam 暫時限制改價，請稍後再試。';
+
+  @override
+  String get marketRepriceUnconfirmed => '尚未確認改價成功，請先核對刊登價格。';
 
   @override
   String get marketCancelAll => '全部下架';

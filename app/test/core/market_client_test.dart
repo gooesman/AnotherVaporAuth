@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:ava/src/core/models/session_data.dart';
 import 'package:ava/src/core/models/steam_guard_account.dart';
 import 'package:ava/src/core/models/steam_item.dart';
 import 'package:ava/src/core/protocol/market_client.dart';
 import 'package:ava/src/services/steam_api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
 
 /// Community POST that always throws the stale-session exception the status
 /// gate raises for a 302/401 reply.
@@ -53,6 +56,57 @@ SteamGuardAccount _account() => SteamGuardAccount(
 );
 
 void main() {
+  test('repricing posts once in the original currency and checks both Steam results', () async {
+    final requests = <RequestOptions>[];
+    final data = <String, dynamic>{'eResult': 1, 'eUpdateResult': 1};
+    final dio = Dio()..interceptors.add(InterceptorsWrapper(onRequest: (r, h) {
+      requests.add(r);
+      h.resolve(Response<String>(requestOptions: r, statusCode: 200, data: jsonEncode({'data': data})));
+    }));
+    final market = MarketClient(SteamApiClient(dio: dio));
+    final listing = MarketListing.fromJson({
+      ..._listing('123'), 'currencyid': 2023, 'original_price_per_unit': '250',
+      'converted_currencyid': 2001, 'converted_price': 35, 'converted_fee': 4,
+    });
+    Future<ListingPriceResult> change() => market.reprice(_account(), listing, 275);
+    expect(await change(), ListingPriceResult.updated);
+    final r = requests.single;
+    expect(r.uri.toString(), 'https://steamcommunity.com/market/actions');
+    expect(r.method, 'POST');
+    expect(r.followRedirects, isFalse);
+    expect(r.contentType, Headers.jsonContentType);
+    expect(r.headers['x-valve-request-type'], 'mutationAction');
+    expect(r.headers['Cookie'], contains('steamLoginSecure='));
+    expect(r.data, {'m': 'UpdateSellListingPrice', 'mp': ['123', 275, 2023]});
+    data.addAll({'bRequiresConfirmation': true, 'eConfirmationMethod': 2});
+    expect(await change(), ListingPriceResult.confirmMobile);
+    data['eConfirmationMethod'] = 1;
+    expect(await change(), ListingPriceResult.confirmEmail);
+    data['eUpdateResult'] = 84;
+    expect(await change(), ListingPriceResult.cooldown);
+    data.remove('eUpdateResult');
+    expect(await change(), ListingPriceResult.unconfirmed);
+    data.addAll({'eResult': 2, 'eUpdateResult': 1});
+    expect(await change(), ListingPriceResult.unconfirmed);
+    expect(requests.length, 6);
+  });
+
+  test('incomplete or held listings cannot submit a price, nor can unchanged amounts', () async {
+    final market = MarketClient(_AuthThrowingApi());
+    final raw = {..._listing('123'), 'currencyid': 2023};
+    for (final listing in [
+      MarketListing.fromJson(raw, state: MarketListingState.onHold),
+      MarketListing.fromJson({...raw, 'currencyid': null}),
+      MarketListing.fromJson({...raw, 'asset': {'amount': '10'}}),
+    ]) {
+      expect(listing.canReprice, isFalse);
+      await expectLater(market.reprice(_account(), listing, 110), throwsArgumentError);
+    }
+    for (final price in [0, -1, 115, 0x80000000]) {
+      await expectLater(market.reprice(_account(), MarketListing.fromJson(raw), price), throwsArgumentError);
+    }
+  });
+
   group('MarketClient.isCancelSuccess', () {
     test(
       'bare/empty body (Steam\'s normal removelisting reply) is success',

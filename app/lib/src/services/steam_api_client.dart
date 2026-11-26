@@ -414,6 +414,38 @@ class SteamApiClient {
     }
   }
 
+  /// The new market uses Valve's JSON mutation action protocol. Never replay a
+  /// price change after a redirect or interpret an HTTP error as acceptance.
+  Future<Map<String, dynamic>> updateSellListingPrice(
+    String listingId, int unitPrice, int currencyId, Map<String, String> cookies,
+  ) async {
+    const path = '/market/actions';
+    final resp = await _dio.post<String>(
+      '$communityBase$path',
+      data: {'m': 'UpdateSellListingPrice', 'mp': [listingId, unitPrice, currencyId]},
+      options: Options(
+        followRedirects: false,
+        responseType: ResponseType.plain,
+        contentType: Headers.jsonContentType,
+        headers: {
+          'Cookie': _cookieHeader(cookies),
+          'Origin': communityBase,
+          'Referer': '$communityBase/market/activelistings',
+          'x-valve-request-type': 'mutationAction',
+        },
+      ),
+    );
+    final diagnostic = _gateCommunityStatus(resp, path);
+    if (diagnostic != null) {
+      throw SteamApiException(2, 'HTTP ${resp.statusCode}', path, httpStatus: resp.statusCode);
+    }
+    final body = jsonDecode(resp.data ?? '');
+    if (body is! Map || body['data'] is! Map<String, dynamic>) {
+      throw const FormatException('Missing Steam price update result.');
+    }
+    return body['data'] as Map<String, dynamic>;
+  }
+
   /// Warms up a `store.steampowered.com` session and returns the cookie jar to
   /// use for the follow-up request.
   ///

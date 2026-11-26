@@ -2315,6 +2315,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get marketCancelConfirm => 'Cancel this market listing?';
 
   @override
+  String get marketReprice => 'Change price';
+
+  @override
+  String get marketReceivePerUnit => 'You receive per item';
+
+  @override
+  String get marketRepriceDecrease =>
+      'Lowering the price may require Steam confirmation.';
+
+  @override
+  String get marketRepriced => 'Listing price updated.';
+
+  @override
+  String get marketRepriceMobile => 'Confirm the price change in Steam Guard.';
+
+  @override
+  String get marketRepriceEmail => 'Confirm the price change by email.';
+
+  @override
+  String get marketRepriceCooldown =>
+      'Steam is limiting price changes. Try again later.';
+
+  @override
+  String get marketRepriceUnconfirmed =>
+      'Price change unconfirmed. Check the listing before trying again.';
+
+  @override
   String get marketCancelAll => 'Cancel all listings';
 
   @override

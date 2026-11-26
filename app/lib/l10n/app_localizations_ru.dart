@@ -2396,6 +2396,34 @@ class AppLocalizationsRu extends AppLocalizations {
       'Отменить это предложение на Торговой площадке?';
 
   @override
+  String get marketReprice => 'Изменить цену';
+
+  @override
+  String get marketReceivePerUnit => 'Вы получите за штуку';
+
+  @override
+  String get marketRepriceDecrease =>
+      'При снижении цены Steam может запросить подтверждение.';
+
+  @override
+  String get marketRepriced => 'Цена лота обновлена.';
+
+  @override
+  String get marketRepriceMobile => 'Подтвердите изменение цены в Steam Guard.';
+
+  @override
+  String get marketRepriceEmail =>
+      'Подтвердите изменение цены по электронной почте.';
+
+  @override
+  String get marketRepriceCooldown =>
+      'Steam временно ограничил изменение цен. Попробуйте позже.';
+
+  @override
+  String get marketRepriceUnconfirmed =>
+      'Изменение цены не подтверждено. Проверьте лот перед повторной попыткой.';
+
+  @override
   String get marketCancelAll => 'Отменить все лоты';
 
   @override

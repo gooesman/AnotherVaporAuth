@@ -7,9 +7,15 @@ preview builds through its [manual release process](docs/fork-releases.md).
 
 ## [v1.5.22] — 2026-11-26 · Fork
 
+### Added
+- Change the per-item seller price of a live listing in My Listings. Steam may request mobile or email confirmation.
+
 ### Fixed
 - Read the wallet from the signed-in inventory page and use Steam's new market search. Favorites still quote the selected currency. A removal error message now counts as an unconfirmed cancellation.
 - Use the static profile picture while an animated avatar loads or fails, clear unequipped cosmetics after a successful refresh, and retry images on a manual home refresh.
+
+### 新增
+- 在「我的出售」直接修改在售挂单的每件实收价，按原挂单币种提交。需要手机或邮件确认时会显示对应提示。
 
 ### 修复
 - 适配 Steam 新版市场。账户概览从已登录的库存页读取钱包，搜索接入新版市场，收藏继续按所选币种查价。下架时若 Steam 只返回错误提示，会计入未确认。

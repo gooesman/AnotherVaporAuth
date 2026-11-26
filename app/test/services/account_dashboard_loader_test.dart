@@ -44,7 +44,8 @@ ResponseBody _json(Map<String, Object?> body, [int status = 200]) =>
         'content-type': ['application/json'],
       },
     );
-ResponseBody _success(RequestOptions request) => request.uri.path == '/market/'
+ResponseBody _success(RequestOptions request) =>
+    request.uri.path.endsWith('/inventory/')
     ? ResponseBody.fromString(
         'var g_rgWalletInfo = {"wallet_currency":23,"wallet_balance":12345};',
         200,
@@ -74,7 +75,7 @@ ResponseBody _summaries(RequestOptions request) {
 SteamGuardAccount _account([int id = 1]) => SteamGuardAccount(
   accountName: 'demo_$id',
   session: SessionData(
-    steamId: id,
+    steamId: 76561198000000000 + id,
     accessToken: 'synthetic',
     refreshToken: 'synthetic-refresh',
   ),
@@ -118,7 +119,7 @@ void main() {
     fakeAsync((clock) {
       final (adapter, loader, _) = _loader(clock);
       adapter.respond = _summaries;
-      final account = _account(76561198000000001);
+      final account = _account(1);
       final disabled = loader.acquire(account, wallet: false, listings: false);
       _flush(clock);
       disabled.refresh();
@@ -163,7 +164,7 @@ void main() {
         final (adapter, loader, _) = _loader(clock);
         final pending = Completer<ResponseBody>();
         adapter.respond = (_) => pending.future;
-        final account = _account(76561198000000001);
+        final account = _account(1);
         final both = loader.acquire(
           account,
           wallet: false,
@@ -208,7 +209,7 @@ void main() {
             ? Completer<ResponseBody>().future
             : _summaries(request);
         final lease = loader.acquire(
-          _account(76561198000000001),
+          _account(1),
           wallet: false,
           listings: false,
           friends: true,
@@ -236,7 +237,7 @@ void main() {
     fakeAsync((clock) {
       final (adapter, loader, _) = _loader(clock);
       adapter.respond = _summaries;
-      final account = _account(76561198000000001);
+      final account = _account(1);
       DashboardLease acquire() => loader.acquire(
         account,
         wallet: false,
@@ -295,12 +296,13 @@ void main() {
     fakeAsync((clock) {
       final (adapter, loader, _) = _loader(clock);
       final pending = Completer<ResponseBody>();
-      adapter.respond = (request) =>
-          request.uri.path == '/market/' ? pending.future : _success(request);
+      adapter.respond = (request) => request.uri.path.endsWith('/inventory/')
+          ? pending.future
+          : _success(request);
       final lease = loader.acquire(_account(), wallet: true, listings: true);
       _flush(clock);
       expect(adapter.requests.map((r) => r.uri.path), [
-        '/market/',
+        '/profiles/76561198000000001/inventory/',
         '/market/mylistings/',
       ]);
       expect(lease.data.wallet.loading, isTrue);
@@ -312,7 +314,10 @@ void main() {
       expect(lease.data.wallet.failed, isTrue);
       expect(lease.data.wallet.needsLogin, isFalse);
       expect(lease.data.wallet.value, isNull);
-      expect(adapter.cancelled, contains('/market/'));
+      expect(
+        adapter.cancelled,
+        contains('/profiles/76561198000000001/inventory/'),
+      );
       expect(adapter.requests, hasLength(2), reason: 'No offline retry/login');
       lease.release();
       loader.clear();
@@ -341,7 +346,7 @@ void main() {
         expect(adapter.cancelled, isEmpty);
         second.release();
         _flush(clock);
-        expect(adapter.cancelled, ['/market/']);
+        expect(adapter.cancelled, ['/profiles/76561198000000001/inventory/']);
         pending.complete(_success(adapter.requests.first));
         _flush(clock);
         expect(second.data.wallet.value, isNull);
@@ -422,7 +427,10 @@ void main() {
       _flush(clock);
       expect(first.data.wallet.value, isNull);
       expect(first.data.wallet.loading, isFalse);
-      expect(adapter.cancelled, contains('/market/'));
+      expect(
+        adapter.cancelled,
+        contains('/profiles/76561198000000001/inventory/'),
+      );
       first.release();
     });
   });

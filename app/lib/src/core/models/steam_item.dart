@@ -176,6 +176,15 @@ class MarketListing {
   final int? holdUntil; // time_finish_hold, unix seconds
   final int? currency; // normalized Steam currency ID, without the 2000 offset
   final bool priceAvailable;
+  // Repricing uses the original seller amount per unit and Steam's wire
+  // currency ID. The converted display price can be in another currency.
+  final int? listingCurrencyId;
+  final int? originalUnitPrice;
+
+  bool get canReprice =>
+      state == MarketListingState.active &&
+      (listingCurrencyId ?? 0) > 0 &&
+      (originalUnitPrice ?? 0) > 0;
 
   const MarketListing({
     required this.listingId,
@@ -191,6 +200,8 @@ class MarketListing {
     this.holdUntil,
     this.currency,
     this.priceAvailable = true,
+    this.listingCurrencyId,
+    this.originalUnitPrice,
   });
 
   /// Amount the seller receives = buyer price − fee.
@@ -228,6 +239,13 @@ class MarketListing {
       name: (asset['name'] ?? asset['market_name'] ?? '') as String,
       iconUrl: _icon(asset['icon_url'] as String?),
       buyerPrice: price + fee,
+      listingCurrencyId: asIntOrNull(j['currencyid']),
+      originalUnitPrice:
+          asIntOrNull(j['original_price_per_unit']) ??
+          asIntOrNull(j['price_per_unit']) ??
+          (asInt(asset['amount'], fallback: 1) == 1
+              ? asIntOrNull(j['price'])
+              : null),
       fee: fee,
       priceAvailable:
           converted ||

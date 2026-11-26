@@ -4097,6 +4097,54 @@ abstract class AppLocalizations {
   /// **'Cancel this market listing?'**
   String get marketCancelConfirm;
 
+  /// No description provided for @marketReprice.
+  ///
+  /// In en, this message translates to:
+  /// **'Change price'**
+  String get marketReprice;
+
+  /// No description provided for @marketReceivePerUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'You receive per item'**
+  String get marketReceivePerUnit;
+
+  /// No description provided for @marketRepriceDecrease.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowering the price may require Steam confirmation.'**
+  String get marketRepriceDecrease;
+
+  /// No description provided for @marketRepriced.
+  ///
+  /// In en, this message translates to:
+  /// **'Listing price updated.'**
+  String get marketRepriced;
+
+  /// No description provided for @marketRepriceMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the price change in Steam Guard.'**
+  String get marketRepriceMobile;
+
+  /// No description provided for @marketRepriceEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the price change by email.'**
+  String get marketRepriceEmail;
+
+  /// No description provided for @marketRepriceCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam is limiting price changes. Try again later.'**
+  String get marketRepriceCooldown;
+
+  /// No description provided for @marketRepriceUnconfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Price change unconfirmed. Check the listing before trying again.'**
+  String get marketRepriceUnconfirmed;
+
   /// No description provided for @marketCancelAll.
   ///
   /// In en, this message translates to:

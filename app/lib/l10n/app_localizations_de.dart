@@ -2333,6 +2333,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get marketCancelConfirm => 'Dieses Marktangebot zurückziehen?';
 
   @override
+  String get marketReprice => 'Preis ändern';
+
+  @override
+  String get marketReceivePerUnit => 'Erlös pro Stück';
+
+  @override
+  String get marketRepriceDecrease =>
+      'Eine Preissenkung kann eine Bestätigung durch Steam erfordern.';
+
+  @override
+  String get marketRepriced => 'Angebotspreis aktualisiert.';
+
+  @override
+  String get marketRepriceMobile =>
+      'Bestätige die Preisänderung in Steam Guard.';
+
+  @override
+  String get marketRepriceEmail => 'Bestätige die Preisänderung per E-Mail.';
+
+  @override
+  String get marketRepriceCooldown =>
+      'Steam begrenzt Preisänderungen. Versuche es später erneut.';
+
+  @override
+  String get marketRepriceUnconfirmed =>
+      'Preisänderung unbestätigt. Prüfe das Angebot vor einem erneuten Versuch.';
+
+  @override
   String get marketCancelAll => 'Alle Angebote stornieren';
 
   @override

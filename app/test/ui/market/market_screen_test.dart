@@ -124,6 +124,16 @@ class _Market extends MarketClient {
     _listing('3', 'Pending item', MarketListingState.pendingConfirmation),
   ];
   Future<bool> Function(String)? cancelResult;
+  final priceChanges = <(String, int)>[];
+  @override
+  Future<ListingPriceResult> reprice(
+    SteamGuardAccount account,
+    MarketListing listing,
+    int unitPrice,
+  ) async {
+    priceChanges.add((listing.listingId, unitPrice));
+    return ListingPriceResult.confirmMobile;
+  }
 
   @override
   Future<MarketPrice?> priceOverview(
@@ -200,6 +210,8 @@ MarketListing _listing(String id, String name, MarketListingState state) =>
       fee: 15,
       createdAt: 0,
       active: state == MarketListingState.active,
+      listingCurrencyId: 2023,
+      originalUnitPrice: 100,
       state: state,
       holdUntil: state == MarketListingState.onHold ? 1900000000 : null,
     );
@@ -1061,6 +1073,31 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'only a live listing offers repricing and confirmation stays pending',
+    (tester) async {
+      final (market, _, l) = await _show(tester);
+      final edit = find.byTooltip(l.marketReprice);
+      expect(edit, findsOneWidget);
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      final submit = find.widgetWithText(FilledButton, l.marketReprice);
+      expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+      await tester.enterText(find.byType(TextFormField), 'Infinity');
+      await tester.pump();
+      expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+      await tester.enterText(find.byType(TextFormField), '0,86');
+      await tester.pump();
+      expect(find.text(l.marketRepriceDecrease), findsOneWidget);
+      await tester.tap(submit);
+      await tester.pumpAndSettle();
+      expect(market.priceChanges, [('1', 86)]);
+      expect(market.cancelledIds, isEmpty);
+      expect(find.text(l.marketRepriceMobile), findsOneWidget);
+      expect(find.text(l.marketRepriced), findsNothing);
+    },
+  );
 
   testWidgets('all sale states remain visible and held filter is selectable', (
     tester,

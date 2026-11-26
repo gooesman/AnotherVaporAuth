@@ -11,6 +11,7 @@ import '../../core/models/steam_guard_account.dart';
 import '../../core/inventory_filter.dart';
 import '../../core/models/steam_item.dart';
 import '../../core/protocol/inventory_client.dart';
+import '../../core/protocol/market_client.dart' show ListingPriceResult;
 import '../../core/steam_currency.dart';
 import '../../services/auto_login.dart';
 import '../../services/steam_api_client.dart' show CommunityAuthException;
@@ -842,7 +843,7 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
   int? _loadedReload;
   bool _loading = false;
   MarketListingState? _filter;
-  final _cancelling = <String>{};
+  final _busyListings = <String>{};
   int? _batchProcessed;
 
   @override
@@ -937,20 +938,123 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
     );
   }
 
+  Future<void> _reprice(MarketListing listing) async {
+    if (!listing.canReprice ||
+        _batchProcessed != null ||
+        _busyListings.contains(listing.listingId)) {
+      return;
+    }
+    final account = widget.account;
+    final source = _future;
+    final l = AppLocalizations.of(context);
+    final currencyId = listing.listingCurrencyId!;
+    final currency = currencyId >= 2000 ? currencyId - 2000 : currencyId;
+    final current = listing.originalUnitPrice!;
+    int? amount = current;
+    final price = await showDialog<int>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, update) => AlertDialog(
+          scrollable: true,
+          title: Text(l.marketReprice),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(listing.name),
+              const SizedBox(height: 12),
+              TextFormField(
+                autofocus: true,
+                initialValue: (current / 100).toStringAsFixed(2),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: l.marketReceivePerUnit,
+                  suffixText: steamCurrencyCode(currency),
+                  errorText: amount == null ? l.marketInvalidPrice : null,
+                ),
+                onChanged: (text) =>
+                    update(() => amount = parsePriceToMinor(text)),
+              ),
+              if (amount != null && amount! < current)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(l.marketRepriceDecrease),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l.commonCancel),
+            ),
+            FilledButton(
+              onPressed: amount == null || amount == current
+                  ? null
+                  : () => Navigator.pop(context, amount),
+              child: Text(l.marketReprice),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (price == null ||
+        !mounted ||
+        !widget.active ||
+        widget.account != account ||
+        _future != source ||
+        _batchProcessed != null ||
+        _busyListings.contains(listing.listingId)) {
+      return;
+    }
+    setState(() => _busyListings.add(listing.listingId));
+    var message = l.marketRepriceUnconfirmed;
+    try {
+      final result = await ref
+          .read(marketClientProvider)
+          .reprice(account, listing, price);
+      message = switch (result) {
+        ListingPriceResult.updated => l.marketRepriced,
+        ListingPriceResult.confirmMobile => l.marketRepriceMobile,
+        ListingPriceResult.confirmEmail => l.marketRepriceEmail,
+        ListingPriceResult.cooldown => l.marketRepriceCooldown,
+        ListingPriceResult.unconfirmed => l.marketRepriceUnconfirmed,
+      };
+    } catch (e) {
+      if (e is CommunityAuthException) message = l.sessionExpired;
+    } finally {
+      if (mounted) setState(() => _busyListings.remove(listing.listingId));
+    }
+    if (!mounted || widget.account != account) return;
+    _loadedReload = null;
+    if (widget.active) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      _refresh();
+    }
+  }
+
   Future<void> _cancel(MarketListing l) async {
-    if (_batchProcessed != null || _cancelling.contains(l.listingId)) return;
+    if (_batchProcessed != null || _busyListings.contains(l.listingId)) return;
     final loc = AppLocalizations.of(context);
     final confirmed = await _confirmCancel(
       loc.marketCancel,
       '${l.name}\n\n${loc.marketCancelConfirm}',
     );
-    if (confirmed != true || !mounted || _batchProcessed != null) return;
-    setState(() => _cancelling.add(l.listingId));
+    if (confirmed != true ||
+        !mounted ||
+        _batchProcessed != null ||
+        _busyListings.contains(l.listingId)) {
+      return;
+    }
+    setState(() => _busyListings.add(l.listingId));
     final ok = await ref
         .read(marketClientProvider)
         .cancel(widget.account, l.listingId);
     if (!mounted) return;
-    setState(() => _cancelling.remove(l.listingId));
+    setState(() => _busyListings.remove(l.listingId));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(ok ? loc.marketCancelled : loc.commonError)),
     );
@@ -961,7 +1065,7 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
   }
 
   Future<void> _cancelAll(List<MarketListing> listings) async {
-    if (_batchProcessed != null || _cancelling.isNotEmpty) return;
+    if (_batchProcessed != null || _busyListings.isNotEmpty) return;
     final loc = AppLocalizations.of(context);
     final source = _future;
     final confirmed = await _confirmCancel(
@@ -973,7 +1077,7 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
         !widget.active ||
         source != _future ||
         _batchProcessed != null ||
-        _cancelling.isNotEmpty) {
+        _busyListings.isNotEmpty) {
       return;
     }
 
@@ -1095,7 +1199,7 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
                       ),
                   if (cancellable.isNotEmpty)
                     OutlinedButton(
-                      onPressed: processed != null || _cancelling.isNotEmpty
+                      onPressed: processed != null || _busyListings.isNotEmpty
                           ? null
                           : () => _cancelAll(cancellable),
                       child: Text(
@@ -1155,14 +1259,29 @@ class _MyListingsTabState extends ConsumerState<_MyListingsTab>
                         ].join('\n'),
                         style: TextStyle(color: t.accent),
                       ),
-                      trailing: IconButton(
-                        tooltip: l.marketCancel,
-                        icon: Icon(Icons.close, color: t.bad),
-                        onPressed:
-                            processed != null ||
-                                _cancelling.contains(lst.listingId)
-                            ? null
-                            : () => _cancel(lst),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (lst.canReprice)
+                            IconButton(
+                              tooltip: l.marketReprice,
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed:
+                                  processed != null ||
+                                      _busyListings.contains(lst.listingId)
+                                  ? null
+                                  : () => _reprice(lst),
+                            ),
+                          IconButton(
+                            tooltip: l.marketCancel,
+                            icon: Icon(Icons.close, color: t.bad),
+                            onPressed:
+                                processed != null ||
+                                    _busyListings.contains(lst.listingId)
+                                ? null
+                                : () => _cancel(lst),
+                          ),
+                        ],
                       ),
                     );
                   },

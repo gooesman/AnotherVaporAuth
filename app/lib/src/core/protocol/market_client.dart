@@ -20,6 +20,14 @@ class SellResult {
   });
 }
 
+enum ListingPriceResult {
+  updated,
+  confirmMobile,
+  confirmEmail,
+  cooldown,
+  unconfirmed,
+}
+
 /// Steam Community Market operations for one account: price lookup, listing an
 /// item for sale, listing management. All writes are POST form bodies with a
 /// generated `sessionid` (sent as both a cookie and a form field) and a Referer.
@@ -308,6 +316,40 @@ class MarketClient {
         ? value.values
         : const [];
     return entries.whereType<Map>().map(Map<String, dynamic>.from).toList();
+  }
+
+  /// Updates the existing sell listing at the seller's original per-unit currency.
+  Future<ListingPriceResult> reprice(
+    SteamGuardAccount account,
+    MarketListing listing,
+    int unitPrice,
+  ) async {
+    if (!listing.canReprice ||
+        !RegExp(r'^[1-9]\d*$').hasMatch(listing.listingId) ||
+        unitPrice <= 0 ||
+        unitPrice > 0x7fffffff ||
+        unitPrice == listing.originalUnitPrice) {
+      throw ArgumentError('Invalid listing or unit price');
+    }
+    final data = await api.updateSellListingPrice(
+      listing.listingId,
+      unitPrice,
+      listing.listingCurrencyId!,
+      communityCookies(account),
+    );
+    final result = data['eResult'] == 1
+        ? data['eUpdateResult']
+        : data['eResult'];
+    if (result == 84) return ListingPriceResult.cooldown;
+    if (result != 1) return ListingPriceResult.unconfirmed;
+    return switch (data['bRequiresConfirmation']) {
+      true =>
+        data['eConfirmationMethod'] == 2
+            ? ListingPriceResult.confirmMobile
+            : ListingPriceResult.confirmEmail,
+      false || null => ListingPriceResult.updated,
+      _ => ListingPriceResult.unconfirmed,
+    };
   }
 
   /// Cancels/removes an active listing.

@@ -38,16 +38,12 @@ List<Confirmation> newMarketConfirmations(
 /// separator followed by 3+ digits ('1,234', '1.234' — thousands-looking;
 /// prices carry at most 2 decimals). Ambiguity must surface an error, never a
 /// silently mispriced listing.
-@visibleForTesting
 int? parsePriceToMinor(String s) {
-  final t = s.trim();
-  final seps = t.split('').where((c) => c == '.' || c == ',').length;
-  if (seps > 1) return null;
-  final sep = seps == 0 ? -1 : t.lastIndexOf(RegExp(r'[.,]'));
-  if (sep >= 0 && t.length - sep - 1 >= 3) return null;
-  final v = double.tryParse(t.replaceAll(',', '.'));
-  if (v == null || v <= 0) return null;
-  return (v * 100).round();
+  final match = RegExp(r'^(\d*)(?:[.,](\d{0,2}))?$').firstMatch(s.trim());
+  if (match == null) return null;
+  final fraction = (match[2] ?? '').padRight(2, '0');
+  final minor = int.tryParse('${match[1]}$fraction');
+  return minor != null && minor > 0 && minor <= 0x7fffffff ? minor : null;
 }
 
 /// True only when the whole batch for this listing was actually approved.
